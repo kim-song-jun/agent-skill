@@ -12,7 +12,12 @@ function lookup(ctx, path) {
 
 function renderEach(body, list, ctx) {
   if (!Array.isArray(list)) return "";
-  return list.map((item, i) => render(body, { ...ctx, __this__: item, __index__: i })).join("");
+  return list.map((item, i) => {
+    const sub = (item && typeof item === "object" && !Array.isArray(item))
+      ? { ...ctx, ...item, __this__: item, __index__: i }
+      : { ...ctx, __this__: item, __index__: i };
+    return render(body, sub);
+  }).join("");
 }
 
 export function render(tpl, ctx = {}) {

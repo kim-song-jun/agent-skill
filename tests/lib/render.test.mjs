@@ -35,3 +35,16 @@ test("missing variable renders as empty string", () => {
 test("ignores unknown helpers gracefully (passes through)", () => {
   assert.equal(render("{{#unknown}}x{{/unknown}}", {}), "{{#unknown}}x{{/unknown}}");
 });
+
+test("#each over objects exposes properties as variables", () => {
+  const out = render(
+    "{{#each agents}}- {{name}} ({{role}})\n{{/each}}",
+    { agents: [{ name: "planner", role: "plan" }, { name: "dev", role: "code" }] }
+  );
+  assert.equal(out, "- planner (plan)\n- dev (code)\n");
+});
+
+test("#each primitives still work via {{this}}", () => {
+  const out = render("{{#each items}}{{this}} {{/each}}", { items: ["a", "b"] });
+  assert.equal(out, "a b ");
+});
