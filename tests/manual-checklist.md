@@ -1,0 +1,31 @@
+# Manual end-to-end checklist
+
+Run before each `harness-builder` release. Use a fresh tmpdir as the target project.
+
+## Setup
+
+```bash
+mkdir /tmp/harness-fixture && cd /tmp/harness-fixture && git init
+# (Optional: drop a package.json or pyproject.toml to influence stack detection)
+```
+
+## Run
+
+In Claude Code, invoke `/harness-init`.
+
+## Checks
+
+- [ ] Phase 1 actually triggers `superpowers:brainstorming` (you see brainstorming questions).
+- [ ] Stack detection picked the right language (or "unknown").
+- [ ] Phase 3 dispatches in parallel (visible in the agent log as multiple subagents launched at once).
+- [ ] `CLAUDE.md` written; `--merge` test: re-run with `--merge` against an existing CLAUDE.md and confirm it appends rather than overwrites.
+- [ ] `.claude/agents/*.md` count matches size (small=3, medium=6+#qa, large=9+#qa).
+- [ ] Each generated agent file contains the three operating principles in its `## Rules` section.
+- [ ] `.claude/hooks/{context-mode-router,session-summary,cache-heal}.mjs` exist and are syntactically valid (`node --check`).
+- [ ] `.claude/settings.local.json` registers the three hooks.
+- [ ] `.gitignore` contains `.claude/.harness-state.json`.
+- [ ] Final commit message is `chore: bootstrap harness via /harness-init`.
+- [ ] Re-running with no flags is a no-op and prints "All phases already complete (use --force to re-run)".
+- [ ] `--force` rebuilds from scratch and overwrites artefacts.
+- [ ] `--dry-run` writes nothing to disk.
+- [ ] Missing-plugin scenario: temporarily disable `context-mode` in settings, re-run, confirm Phase 5 prints the install command.
