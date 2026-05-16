@@ -1,6 +1,22 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { render } from "../../skills/harness-init/lib/render.mjs";
+
+const here = dirname(fileURLToPath(import.meta.url));
+
+function snapshot(name, actual) {
+  const snapPath = resolve(here, "__snapshots__", `${name}.snap`);
+  mkdirSync(dirname(snapPath), { recursive: true });
+  if (!existsSync(snapPath) || process.env.UPDATE_SNAPSHOTS === "1") {
+    writeFileSync(snapPath, actual);
+    return;
+  }
+  const expected = readFileSync(snapPath, "utf-8");
+  assert.equal(actual, expected, `Snapshot mismatch for ${name}. Re-run with UPDATE_SNAPSHOTS=1 to update.`);
+}
 
 test("substitutes simple variables", () => {
   assert.equal(render("hello {{name}}", { name: "world" }), "hello world");
@@ -48,3 +64,31 @@ test("#each primitives still work via {{this}}", () => {
   const out = render("{{#each items}}{{this}} {{/each}}", { items: ["a", "b"] });
   assert.equal(out, "a b ");
 });
+
+const TEMPLATES_DIR = resolve(here, "..", "..", "skills", "harness-init", "templates");
+
+const FIXTURES = [
+  { tag: "ts-small", ctx: { purpose: "Demo app", stack: "typescript", deploy_targets: "vercel", agents: [{name:"planner",when:"all planning"},{name:"dev",when:"implementation"},{name:"reviewer",when:"final review"}], constraints: "" } },
+  { tag: "py-medium", ctx: { purpose: "API service", stack: "python", deploy_targets: "docker", agents: [{name:"planner",when:"all planning"},{name:"dev",when:"implementation"},{name:"designer",when:"UI"},{name:"qa-auth",when:"auth flow"},{name:"tester",when:"automated runs"},{name:"reviewer",when:"final review"}], constraints: "GDPR scope" } },
+  { tag: "rs-large", ctx: { purpose: "CLI tool", stack: "rust", deploy_targets: "github releases", agents: [{name:"planner",when:""},{name:"frontend-dev",when:""},{name:"backend-dev",when:""},{name:"qa-cli",when:""},{name:"tester",when:""},{name:"reviewer",when:""},{name:"doc-writer",when:""}], constraints: "" } },
+  { tag: "go-small", ctx: { purpose: "Worker", stack: "go", deploy_targets: "", agents: [{name:"planner",when:""},{name:"dev",when:""},{name:"reviewer",when:""}], constraints: "" } },
+  { tag: "mono-medium", ctx: { purpose: "Monorepo", stack: "javascript", deploy_targets: "cloudflare", agents: [{name:"planner",when:""},{name:"dev",when:""},{name:"designer",when:""},{name:"qa-general",when:""},{name:"tester",when:""},{name:"reviewer",when:""}], constraints: "" } },
+];
+
+function listTemplates(dir, base = "") {
+  return readdirSync(dir, { withFileTypes: true }).flatMap(e => {
+    const p = `${base}${e.name}`;
+    return e.isDirectory() ? listTemplates(resolve(dir, e.name), `${p}/`) : [p];
+  });
+}
+
+for (const tplRel of listTemplates(TEMPLATES_DIR)) {
+  if (!tplRel.endsWith(".hbs")) continue;
+  const tpl = readFileSync(resolve(TEMPLATES_DIR, tplRel), "utf-8");
+  for (const fx of FIXTURES) {
+    test(`snapshot: ${tplRel} × ${fx.tag}`, () => {
+      const out = render(tpl, { ...fx.ctx, persona: "auth" });
+      snapshot(`${tplRel.replace(/\//g, "_")}__${fx.tag}`, out);
+    });
+  }
+}

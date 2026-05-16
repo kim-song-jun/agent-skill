@@ -1,0 +1,39 @@
+# Demo app
+
+> Project memory for Claude Code. Maintained by `/harness-init`.
+
+## Stack
+
+typescript — deploys to vercel
+
+## Operating Principles
+
+These apply to the main agent and to every role in `.claude/agents/`:
+
+1. **Brainstorm first.** Before any deliverable (code, doc, design), invoke `superpowers:brainstorming` to align on intent.
+2. **Parallel via superpowers.** When fanning out 2+ independent subtasks, invoke `superpowers:dispatching-parallel-agents` or `subagent-driven-development`.
+3. **context-mode over Bash.** For commands whose output may exceed ~20 lines, use `mcp__plugin_context-mode_context-mode__ctx_batch_execute`.
+
+## Agent Roster
+
+| Role | When to use | File |
+|------|-------------|------|
+| planner | all planning | `.claude/agents/planner.md` |
+| dev | implementation | `.claude/agents/dev.md` |
+| reviewer | final review | `.claude/agents/reviewer.md` |
+
+
+## Hooks
+
+- `PreToolUse` (Bash) → `context-mode-router.mjs` — suggests context-mode for likely-large commands
+- `Stop` → `session-summary.mjs` — appends key decisions to `docs/decisions/`
+- `SessionStart` → `cache-heal.mjs` — self-heals plugin cache symlinks
+
+## Work Folders
+
+- `docs/superpowers/specs/` — brainstorming output (design specs)
+- `docs/superpowers/plans/` — writing-plans output (implementation plans)
+- `docs/decisions/` — session-summary logs
+- `docs/tasks/` — long-running task tracking
+
+
