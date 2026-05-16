@@ -1,0 +1,4 @@
+{
+  "installed": { "plugins": { "context-mode@context-mode": [{ "installPath": "/tmp/x" }], "superpowers@claude-plugins-official": [{ "installPath": "/tmp/y" }] } },
+  "enabled": { "context-mode@context-mode": true }
+}
