@@ -1,0 +1,14 @@
+# Node
+node_modules/
+*.log
+
+# Test artefacts
+tests/tmp/
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Per-project harness state (only relevant when this repo is itself harnessed)
+.claude/.harness-state.json
