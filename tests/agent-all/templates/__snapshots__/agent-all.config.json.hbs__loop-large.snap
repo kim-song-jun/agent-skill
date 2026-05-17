@@ -1,0 +1,27 @@
+{
+  "defaults": {
+    "maxIter": 10,
+    "maxCostUSD": 200,
+    "waveSize": "large",
+    "brainstormFirst": true,
+    "createPR": true
+  },
+  "waves": {
+    "small":  { "maxParallel": 2,  "rolesAllowed": ["dev", "reviewer"] },
+    "medium": { "maxParallel": 4,  "rolesAllowed": ["frontend-dev", "backend-dev", "designer", "reviewer"] },
+    "large":  { "maxParallel": 8,  "rolesAllowed": ["frontend-dev", "backend-dev", "designer", "qa-*", "reviewer", "doc-writer"] }
+  },
+  "loop": {
+    "breakCondition": "pytest && npm test",
+    "stableIters": 1
+  },
+  "gates": {
+    "specReview": true,
+    "qualityReview": true,
+    "blockOnCritical": true
+  },
+  "pr": {
+    "branchPrefix": "feat/agent-all/",
+    "baseBranch": "main"
+  }
+}
