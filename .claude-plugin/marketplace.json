@@ -1,10 +1,10 @@
 {
   "name": "agent-skill",
-  "description": "Harness builder + optimisation skills for Claude Code",
+  "description": "Harness builder + visual-QA + (future) optimisation skills for Claude Code",
   "plugins": [
     {
       "name": "harness-builder",
-      "source": "./",
+      "source": "./plugins/harness-builder",
       "description": "Bootstrap CLAUDE.md, .claude/agents/, hooks, and plugin wiring with /harness-init"
     }
   ]

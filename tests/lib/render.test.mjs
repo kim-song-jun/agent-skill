@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { render } from "../../skills/harness-init/lib/render.mjs";
+import { render } from "../../plugins/harness-builder/skills/harness-init/lib/render.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -65,7 +65,7 @@ test("#each primitives still work via {{this}}", () => {
   assert.equal(out, "a b ");
 });
 
-const TEMPLATES_DIR = resolve(here, "..", "..", "skills", "harness-init", "templates");
+const TEMPLATES_DIR = resolve(here, "..", "..", "plugins", "harness-builder", "skills", "harness-init", "templates");
 
 const FIXTURES = [
   { tag: "ts-small", ctx: { purpose: "Demo app", stack: "typescript", deploy_targets: "vercel", agents: [{name:"planner",when:"all planning"},{name:"dev",when:"implementation"},{name:"reviewer",when:"final review"}], constraints: "" } },
