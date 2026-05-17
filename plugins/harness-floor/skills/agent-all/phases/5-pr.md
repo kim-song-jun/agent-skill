@@ -44,7 +44,7 @@ If `--no-pr` OR `config.defaults.createPR === false`: skip Phase 5. Push `{phase
    };
    ```
 
-6. Render `templates/pr-body.md.hbs` with `ctx` using `plugins/harness-builder/skills/harness-init/lib/render.mjs`.
+6. Render `templates/pr-body.md.hbs` with `ctx` using `plugins/harness-builder/skills/agent-init/lib/render.mjs`.
 
 7. Create PR:
    ```bash

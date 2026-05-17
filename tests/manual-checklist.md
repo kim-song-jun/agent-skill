@@ -11,7 +11,7 @@ mkdir /tmp/harness-fixture && cd /tmp/harness-fixture && git init
 
 ## Run
 
-In Claude Code, invoke `/harness-init`.
+In Claude Code, invoke `/agent-init`.
 
 ## Checks
 
@@ -24,7 +24,7 @@ In Claude Code, invoke `/harness-init`.
 - [ ] `.claude/hooks/{context-mode-router,session-summary,cache-heal}.mjs` exist and are syntactically valid (`node --check`).
 - [ ] `.claude/settings.local.json` registers the three hooks.
 - [ ] `.gitignore` contains `.claude/.harness-state.json`.
-- [ ] Final commit message is `chore: bootstrap harness via /harness-init`.
+- [ ] Final commit message is `chore: bootstrap harness via /agent-init`.
 - [ ] Re-running with no flags is a no-op and prints "All phases already complete (use --force to re-run)".
 - [ ] `--force` rebuilds from scratch and overwrites artefacts.
 - [ ] `--dry-run` writes nothing to disk.

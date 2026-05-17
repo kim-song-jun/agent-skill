@@ -10,5 +10,6 @@ coverage/
 .DS_Store
 Thumbs.db
 
-# Per-project harness state (only relevant when this repo is itself harnessed)
+# Per-project agent-init state (only relevant when this repo is itself harnessed)
 .claude/.harness-state.json
+.claude/.agent-init-state.json

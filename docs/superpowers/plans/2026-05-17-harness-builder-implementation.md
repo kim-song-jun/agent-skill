@@ -2,9 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the `/harness-init` skill as a Claude Code plugin marketplace, packaging it so a fresh project can be bootstrapped with CLAUDE.md + .claude/agents/ + hooks + plugin wiring in one invocation.
+**Note (2026-05-18):** `/harness-init` was renamed to `/agent-init` in harness-builder v0.2.0. References below to the old name reflect the original design and remain accurate for that timeframe. Treat `harness-init` and `agent-init` as the same skill in current code.
 
-**Architecture:** Single plugin marketplace at repo root. One thin SKILL.md orchestrates 5 phase prompts. Deterministic mechanics (template rendering, settings merge, stack detection, plugin scan) live as pure-JS modules in `skills/harness-init/lib/` and are TDD'd. Templates are mustache-style `.hbs` files rendered by an in-house 50-line engine — zero npm dependencies.
+**Goal:** Build the `/agent-init` skill as a Claude Code plugin marketplace, packaging it so a fresh project can be bootstrapped with CLAUDE.md + .claude/agents/ + hooks + plugin wiring in one invocation.
+
+**Architecture:** Single plugin marketplace at repo root. One thin SKILL.md orchestrates 5 phase prompts. Deterministic mechanics (template rendering, settings merge, stack detection, plugin scan) live as pure-JS modules in `skills/agent-init/lib/` and are TDD'd. Templates are mustache-style `.hbs` files rendered by an in-house 50-line engine — zero npm dependencies.
 
 **Tech Stack:** Node.js native test runner (`node --test`), pure ES modules, no third-party deps. Plugin manifest follows the Claude Code plugin schema.
 
@@ -21,7 +23,7 @@ agent-skill/
 ├── .claude-plugin/
 │   ├── marketplace.json         # registers this repo as a plugin marketplace
 │   └── plugin.json              # registers skills + global hooks
-├── skills/harness-init/
+├── skills/agent-init/
 │   ├── SKILL.md                 # ≤150 lines, thin orchestrator
 │   ├── phases/
 │   │   ├── 1-discover.md
@@ -97,7 +99,7 @@ coverage/
 Thumbs.db
 
 # Per-project harness state (only relevant when this repo is itself harnessed)
-.claude/.harness-state.json
+.claude/.agent-init-state.json
 ```
 
 - [ ] **Step 2: Write `README.md`**
@@ -105,7 +107,7 @@ Thumbs.db
 ```markdown
 # agent-skill
 
-Claude Code plugin marketplace for `/harness-init` and (eventually) sibling skills that bootstrap project-level agent harnesses.
+Claude Code plugin marketplace for `/agent-init` and (eventually) sibling skills that bootstrap project-level agent harnesses.
 
 ## Install
 
@@ -116,7 +118,7 @@ Claude Code plugin marketplace for `/harness-init` and (eventually) sibling skil
 
 ## What it ships
 
-- `harness-builder` plugin → `/harness-init` skill
+- `harness-builder` plugin → `/agent-init` skill
 - Global hook `context-mode-cache-heal.mjs` (SessionStart)
 
 See `docs/superpowers/specs/` for design, `docs/superpowers/plans/` for implementation plans.
@@ -166,7 +168,7 @@ git commit -m "chore: repo bootstrap (README, .gitignore, CHANGELOG)"
     {
       "name": "harness-builder",
       "source": "./",
-      "description": "Bootstrap CLAUDE.md, .claude/agents/, hooks, and plugin wiring with /harness-init"
+      "description": "Bootstrap CLAUDE.md, .claude/agents/, hooks, and plugin wiring with /agent-init"
     }
   ]
 }
@@ -179,7 +181,7 @@ git commit -m "chore: repo bootstrap (README, .gitignore, CHANGELOG)"
   "name": "harness-builder",
   "version": "0.1.0",
   "description": "Single-command project harness bootstrapper",
-  "skills": ["skills/harness-init"],
+  "skills": ["skills/agent-init"],
   "hooks": {
     "SessionStart": [
       {
@@ -274,7 +276,7 @@ git commit -m "feat(hooks): migrate context-mode cache-heal hook into repo"
 - Create: `tests/fixtures/stacks/go/go.mod`
 - Create: `tests/fixtures/stacks/monorepo/package.json`
 - Create: `tests/lib/detect-stack.test.mjs`
-- Create: `skills/harness-init/lib/detect-stack.mjs`
+- Create: `skills/agent-init/lib/detect-stack.mjs`
 
 - [ ] **Step 1: Create the 5 fixture projects (minimal contents)**
 
@@ -328,7 +330,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { detectStack } from "../../skills/harness-init/lib/detect-stack.mjs";
+import { detectStack } from "../../skills/agent-init/lib/detect-stack.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fx = (name) => resolve(here, "..", "fixtures", "stacks", name);
@@ -363,7 +365,7 @@ test("returns 'unknown' when no recognized manifest", () => {
 Run: `node --test tests/lib/detect-stack.test.mjs`
 Expected: FAIL — cannot find module `detect-stack.mjs`.
 
-- [ ] **Step 4: Write `skills/harness-init/lib/detect-stack.mjs`**
+- [ ] **Step 4: Write `skills/agent-init/lib/detect-stack.mjs`**
 
 ```javascript
 import { existsSync } from "node:fs";
@@ -394,7 +396,7 @@ Expected: all 6 tests pass.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add tests/fixtures/stacks tests/lib/detect-stack.test.mjs skills/harness-init/lib/detect-stack.mjs
+git add tests/fixtures/stacks tests/lib/detect-stack.test.mjs skills/agent-init/lib/detect-stack.mjs
 git commit -m "feat(lib): detect-stack with TDD coverage for 5 stacks + unknown"
 ```
 
@@ -407,7 +409,7 @@ git commit -m "feat(lib): detect-stack with TDD coverage for 5 stacks + unknown"
 - Create: `tests/fixtures/plugins/partial.json`
 - Create: `tests/fixtures/plugins/missing.json`
 - Create: `tests/lib/plugin-scan.test.mjs`
-- Create: `skills/harness-init/lib/plugin-scan.mjs`
+- Create: `skills/agent-init/lib/plugin-scan.mjs`
 
 - [ ] **Step 1: Write fixtures**
 
@@ -443,7 +445,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { scanPlugins } from "../../skills/harness-init/lib/plugin-scan.mjs";
+import { scanPlugins } from "../../skills/agent-init/lib/plugin-scan.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const load = (name) => JSON.parse(readFileSync(resolve(here, "..", "fixtures", "plugins", name), "utf-8"));
@@ -490,7 +492,7 @@ test("ignores plugins not in the required list", () => {
 Run: `node --test tests/lib/plugin-scan.test.mjs`
 Expected: FAIL — module not found.
 
-- [ ] **Step 4: Write `skills/harness-init/lib/plugin-scan.mjs`**
+- [ ] **Step 4: Write `skills/agent-init/lib/plugin-scan.mjs`**
 
 ```javascript
 export function scanPlugins({ installedPlugins, enabledPlugins, required }) {
@@ -518,7 +520,7 @@ Expected: all 4 tests pass.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add tests/fixtures/plugins tests/lib/plugin-scan.test.mjs skills/harness-init/lib/plugin-scan.mjs
+git add tests/fixtures/plugins tests/lib/plugin-scan.test.mjs skills/agent-init/lib/plugin-scan.mjs
 git commit -m "feat(lib): plugin-scan classifies required plugins as enabled/disabled/missing"
 ```
 
@@ -528,14 +530,14 @@ git commit -m "feat(lib): plugin-scan classifies required plugins as enabled/dis
 
 **Files:**
 - Create: `tests/lib/manifest-merge.test.mjs`
-- Create: `skills/harness-init/lib/manifest-merge.mjs`
+- Create: `skills/agent-init/lib/manifest-merge.mjs`
 
 - [ ] **Step 1: Write `tests/lib/manifest-merge.test.mjs`**
 
 ```javascript
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mergeSettings } from "../../skills/harness-init/lib/manifest-merge.mjs";
+import { mergeSettings } from "../../skills/agent-init/lib/manifest-merge.mjs";
 
 test("creates fresh settings when current is empty", () => {
   const out = mergeSettings({}, {
@@ -581,7 +583,7 @@ test("preserves non-hook fields verbatim", () => {
 Run: `node --test tests/lib/manifest-merge.test.mjs`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Write `skills/harness-init/lib/manifest-merge.mjs`**
+- [ ] **Step 3: Write `skills/agent-init/lib/manifest-merge.mjs`**
 
 ```javascript
 export function mergeSettings(current, additions) {
@@ -614,7 +616,7 @@ Expected: all 4 tests pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add tests/lib/manifest-merge.test.mjs skills/harness-init/lib/manifest-merge.mjs
+git add tests/lib/manifest-merge.test.mjs skills/agent-init/lib/manifest-merge.mjs
 git commit -m "feat(lib): manifest-merge preserves existing hooks, dedupes commands"
 ```
 
@@ -626,14 +628,14 @@ git commit -m "feat(lib): manifest-merge preserves existing hooks, dedupes comma
 
 **Files:**
 - Create: `tests/lib/render.test.mjs`
-- Create: `skills/harness-init/lib/render.mjs`
+- Create: `skills/agent-init/lib/render.mjs`
 
 - [ ] **Step 1: Write `tests/lib/render.test.mjs`**
 
 ```javascript
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { render } from "../../skills/harness-init/lib/render.mjs";
+import { render } from "../../skills/agent-init/lib/render.mjs";
 
 test("substitutes simple variables", () => {
   assert.equal(render("hello {{name}}", { name: "world" }), "hello world");
@@ -675,7 +677,7 @@ test("ignores unknown helpers gracefully (passes through)", () => {
 Run: `node --test tests/lib/render.test.mjs`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Write `skills/harness-init/lib/render.mjs`**
+- [ ] **Step 3: Write `skills/agent-init/lib/render.mjs`**
 
 ```javascript
 function lookup(ctx, path) {
@@ -717,7 +719,7 @@ Expected: all 8 tests pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add tests/lib/render.test.mjs skills/harness-init/lib/render.mjs
+git add tests/lib/render.test.mjs skills/agent-init/lib/render.mjs
 git commit -m "feat(lib): render — mustache-subset engine (vars, #if, #each)"
 ```
 
@@ -726,14 +728,14 @@ git commit -m "feat(lib): render — mustache-subset engine (vars, #if, #each)"
 ## Task 8: Template `CLAUDE.md.hbs`
 
 **Files:**
-- Create: `skills/harness-init/templates/CLAUDE.md.hbs`
+- Create: `skills/agent-init/templates/CLAUDE.md.hbs`
 
 - [ ] **Step 1: Write template**
 
 ```handlebars
 # {{purpose}}
 
-> Project memory for Claude Code. Maintained by `/harness-init`.
+> Project memory for Claude Code. Maintained by `/agent-init`.
 
 ## Stack
 
@@ -777,7 +779,7 @@ These apply to the main agent and to every role in `.claude/agents/`:
 - [ ] **Step 2: Commit**
 
 ```bash
-git add skills/harness-init/templates/CLAUDE.md.hbs
+git add skills/agent-init/templates/CLAUDE.md.hbs
 git commit -m "feat(templates): CLAUDE.md.hbs with agent index + principles"
 ```
 
@@ -786,7 +788,7 @@ git commit -m "feat(templates): CLAUDE.md.hbs with agent index + principles"
 ## Task 9: Template `agents/planner.md.hbs` (canonical reference)
 
 **Files:**
-- Create: `skills/harness-init/templates/agents/planner.md.hbs`
+- Create: `skills/agent-init/templates/agents/planner.md.hbs`
 
 This task writes the reference template fully. Task 10 lists the other 8 agent templates as variations on this structure.
 
@@ -824,7 +826,7 @@ This project uses **{{stack}}**.{{#if deploy_targets}} It deploys to **{{deploy_
 - [ ] **Step 2: Commit**
 
 ```bash
-git add skills/harness-init/templates/agents/planner.md.hbs
+git add skills/agent-init/templates/agents/planner.md.hbs
 git commit -m "feat(templates): planner.md.hbs — canonical agent template"
 ```
 
@@ -851,13 +853,13 @@ For each, follow the planner.md.hbs structure (front-matter with name/descriptio
 
 - [ ] **Step 2: Verify all 9 agent templates exist**
 
-Run: `ls skills/harness-init/templates/agents/ | wc -l`
+Run: `ls skills/agent-init/templates/agents/ | wc -l`
 Expected: `9`.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add skills/harness-init/templates/agents/
+git add skills/agent-init/templates/agents/
 git commit -m "feat(templates): add dev, reviewer, designer, qa, tester, frontend-dev, backend-dev, doc-writer agents"
 ```
 
@@ -866,7 +868,7 @@ git commit -m "feat(templates): add dev, reviewer, designer, qa, tester, fronten
 ## Task 11: Template `hooks/context-mode-router.mjs`
 
 **Files:**
-- Create: `skills/harness-init/templates/hooks/context-mode-router.mjs`
+- Create: `skills/agent-init/templates/hooks/context-mode-router.mjs`
 
 - [ ] **Step 1: Write the hook**
 
@@ -900,20 +902,20 @@ process.exit(0);
 
 Run:
 ```bash
-echo '{"tool_input":{"command":"git log --oneline -50"}}' | node skills/harness-init/templates/hooks/context-mode-router.mjs
+echo '{"tool_input":{"command":"git log --oneline -50"}}' | node skills/agent-init/templates/hooks/context-mode-router.mjs
 ```
 Expected: stdout contains `context_guidance`.
 
 Run:
 ```bash
-echo '{"tool_input":{"command":"echo hi"}}' | node skills/harness-init/templates/hooks/context-mode-router.mjs
+echo '{"tool_input":{"command":"echo hi"}}' | node skills/agent-init/templates/hooks/context-mode-router.mjs
 ```
 Expected: stdout empty.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add skills/harness-init/templates/hooks/context-mode-router.mjs
+git add skills/agent-init/templates/hooks/context-mode-router.mjs
 git commit -m "feat(templates): context-mode-router PreToolUse hook"
 ```
 
@@ -922,7 +924,7 @@ git commit -m "feat(templates): context-mode-router PreToolUse hook"
 ## Task 12: Template `hooks/session-summary.mjs`
 
 **Files:**
-- Create: `skills/harness-init/templates/hooks/session-summary.mjs`
+- Create: `skills/agent-init/templates/hooks/session-summary.mjs`
 
 - [ ] **Step 1: Write the hook**
 
@@ -957,7 +959,7 @@ process.exit(0);
 
 Run (from repo root):
 ```bash
-TMPDIR=$(mktemp -d) && echo '{"stop_reason":"user requested halt"}' | CLAUDE_PROJECT_DIR="$TMPDIR" node skills/harness-init/templates/hooks/session-summary.mjs && ls "$TMPDIR/docs/decisions/"
+TMPDIR=$(mktemp -d) && echo '{"stop_reason":"user requested halt"}' | CLAUDE_PROJECT_DIR="$TMPDIR" node skills/agent-init/templates/hooks/session-summary.mjs && ls "$TMPDIR/docs/decisions/"
 ```
 
 Expected: lists one file named `YYYY-MM-DD-session.md`. Exit code 0.
@@ -965,7 +967,7 @@ Expected: lists one file named `YYYY-MM-DD-session.md`. Exit code 0.
 - [ ] **Step 3: Commit**
 
 ```bash
-git add skills/harness-init/templates/hooks/session-summary.mjs
+git add skills/agent-init/templates/hooks/session-summary.mjs
 git commit -m "feat(templates): session-summary Stop hook writes to docs/decisions/"
 ```
 
@@ -974,7 +976,7 @@ git commit -m "feat(templates): session-summary Stop hook writes to docs/decisio
 ## Task 13: Template `hooks/cache-heal.mjs` (project-scoped)
 
 **Files:**
-- Create: `skills/harness-init/templates/hooks/cache-heal.mjs`
+- Create: `skills/agent-init/templates/hooks/cache-heal.mjs`
 
 - [ ] **Step 1: Adapt the global cache-heal to a project scope**
 
@@ -1036,13 +1038,13 @@ process.exit(0);
 
 - [ ] **Step 2: Smoke-test**
 
-Run: `node skills/harness-init/templates/hooks/cache-heal.mjs && echo ok`
+Run: `node skills/agent-init/templates/hooks/cache-heal.mjs && echo ok`
 Expected: prints `ok` (and possibly a JSON line if a CLAUDE.md is present in cwd — no error).
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add skills/harness-init/templates/hooks/cache-heal.mjs
+git add skills/agent-init/templates/hooks/cache-heal.mjs
 git commit -m "feat(templates): project-scoped cache-heal SessionStart hook"
 ```
 
@@ -1051,7 +1053,7 @@ git commit -m "feat(templates): project-scoped cache-heal SessionStart hook"
 ## Task 14: Template `settings.local.json.hbs`
 
 **Files:**
-- Create: `skills/harness-init/templates/settings.local.json.hbs`
+- Create: `skills/agent-init/templates/settings.local.json.hbs`
 
 - [ ] **Step 1: Write template**
 
@@ -1087,7 +1089,7 @@ git commit -m "feat(templates): project-scoped cache-heal SessionStart hook"
 - [ ] **Step 2: Commit**
 
 ```bash
-git add skills/harness-init/templates/settings.local.json.hbs
+git add skills/agent-init/templates/settings.local.json.hbs
 git commit -m "feat(templates): settings.local.json.hbs registers 3 project hooks"
 ```
 
@@ -1174,10 +1176,10 @@ git commit -m "test(lib): snapshot all templates across 5 stack/size fixtures"
 
 ---
 
-## Task 16: `skills/harness-init/SKILL.md`
+## Task 16: `skills/agent-init/SKILL.md`
 
 **Files:**
-- Create: `skills/harness-init/SKILL.md`
+- Create: `skills/agent-init/SKILL.md`
 
 - [ ] **Step 1: Write the skill orchestrator (thin)**
 
@@ -1187,7 +1189,7 @@ name: harness-init
 description: Bootstrap a Claude Code agent harness in the current project — CLAUDE.md, .claude/agents/, hooks, plugin wiring, all in one invocation. Use when starting a new project or adopting Claude Code on an existing one without an existing CLAUDE.md.
 ---
 
-# /harness-init
+# /agent-init
 
 Sets up a full per-project agent harness following the three operating principles: brainstorming-first, superpowers for parallel, context-mode for large output.
 
@@ -1196,7 +1198,7 @@ Sets up a full per-project agent harness following the three operating principle
 - `--force` — re-run all phases; overwrite existing artefacts.
 - `--merge` — preserve existing CLAUDE.md and append a harness section.
 - `--dry-run` — print decisions and intended writes; touch nothing.
-- `--resume` — skip phases already marked complete in `.claude/.harness-state.json`.
+- `--resume` — skip phases already marked complete in `.claude/.agent-init-state.json`.
 - `--size=small|medium|large` — override auto-inferred agent team size.
 - `--qa=<persona>[,<persona>]` — override auto-inferred QA personas.
 
@@ -1216,7 +1218,7 @@ The skill runs 5 phases strictly in order. Each phase is described in a separate
 ## Rules
 
 1. **You orchestrate; the phase files are the source of truth.** Before each phase, Read its file and follow it literally.
-2. **State lives in `.claude/.harness-state.json`.** Shape: `{ "phases": [{ "phase": N, "completedAt": "<iso>" }], "discovery": {...}, "plugin_scan": {...}, "commit": "<sha>" }`. After each completed phase, append a `{phase, completedAt}` entry to `phases`. `--resume` resumes after `max(phases[*].phase)`.
+2. **State lives in `.claude/.agent-init-state.json`.** Shape: `{ "phases": [{ "phase": N, "completedAt": "<iso>" }], "discovery": {...}, "plugin_scan": {...}, "commit": "<sha>" }`. After each completed phase, append a `{phase, completedAt}` entry to `phases`. `--resume` resumes after `max(phases[*].phase)`.
 3. **Brainstorm before scaffolding.** Phase 1 invokes `superpowers:brainstorming` — do not skip it even if you "know" what the user wants.
 4. **Parallel only in Phase 3.** Before fan-out, invoke `superpowers:dispatching-parallel-agents` to set up the dispatch correctly.
 5. **context-mode for any inspection.** When reading `installed_plugins.json`, large directories, or `git status`, use `mcp__plugin_context-mode_context-mode__ctx_batch_execute` instead of raw Bash.
@@ -1247,7 +1249,7 @@ Print a one-screen summary: phases completed, files written, plugin install comm
 - [ ] **Step 2: Commit**
 
 ```bash
-git add skills/harness-init/SKILL.md
+git add skills/agent-init/SKILL.md
 git commit -m "feat(skill): harness-init orchestrator (thin SKILL.md)"
 ```
 
@@ -1256,7 +1258,7 @@ git commit -m "feat(skill): harness-init orchestrator (thin SKILL.md)"
 ## Task 17: `phases/1-discover.md`
 
 **Files:**
-- Create: `skills/harness-init/phases/1-discover.md`
+- Create: `skills/agent-init/phases/1-discover.md`
 
 - [ ] **Step 1: Write the phase prompt**
 
@@ -1276,7 +1278,7 @@ git commit -m "feat(skill): harness-init orchestrator (thin SKILL.md)"
    const scan = scanPlugins({ installedPlugins, enabledPlugins, required: ["context-mode@context-mode", "superpowers@claude-plugins-official"] });
    ```
    Stash `scan` for Phase 5. Do NOT abort on missing plugins.
-4. Read `.claude/.harness-state.json` if present. If `--resume` and `max(state.phases[*].phase) >= 1`, skip Phase 1 proper.
+4. Read `.claude/.agent-init-state.json` if present. If `--resume` and `max(state.phases[*].phase) >= 1`, skip Phase 1 proper.
 
 ## Phase 1 proper
 
@@ -1298,7 +1300,7 @@ git commit -m "feat(skill): harness-init orchestrator (thin SKILL.md)"
      stack: detectStack(cwd),         // from helper
    };
    ```
-4. Update `.claude/.harness-state.json` (create with `{ "phases": [] }` if missing). Set top-level `discovery` and `plugin_scan`, then push `{ "phase": 1, "completedAt": "<iso>" }` onto `phases`. Use atomic write: temp file + rename.
+4. Update `.claude/.agent-init-state.json` (create with `{ "phases": [] }` if missing). Set top-level `discovery` and `plugin_scan`, then push `{ "phase": 1, "completedAt": "<iso>" }` onto `phases`. Use atomic write: temp file + rename.
 5. Do not commit yet. Phase 5 makes a single bootstrap commit.
 
 ## Output to user
@@ -1309,7 +1311,7 @@ Print a 3-line summary: detected stack, chosen size, QA personas. Ask "proceed t
 - [ ] **Step 2: Commit**
 
 ```bash
-git add skills/harness-init/phases/1-discover.md
+git add skills/agent-init/phases/1-discover.md
 git commit -m "feat(phases): 1-discover — preflight + brainstorming + stack detection"
 ```
 
@@ -1318,7 +1320,7 @@ git commit -m "feat(phases): 1-discover — preflight + brainstorming + stack de
 ## Task 18: `phases/2-claude-md.md`
 
 **Files:**
-- Create: `skills/harness-init/phases/2-claude-md.md`
+- Create: `skills/agent-init/phases/2-claude-md.md`
 
 - [ ] **Step 1: Write the phase prompt**
 
@@ -1354,7 +1356,7 @@ git commit -m "feat(phases): 1-discover — preflight + brainstorming + stack de
 3. Render with `render(tpl, { ...discovery, agents })`.
 4. Write `CLAUDE.md` at project root.
    - If `--merge` and the file exists: append `\n\n---\n\n## Harness\n\n<rendered content>` instead of overwriting.
-5. Push `{ "phase": 2, "completedAt": "<iso>" }` onto `phases` in `.harness-state.json`.
+5. Push `{ "phase": 2, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`.
 
 ## Output to user
 
@@ -1364,7 +1366,7 @@ Print: `CLAUDE.md written (N lines)`.
 - [ ] **Step 2: Commit**
 
 ```bash
-git add skills/harness-init/phases/2-claude-md.md
+git add skills/agent-init/phases/2-claude-md.md
 git commit -m "feat(phases): 2-claude-md — render & write CLAUDE.md"
 ```
 
@@ -1373,7 +1375,7 @@ git commit -m "feat(phases): 2-claude-md — render & write CLAUDE.md"
 ## Task 19: `phases/3-agents.md`
 
 **Files:**
-- Create: `skills/harness-init/phases/3-agents.md`
+- Create: `skills/agent-init/phases/3-agents.md`
 
 - [ ] **Step 1: Write the phase prompt**
 
@@ -1405,9 +1407,9 @@ Invoke `Skill` with `superpowers:dispatching-parallel-agents` first. Adopt its d
    ```
    Dispatch via `Skill` with `superpowers:dispatching-parallel-agents`. Treat each role-render as an independent task — they share no state.
 
-3. Collect results. If any role failed, abort the phase: list the failures, leave `.harness-state.json` unchanged. Do NOT mark Phase 3 complete on partial success.
+3. Collect results. If any role failed, abort the phase: list the failures, leave `.agent-init-state.json` unchanged. Do NOT mark Phase 3 complete on partial success.
 
-4. On full success, set top-level `agents_written` to the list of paths and push `{ "phase": 3, "completedAt": "<iso>" }` onto `phases` in `.harness-state.json`.
+4. On full success, set top-level `agents_written` to the list of paths and push `{ "phase": 3, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`.
 
 ## Output to user
 
@@ -1417,7 +1419,7 @@ Print a table: role → file path → bytes.
 - [ ] **Step 2: Commit**
 
 ```bash
-git add skills/harness-init/phases/3-agents.md
+git add skills/agent-init/phases/3-agents.md
 git commit -m "feat(phases): 3-agents — fan-out role rendering via superpowers"
 ```
 
@@ -1426,7 +1428,7 @@ git commit -m "feat(phases): 3-agents — fan-out role rendering via superpowers
 ## Task 20: `phases/4-hooks.md`
 
 **Files:**
-- Create: `skills/harness-init/phases/4-hooks.md`
+- Create: `skills/agent-init/phases/4-hooks.md`
 
 - [ ] **Step 1: Write the phase prompt**
 
@@ -1447,7 +1449,7 @@ git commit -m "feat(phases): 3-agents — fan-out role rendering via superpowers
    - Call `mergeSettings(current, additions)` from `lib/manifest-merge.mjs`.
    - Write the result back.
    Otherwise write the rendered template as-is.
-6. Push `{ "phase": 4, "completedAt": "<iso>" }` onto `phases` in `.harness-state.json`.
+6. Push `{ "phase": 4, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`.
 
 ## Output to user
 
@@ -1457,7 +1459,7 @@ Print: `Hooks installed: context-mode-router, session-summary, cache-heal`.
 - [ ] **Step 2: Commit**
 
 ```bash
-git add skills/harness-init/phases/4-hooks.md
+git add skills/agent-init/phases/4-hooks.md
 git commit -m "feat(phases): 4-hooks — install hooks + merge settings"
 ```
 
@@ -1466,7 +1468,7 @@ git commit -m "feat(phases): 4-hooks — install hooks + merge settings"
 ## Task 21: `phases/5-wire.md`
 
 **Files:**
-- Create: `skills/harness-init/phases/5-wire.md`
+- Create: `skills/agent-init/phases/5-wire.md`
 
 - [ ] **Step 1: Write the phase prompt**
 
@@ -1475,7 +1477,7 @@ git commit -m "feat(phases): 4-hooks — install hooks + merge settings"
 
 ## Steps
 
-1. Re-read `plugin_scan` from `.harness-state.json`.
+1. Re-read `plugin_scan` from `.agent-init-state.json`.
 2. Compose a "missing plugins" report:
 
    For each plugin in `scan.missing`, print:
@@ -1493,17 +1495,17 @@ git commit -m "feat(phases): 4-hooks — install hooks + merge settings"
 
    If both arrays are empty: print "All required plugins are enabled."
 
-3. Update `.gitignore`. If `.claude/.harness-state.json` is not already listed, append it. Idempotent.
+3. Update `.gitignore`. If `.claude/.agent-init-state.json` is not already listed, append it. Idempotent.
 
 4. Make sure `docs/superpowers/specs/`, `docs/superpowers/plans/`, `docs/decisions/`, `docs/tasks/` exist. `mkdir -p` for each. Add a `.gitkeep` to each.
 
 5. Single git commit:
    ```bash
    git add CLAUDE.md .claude/ .gitignore docs/
-   git commit -m "chore: bootstrap harness via /harness-init"
+   git commit -m "chore: bootstrap harness via /agent-init"
    ```
 
-6. Set top-level `commit` to the new SHA and push `{ "phase": 5, "completedAt": "<iso>" }` onto `phases` in `.harness-state.json`. Write to disk (this update happens AFTER the commit in step 5, and `.harness-state.json` is `.gitignored` from step 3 so it stays out of git).
+6. Set top-level `commit` to the new SHA and push `{ "phase": 5, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`. Write to disk (this update happens AFTER the commit in step 5, and `.agent-init-state.json` is `.gitignored` from step 3 so it stays out of git).
 
 ## Output to user
 
@@ -1511,13 +1513,13 @@ Print the success summary:
 - Phases completed: 5 / 5
 - CLAUDE.md, N agents, 3 hooks installed
 - Missing plugins (if any) — with the exact install commands
-- Next step suggestion: "Try `/harness-init --dry-run` or invoke planner with `/plan <goal>`."
+- Next step suggestion: "Try `/agent-init --dry-run` or invoke planner with `/plan <goal>`."
 ```
 
 - [ ] **Step 2: Commit**
 
 ```bash
-git add skills/harness-init/phases/5-wire.md
+git add skills/agent-init/phases/5-wire.md
 git commit -m "feat(phases): 5-wire — surface missing plugins, commit, summarise"
 ```
 
@@ -1526,7 +1528,7 @@ git commit -m "feat(phases): 5-wire — surface missing plugins, commit, summari
 ## Task 22: `references/legacy-notes.md`
 
 **Files:**
-- Create: `skills/harness-init/references/legacy-notes.md`
+- Create: `skills/agent-init/references/legacy-notes.md`
 
 - [ ] **Step 1: Capture provenance of the existing 3 user skills**
 
@@ -1535,7 +1537,7 @@ Read each existing skill's SKILL.md (under `C:/Users/kinso/.claude/skills/`) and
 ```markdown
 # Legacy Notes
 
-This skill replaces three earlier user skills. Their behaviour is now absorbed into `/harness-init`'s phases.
+This skill replaces three earlier user skills. Their behaviour is now absorbed into `/agent-init`'s phases.
 
 ## Original `claude-init`
 
@@ -1559,7 +1561,7 @@ This skill replaces three earlier user skills. Their behaviour is now absorbed i
 - [ ] **Step 2: Commit**
 
 ```bash
-git add skills/harness-init/references/legacy-notes.md
+git add skills/agent-init/references/legacy-notes.md
 git commit -m "docs(skill): legacy-notes captures provenance of pre-merger user skills"
 ```
 
@@ -1586,7 +1588,7 @@ mkdir /tmp/harness-fixture && cd /tmp/harness-fixture && git init
 
 ## Run
 
-In Claude Code, invoke `/harness-init`.
+In Claude Code, invoke `/agent-init`.
 
 ## Checks
 
@@ -1598,8 +1600,8 @@ In Claude Code, invoke `/harness-init`.
 - [ ] Each generated agent file contains the three operating principles in its `## Rules` section.
 - [ ] `.claude/hooks/{context-mode-router,session-summary,cache-heal}.mjs` exist and are syntactically valid (`node --check`).
 - [ ] `.claude/settings.local.json` registers the three hooks.
-- [ ] `.gitignore` contains `.claude/.harness-state.json`.
-- [ ] Final commit message is `chore: bootstrap harness via /harness-init`.
+- [ ] `.gitignore` contains `.claude/.agent-init-state.json`.
+- [ ] Final commit message is `chore: bootstrap harness via /agent-init`.
 - [ ] Re-running with no flags is a no-op and prints "All phases already complete (use --force to re-run)".
 - [ ] `--force` rebuilds from scratch and overwrites artefacts.
 - [ ] `--dry-run` writes nothing to disk.

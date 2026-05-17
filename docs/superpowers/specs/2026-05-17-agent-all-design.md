@@ -5,13 +5,15 @@
 **Author:** kimsongjun (sungjun@molcube.com)
 **Theme:** C of 3 (cost-unrestricted patterns). Combined sub-spec covering C-2 and C-3.
 
+**Note (2026-05-18):** `/harness-init` was renamed to `/agent-init` in harness-builder v0.2.0. References below to the old name reflect the original design and remain accurate for that timeframe. Treat `harness-init` and `agent-init` as the same skill in current code.
+
 ---
 
 ## 1. Purpose
 
-Provide a Claude Code skill — `/agent-all` — that drives an end-to-end multi-agent pipeline (intent → plan → wave dispatch → gate → PR) on top of the `.claude/agents/` roster scaffolded by `/harness-init`. Optionally loops the entire run via `--loop` until a shell break-condition succeeds, bounded by `--max-iter` and `--max-cost`.
+Provide a Claude Code skill — `/agent-all` — that drives an end-to-end multi-agent pipeline (intent → plan → wave dispatch → gate → PR) on top of the `.claude/agents/` roster scaffolded by `/agent-init`. Optionally loops the entire run via `--loop` until a shell break-condition succeeds, bounded by `--max-iter` and `--max-cost`.
 
-Also extends `/harness-init` with a new `--theme=floor` flag (C-3) that bundles the `harness-floor` plugin's configs: `.visual-qa.json`, `.agent-all.json`, and a "Floor theme" CLAUDE.md section.
+Also extends `/agent-init` with a new `--theme=floor` flag (C-3) that bundles the `harness-floor` plugin's configs: `.visual-qa.json`, `.agent-all.json`, and a "Floor theme" CLAUDE.md section.
 
 Cost-unrestricted by design: the skill willingly burns budget on wave parallelism, repeated review gates, and looped iterations to land high-quality changes without human babysitting.
 
@@ -96,9 +98,9 @@ plugins/harness-floor/
 ```
 
 `harness-builder` plugin (Theme A) gets minimal additions for C-3:
-- `skills/harness-init/SKILL.md` — append `--theme=floor` to the flags list
-- `skills/harness-init/phases/5-wire.md` — add step `4c` handling `--theme=floor`
-- `skills/harness-init/templates/CLAUDE.md.hbs` — add `{{#if floorTheme}}...{{/if}}` Floor section at the end
+- `skills/agent-init/SKILL.md` — append `--theme=floor` to the flags list
+- `skills/agent-init/phases/5-wire.md` — add step `4c` handling `--theme=floor`
+- `skills/agent-init/templates/CLAUDE.md.hbs` — add `{{#if floorTheme}}...{{/if}}` Floor section at the end
 
 ### 4.2 Updated `plugins/harness-floor/plugin.json`
 
@@ -162,8 +164,8 @@ CLI flags override the corresponding `defaults` field at run time.
 ### 5.1 Phase 0 — Preflight
 
 1. Confirm `pwd` is a git repo and the tree is clean (`git status --porcelain` empty). If dirty: abort with `Stash or commit first; agent-all needs a clean tree.`
-2. Confirm `.claude/agents/` exists and contains at least `planner.md`, `dev.md`, `reviewer.md`. If not: abort with `Run /harness-init first.`
-3. Load `.agent-all.json`. If missing: use hard-coded defaults (`{maxIter:1, maxCostUSD:50, waveSize:"medium", brainstormFirst:true, createPR:true}`) and print a one-line warning `(no .agent-all.json — using built-ins; run /harness-init --theme=floor to seed)`.
+2. Confirm `.claude/agents/` exists and contains at least `planner.md`, `dev.md`, `reviewer.md`. If not: abort with `Run /agent-init first.`
+3. Load `.agent-all.json`. If missing: use hard-coded defaults (`{maxIter:1, maxCostUSD:50, waveSize:"medium", brainstormFirst:true, createPR:true}`) and print a one-line warning `(no .agent-all.json — using built-ins; run /agent-init --theme=floor to seed)`.
 4. Read `.agent-all-state.json` if present. If `--resume` and `max(phases[*].phase) >= 0`, skip the rest of Phase 0.
 5. Confirm input: if positional argument ends with `.md`, treat as task path — abort if file doesn't exist (`task file not found: <path>`). Otherwise treat as free-form prompt; abort if empty.
 6. Push `{phase: 0, completedAt: "<iso>"}` to state.
@@ -228,7 +230,7 @@ Otherwise:
 5. Increment `iter`. Re-enter Phase 1 — but for loop iterations, **always treat the task as already-written** (the task.md from iteration 1). Skip brainstorming. Phase 2 regenerates the plan from scratch (`--no-replan` to reuse plan is out of scope for v0.1).
 6. Repeat.
 
-### 5.8 `/harness-init --theme=floor` (C-3)
+### 5.8 `/agent-init --theme=floor` (C-3)
 
 **`SKILL.md` flag entry (appended to existing Flags section):**
 ```
@@ -244,7 +246,7 @@ Inserted between existing `4b` (--visual-qa) and `5` (single commit):
     - Implicitly set `--visual-qa = true` (so step 4b also runs).
     - Verify `harness-floor` plugin enabled. If not: print install command, continue.
     - Render `plugins/harness-floor/skills/agent-all/templates/agent-all.config.json.hbs` with `{maxIter: 1, maxCostUSD: 50, waveSize: <size from Phase 1>}` and write to `.agent-all.json` at project root.
-    - Append `.agent-all-state.json` to `.gitignore` (idempotent — already has `.harness-state.json` and `.visual-qa-state.json` patterns).
+    - Append `.agent-all-state.json` to `.gitignore` (idempotent — already has `.agent-init-state.json` and `.visual-qa-state.json` patterns).
     - Set Phase 2 context flag `floorTheme: true` (used by `templates/CLAUDE.md.hbs` for the conditional section).
 ```
 
@@ -270,7 +272,7 @@ Read `plugins/harness-floor/skills/{visual-qa,agent-all}/SKILL.md` for full flag
 |----------|-----------|
 | Not in a git repo | Phase 0 abort + `git init` suggestion |
 | Working tree dirty | Phase 0 abort + `stash/commit first` |
-| `.claude/agents/` missing | Phase 0 abort + `/harness-init` suggestion |
+| `.claude/agents/` missing | Phase 0 abort + `/agent-init` suggestion |
 | `.agent-all.json` missing | Use built-in defaults, warn |
 | Free-form prompt empty | Phase 1 abort + `provide a prompt or task path` |
 | brainstorming cancelled by user | Phase 1 abort, no task.md written, state unchanged |
@@ -311,7 +313,7 @@ Extend the existing `tests/lib/render.test.mjs` snapshot matrix with a new fixtu
 
 ### 7.5 Manual E2E checklist (`tests/agent-all/manual-checklist.md`)
 
-12 items including: empty `.claude/agents/`, dirty tree, brainstorming cancel mid-run, `--resume` after Ctrl-C, `--loop` with deliberately failing breakCondition, `--max-cost` early abort, `--no-pr` flow, `/harness-init --theme=floor` bundle verification.
+12 items including: empty `.claude/agents/`, dirty tree, brainstorming cancel mid-run, `--resume` after Ctrl-C, `--loop` with deliberately failing breakCondition, `--max-cost` early abort, `--no-pr` flow, `/agent-init --theme=floor` bundle verification.
 
 ### 7.6 Out of scope
 
@@ -323,7 +325,7 @@ Extend the existing `tests/lib/render.test.mjs` snapshot matrix with a new fixtu
 
 - `plugins/harness-floor/plugin.json` bumps from v0.1.0 to v0.2.0 (new skill).
 - No breaking changes to `harness-builder` or `visual-qa` skills; their public surface is unchanged.
-- The `--theme=floor` flag is additive; existing `/harness-init` invocations continue to work.
+- The `--theme=floor` flag is additive; existing `/agent-init` invocations continue to work.
 
 ## 9. Future work (out of scope)
 

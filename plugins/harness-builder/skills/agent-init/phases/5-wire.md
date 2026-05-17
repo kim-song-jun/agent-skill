@@ -2,7 +2,7 @@
 
 ## Steps
 
-1. Re-read `plugin_scan` from `.harness-state.json`.
+1. Re-read `plugin_scan` from `.agent-init-state.json`.
 2. Compose a "missing plugins" report:
 
    For each plugin in `scan.missing`, print:
@@ -20,7 +20,7 @@
 
    If both arrays are empty: print "All required plugins are enabled."
 
-3. Update `.gitignore`. If `.claude/.harness-state.json` is not already listed, append it. Idempotent.
+3. Update `.gitignore`. If `.claude/.agent-init-state.json` is not already listed, append it. Idempotent.
 
 4. Make sure `docs/superpowers/specs/`, `docs/superpowers/plans/`, `docs/decisions/`, `docs/tasks/` exist. `mkdir -p` for each. Add a `.gitkeep` to each.
 
@@ -36,7 +36,7 @@
 
 4c. If theme is `floor` (NOT legacy `--visual-qa` alone): render `.agent-all.json` and enable Floor CLAUDE section.
     - Render `plugins/harness-floor/skills/agent-all/templates/agent-all.config.json.hbs` with `{maxIter: 10, maxCostUSD: 500, waveSize: "large", breakCondition: "npm test"}` and write to `.agent-all.json` at project root.
-    - Append `.agent-all-state.json` to `.gitignore` (idempotent — same pattern as `.harness-state.json` and `.visual-qa-state.json`).
+    - Append `.agent-all-state.json` to `.gitignore` (idempotent — same pattern as `.agent-init-state.json` and `.visual-qa-state.json`).
     - Set Phase 2 context flag `floorTheme: true` (used by `templates/CLAUDE.md.hbs` for the conditional Floor section).
 
 5. Single git commit:
@@ -45,7 +45,7 @@
    git commit -m "chore: bootstrap harness via /harness-init"
    ```
 
-6. Set top-level `commit` to the new SHA and push `{ "phase": 5, "completedAt": "<iso>" }` onto `phases` in `.harness-state.json`. Write to disk (this update happens AFTER the commit in step 5, and `.harness-state.json` is `.gitignored` from step 3 so it stays out of git).
+6. Set top-level `commit` to the new SHA and push `{ "phase": 5, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`. Write to disk (this update happens AFTER the commit in step 5, and `.agent-init-state.json` is `.gitignored` from step 3 so it stays out of git).
 
 ## Output to user
 

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { scanPlugins } from "../../plugins/harness-builder/skills/harness-init/lib/plugin-scan.mjs";
+import { scanPlugins } from "../../plugins/harness-builder/skills/agent-init/lib/plugin-scan.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const load = (name) => JSON.parse(readFileSync(resolve(here, "..", "fixtures", "plugins", name), "utf-8"));

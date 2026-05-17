@@ -5,13 +5,15 @@
 **Author:** kimsongjun (sungjun@molcube.com)
 **Theme:** C of 3 (cost-unrestricted patterns). Sub-spec C-1 of 3 within C.
 
+**Note (2026-05-18):** `/harness-init` was renamed to `/agent-init` in harness-builder v0.2.0. References below to the old name reflect the original design and remain accurate for that timeframe. Treat `harness-init` and `agent-init` as the same skill in current code.
+
 ---
 
 ## 1. Purpose
 
 Provide a Claude Code skill — `/visual-qa` — that, when invoked in a project with a `.visual-qa.json` config, drives Playwright MCP to capture a matrix of screenshots (pages × components × interactive states × breakpoints + scripted flows), runs LLM analysis on each image, diffs against the previous run, and writes a markdown + JSON report to `docs/visual-qa/<date-slug>/`.
 
-The skill packages as a sibling plugin `harness-floor` in the same marketplace as `harness-builder`. `/harness-init --visual-qa` (a flag added to the existing Theme A skill) installs a starter `.visual-qa.json` into a project.
+The skill packages as a sibling plugin `harness-floor` in the same marketplace as `harness-builder`. `/agent-init --visual-qa` (a flag added to the existing Theme A skill) installs a starter `.visual-qa.json` into a project.
 
 Cost-unrestricted by design: every screenshot triggers a fresh LLM analysis on every run. Diff happens at the report level (issue keys), not at the pixel level.
 
@@ -80,7 +82,7 @@ agent-skill/
 ├── plugins/
 │   ├── harness-builder/            # was at repo root in Theme A
 │   │   ├── plugin.json
-│   │   └── skills/harness-init/
+│   │   └── skills/agent-init/
 │   │       └── ... (unchanged)
 │   └── harness-floor/              # NEW (Theme C)
 │       ├── plugin.json
@@ -128,7 +130,7 @@ The repo-layout move is bundled into this spec because dropping `harness-floor` 
   "name": "agent-skill",
   "description": "Harness builder + visual-QA + (future) optimisation skills for Claude Code",
   "plugins": [
-    { "name": "harness-builder", "source": "./plugins/harness-builder", "description": "Bootstrap CLAUDE.md, .claude/agents/, hooks, and plugin wiring with /harness-init" },
+    { "name": "harness-builder", "source": "./plugins/harness-builder", "description": "Bootstrap CLAUDE.md, .claude/agents/, hooks, and plugin wiring with /agent-init" },
     { "name": "harness-floor",   "source": "./plugins/harness-floor",   "description": "Cost-unrestricted patterns starting with /visual-qa (visual regression + LLM analysis via Playwright MCP)" }
   ]
 }
@@ -149,7 +151,7 @@ No new hooks at the plugin level. The skill itself is the only entry.
 
 ### 4.3 Phase Pipeline
 
-`/visual-qa` runs 6 phases strictly in order. Each phase records completion in `.visual-qa-state.json` (same shape pattern as Theme A's `.harness-state.json`).
+`/visual-qa` runs 6 phases strictly in order. Each phase records completion in `.visual-qa-state.json` (same shape pattern as Theme A's `.agent-init-state.json`).
 
 | Phase | Name | Parallel? |
 |-------|------|-----------|
@@ -247,7 +249,7 @@ State semantics:
 
 ### 5.1 Phase 0 — Preflight
 
-1. Confirm `.visual-qa.json` exists at project root. If absent: print `/harness-init --visual-qa` suggestion, abort.
+1. Confirm `.visual-qa.json` exists at project root. If absent: print `/agent-init --visual-qa` suggestion, abort.
 2. Confirm Playwright MCP tools are available (`mcp__plugin_playwright_playwright__browser_navigate` is callable). If not: print MCP install instructions, abort.
 3. Probe `baseUrl` with a `GET /` (timeout 5s). If non-200 and `--skip-health` not set: ask user "dev server down, continue anyway?" and wait for confirmation (or abort if `--yes` was passed in non-interactive mode).
 4. Read `.visual-qa-state.json` if present. If `--resume` and `max(state.phases[*].phase) >= 0`, skip Phase 0 proper.
@@ -376,7 +378,7 @@ Exit code:
 
 | Scenario | Behaviour |
 |----------|-----------|
-| `.visual-qa.json` missing | Phase 0 abort + suggest `/harness-init --visual-qa` |
+| `.visual-qa.json` missing | Phase 0 abort + suggest `/agent-init --visual-qa` |
 | Playwright MCP not available | Phase 0 abort + suggest `/plugin install playwright@claude-plugins-official` |
 | `baseUrl` not responding | Phase 0 ask user to continue (or abort if non-interactive) |
 | Config schema invalid | Phase 1 abort with `field: message` list |
@@ -419,7 +421,7 @@ Mock Playwright MCP and LLM. The page-subagent module exports a `runPage({page, 
 
 Run against a fake next.js fixture project with dev server up. Tick:
 - [ ] `/visual-qa` with no `.visual-qa.json` → abort + suggestion.
-- [ ] Config seeded by `/harness-init --visual-qa` is valid.
+- [ ] Config seeded by `/agent-init --visual-qa` is valid.
 - [ ] First run produces full slug dir + report.md + per-image .png/.json/.md.
 - [ ] Hover state actually captures a hover (compare to default state visually).
 - [ ] Auth flow works: protected page captures land.
@@ -437,12 +439,12 @@ Run against a fake next.js fixture project with dev server up. Tick:
 
 ## 8. Migration impact on Theme A
 
-Theme A's `skills/harness-init/...` moves to `plugins/harness-builder/skills/harness-init/...`. Specifically:
-- `git mv skills/harness-init plugins/harness-builder/skills/harness-init`
+Theme A's `skills/agent-init/...` moves to `plugins/harness-builder/skills/agent-init/...`. Specifically:
+- `git mv skills/agent-init plugins/harness-builder/skills/agent-init`
 - `git mv` the root `hooks/` to `plugins/harness-builder/hooks/` (was referenced by the old root `plugin.json` via `${CLAUDE_PLUGIN_ROOT}/hooks/...`)
 - `mv .claude-plugin/plugin.json plugins/harness-builder/plugin.json`
 - Update `.claude-plugin/marketplace.json` to add `source: "./plugins/harness-builder"` for the existing plugin and `source: "./plugins/harness-floor"` for the new one
-- Tests under `tests/lib/` keep working — they import via relative paths from `tests/lib/*.test.mjs` to `../../skills/harness-init/lib/*.mjs`, which become `../../plugins/harness-builder/skills/harness-init/lib/*.mjs`. Update the import paths.
+- Tests under `tests/lib/` keep working — they import via relative paths from `tests/lib/*.test.mjs` to `../../skills/agent-init/lib/*.mjs`, which become `../../plugins/harness-builder/skills/agent-init/lib/*.mjs`. Update the import paths.
 - Snapshot paths under `tests/lib/__snapshots__/` already use slash-replaced names like `agents_planner.md.hbs__ts-small.snap` — those stay valid since they're keyed by relative-template-path. The TEMPLATES_DIR constant in `tests/lib/render.test.mjs` changes.
 
 The migration is mechanical and lands in C-1 because waiting until C-2 would mean shipping `harness-floor` in a layout that doesn't match its sibling.
@@ -450,6 +452,6 @@ The migration is mechanical and lands in C-1 because waiting until C-2 would mea
 ## 9. Future work (out of scope for this spec)
 
 - **C-2 (agent-all pipeline)**: a sibling skill in `harness-floor` that wraps the user's existing `agent-all` workflow with `superpowers:subagent-driven-development`.
-- **C-3 (ralph-loop pattern + harness-init integration)**: surface `/harness-init --theme=floor` to bundle agent-all + visual-qa + ralph-loop into a single setup.
+- **C-3 (ralph-loop pattern + harness-init integration)**: surface `/agent-init --theme=floor` to bundle agent-all + visual-qa + ralph-loop into a single setup.
 - **CI integration**: separate plugin or skill that wires `/visual-qa` into GitHub Actions with PR comment outputs.
 - **Baseline mode**: option for pixel-diff first, LLM only when threshold exceeded (would belong to Theme B, the cost-optimisation theme).

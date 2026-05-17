@@ -1,6 +1,6 @@
 ---
 name: agent-all
-description: Cost-unrestricted multi-agent pipeline. Drives intent→plan→wave-dispatch→gate→PR over the .claude/agents/ roster, with optional --loop until a shell break-condition succeeds (bounded by --max-iter and --max-cost). Requires /harness-init scaffolding.
+description: Cost-unrestricted multi-agent pipeline. Drives intent→plan→wave-dispatch→gate→PR over the .claude/agents/ roster, with optional --loop until a shell break-condition succeeds (bounded by --max-iter and --max-cost). Requires /agent-init scaffolding.
 ---
 
 # /agent-all
@@ -57,7 +57,7 @@ Runs a complete multi-agent pipeline from a free-form prompt or an existing task
 ## On error
 
 - Dirty git tree → abort.
-- `.claude/agents/` missing → abort + suggest `/harness-init`.
+- `.claude/agents/` missing → abort + suggest `/agent-init`.
 - `.agent-all.json` missing → warn + use built-ins.
 - writing-plans fails → abort.
 - Wave task BLOCKED 3× → Phase 3 abort with exit code 2.

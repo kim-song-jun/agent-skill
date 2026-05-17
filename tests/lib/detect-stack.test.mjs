@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { detectStack } from "../../plugins/harness-builder/skills/harness-init/lib/detect-stack.mjs";
+import { detectStack } from "../../plugins/harness-builder/skills/agent-init/lib/detect-stack.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fx = (name) => resolve(here, "..", "fixtures", "stacks", name);

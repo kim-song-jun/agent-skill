@@ -46,7 +46,7 @@ The skill runs 6 phases strictly in order. Each phase has its own file under `ph
 
 ## On error
 
-- `.visual-qa.json` missing → abort + suggest `/harness-init --visual-qa`.
+- `.visual-qa.json` missing → abort + suggest `/agent-init --visual-qa`.
 - Playwright MCP not available → abort + suggest plugin install.
 - baseUrl down → ask user to continue (or abort in non-interactive).
 - Matrix > 5000 captures + no `--yes` → require explicit confirm.

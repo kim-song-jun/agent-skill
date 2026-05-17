@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mergeSettings } from "../../plugins/harness-builder/skills/harness-init/lib/manifest-merge.mjs";
+import { mergeSettings } from "../../plugins/harness-builder/skills/agent-init/lib/manifest-merge.mjs";
 
 test("creates fresh settings when current is empty", () => {
   const out = mergeSettings({}, {

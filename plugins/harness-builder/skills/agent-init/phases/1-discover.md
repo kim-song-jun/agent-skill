@@ -13,7 +13,7 @@
    const scan = scanPlugins({ installedPlugins, enabledPlugins, required: ["context-mode@context-mode", "superpowers@claude-plugins-official"] });
    ```
    Stash `scan` for Phase 5. Do NOT abort on missing plugins.
-4. Read `.claude/.harness-state.json` if present. If `--resume` and `max(state.phases[*].phase) >= 1`, skip Phase 1 proper.
+4. Read `.claude/.agent-init-state.json` if present. If `--resume` and `max(state.phases[*].phase) >= 1`, skip Phase 1 proper.
 
 ## Phase 1 proper
 
@@ -35,7 +35,7 @@
      stack: detectStack(cwd),         // from helper
    };
    ```
-4. Update `.claude/.harness-state.json` (create with `{ "phases": [] }` if missing). Set top-level `discovery` and `plugin_scan`, then push `{ "phase": 1, "completedAt": "<iso>" }` onto `phases`. Use atomic write: temp file + rename.
+4. Update `.claude/.agent-init-state.json` (create with `{ "phases": [] }` if missing). Set top-level `discovery` and `plugin_scan`, then push `{ "phase": 1, "completedAt": "<iso>" }` onto `phases`. Use atomic write: temp file + rename.
 5. Do not commit yet. Phase 5 makes a single bootstrap commit.
 
 ## Output to user

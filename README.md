@@ -1,6 +1,6 @@
 # agent-skill
 
-Claude Code plugin marketplace for `/harness-init` and (eventually) sibling skills that bootstrap project-level agent harnesses.
+Claude Code plugin marketplace for `/agent-init` and (eventually) sibling skills that bootstrap project-level agent harnesses.
 
 ## Install
 
@@ -11,7 +11,7 @@ Claude Code plugin marketplace for `/harness-init` and (eventually) sibling skil
 
 ## What it ships
 
-- `harness-builder` plugin → `/harness-init` skill
+- `harness-builder` plugin → `/agent-init` skill
 - Global hook `context-mode-cache-heal.mjs` (SessionStart)
 
 See `docs/superpowers/specs/` for design, `docs/superpowers/plans/` for implementation plans.

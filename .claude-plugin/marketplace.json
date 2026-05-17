@@ -5,7 +5,7 @@
     {
       "name": "harness-builder",
       "source": "./plugins/harness-builder",
-      "description": "Bootstrap CLAUDE.md, .claude/agents/, hooks, and plugin wiring with /harness-init"
+      "description": "Bootstrap CLAUDE.md, .claude/agents/, hooks, and plugin wiring with /agent-init"
     },
     {
       "name": "harness-floor",

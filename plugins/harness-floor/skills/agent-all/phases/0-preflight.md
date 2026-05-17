@@ -6,14 +6,14 @@
 
 2. Confirm working tree clean: `git status --porcelain` empty. If not: abort `Stash or commit local changes first; agent-all needs a clean tree.`
 
-3. Confirm `.claude/agents/` exists and contains at minimum `planner.md`, `dev.md`, `reviewer.md`. If not: abort `Run /harness-init first to scaffold .claude/agents/.`
+3. Confirm `.claude/agents/` exists and contains at minimum `planner.md`, `dev.md`, `reviewer.md`. If not: abort `Run /agent-init first to scaffold .claude/agents/.`
 
 4. Load `.agent-all.json`:
    ```javascript
    import { loadConfig } from "./lib/config-loader.mjs";
    const { ok, config, warning, errors } = loadConfig(".agent-all.json");
    if (!ok) { /* print errors as 'field: message', abort */ }
-   if (warning) { /* print: ".agent-all.json not found; using built-ins. Run /harness-init --theme=floor to seed." */ }
+   if (warning) { /* print: ".agent-all.json not found; using built-ins. Run /agent-init --theme=floor to seed." */ }
    ```
 
 5. Read `.agent-all-state.json` if present. If `--resume` and `max(state.phases[*].phase) >= 0`, skip rest of Phase 0.

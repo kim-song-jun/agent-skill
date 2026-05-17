@@ -1,6 +1,6 @@
 # Legacy Notes
 
-This skill is a superpowers-based reimplementation of the original user skill `agent-all` (preserved at `plugins/harness-builder/skills/harness-init/references/legacy-notes.md` for Theme A).
+This skill is a superpowers-based reimplementation of the original user skill `agent-all` (preserved at `plugins/harness-builder/skills/agent-init/references/legacy-notes.md` for Theme A).
 
 ## What changed from the original
 

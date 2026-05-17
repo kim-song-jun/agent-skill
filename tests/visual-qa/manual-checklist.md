@@ -32,7 +32,7 @@ Drop this `.visual-qa.json`:
 
 ## Checks
 
-- [ ] `/visual-qa` with no `.visual-qa.json` aborts and suggests `/harness-init --visual-qa`.
+- [ ] `/visual-qa` with no `.visual-qa.json` aborts and suggests `/agent-init --visual-qa`.
 - [ ] Stop the dev server, run `/visual-qa` — Phase 0 asks "continue anyway?" and abort on "n".
 - [ ] First successful run produces `docs/visual-qa/YYYY-MM-DD-<hex>/` with: `report.md`, `report.json`, `home/mobile/_page.png`, `home/desktop/_page.png`, `home/*/cta__default.png`, `home/*/cta__hover.png`, `home/*/cta__focus.png`.
 - [ ] Each `.png` has a sibling `.analysis.json` (parses) and `.analysis.md` (non-empty).

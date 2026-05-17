@@ -14,7 +14,7 @@
    - Call `mergeSettings(current, additions)` from `lib/manifest-merge.mjs`.
    - Write the result back.
    Otherwise write the rendered template as-is.
-6. Push `{ "phase": 4, "completedAt": "<iso>" }` onto `phases` in `.harness-state.json`.
+6. Push `{ "phase": 4, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`.
 
 ## Output to user
 

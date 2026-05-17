@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Note (2026-05-18):** `/harness-init` was renamed to `/agent-init` in harness-builder v0.2.0. References below to the old name reflect the original design and remain accurate for that timeframe. Treat `harness-init` and `agent-init` as the same skill in current code.
+
 **Goal:** Build the `/visual-qa` skill in a new `harness-floor` plugin alongside the existing `harness-builder`. The skill drives Playwright MCP to capture a configured matrix of screenshots, runs per-image LLM analysis, diffs vs the prior run, and writes a report. This plan also includes the layout migration from single-plugin to multi-plugin.
 
 **Architecture:** 6 sequential phases (preflight → config → discover → capture → aggregate → summary). Phase 3 is the only parallel phase: one subagent per page (via `superpowers:dispatching-parallel-agents`). Deterministic mechanics (config validation, matrix construction, run diff, cost estimation) live in `plugins/harness-floor/skills/visual-qa/lib/` as pure JS, TDD'd. The page-subagent IS the LLM analyzer — no external API client.
@@ -22,7 +24,7 @@ agent-skill/
 │   ├── harness-builder/                          # MIGRATED from repo root
 │   │   ├── plugin.json
 │   │   ├── hooks/context-mode-cache-heal.mjs
-│   │   └── skills/harness-init/
+│   │   └── skills/agent-init/
 │   │       ├── SKILL.md
 │   │       ├── phases/{1..5}.md
 │   │       ├── lib/{render,detect-stack,plugin-scan,manifest-merge}.mjs
@@ -60,7 +62,7 @@ agent-skill/
 ## Task 1: Migrate Theme A to multi-plugin layout
 
 **Files:**
-- Move: `skills/harness-init/` → `plugins/harness-builder/skills/harness-init/`
+- Move: `skills/agent-init/` → `plugins/harness-builder/skills/agent-init/`
 - Move: `hooks/` → `plugins/harness-builder/hooks/`
 - Move: `.claude-plugin/plugin.json` → `plugins/harness-builder/plugin.json`
 - Modify: `.claude-plugin/marketplace.json` (update source path)
@@ -71,7 +73,7 @@ agent-skill/
 
 ```bash
 mkdir -p plugins/harness-builder
-git mv skills/harness-init plugins/harness-builder/skills/harness-init
+git mv skills/agent-init plugins/harness-builder/skills/agent-init
 git mv hooks plugins/harness-builder/hooks
 git mv .claude-plugin/plugin.json plugins/harness-builder/plugin.json
 ```
@@ -88,7 +90,7 @@ Replace `.claude-plugin/marketplace.json` content with:
     {
       "name": "harness-builder",
       "source": "./plugins/harness-builder",
-      "description": "Bootstrap CLAUDE.md, .claude/agents/, hooks, and plugin wiring with /harness-init"
+      "description": "Bootstrap CLAUDE.md, .claude/agents/, hooks, and plugin wiring with /agent-init"
     }
   ]
 }
@@ -96,7 +98,7 @@ Replace `.claude-plugin/marketplace.json` content with:
 
 - [ ] **Step 3: Update test import paths**
 
-In each of these 4 files, replace `../../skills/harness-init/lib/` with `../../plugins/harness-builder/skills/harness-init/lib/`:
+In each of these 4 files, replace `../../skills/agent-init/lib/` with `../../plugins/harness-builder/skills/agent-init/lib/`:
 - `tests/lib/detect-stack.test.mjs`
 - `tests/lib/plugin-scan.test.mjs`
 - `tests/lib/manifest-merge.test.mjs`
@@ -154,7 +156,7 @@ Replace `.claude-plugin/marketplace.json`:
     {
       "name": "harness-builder",
       "source": "./plugins/harness-builder",
-      "description": "Bootstrap CLAUDE.md, .claude/agents/, hooks, and plugin wiring with /harness-init"
+      "description": "Bootstrap CLAUDE.md, .claude/agents/, hooks, and plugin wiring with /agent-init"
     },
     {
       "name": "harness-floor",
@@ -750,14 +752,14 @@ git commit -m "feat(visual-qa): cost-estimator with model price table (TDD)"
 }
 ```
 
-Note: `{{model}}` will be rendered to e.g. `claude-sonnet-4-6` by Phase 1 of `/harness-init --visual-qa`. `{{baseUrl}}` defaults to `http://localhost:3000`.
+Note: `{{model}}` will be rendered to e.g. `claude-sonnet-4-6` by Phase 1 of `/agent-init --visual-qa`. `{{baseUrl}}` defaults to `http://localhost:3000`.
 
 - [ ] **Step 2: Render-test**
 
 Render via the existing render lib (re-used from harness-builder):
 
 ```bash
-node -e "import('./plugins/harness-builder/skills/harness-init/lib/render.mjs').then(m=>{const out=m.render(require('node:fs').readFileSync('plugins/harness-floor/skills/visual-qa/templates/visual-qa.config.json.hbs','utf-8'),{baseUrl:'http://localhost:3000',model:'claude-sonnet-4-6'});JSON.parse(out);console.log('valid json')})"
+node -e "import('./plugins/harness-builder/skills/agent-init/lib/render.mjs').then(m=>{const out=m.render(require('node:fs').readFileSync('plugins/harness-floor/skills/visual-qa/templates/visual-qa.config.json.hbs','utf-8'),{baseUrl:'http://localhost:3000',model:'claude-sonnet-4-6'});JSON.parse(out);console.log('valid json')})"
 ```
 Expected: `valid json`.
 
@@ -894,7 +896,7 @@ Generated by `/visual-qa`. Config: `.visual-qa.json`. Cost estimate: ${{estCostU
 - [ ] **Step 2: Render-test**
 
 ```bash
-node -e "import('./plugins/harness-builder/skills/harness-init/lib/render.mjs').then(m=>{const out=m.render(require('node:fs').readFileSync('plugins/harness-floor/skills/visual-qa/templates/report.md.hbs','utf-8'),{slug:'2026-05-17-test',timestamp:'2026-05-17T00:00Z',matrix:{totalCaptures:42},pageCount:3,counts:{critical:{new:0,resolved:0,unchanged:0,total:0},major:{new:1,resolved:0,unchanged:0,total:1},minor:{new:0,resolved:0,unchanged:0,total:0}},hasIncompletePages:false,incompletePages:[],newIssues:[{severity:'major',page:'home',component:'cta',state:'hover',bp:'desktop',category:'color-contrast',description:'low contrast',suggestion:'darken',imagePath:'home/desktop/cta__hover.png'}],resolvedIssues:[],unchangedIssues:[],estCostUSD:'1.20'});console.log(out)})"
+node -e "import('./plugins/harness-builder/skills/agent-init/lib/render.mjs').then(m=>{const out=m.render(require('node:fs').readFileSync('plugins/harness-floor/skills/visual-qa/templates/report.md.hbs','utf-8'),{slug:'2026-05-17-test',timestamp:'2026-05-17T00:00Z',matrix:{totalCaptures:42},pageCount:3,counts:{critical:{new:0,resolved:0,unchanged:0,total:0},major:{new:1,resolved:0,unchanged:0,total:1},minor:{new:0,resolved:0,unchanged:0,total:0}},hasIncompletePages:false,incompletePages:[],newIssues:[{severity:'major',page:'home',component:'cta',state:'hover',bp:'desktop',category:'color-contrast',description:'low contrast',suggestion:'darken',imagePath:'home/desktop/cta__hover.png'}],resolvedIssues:[],unchangedIssues:[],estCostUSD:'1.20'});console.log(out)})"
 ```
 Expected: full markdown output with the major issue row rendered correctly.
 
@@ -921,7 +923,7 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { render } from "../../../plugins/harness-builder/skills/harness-init/lib/render.mjs";
+import { render } from "../../../plugins/harness-builder/skills/agent-init/lib/render.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -1087,7 +1089,7 @@ The skill runs 6 phases strictly in order. Each phase has its own file under `ph
 
 ## On error
 
-- `.visual-qa.json` missing → abort + suggest `/harness-init --visual-qa`.
+- `.visual-qa.json` missing → abort + suggest `/agent-init --visual-qa`.
 - Playwright MCP not available → abort + suggest plugin install.
 - baseUrl down → ask user to continue (or abort in non-interactive).
 - Matrix > 500 captures + no `--yes` → require explicit confirm.
@@ -1121,7 +1123,7 @@ git commit -m "feat(visual-qa): SKILL.md thin orchestrator"
 
 ## Steps
 
-1. Confirm `.visual-qa.json` exists at the project root. If not: print `Run /harness-init --visual-qa to scaffold the config.` and abort.
+1. Confirm `.visual-qa.json` exists at the project root. If not: print `Run /agent-init --visual-qa to scaffold the config.` and abort.
 
 2. Confirm Playwright MCP tools are available. Use `ToolSearch` to load `mcp__plugin_playwright_playwright__browser_navigate`. If unavailable: print `Install the playwright plugin: /plugin install playwright@claude-plugins-official` and abort.
 
@@ -1630,7 +1632,7 @@ Drop this `.visual-qa.json`:
 
 ## Checks
 
-- [ ] `/visual-qa` with no `.visual-qa.json` aborts and suggests `/harness-init --visual-qa`.
+- [ ] `/visual-qa` with no `.visual-qa.json` aborts and suggests `/agent-init --visual-qa`.
 - [ ] Stop the dev server, run `/visual-qa` — Phase 0 asks "continue anyway?" and abort on "n".
 - [ ] First successful run produces `docs/visual-qa/YYYY-MM-DD-<hex>/` with: `report.md`, `report.json`, `home/mobile/_page.png`, `home/desktop/_page.png`, `home/*/cta__default.png`, `home/*/cta__hover.png`, `home/*/cta__focus.png`.
 - [ ] Each `.png` has a sibling `.analysis.json` (parses) and `.analysis.md` (non-empty).
@@ -1656,13 +1658,13 @@ git commit -m "test(visual-qa): manual E2E checklist"
 ## Task 20: Integrate with harness-init via `--visual-qa` flag
 
 **Files:**
-- Modify: `plugins/harness-builder/skills/harness-init/SKILL.md` (add flag)
-- Modify: `plugins/harness-builder/skills/harness-init/phases/5-wire.md` (handle flag — seed `.visual-qa.json`)
-- Modify: `plugins/harness-builder/skills/harness-init/templates/CLAUDE.md.hbs` (optional mention)
+- Modify: `plugins/harness-builder/skills/agent-init/SKILL.md` (add flag)
+- Modify: `plugins/harness-builder/skills/agent-init/phases/5-wire.md` (handle flag — seed `.visual-qa.json`)
+- Modify: `plugins/harness-builder/skills/agent-init/templates/CLAUDE.md.hbs` (optional mention)
 
 - [ ] **Step 1: Add the flag to harness-init SKILL.md**
 
-In `plugins/harness-builder/skills/harness-init/SKILL.md`, under `## Flags`, append:
+In `plugins/harness-builder/skills/agent-init/SKILL.md`, under `## Flags`, append:
 
 ```
 - `--visual-qa` — also scaffold `.visual-qa.json` (requires `harness-floor` plugin enabled).
@@ -1670,14 +1672,14 @@ In `plugins/harness-builder/skills/harness-init/SKILL.md`, under `## Flags`, app
 
 - [ ] **Step 2: Update phases/5-wire.md to handle --visual-qa**
 
-Add a new numbered step before "Single git commit" in `plugins/harness-builder/skills/harness-init/phases/5-wire.md`:
+Add a new numbered step before "Single git commit" in `plugins/harness-builder/skills/agent-init/phases/5-wire.md`:
 
 ```markdown
 4b. If `--visual-qa` was passed:
     - Verify `harness-floor` plugin enabled. If not: print install command, continue (degraded — config won't be runnable yet).
     - Render `plugins/harness-floor/skills/visual-qa/templates/visual-qa.config.json.hbs` with `{baseUrl: "http://localhost:3000", model: "claude-sonnet-4-6"}` (or model from discovery if specified).
     - Write the rendered JSON to `.visual-qa.json` at project root.
-    - Append `.visual-qa-state.json` to `.gitignore` (idempotent — same pattern as `.harness-state.json`).
+    - Append `.visual-qa-state.json` to `.gitignore` (idempotent — same pattern as `.agent-init-state.json`).
 ```
 
 Renumber subsequent steps accordingly. Update §6 step text to mention `.visual-qa.json` in the success summary.

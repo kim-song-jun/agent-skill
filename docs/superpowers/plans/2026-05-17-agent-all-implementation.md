@@ -2,11 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add `/agent-all` skill in `plugins/harness-floor/` (7-phase pipeline wrapping superpowers brainstorming/writing-plans/subagent-driven-development with optional `--loop`). Add `--theme=floor` flag to `/harness-init` that bundles `.visual-qa.json` + `.agent-all.json` + CLAUDE.md Floor section.
+**Note (2026-05-18):** `/harness-init` was renamed to `/agent-init` in harness-builder v0.2.0. References below to the old name reflect the original design and remain accurate for that timeframe. Treat `harness-init` and `agent-init` as the same skill in current code.
+
+**Goal:** Add `/agent-all` skill in `plugins/harness-floor/` (7-phase pipeline wrapping superpowers brainstorming/writing-plans/subagent-driven-development with optional `--loop`). Add `--theme=floor` flag to `/agent-init` that bundles `.visual-qa.json` + `.agent-all.json` + CLAUDE.md Floor section.
 
 **Architecture:** Sequential phases 0–6, phase 3 delegates fan-out to `superpowers:subagent-driven-development`. Lib modules are pure JS (TDD). Phase prompts are markdown docs the main agent reads on demand. `--theme=floor` is a small addition to harness-init's phase 5-wire.
 
-**Tech Stack:** Node 18+ native test runner, ES modules, zero npm deps. Reuses `plugins/harness-builder/skills/harness-init/lib/render.mjs` for templates.
+**Tech Stack:** Node 18+ native test runner, ES modules, zero npm deps. Reuses `plugins/harness-builder/skills/agent-init/lib/render.mjs` for templates.
 
 **Spec:** `docs/superpowers/specs/2026-05-17-agent-all-design.md`
 
@@ -17,7 +19,7 @@
 ```
 plugins/
 ├── harness-builder/
-│   └── skills/harness-init/
+│   └── skills/agent-init/
 │       ├── SKILL.md                          # MODIFIED — add --theme=floor flag
 │       ├── phases/5-wire.md                  # MODIFIED — add step 4c
 │       └── templates/CLAUDE.md.hbs           # MODIFIED — add Floor section
@@ -483,7 +485,7 @@ git commit -m "feat(agent-all): loop-evaluator with breakCondition + stableIters
 - [ ] **Step 2: Render-test**
 
 ```bash
-node -e "import('./plugins/harness-builder/skills/harness-init/lib/render.mjs').then(m=>{const out=m.render(require('node:fs').readFileSync('plugins/harness-floor/skills/agent-all/templates/agent-all.config.json.hbs','utf-8'),{maxIter:3,maxCostUSD:75,waveSize:'medium',breakCondition:'npm test'});JSON.parse(out);console.log('valid json')})"
+node -e "import('./plugins/harness-builder/skills/agent-init/lib/render.mjs').then(m=>{const out=m.render(require('node:fs').readFileSync('plugins/harness-floor/skills/agent-all/templates/agent-all.config.json.hbs','utf-8'),{maxIter:3,maxCostUSD:75,waveSize:'medium',breakCondition:'npm test'});JSON.parse(out);console.log('valid json')})"
 ```
 Expected: `valid json`.
 
@@ -536,7 +538,7 @@ Iter {{iter}} of {{maxIter}} max. Cost ${{costUSD}} of ${{maxCostUSD}} budget.
 - [ ] **Step 2: Render-test**
 
 ```bash
-node -e "import('./plugins/harness-builder/skills/harness-init/lib/render.mjs').then(m=>console.log(m.render(require('node:fs').readFileSync('plugins/harness-floor/skills/agent-all/templates/pr-body.md.hbs','utf-8'),{task:{title:'X',path:'docs/tasks/1-x.md'},plan:{path:'docs/superpowers/plans/p.md'},waves:[{status:'completed',tasks:[{id:1,title:'A'}]}],loop:{breakCondition:'npm test'},breakConditionPassed:true,testsPass:true,reviewClean:true,iter:1,maxIter:3,costUSD:'2.40',maxCostUSD:50})))"
+node -e "import('./plugins/harness-builder/skills/agent-init/lib/render.mjs').then(m=>console.log(m.render(require('node:fs').readFileSync('plugins/harness-floor/skills/agent-all/templates/pr-body.md.hbs','utf-8'),{task:{title:'X',path:'docs/tasks/1-x.md'},plan:{path:'docs/superpowers/plans/p.md'},waves:[{status:'completed',tasks:[{id:1,title:'A'}]}],loop:{breakCondition:'npm test'},breakConditionPassed:true,testsPass:true,reviewClean:true,iter:1,maxIter:3,costUSD:'2.40',maxCostUSD:50})))"
 ```
 Verify output contains `Wave 0 — completed` and `[x] Break condition` (with checkbox marked).
 
@@ -563,7 +565,7 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { render } from "../../../plugins/harness-builder/skills/harness-init/lib/render.mjs";
+import { render } from "../../../plugins/harness-builder/skills/agent-init/lib/render.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -637,7 +639,7 @@ git commit -m "test(agent-all): snapshot 2 templates × 3 fixtures"
 ```markdown
 ---
 name: agent-all
-description: Cost-unrestricted multi-agent pipeline. Drives intent→plan→wave-dispatch→gate→PR over the .claude/agents/ roster, with optional --loop until a shell break-condition succeeds (bounded by --max-iter and --max-cost). Requires /harness-init scaffolding.
+description: Cost-unrestricted multi-agent pipeline. Drives intent→plan→wave-dispatch→gate→PR over the .claude/agents/ roster, with optional --loop until a shell break-condition succeeds (bounded by --max-iter and --max-cost). Requires /agent-init scaffolding.
 ---
 
 # /agent-all
@@ -694,7 +696,7 @@ Runs a complete multi-agent pipeline from a free-form prompt or an existing task
 ## On error
 
 - Dirty git tree → abort.
-- `.claude/agents/` missing → abort + suggest `/harness-init`.
+- `.claude/agents/` missing → abort + suggest `/agent-init`.
 - `.agent-all.json` missing → warn + use built-ins.
 - writing-plans fails → abort.
 - Wave task BLOCKED 3× → Phase 3 abort with exit code 2.
@@ -731,14 +733,14 @@ git commit -m "feat(agent-all): SKILL.md thin orchestrator"
 
 2. Confirm working tree clean: `git status --porcelain` empty. If not: abort `Stash or commit local changes first; agent-all needs a clean tree.`
 
-3. Confirm `.claude/agents/` exists and contains at minimum `planner.md`, `dev.md`, `reviewer.md`. If not: abort `Run /harness-init first to scaffold .claude/agents/.`
+3. Confirm `.claude/agents/` exists and contains at minimum `planner.md`, `dev.md`, `reviewer.md`. If not: abort `Run /agent-init first to scaffold .claude/agents/.`
 
 4. Load `.agent-all.json`:
    ```javascript
    import { loadConfig } from "./lib/config-loader.mjs";
    const { ok, config, warning, errors } = loadConfig(".agent-all.json");
    if (!ok) { /* print errors as 'field: message', abort */ }
-   if (warning) { /* print: ".agent-all.json not found; using built-ins. Run /harness-init --theme=floor to seed." */ }
+   if (warning) { /* print: ".agent-all.json not found; using built-ins. Run /agent-init --theme=floor to seed." */ }
    ```
 
 5. Read `.agent-all-state.json` if present. If `--resume` and `max(state.phases[*].phase) >= 0`, skip rest of Phase 0.
@@ -1035,7 +1037,7 @@ If `--no-pr` OR `config.defaults.createPR === false`: skip Phase 5. Push `{phase
    };
    ```
 
-6. Render `templates/pr-body.md.hbs` with `ctx` using `plugins/harness-builder/skills/harness-init/lib/render.mjs`.
+6. Render `templates/pr-body.md.hbs` with `ctx` using `plugins/harness-builder/skills/agent-init/lib/render.mjs`.
 
 7. Create PR:
    ```bash
@@ -1128,7 +1130,7 @@ git commit -m "feat(agent-all): 6-loop phase doc"
 ```markdown
 # Legacy Notes
 
-This skill is a superpowers-based reimplementation of the original user skill `agent-all` (preserved at `plugins/harness-builder/skills/harness-init/references/legacy-notes.md` for Theme A).
+This skill is a superpowers-based reimplementation of the original user skill `agent-all` (preserved at `plugins/harness-builder/skills/agent-init/references/legacy-notes.md` for Theme A).
 
 ## What changed from the original
 
@@ -1278,7 +1280,7 @@ git commit -m "test(agent-all): scenario integration tests for wave-dispatch + l
 # /agent-all — Manual E2E Checklist
 
 Run before each `harness-floor` release with /agent-all changes. Requires:
-- A small fixture project with `.claude/agents/` already scaffolded (via `/harness-init`).
+- A small fixture project with `.claude/agents/` already scaffolded (via `/agent-init`).
 - `gh` installed and authenticated for PR test.
 - Working git repo.
 
@@ -1287,13 +1289,13 @@ Run before each `harness-floor` release with /agent-all changes. Requires:
 \`\`\`bash
 mkdir /tmp/agent-all-fixture && cd /tmp/agent-all-fixture
 git init
-/harness-init --size=small
-/harness-init --theme=floor   # seeds .visual-qa.json + .agent-all.json
+/agent-init --size=small
+/agent-init --theme=floor   # seeds .visual-qa.json + .agent-all.json
 \`\`\`
 
 ## Checks
 
-- [ ] `/agent-all` with empty `.claude/agents/` aborts and suggests `/harness-init`.
+- [ ] `/agent-all` with empty `.claude/agents/` aborts and suggests `/agent-init`.
 - [ ] Dirty git tree aborts.
 - [ ] `/agent-all "tiny prompt"` with brainstorming enabled runs brainstorming → plan → 1-wave dispatch → PR.
 - [ ] `/agent-all "tiny prompt" --no-brainstorm` skips brainstorming, writes task verbatim.
@@ -1303,7 +1305,7 @@ git init
 - [ ] `/agent-all "x" --loop` with deliberately failing breakCondition exhausts maxIter (exit code 3).
 - [ ] `/agent-all "x" --loop` with passing breakCondition exits after 1 iter (exit code 0).
 - [ ] `--max-cost=0.01` aborts in middle of Phase 3.
-- [ ] `--theme=floor` from `/harness-init` produces both `.visual-qa.json` and `.agent-all.json` and adds "Floor Theme" section to CLAUDE.md.
+- [ ] `--theme=floor` from `/agent-init` produces both `.visual-qa.json` and `.agent-all.json` and adds "Floor Theme" section to CLAUDE.md.
 - [ ] `.agent-all-state.json` is in `.gitignore`.
 ```
 
@@ -1318,16 +1320,16 @@ git commit -m "test(agent-all): manual E2E checklist"
 
 ---
 
-## Task 19: `/harness-init --theme=floor` integration (C-3)
+## Task 19: `/agent-init --theme=floor` integration (C-3)
 
 **Files:**
-- Modify: `plugins/harness-builder/skills/harness-init/SKILL.md`
-- Modify: `plugins/harness-builder/skills/harness-init/phases/5-wire.md`
-- Modify: `plugins/harness-builder/skills/harness-init/templates/CLAUDE.md.hbs`
+- Modify: `plugins/harness-builder/skills/agent-init/SKILL.md`
+- Modify: `plugins/harness-builder/skills/agent-init/phases/5-wire.md`
+- Modify: `plugins/harness-builder/skills/agent-init/templates/CLAUDE.md.hbs`
 
 - [ ] **Step 1: Add `--theme=floor` flag to SKILL.md**
 
-Read `plugins/harness-builder/skills/harness-init/SKILL.md`. Find the `## Flags` section. Append after the `--visual-qa` line (added in VQ20):
+Read `plugins/harness-builder/skills/agent-init/SKILL.md`. Find the `## Flags` section. Append after the `--visual-qa` line (added in VQ20):
 
 ```
 - `--theme=floor` — bundle harness-floor configs (.visual-qa.json + .agent-all.json + CLAUDE.md Floor section). Implicit `--visual-qa`.
@@ -1335,20 +1337,20 @@ Read `plugins/harness-builder/skills/harness-init/SKILL.md`. Find the `## Flags`
 
 - [ ] **Step 2: Add step 4c to phases/5-wire.md**
 
-Read `plugins/harness-builder/skills/harness-init/phases/5-wire.md`. Find step `4b` (the `--visual-qa` handler). Insert after it (before step 5):
+Read `plugins/harness-builder/skills/agent-init/phases/5-wire.md`. Find step `4b` (the `--visual-qa` handler). Insert after it (before step 5):
 
 ```markdown
 4c. If `--theme=floor` was passed:
     - Implicitly set `--visual-qa = true` (so step 4b also runs).
     - Verify `harness-floor` plugin enabled. If not: print install command, continue.
     - Render `plugins/harness-floor/skills/agent-all/templates/agent-all.config.json.hbs` with `{maxIter: 1, maxCostUSD: 50, waveSize: <size from Phase 1>, breakCondition: "npm test"}` and write to `.agent-all.json` at project root.
-    - Append `.agent-all-state.json` to `.gitignore` (idempotent — same pattern as `.harness-state.json` and `.visual-qa-state.json`).
+    - Append `.agent-all-state.json` to `.gitignore` (idempotent — same pattern as `.agent-init-state.json` and `.visual-qa-state.json`).
     - Set Phase 2 context flag `floorTheme: true` (used by `templates/CLAUDE.md.hbs` for the conditional section).
 ```
 
 - [ ] **Step 3: Add Floor section to CLAUDE.md.hbs**
 
-Read `plugins/harness-builder/skills/harness-init/templates/CLAUDE.md.hbs`. Append at the end (after the existing `{{#if constraints}}` block):
+Read `plugins/harness-builder/skills/agent-init/templates/CLAUDE.md.hbs`. Append at the end (after the existing `{{#if constraints}}` block):
 
 ```handlebars
 {{#if floorTheme}}
@@ -1401,7 +1403,7 @@ Expected: all tests pass. Existing snapshot count was 55; with the new fixture a
 - [ ] **Step 6: Commit**
 
 ```bash
-git add plugins/harness-builder/skills/harness-init/SKILL.md plugins/harness-builder/skills/harness-init/phases/5-wire.md plugins/harness-builder/skills/harness-init/templates/CLAUDE.md.hbs tests/lib/render.test.mjs tests/lib/__snapshots__
+git add plugins/harness-builder/skills/agent-init/SKILL.md plugins/harness-builder/skills/agent-init/phases/5-wire.md plugins/harness-builder/skills/agent-init/templates/CLAUDE.md.hbs tests/lib/render.test.mjs tests/lib/__snapshots__
 git commit -m "feat(harness-init): --theme=floor flag bundles agent-all config + Floor CLAUDE section"
 ```
 

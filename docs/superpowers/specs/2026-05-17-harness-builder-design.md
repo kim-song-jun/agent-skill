@@ -5,11 +5,13 @@
 **Author:** kimsongjun (sungjun@molcube.com)
 **Theme:** A of 3 (per-project harness builder)
 
+**Note (2026-05-18):** `/harness-init` was renamed to `/agent-init` in harness-builder v0.2.0. References below to the old name reflect the original design and remain accurate for that timeframe. Treat `harness-init` and `agent-init` as the same skill in current code.
+
 ---
 
 ## 1. Purpose
 
-Provide a single Claude Code skill — `/harness-init` — that, when invoked inside a fresh project, bootstraps a complete agent harness:
+Provide a single Claude Code skill — `/agent-init` — that, when invoked inside a fresh project, bootstraps a complete agent harness:
 
 - `CLAUDE.md` (project memory, agent index)
 - `.claude/agents/*.md` (planner / dev / designer / qa-* / tester / reviewer)
@@ -40,7 +42,7 @@ The skill itself follows the same three principles when it runs.
 - `--force` — re-run all phases, overwrite existing harness artefacts.
 - `--merge` — preserve an existing `CLAUDE.md` and append a harness section.
 - `--dry-run` — print every decision and file path that *would* be written; write nothing.
-- `--resume` — skip phases already marked complete in `.claude/.harness-state.json`.
+- `--resume` — skip phases already marked complete in `.claude/.agent-init-state.json`.
 - `--size=small|medium|large` — override auto-inferred agent team size.
 - `--qa=<persona>[,<persona>]` — override auto-inferred QA persona list.
 
@@ -65,7 +67,7 @@ my-project/
 │   │   ├── session-summary.mjs
 │   │   └── cache-heal.mjs
 │   ├── settings.local.json
-│   └── .harness-state.json        # .gitignored
+│   └── .agent-init-state.json        # .gitignored
 └── docs/
     ├── superpowers/specs/
     ├── superpowers/plans/
@@ -127,19 +129,19 @@ agent-skill/
 └── CHANGELOG.md
 ```
 
-`SKILL.md` is intentionally thin (≤ 150 lines): names the phases and points to `phases/*.md`. Each phase file is loaded on demand via `Read`, keeping the Skill-tool load cost low. Deterministic mechanics (template rendering, settings merge, stack detection, plugin scan) live as pure JS modules in `skills/harness-init/lib/` so they are unit-testable without spawning Claude Code.
+`SKILL.md` is intentionally thin (≤ 150 lines): names the phases and points to `phases/*.md`. Each phase file is loaded on demand via `Read`, keeping the Skill-tool load cost low. Deterministic mechanics (template rendering, settings merge, stack detection, plugin scan) live as pure JS modules in `skills/agent-init/lib/` so they are unit-testable without spawning Claude Code.
 
 ### 4.2 Plugin Manifest
 
 `.claude-plugin/marketplace.json` registers one plugin source so users can do `/plugin marketplace add <git-url>` once.
 
 `.claude-plugin/plugin.json` registers:
-- `skills`: `skills/harness-init/`
+- `skills`: `skills/agent-init/`
 - `hooks`: `hooks/context-mode-cache-heal.mjs` (global, SessionStart)
 
 ### 4.3 Phase Pipeline
 
-`/harness-init` runs phases strictly in order. Each phase records completion to `.claude/.harness-state.json` so `--resume` can pick up after an interruption.
+`/agent-init` runs phases strictly in order. Each phase records completion to `.claude/.agent-init-state.json` so `--resume` can pick up after an interruption.
 
 | Phase | Name | Purpose | Parallel? |
 |-------|------|---------|-----------|
@@ -242,9 +244,9 @@ Then writes/merges `.claude/settings.local.json` to register all three hooks. Ex
 ### 5.5 Phase 5 — Wire
 
 1. Surfaces the dependency-resolution output from Phase 0 (missing/disabled plugins + commands).
-2. Updates `.gitignore` to add `.claude/.harness-state.json`.
+2. Updates `.gitignore` to add `.claude/.agent-init-state.json`.
 3. `git add` everything written across phases.
-4. Creates commit: `chore: bootstrap harness via /harness-init`.
+4. Creates commit: `chore: bootstrap harness via /agent-init`.
 5. Prints success summary with next steps ("try `/plan some-task`", "review `.claude/agents/planner.md`").
 
 If the user has not yet installed the required plugins, the commit still happens — the harness works without them, just with reduced features.
@@ -256,9 +258,9 @@ If the user has not yet installed the required plugins, the commit still happens
 | Not a git repo | Print `git init` suggestion; do not run it. Abort. |
 | `CLAUDE.md` exists, no `--merge` / `--force` | Abort with message recommending `claude-md-improver` or `--merge`. |
 | `.claude/agents/<role>.md` exists | Abort unless `--force`. Suggest `--force` if intentional. |
-| `.harness-state.json` says Phase N complete, but a phase-N artefact is missing | Treat as corrupted; require `--force` to re-run. |
+| `.agent-init-state.json` says Phase N complete, but a phase-N artefact is missing | Treat as corrupted; require `--force` to re-run. |
 | Hook execution fails at runtime (e.g. cache-heal) | Hook itself silently swallows errors (try/catch). User's workflow is never blocked. |
-| External plugin install fails | Skill does not abort. Prints "install manually, then `/harness-init --resume`". |
+| External plugin install fails | Skill does not abort. Prints "install manually, then `/agent-init --resume`". |
 | User declines plugin install at Phase 5 | Skill completes with a warning; harness still functions in degraded mode. |
 
 All error messages name the next user action explicitly. No silent failures.
@@ -267,7 +269,7 @@ All error messages name the next user action explicitly. No silent failures.
 
 ### 7.1 Lib Tests (`tests/lib/`)
 
-The `skills/harness-init/lib/` modules are pure JS and directly testable. Runner: Node.js native test runner (`node --test`). Zero dependencies.
+The `skills/agent-init/lib/` modules are pure JS and directly testable. Runner: Node.js native test runner (`node --test`). Zero dependencies.
 
 | Module | Test |
 |--------|------|
@@ -280,7 +282,7 @@ The phase prompts (`phases/*.md`) themselves are not unit-tested; the manual che
 
 ### 7.2 Manual End-to-End Checklist (`tests/manual-checklist.md`)
 
-Run `/harness-init` in real Claude Code against a fresh fixture project and tick:
+Run `/agent-init` in real Claude Code against a fresh fixture project and tick:
 
 - [ ] Phase 1 actually triggers `superpowers:brainstorming`
 - [ ] Re-running with no flags is a no-op (idempotency)
@@ -290,8 +292,8 @@ Run `/harness-init` in real Claude Code against a fresh fixture project and tick
 - [ ] Missing-plugin output lists the exact commands
 - [ ] Phase 3 actually dispatches in parallel (visible in agent log)
 - [ ] Generated `planner.md` references brainstorming
-- [ ] `.harness-state.json` is in `.gitignore`
-- [ ] Final commit message matches `chore: bootstrap harness via /harness-init`
+- [ ] `.agent-init-state.json` is in `.gitignore`
+- [ ] Final commit message matches `chore: bootstrap harness via /agent-init`
 
 The manual checklist runs before each release; it is not part of CI.
 

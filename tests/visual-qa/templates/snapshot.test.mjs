@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { render } from "../../../plugins/harness-builder/skills/harness-init/lib/render.mjs";
+import { render } from "../../../plugins/harness-builder/skills/agent-init/lib/render.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 

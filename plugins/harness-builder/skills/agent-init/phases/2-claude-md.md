@@ -29,7 +29,7 @@
 3. Render with `render(tpl, { ...discovery, agents })`.
 4. Write `CLAUDE.md` at project root.
    - If `--merge` and the file exists: append `\n\n---\n\n## Harness\n\n<rendered content>` instead of overwriting.
-5. Push `{ "phase": 2, "completedAt": "<iso>" }` onto `phases` in `.harness-state.json`.
+5. Push `{ "phase": 2, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`.
 
 ## Output to user
 

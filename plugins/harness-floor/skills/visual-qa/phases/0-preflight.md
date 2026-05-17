@@ -2,7 +2,7 @@
 
 ## Steps
 
-1. Confirm `.visual-qa.json` exists at the project root. If not: print `Run /harness-init --visual-qa to scaffold the config.` and abort.
+1. Confirm `.visual-qa.json` exists at the project root. If not: print `Run /agent-init --visual-qa to scaffold the config.` and abort.
 
 2. Confirm Playwright MCP tools are available. Use `ToolSearch` to load `mcp__plugin_playwright_playwright__browser_navigate`. If unavailable: print `Install the playwright plugin: /plugin install playwright@claude-plugins-official` and abort.
 
