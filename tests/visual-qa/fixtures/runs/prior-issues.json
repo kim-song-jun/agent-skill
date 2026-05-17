@@ -1,0 +1,7 @@
+{
+  "slug": "prior",
+  "issues": [
+    { "page": "home", "component": "hero", "state": "default", "bp": "desktop", "category": "alignment", "description": "logo off-center", "severity": "major" },
+    { "page": "home", "component": "hero", "state": "hover", "bp": "desktop", "category": "color-contrast", "description": "text-bg ratio 3.1", "severity": "minor" }
+  ]
+}
