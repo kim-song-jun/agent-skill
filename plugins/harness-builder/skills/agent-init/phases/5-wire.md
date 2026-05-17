@@ -42,7 +42,7 @@
 5. Single git commit:
    ```bash
    git add CLAUDE.md .claude/ .gitignore docs/
-   git commit -m "chore: bootstrap harness via /harness-init"
+   git commit -m "chore: bootstrap harness via /agent-init"
    ```
 
 6. Set top-level `commit` to the new SHA and push `{ "phase": 5, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`. Write to disk (this update happens AFTER the commit in step 5, and `.agent-init-state.json` is `.gitignored` from step 3 so it stays out of git).
@@ -53,4 +53,4 @@ Print the success summary:
 - Phases completed: 5 / 5
 - CLAUDE.md, N agents, 3 hooks installed
 - Missing plugins (if any) — with the exact install commands
-- Next step suggestion: "Try `/harness-init --dry-run` or invoke planner with `/plan <goal>`."
+- Next step suggestion: "Try `/agent-init --dry-run` or invoke planner with `/plan <goal>`."
