@@ -1,0 +1,3 @@
+{
+  "defaults": { "maxIter": 1, "maxCostUSD": 50, "waveSize": "medium", "brainstormFirst": true, "createPR": true }
+}
