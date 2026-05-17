@@ -65,6 +65,22 @@ test("#each primitives still work via {{this}}", () => {
   assert.equal(out, "a b ");
 });
 
+test("nested #each over object arrays renders inner loop correctly", () => {
+  const tpl = "{{#each waves}}Wave {{@index}}:\n{{#each this.tasks}}- {{this.id}}: {{this.title}}\n{{/each}}\n{{/each}}";
+  const ctx = { waves: [
+    { tasks: [{ id: 1, title: "A" }, { id: 2, title: "B" }] },
+    { tasks: [{ id: 3, title: "C" }] },
+  ]};
+  const out = render(tpl, ctx);
+  assert.equal(out, "Wave 0:\n- 1: A\n- 2: B\n\nWave 1:\n- 3: C\n\n");
+});
+
+test("nested #if inside #if still renders correctly", () => {
+  const tpl = "{{#if outer}}OUT-{{#if inner}}IN{{/if}}-END{{/if}}";
+  assert.equal(render(tpl, { outer: true, inner: true }), "OUT-IN-END");
+  assert.equal(render(tpl, { outer: true, inner: false }), "OUT--END");
+});
+
 const TEMPLATES_DIR = resolve(here, "..", "..", "plugins", "harness-builder", "skills", "harness-init", "templates");
 
 const FIXTURES = [
