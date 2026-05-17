@@ -15,6 +15,7 @@ Sets up a full per-project agent harness following the three operating principle
 - `--resume` — skip phases already marked complete in `.claude/.harness-state.json`.
 - `--size=small|medium|large` — override auto-inferred agent team size.
 - `--qa=<persona>[,<persona>]` — override auto-inferred QA personas.
+- `--visual-qa` — also scaffold `.visual-qa.json` (requires `harness-floor` plugin enabled).
 
 ## Pipeline
 

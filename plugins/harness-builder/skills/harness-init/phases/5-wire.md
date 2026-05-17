@@ -24,6 +24,12 @@
 
 4. Make sure `docs/superpowers/specs/`, `docs/superpowers/plans/`, `docs/decisions/`, `docs/tasks/` exist. `mkdir -p` for each. Add a `.gitkeep` to each.
 
+4b. If `--visual-qa` was passed:
+    - Verify `harness-floor` plugin enabled. If not: print install command, continue (degraded — config won't be runnable yet).
+    - Render `plugins/harness-floor/skills/visual-qa/templates/visual-qa.config.json.hbs` with `{baseUrl: "http://localhost:3000", model: "claude-sonnet-4-6"}` (or model from discovery if specified).
+    - Write the rendered JSON to `.visual-qa.json` at project root.
+    - Append `.visual-qa-state.json` to `.gitignore` (idempotent — same pattern as `.harness-state.json`).
+
 5. Single git commit:
    ```bash
    git add CLAUDE.md .claude/ .gitignore docs/
