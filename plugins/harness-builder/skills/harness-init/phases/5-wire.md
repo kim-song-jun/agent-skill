@@ -24,18 +24,20 @@
 
 4. Make sure `docs/superpowers/specs/`, `docs/superpowers/plans/`, `docs/decisions/`, `docs/tasks/` exist. `mkdir -p` for each. Add a `.gitkeep` to each.
 
-4b. If `--visual-qa` was passed:
-    - Verify `harness-floor` plugin enabled. If not: print install command, continue (degraded — config won't be runnable yet).
-    - Render `plugins/harness-floor/skills/visual-qa/templates/visual-qa.config.json.hbs` with `{baseUrl: "http://localhost:3000", model: "claude-sonnet-4-6"}` (or model from discovery if specified).
-    - Write the rendered JSON to `.visual-qa.json` at project root.
-    - Append `.visual-qa-state.json` to `.gitignore` (idempotent — same pattern as `.harness-state.json`).
+4a. **Theme resolution.** Determine theme:
+    - If `--theme=lite` was passed: theme = `lite`. Skip steps 4b and 4c entirely.
+    - Else if `--theme=floor` was passed OR no theme flag was passed: theme = `floor` (default). Continue to 4b and 4c.
+    - Backwards compat: if `--visual-qa` was passed without `--theme=*`: render only `.visual-qa.json` (legacy behavior); skip 4c, do not set floorTheme.
 
-4c. If `--theme=floor` was passed:
-    - Implicitly set `--visual-qa = true` (so step 4b also runs).
-    - Verify `harness-floor` plugin enabled. If not: print install command, continue.
-    - Render `plugins/harness-floor/skills/agent-all/templates/agent-all.config.json.hbs` with `{maxIter: 1, maxCostUSD: 50, waveSize: <size from Phase 1>, breakCondition: "npm test"}` and write to `.agent-all.json` at project root.
+4b. If theme is `floor` OR legacy `--visual-qa`: render `.visual-qa.json`.
+    - Verify `harness-floor` plugin enabled. If not: print install command, continue (degraded).
+    - Render `plugins/harness-floor/skills/visual-qa/templates/visual-qa.config.json.hbs` with `{baseUrl: "http://localhost:3000", model: "claude-sonnet-4-6"}`. Write to `.visual-qa.json`.
+    - Append `.visual-qa-state.json` to `.gitignore` (idempotent).
+
+4c. If theme is `floor` (NOT legacy `--visual-qa` alone): render `.agent-all.json` and enable Floor CLAUDE section.
+    - Render `plugins/harness-floor/skills/agent-all/templates/agent-all.config.json.hbs` with `{maxIter: 10, maxCostUSD: 500, waveSize: "large", breakCondition: "npm test"}` and write to `.agent-all.json` at project root.
     - Append `.agent-all-state.json` to `.gitignore` (idempotent — same pattern as `.harness-state.json` and `.visual-qa-state.json`).
-    - Set Phase 2 context flag `floorTheme: true` (used by `templates/CLAUDE.md.hbs` for the conditional section).
+    - Set Phase 2 context flag `floorTheme: true` (used by `templates/CLAUDE.md.hbs` for the conditional Floor section).
 
 5. Single git commit:
    ```bash

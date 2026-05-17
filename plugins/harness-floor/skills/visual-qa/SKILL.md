@@ -49,7 +49,7 @@ The skill runs 6 phases strictly in order. Each phase has its own file under `ph
 - `.visual-qa.json` missing → abort + suggest `/harness-init --visual-qa`.
 - Playwright MCP not available → abort + suggest plugin install.
 - baseUrl down → ask user to continue (or abort in non-interactive).
-- Matrix > 500 captures + no `--yes` → require explicit confirm.
+- Matrix > 5000 captures + no `--yes` → require explicit confirm.
 - `--budget` exceeded → abort gracefully, save partial report.
 - 3+ analysis errors in one page → that page marked incomplete, others continue, exit code 2.
 - Auth flow fails → page-subagent BLOCKED.

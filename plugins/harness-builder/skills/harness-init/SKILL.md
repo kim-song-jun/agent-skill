@@ -15,8 +15,9 @@ Sets up a full per-project agent harness following the three operating principle
 - `--resume` — skip phases already marked complete in `.claude/.harness-state.json`.
 - `--size=small|medium|large` — override auto-inferred agent team size.
 - `--qa=<persona>[,<persona>]` — override auto-inferred QA personas.
-- `--visual-qa` — also scaffold `.visual-qa.json` (requires `harness-floor` plugin enabled).
-- `--theme=floor` — bundle harness-floor configs (.visual-qa.json + .agent-all.json + CLAUDE.md Floor section). Implicit `--visual-qa`.
+- `--theme=floor` — (DEFAULT) bundle harness-floor configs (.visual-qa.json + .agent-all.json + CLAUDE.md Floor section). Implicit `--visual-qa`.
+- `--theme=lite` — minimal scaffold; skip the floor bundle (no .visual-qa.json, no .agent-all.json, no Floor section in CLAUDE.md).
+- `--visual-qa` — (legacy alias) scaffold only `.visual-qa.json` without the rest of the floor bundle. Most users want the default theme=floor instead.
 
 ## Pipeline
 

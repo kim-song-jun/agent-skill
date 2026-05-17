@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from "node:fs";
 
 export const DEFAULTS = {
-  defaults: { maxIter: 1, maxCostUSD: 50, waveSize: "medium", brainstormFirst: true, createPR: true },
+  defaults: { maxIter: 10, maxCostUSD: 500, waveSize: "large", brainstormFirst: true, createPR: true },
   waves: {
     small:  { maxParallel: 2, rolesAllowed: ["dev", "reviewer"] },
     medium: { maxParallel: 4, rolesAllowed: ["frontend-dev", "backend-dev", "designer", "reviewer"] },

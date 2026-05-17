@@ -36,7 +36,7 @@
    Estimated LLM cost: ~$<estCostUSD>
    ```
 
-6. If `matrix.length > 500` OR `--yes` not set: ask `Proceed? [Y/n]` and wait. (`--yes` skips except when over 500.)
+6. If `matrix.length > 5000` OR `--yes` not set: ask `Proceed? [Y/n]` and wait. (`--yes` skips except when over 5000. Threshold raised from 500 — cost-unrestricted principle.)
 
 7. Update state:
    - Push `{phase: 1, completedAt}` to `phases`.
