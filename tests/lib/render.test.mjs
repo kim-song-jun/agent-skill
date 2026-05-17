@@ -84,11 +84,12 @@ test("nested #if inside #if still renders correctly", () => {
 const TEMPLATES_DIR = resolve(here, "..", "..", "plugins", "harness-builder", "skills", "harness-init", "templates");
 
 const FIXTURES = [
-  { tag: "ts-small", ctx: { purpose: "Demo app", stack: "typescript", deploy_targets: "vercel", agents: [{name:"planner",when:"all planning"},{name:"dev",when:"implementation"},{name:"reviewer",when:"final review"}], constraints: "" } },
-  { tag: "py-medium", ctx: { purpose: "API service", stack: "python", deploy_targets: "docker", agents: [{name:"planner",when:"all planning"},{name:"dev",when:"implementation"},{name:"designer",when:"UI"},{name:"qa-auth",when:"auth flow"},{name:"tester",when:"automated runs"},{name:"reviewer",when:"final review"}], constraints: "GDPR scope" } },
-  { tag: "rs-large", ctx: { purpose: "CLI tool", stack: "rust", deploy_targets: "github releases", agents: [{name:"planner",when:""},{name:"frontend-dev",when:""},{name:"backend-dev",when:""},{name:"qa-cli",when:""},{name:"tester",when:""},{name:"reviewer",when:""},{name:"doc-writer",when:""}], constraints: "" } },
-  { tag: "go-small", ctx: { purpose: "Worker", stack: "go", deploy_targets: "", agents: [{name:"planner",when:""},{name:"dev",when:""},{name:"reviewer",when:""}], constraints: "" } },
-  { tag: "mono-medium", ctx: { purpose: "Monorepo", stack: "javascript", deploy_targets: "cloudflare", agents: [{name:"planner",when:""},{name:"dev",when:""},{name:"designer",when:""},{name:"qa-general",when:""},{name:"tester",when:""},{name:"reviewer",when:""}], constraints: "" } },
+  { tag: "ts-small", ctx: { purpose: "Demo app", stack: "typescript", deploy_targets: "vercel", agents: [{name:"planner",when:"all planning"},{name:"dev",when:"implementation"},{name:"reviewer",when:"final review"}], constraints: "", floorTheme: false } },
+  { tag: "py-medium", ctx: { purpose: "API service", stack: "python", deploy_targets: "docker", agents: [{name:"planner",when:"all planning"},{name:"dev",when:"implementation"},{name:"designer",when:"UI"},{name:"qa-auth",when:"auth flow"},{name:"tester",when:"automated runs"},{name:"reviewer",when:"final review"}], constraints: "GDPR scope", floorTheme: false } },
+  { tag: "rs-large", ctx: { purpose: "CLI tool", stack: "rust", deploy_targets: "github releases", agents: [{name:"planner",when:""},{name:"frontend-dev",when:""},{name:"backend-dev",when:""},{name:"qa-cli",when:""},{name:"tester",when:""},{name:"reviewer",when:""},{name:"doc-writer",when:""}], constraints: "", floorTheme: false } },
+  { tag: "go-small", ctx: { purpose: "Worker", stack: "go", deploy_targets: "", agents: [{name:"planner",when:""},{name:"dev",when:""},{name:"reviewer",when:""}], constraints: "", floorTheme: false } },
+  { tag: "mono-medium", ctx: { purpose: "Monorepo", stack: "javascript", deploy_targets: "cloudflare", agents: [{name:"planner",when:""},{name:"dev",when:""},{name:"designer",when:""},{name:"qa-general",when:""},{name:"tester",when:""},{name:"reviewer",when:""}], constraints: "", floorTheme: false } },
+  { tag: "floor-theme", ctx: { purpose: "Floor test app", stack: "typescript", deploy_targets: "vercel", agents: [{name:"planner",when:"plan"},{name:"dev",when:"code"},{name:"reviewer",when:"review"}], constraints: "", floorTheme: true } },
 ];
 
 function listTemplates(dir, base = "") {

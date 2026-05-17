@@ -39,3 +39,15 @@ These apply to the main agent and to every role in `.claude/agents/`:
 
 {{constraints}}
 {{/if}}
+
+{{#if floorTheme}}
+## Floor Theme
+
+Cost-unrestricted parallel pattern enabled. Commands:
+
+- `/visual-qa` — visual regression with LLM analysis (see `.visual-qa.json`)
+- `/agent-all "task description"` — multi-wave pipeline (see `.agent-all.json`)
+- `/agent-all <task-path> --loop` — iterate until the break-condition succeeds
+
+Read `plugins/harness-floor/skills/{visual-qa,agent-all}/SKILL.md` for full flag references.
+{{/if}}

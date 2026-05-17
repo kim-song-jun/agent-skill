@@ -30,6 +30,13 @@
     - Write the rendered JSON to `.visual-qa.json` at project root.
     - Append `.visual-qa-state.json` to `.gitignore` (idempotent — same pattern as `.harness-state.json`).
 
+4c. If `--theme=floor` was passed:
+    - Implicitly set `--visual-qa = true` (so step 4b also runs).
+    - Verify `harness-floor` plugin enabled. If not: print install command, continue.
+    - Render `plugins/harness-floor/skills/agent-all/templates/agent-all.config.json.hbs` with `{maxIter: 1, maxCostUSD: 50, waveSize: <size from Phase 1>, breakCondition: "npm test"}` and write to `.agent-all.json` at project root.
+    - Append `.agent-all-state.json` to `.gitignore` (idempotent — same pattern as `.harness-state.json` and `.visual-qa-state.json`).
+    - Set Phase 2 context flag `floorTheme: true` (used by `templates/CLAUDE.md.hbs` for the conditional section).
+
 5. Single git commit:
    ```bash
    git add CLAUDE.md .claude/ .gitignore docs/

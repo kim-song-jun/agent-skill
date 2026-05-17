@@ -1,10 +1,10 @@
-# Monorepo
+# Floor test app
 
 > Project memory for Claude Code. Maintained by `/harness-init`.
 
 ## Stack
 
-javascript — deploys to cloudflare
+typescript — deploys to vercel
 
 ## Operating Principles
 
@@ -18,12 +18,9 @@ These apply to the main agent and to every role in `.claude/agents/`:
 
 | Role | When to use | File |
 |------|-------------|------|
-| planner |  | `.claude/agents/planner.md` |
-| dev |  | `.claude/agents/dev.md` |
-| designer |  | `.claude/agents/designer.md` |
-| qa-general |  | `.claude/agents/qa-general.md` |
-| tester |  | `.claude/agents/tester.md` |
-| reviewer |  | `.claude/agents/reviewer.md` |
+| planner | plan | `.claude/agents/planner.md` |
+| dev | code | `.claude/agents/dev.md` |
+| reviewer | review | `.claude/agents/reviewer.md` |
 
 
 ## Hooks
@@ -41,4 +38,14 @@ These apply to the main agent and to every role in `.claude/agents/`:
 
 
 
+
+## Floor Theme
+
+Cost-unrestricted parallel pattern enabled. Commands:
+
+- `/visual-qa` — visual regression with LLM analysis (see `.visual-qa.json`)
+- `/agent-all "task description"` — multi-wave pipeline (see `.agent-all.json`)
+- `/agent-all <task-path> --loop` — iterate until the break-condition succeeds
+
+Read `plugins/harness-floor/skills/{visual-qa,agent-all}/SKILL.md` for full flag references.
 

@@ -16,6 +16,7 @@ Sets up a full per-project agent harness following the three operating principle
 - `--size=small|medium|large` — override auto-inferred agent team size.
 - `--qa=<persona>[,<persona>]` — override auto-inferred QA personas.
 - `--visual-qa` — also scaffold `.visual-qa.json` (requires `harness-floor` plugin enabled).
+- `--theme=floor` — bundle harness-floor configs (.visual-qa.json + .agent-all.json + CLAUDE.md Floor section). Implicit `--visual-qa`.
 
 ## Pipeline
 
