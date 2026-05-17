@@ -1,0 +1,36 @@
+{
+  "baseUrl": "http://localhost:3000",
+  "auth": {
+    "type": "form",
+    "cookieFile": ".visual-qa-auth.json",
+    "loginFlow": [
+      { "goto": "/login" },
+      { "fill": "[name=email]", "value": "${env:VQA_EMAIL}" },
+      { "click": "button[type=submit]" },
+      { "waitFor": "[data-testid=dashboard]" }
+    ]
+  },
+  "breakpoints": [
+    { "name": "mobile", "width": 375, "height": 812 },
+    { "name": "desktop", "width": 1440, "height": 900 }
+  ],
+  "pages": [
+    {
+      "name": "settings",
+      "path": "/settings",
+      "requiresAuth": true,
+      "components": [
+        { "name": "save-btn", "selector": "button[type=submit]", "states": ["hover", "focus"] }
+      ]
+    }
+  ],
+  "flows": [
+    { "name": "x", "steps": [{ "goto": "/x" }, { "screenshot": "y" }] }
+  ],
+  "analysis": {
+    "model": "claude-sonnet-4-6",
+    "categories": ["accessibility"],
+    "severityThreshold": "minor"
+  },
+  "output": { "dir": "docs/visual-qa", "keepLastN": 5 }
+}

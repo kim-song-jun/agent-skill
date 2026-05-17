@@ -1,0 +1,5 @@
+{
+  "baseUrl": "http://localhost",
+  "breakpoints": [{ "name": "d", "width": 1, "height": 1 }],
+  "pages": [{ "name": "p", "path": "/", "components": [{ "name": "c", "selector": "[data-x=${env:MISSING_VAR_FOR_TEST}]" }] }]
+}

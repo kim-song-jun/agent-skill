@@ -1,0 +1,5 @@
+{
+  "baseUrl": "http://localhost",
+  "breakpoints": [{ "name": "d" }],
+  "pages": []
+}
