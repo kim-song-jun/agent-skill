@@ -6,6 +6,11 @@
       "name": "harness-builder",
       "source": "./plugins/harness-builder",
       "description": "Bootstrap CLAUDE.md, .claude/agents/, hooks, and plugin wiring with /harness-init"
+    },
+    {
+      "name": "harness-floor",
+      "source": "./plugins/harness-floor",
+      "description": "Cost-unrestricted patterns starting with /visual-qa (visual regression + LLM analysis via Playwright MCP)"
     }
   ]
 }

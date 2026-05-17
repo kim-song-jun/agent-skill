@@ -1,0 +1,6 @@
+{
+  "name": "harness-floor",
+  "version": "0.1.0",
+  "description": "Visual QA skill with Playwright MCP capture and LLM per-image analysis",
+  "skills": ["skills/visual-qa"]
+}
