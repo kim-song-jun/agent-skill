@@ -451,7 +451,68 @@ Playwright MCP와 LLM을 mock합니다. 페이지-부에이전트 모듈은 `run
 
 마이그레이션은 메커니컬하고 C-1에 착륙합니다. C-2까지 기다리면 `harness-floor`를 형제와 일치하지 않는 레이아웃으로 배송하기 때문입니다.
 
-## 9. 향후 작업 (이 스펙의 범위 밖)
+## 9. 예제
+
+### 첫 실행: 기준선 설정
+
+```
+cd my-next-app
+npm run dev                  # localhost:3000
+/visual-qa
+```
+
+`docs/visual-qa/2026-05-18-abc1234/` 생성:
+- `report.md` — 3개 페이지에 걸친 모든 247개 캡처 표시
+- 이미지별 `.png`, `.analysis.json`, `.analysis.md` 파일
+- Diff 섹션 비어 있음 (비교할 이전 실행 없음)
+- 종료 코드 0 (첫 기준선에서 중요 이슈 없음)
+
+### 시각적 버그 도입 후 재실행
+
+```
+# 버그 도입: hero 버튼 색상을 빨강으로 변경
+git commit -am "style: change hero button to red"
+
+/visual-qa
+```
+
+출력 `docs/visual-qa/2026-05-18-xyz9876/`:
+- 동일한 247개 캡처
+- 맨 위 Diff: `+3 새 이슈 (2개 중요 색상 대비, 1개 주요 정렬)`
+- 리포트는 새 이슈가 있는 hero 버튼 컴포넌트 표시
+- 종료 코드 1 (중요 이슈 감지)
+
+### 인증 흐름 예제
+
+```
+# .visual-qa.json 구성:
+"auth": {
+  "type": "form",
+  "loginFlow": [
+    { "goto": "/login" },
+    { "fill": "[name=email]", "value": "${env:VQA_EMAIL}" },
+    { "fill": "[name=password]", "value": "${env:VQA_PASSWORD}" },
+    { "click": "button[type=submit]" },
+    { "waitFor": "[data-testid=dashboard]" }
+  ]
+},
+"pages": [
+  { "name": "dashboard", "path": "/dashboard", "requiresAuth": true }
+]
+
+VQA_EMAIL=test@example.com VQA_PASSWORD=pass123 /visual-qa
+```
+
+페이즈 3 로그:
+```
+  Dashboard page requires auth
+  Running login flow...
+  Captured dashboard at mobile (after login)
+  Captured dashboard at tablet (after login)
+  Captured dashboard at desktop (after login)
+```
+
+## 10. 향후 작업 (이 스펙의 범위 밖)
 
 - **C-2 (agent-all 파이프라인)**: 사용자의 기존 `agent-all` 워크플로우를 `superpowers:subagent-driven-development`로 래핑하는 `harness-floor`의 형제 스킬.
 - **C-3 (ralph-loop 패턴 + harness-init 통합)**: `/agent-init --theme=floor` 표면을 하나의 설정으로 agent-all + visual-qa + ralph-loop을 번들합니다.

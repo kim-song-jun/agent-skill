@@ -329,7 +329,58 @@ CLI 플래그는 런타임 시 해당하는 `defaults` 필드를 재정의합니
 - `harness-builder` 또는 `visual-qa` 스킬에 대한 breaking 변경 없음. 공개 표면은 변경 없음.
 - `--theme=floor` 플래그는 추가이고; 기존 `/agent-init` 호출은 계속 작동합니다.
 
-## 9. 향후 작업 (범위 밖)
+## 9. 예제
+
+### 자유로운 프롬프트에서 일회성 기능
+
+```
+/agent-all "Add OAuth login with GitHub"
+```
+
+실행:
+1. 페이즈 1 (브레인스토밍) — AI와 사용자 요구 사항 대화
+2. 페이즈 2 (계획) — superpowers:writing-plans이 작업 목록 생성
+3. 페이즈 3 (디스패치) — 2~3개 웨이브의 부에이전트가 구현 + 검토
+4. 페이즈 4 (게이트) — 선택적 스펙/품질 검토
+5. 페이즈 5 (PR) — `feat/agent-all/oauth-login` 브랜치에서 PR 생성
+
+일반적인 출력: PR의 4~6개 커밋, 비용 ~$12~15 (Sonnet).
+
+### 테스트가 통과할 때까지 루프
+
+```
+/agent-all "Fix the intermittent race condition in payment tests" --loop --max-iter=5
+```
+
+반복 1: brainstorm + plan + dispatch (테스트 실패)
+반복 2: 계획 재생성, race 수정에 초점 둔 dispatch (여전히 실패)
+반복 3: 재설계, dispatch (성공)
+페이즈 6는 `npm test` 종료 코드 0 감지, 루프 중단.
+
+총 비용: ~$30~40, 벽시계 시간: 테스트 스위트에 따라 15~20분.
+
+### 기존 작업 재사용, 브레인스토밍 건너뛰기
+
+```
+/agent-all docs/tasks/7-auth-improvements.md --loop --max-iter=10 --max-cost=50
+```
+
+페이즈 1은 작업 파일을 로드합니다. 브레인스토밍 없음.
+페이즈 2는 작업으로부터 계획 재생성.
+페이즈 3~6은 breakCondition 또는 비용 한도까지 루프.
+
+### Codex 구조 패턴
+
+```
+/agent-all "Migrate ORM schema to Prisma" --wave-size=medium
+# 웨이브 1: frontend-dev + backend-dev 구현
+# 2회 재시도 후 웨이브가 막히면:
+/codex:rescue
+```
+
+부에이전트가 BLOCKED를 보고하면, Codex 스킬은 OpenAI를 호출하여 막힌 작업에 대한 제2 의견을 얻습니다.
+
+## 10. 향후 작업 (범위 밖)
 
 - **Replan-mid-loop** (`--no-replan` 또는 `--replan-every=N`): 현재 각 루프 반복은 계획을 재생성합니다. 구성 가능 replan 전략.
 - **PR 코멘트 통합**: 단계 5는 선택적으로 검토 요약을 PR에 코멘트할 수 있습니다.

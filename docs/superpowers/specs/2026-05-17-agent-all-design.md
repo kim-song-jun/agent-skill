@@ -329,7 +329,58 @@ Extend the existing `tests/lib/render.test.mjs` snapshot matrix with a new fixtu
 - No breaking changes to `harness-builder` or `visual-qa` skills; their public surface is unchanged.
 - The `--theme=floor` flag is additive; existing `/agent-init` invocations continue to work.
 
-## 9. Future work (out of scope)
+## 9. Examples
+
+### One-shot feature from free-form prompt
+
+```
+/agent-all "Add OAuth login with GitHub"
+```
+
+Runs:
+1. Phase 1 (brainstorming) — AI and user dialogue on requirements
+2. Phase 2 (plan) — superpowers:writing-plans generates task list
+3. Phase 3 (dispatch) — 2-3 waves of subagents implement + review
+4. Phase 4 (gate) — optional spec/quality review
+5. Phase 5 (PR) — creates PR from `feat/agent-all/oauth-login` branch
+
+Typical output: 4–6 commits in the PR, cost ~$12–15 for Sonnet.
+
+### Loop until tests pass
+
+```
+/agent-all "Fix the intermittent race condition in payment tests" --loop --max-iter=5
+```
+
+Iteration 1: brainstorm + plan + dispatch (failing test)
+Iteration 2: regenerate plan, dispatch with focus on race fix (still fails)
+Iteration 3: redesign, dispatch (green)
+Phase 6 detects `npm test` exit 0, breaks loop.
+
+Total cost: ~$30–40, wallclock: 15–20 min depending on test suite.
+
+### Reuse existing task, skip brainstorming
+
+```
+/agent-all docs/tasks/7-auth-improvements.md --loop --max-iter=10 --max-cost=50
+```
+
+Phase 1 loads the task file. No brainstorming.
+Phase 2 regenerates plan from the task.
+Phases 3–6 loop until breakCondition or cost limit.
+
+### Codex rescue pattern
+
+```
+/agent-all "Migrate ORM schema to Prisma" --wave-size=medium
+# Wave 1: frontend-dev + backend-dev implement
+# If wave blocks after 2 retries:
+/codex:rescue
+```
+
+When a subagent reports BLOCKED, Codex skill invokes OpenAI to get a second opinion on the stuck task.
+
+## 10. Future work (out of scope)
 
 - **Replan-mid-loop** (`--no-replan` or `--replan-every=N`): currently each loop iteration regenerates the plan. Configurable replan strategy.
 - **PR comment integration**: Phase 5 could optionally comment review summaries to the PR.

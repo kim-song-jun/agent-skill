@@ -304,7 +304,42 @@ The manual checklist runs before each release; it is not part of CI.
 - Mocking Claude Code's hook runtime to test hook behaviour end-to-end (covered by manual checklist).
 - Testing the `/plugin install` external flow (user-driven).
 
-## 8. Future Work (out of scope for this spec)
+## 8. Examples
+
+### Default bootstrap on a fresh Node project
+
+```
+mkdir hello && cd hello && git init && npm init -y
+/agent-init
+```
+
+Result:
+- `CLAUDE.md` (52 lines) with javascript stack inferred from package.json
+- `.claude/agents/{planner,dev,reviewer}.md` (small size auto-inferred)
+- `.claude/hooks/{context-mode-router,session-summary,cache-heal}.mjs`
+- `.claude/settings.local.json`
+- `.visual-qa.json` (Floor theme default)
+- `.agent-all.json` (Floor theme default)
+- 1 commit: `chore: bootstrap harness via /agent-init`
+
+### Re-running on an existing project
+
+```
+cd existing-project   # already has CLAUDE.md
+/agent-init --merge
+```
+
+Appends `## Harness` section to existing CLAUDE.md.
+
+### Sizing override
+
+```
+/agent-init --size=large --qa=auth,payment
+```
+
+Produces 9-role roster + 2 QA persona files.
+
+## 9. Future Work (out of scope for this spec)
 
 - **Theme B (Token cost optimization)**: a sibling plugin that adds aggressive context-mode patterns, prompt-cache-friendly templates, summarisation hooks.
 - **Theme C (Cost-unrestricted parallel mode)**: a sibling plugin that wraps `agent-all` + `ralph-loop` + `codex:rescue` for high-throughput iterations.

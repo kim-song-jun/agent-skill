@@ -451,7 +451,68 @@ Theme A's `skills/agent-init/...` moves to `plugins/harness-builder/skills/agent
 
 The migration is mechanical and lands in C-1 because waiting until C-2 would mean shipping `harness-floor` in a layout that doesn't match its sibling.
 
-## 9. Future work (out of scope for this spec)
+## 9. Examples
+
+### First run: baseline establishment
+
+```
+cd my-next-app
+npm run dev                  # localhost:3000
+/visual-qa
+```
+
+Creates `docs/visual-qa/2026-05-18-abc1234/`:
+- `report.md` showing all 247 captures across 3 pages
+- Per-image `.png`, `.analysis.json`, `.analysis.md` files
+- Diff section empty (no prior run to compare)
+- Exit code 0 (no critical issues on first baseline)
+
+### Re-run after introducing a visual bug
+
+```
+# Introduce bug: change hero button color
+git commit -am "style: change hero button to red"
+
+/visual-qa
+```
+
+Output `docs/visual-qa/2026-05-18-xyz9876/`:
+- Same 247 captures
+- Diff at top: `+3 new issues (2 critical color-contrast, 1 major alignment)`
+- Report marks the hero button component with new issues
+- Exit code 1 (critical issue detected)
+
+### Auth flow example
+
+```
+# .visual-qa.json configured with:
+"auth": {
+  "type": "form",
+  "loginFlow": [
+    { "goto": "/login" },
+    { "fill": "[name=email]", "value": "${env:VQA_EMAIL}" },
+    { "fill": "[name=password]", "value": "${env:VQA_PASSWORD}" },
+    { "click": "button[type=submit]" },
+    { "waitFor": "[data-testid=dashboard]" }
+  ]
+},
+"pages": [
+  { "name": "dashboard", "path": "/dashboard", "requiresAuth": true }
+]
+
+VQA_EMAIL=test@example.com VQA_PASSWORD=pass123 /visual-qa
+```
+
+Phase 3 logs:
+```
+  Dashboard page requires auth
+  Running login flow...
+  Captured dashboard at mobile (after login)
+  Captured dashboard at tablet (after login)
+  Captured dashboard at desktop (after login)
+```
+
+## 10. Future work (out of scope for this spec)
 
 - **C-2 (agent-all pipeline)**: a sibling skill in `harness-floor` that wraps the user's existing `agent-all` workflow with `superpowers:subagent-driven-development`.
 - **C-3 (ralph-loop pattern + harness-init integration)**: surface `/agent-init --theme=floor` to bundle agent-all + visual-qa + ralph-loop into a single setup.

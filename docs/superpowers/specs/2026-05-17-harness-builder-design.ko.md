@@ -304,7 +304,42 @@ agent-skill/
 - Claude Code의 훅 런타임을 모의하여 훅 동작을 종단간 테스트하기 (수동 체크리스트로 다룸).
 - `/plugin install` 외부 흐름 테스트하기 (사용자 주도).
 
-## 8. 향후 작업 (이 스펙의 범위 밖)
+## 8. 예제
+
+### 신규 Node 프로젝트에서 기본 부트스트랩
+
+```
+mkdir hello && cd hello && git init && npm init -y
+/agent-init
+```
+
+결과:
+- `CLAUDE.md` (52줄) - package.json에서 추론된 javascript 스택
+- `.claude/agents/{planner,dev,reviewer}.md` (작은 크기 자동 추론)
+- `.claude/hooks/{context-mode-router,session-summary,cache-heal}.mjs`
+- `.claude/settings.local.json`
+- `.visual-qa.json` (Floor 테마 기본값)
+- `.agent-all.json` (Floor 테마 기본값)
+- 1개 커밋: `chore: bootstrap harness via /agent-init`
+
+### 기존 프로젝트에서 재실행
+
+```
+cd existing-project   # 이미 CLAUDE.md 있음
+/agent-init --merge
+```
+
+기존 CLAUDE.md에 `## Harness` 섹션을 추가합니다.
+
+### 크기 재정의
+
+```
+/agent-init --size=large --qa=auth,payment
+```
+
+9개 역할 명단 + 2개 QA 페르소나 파일을 생성합니다.
+
+## 9. 향후 작업 (이 스펙의 범위 밖)
 
 - **테마 B (토큰 비용 최적화)**: 적극적인 context-mode 패턴, 프롬프트 캐시 친화적인 템플릿, 요약 훅을 추가하는 형제 플러그인.
 - **테마 C (비용 제한 없는 병렬 모드)**: 높은 처리량 반복을 위해 `agent-all` + `ralph-loop` + `codex:rescue`를 래핑하는 형제 플러그인.
