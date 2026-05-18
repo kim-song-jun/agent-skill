@@ -1,0 +1,28 @@
+{
+  "baseUrl": "{{baseUrl}}",
+  "breakpoints": [
+    { "name": "mobile",  "width": 375,  "height": 812 },
+    { "name": "tablet",  "width": 768,  "height": 1024 },
+    { "name": "desktop", "width": 1440, "height": 900 }
+  ],
+  "pages": [
+    {
+      "name": "home",
+      "path": "/",
+      "components": [
+        { "name": "header", "selector": "[data-testid=header]" },
+        { "name": "primary-cta", "selector": "[data-testid=primary-cta]", "states": ["hover", "focus"] }
+      ]
+    }
+  ],
+  "flows": [],
+  "analysis": {
+    "model": "{{model}}",
+    "categories": ["accessibility", "alignment", "color-contrast", "copy-quality", "responsive-fit"],
+    "severityThreshold": "minor"
+  },
+  "output": {
+    "dir": "docs/visual-qa",
+    "keepLastN": 10
+  }
+}
