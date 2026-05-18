@@ -13,6 +13,68 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Anthropic SDK / OpenAI SDK / Vertex SDK actual API hookups (currently
   mock toolCallers used in tests).
 
+## Cross-platform install — fill missing builder renderers + orchestrator — 2026-05-18
+
+### Added
+
+Closes the cross-platform install gap. Before today, `harness-builder-codex`,
+`harness-builder-copilot`, and `harness-builder-gemini` had templates +
+SKILL.md but no shell-callable installer — users on those CLIs couldn't
+bootstrap a project without Claude Code mediating. README had been
+documenting fake commands like `gh copilot plugins install ...` that
+don't exist.
+
+**New install renderers** (3 files):
+- `plugins/harness-builder-codex/bin/init.mjs` — writes `AGENTS.md` +
+  `.codex/skills/{planner,dev,reviewer}/SKILL.md`; emits `config.toml`
+  snippet to stdout for `~/.codex/config.toml` merge.
+- `plugins/harness-builder-copilot/bin/init.mjs` — writes `AGENTS.md` +
+  `.github/copilot-instructions.md` + `.github/instructions/<role>.instructions.md`
+  + `.github/hooks/*.json` (3 files); emits `mcp-config.json` to stdout.
+- `plugins/harness-builder-gemini/bin/init.mjs` — writes `GEMINI.md` +
+  `.gemini/skills/{planner,dev,reviewer}/SKILL.md`; emits `settings.json`
+  snippet to stdout.
+
+All three follow the `harness-builder-cursor/bin/init.mjs` pattern:
+`--ctx <path>`, `--force`, env-var fallbacks (`PURPOSE`/`SIZE`/etc),
+`detectProject()` for stack auto-detection, refuse-without-force
+protection.
+
+**New orchestrator script** (`scripts/install-platform.sh`):
+
+```bash
+./scripts/install-platform.sh --platform=cursor --target=...        # all 3 themes
+./scripts/install-platform.sh --platform=codex --target=. --theme=floor
+./scripts/install-platform.sh --platform=vscode-copilot --target=.  # aliases to copilot
+```
+
+Supported platforms: `cursor`, `copilot`, `vscode-copilot`, `codex`,
+`gemini`. Supported themes: `all` (default), `builder`, `floor`, `thrift`.
+Iterates the right `bin/init.mjs` + `bin/install.mjs` renderers and
+prints platform-specific "what was written" summary at the end.
+
+### Tests
+
+- `tests/lib/harness-builder-cli-init.test.mjs` — 18 tests (6 per
+  plugin × 3 plugins): usage error, non-existent target, full install +
+  config snippet stdout, `--ctx` override, `--force` overwrite, env-var
+  flow.
+- Full suite: **999/999 tests pass** (was 981, +18).
+
+### README updates
+
+- "Use it on other AI tools" section rewritten with accurate one-line
+  install per platform (`./scripts/install-platform.sh --platform=...`).
+- Removed the fake commands (`gh copilot plugins install`,
+  `codex plugins install`, `gemini extensions install`) and explicitly
+  flagged them as "don't run these — they don't exist".
+- New "Once installed, how do you actually use it?" table covering the
+  entry point per platform (Claude Code slash command, Cursor chat
+  invocation, Copilot CLI `gh copilot suggest`, VS Code Copilot Chat,
+  Codex CLI, Gemini CLI).
+- "What each platform receives" table showing the exact files written
+  per platform — no more guessing.
+
 ## README — main-thread isolation as the real value prop — 2026-05-18
 
 ### Changed

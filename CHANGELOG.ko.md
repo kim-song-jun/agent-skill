@@ -13,6 +13,66 @@
 - Anthropic SDK / OpenAI SDK / Vertex SDK 실제 API 연결 (현재 mock
   toolCaller 사용).
 
+## 크로스 플랫폼 설치 — 누락 builder 렌더러 + orchestrator — 2026-05-18
+
+### 추가
+
+크로스 플랫폼 설치 갭 해결. 오늘 이전엔 `harness-builder-codex`,
+`harness-builder-copilot`, `harness-builder-gemini`가 템플릿 + SKILL.md
+가 있었지만 shell-callable 설치 도구가 없었음 — 해당 CLI 사용자는
+Claude Code 중재 없이 프로젝트 부트스트랩 불가. README가 존재하지 않는
+`gh copilot plugins install ...` 같은 가짜 명령을 문서화하고 있었음.
+
+**새 설치 렌더러** (3개 파일):
+- `plugins/harness-builder-codex/bin/init.mjs` — `AGENTS.md` +
+  `.codex/skills/{planner,dev,reviewer}/SKILL.md` 작성; `config.toml`
+  스니펫 stdout으로 출력 (`~/.codex/config.toml`에 merge).
+- `plugins/harness-builder-copilot/bin/init.mjs` — `AGENTS.md` +
+  `.github/copilot-instructions.md` +
+  `.github/instructions/<role>.instructions.md` + `.github/hooks/*.json`
+  (3개 파일) 작성; `mcp-config.json` 스니펫 stdout 출력.
+- `plugins/harness-builder-gemini/bin/init.mjs` — `GEMINI.md` +
+  `.gemini/skills/{planner,dev,reviewer}/SKILL.md` 작성; `settings.json`
+  스니펫 stdout 출력.
+
+모두 `harness-builder-cursor/bin/init.mjs` 패턴 따름: `--ctx <path>`,
+`--force`, env-var fallback (`PURPOSE`/`SIZE`/등), `detectProject()`로
+스택 자동 감지, `--force` 없이 덮어쓰기 거부.
+
+**새 orchestrator 스크립트** (`scripts/install-platform.sh`):
+
+```bash
+./scripts/install-platform.sh --platform=cursor --target=...        # 모든 3 테마
+./scripts/install-platform.sh --platform=codex --target=. --theme=floor
+./scripts/install-platform.sh --platform=vscode-copilot --target=.  # copilot에 별칭
+```
+
+지원 플랫폼: `cursor`, `copilot`, `vscode-copilot`, `codex`, `gemini`.
+지원 테마: `all` (기본), `builder`, `floor`, `thrift`. 올바른
+`bin/init.mjs` + `bin/install.mjs` 렌더러를 iterate하고 끝에 플랫폼별
+"작성된 것" 요약 출력.
+
+### 테스트
+
+- `tests/lib/harness-builder-cli-init.test.mjs` — 18개 테스트 (플러그인
+  당 6개 × 3 플러그인): 사용법 에러, 존재 안 하는 target, 전체 설치 +
+  config 스니펫 stdout, `--ctx` override, `--force` overwrite, env-var
+  flow.
+- 전체 suite: **999/999 tests pass** (이전 981, +18).
+
+### README 갱신
+
+- "다른 AI 도구에서 사용" 섹션이 플랫폼별 정확한 원-라이너 설치로
+  재작성 (`./scripts/install-platform.sh --platform=...`).
+- 가짜 명령 (`gh copilot plugins install`, `codex plugins install`,
+  `gemini extensions install`) 제거 + "실행하지 마세요 — 존재 안 함"
+  으로 명시.
+- 신규 "설치 후 실제로 어떻게 사용하나" 테이블이 플랫폼별 진입점
+  커버 (Claude Code 슬래시 명령, Cursor 채팅 호출, Copilot CLI
+  `gh copilot suggest`, VS Code Copilot Chat, Codex CLI, Gemini CLI).
+- "각 플랫폼이 받는 파일" 테이블이 플랫폼별 정확한 작성 파일 표시 —
+  더 이상 추측 없음.
+
 ## README — 진짜 가치 제안으로서 메인 스레드 격리 — 2026-05-18
 
 ### 변경
