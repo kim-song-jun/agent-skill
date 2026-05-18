@@ -1,6 +1,8 @@
 # CLI runtime verification — handoff checklist
 
-**Date:** 2026-05-18
+**Date:** 2026-05-18 (last refreshed: 2026-05-18 after `bin/init.mjs`
+renderers + `bin/spawn-*.mjs` dispatch libs + `ask-user-adapter` per
+platform + `harness-thrift` design landed)
 **Status:** Handoff doc — runtime checks deferred to next session
 **Purpose:** Document the verification steps that require live CLI access
 (Codex, Copilot CLI, Gemini CLI, Cursor) that the current sandbox cannot
@@ -160,6 +162,48 @@ For each platform, in a test project with `.agent-all.json` and `.claude/agents/
 - **Gemini**: Subprocess pool spawns up to `dispatch.maxSubprocesses`.
   Per-task tmp file populated. Cost accumulator reads `--output-json`.
 
+### bin/init.mjs install renderers (all 4 platforms)
+
+For each platform, in a clean target project directory:
+
+| Step | Command | Expected outcome |
+|---|---|---|
+| 1 | `node plugins/harness-floor-<p>/bin/init.mjs /tmp/test-target` | Exit 0; `.visual-qa.json` + `.agent-all.json` created |
+| 2 | Cursor only — Verify `.cursor/agents/agent-all-coordinator.md` (is_background: false) + implementer/reviewer (is_background: true) | All 4 cursor agent files present |
+| 3 | Re-run without `--force` | Exit 2; "Refusing to overwrite" |
+| 4 | Re-run with `--force` | Exit 0; files overwritten |
+| 5 | `--only=agent-all` | Only `.agent-all.json` written; visual-qa skipped |
+| 6 | `--ctx custom.json` | Template variables substituted from ctx |
+| 7 | Codex only — stdout contains `[[hooks.agent]]` matchers for both visual-qa/page/* and agent-all/wave/* | Snippets ready for ~/.codex/config.toml merge |
+
+### Phase 3 subprocess dispatcher (Gemini)
+
+In a project with `.visual-qa.json` and a running dev server:
+
+| Step | Command | Expected outcome |
+|---|---|---|
+| 1 | Build a wave.json with 3 tasks; run `node plugins/harness-floor-gemini/bin/spawn-wave.mjs --wave wave.json --tmp /tmp/aw --dry-run` | Exit 0; result JSON has `status: "completed"`, 3 entries; tmp stubs written |
+| 2 | Same without `--dry-run`, with real `gemini` in PATH | Subprocesses actually spawn; per-task tmp files populated by `gemini chat --output-file` |
+| 3 | Run with `--gemini-bin /nonexistent`, `--timeout 1` | Exit 0; all tasks marked `failed` with `subprocess output missing` |
+| 4 | spawn-page-subagent.mjs with `--max-parallel 2` and 5 pages | `maxParallelUsed: 2`; tasks chunked into 3 waves |
+
+### ask-user-adapter per platform
+
+These are testable without the host CLI by injecting a mock invoker
+(already covered by `tests/lib/ask-user-adapter.test.mjs`). Runtime
+validation steps:
+
+| Platform | Step | Expected outcome |
+|---|---|---|
+| Cursor | Wire invoker that emits markdown to chat + reads next user message | Numbered prompts render; user can reply with `1,3` or free-form |
+| Copilot | Wire invoker that calls `ask_user({prompt, choices, multi})` tool | Returns `{selected}` for choice, `{freeForm}` for fallback |
+| Codex | Same as Copilot, plus optional `exec_command` TUI variant (deferred) | Same shape |
+| Gemini | Wire invoker that calls `ask_user({prompt})` with encoded choices | Free-text reply parsed for numeric or label match |
+
+Open: confirm each platform's `ask_user` response shape matches the
+adapter's assumed `{selected, freeForm}` JSON. If mismatched, adapt
+the shim layer in each adapter's invoker wrapper.
+
 ## Tests that CANNOT be sandbox-verified
 
 | Test category | Why deferred |
@@ -215,6 +259,29 @@ the current MVP listing):
 - [ ] agent-all scaffold: runs Phase 0–2 without errors (Phase 3+ may
       defer to per-platform research-spike outcomes).
 - [ ] At least one full agent-all pipeline run produces a PR.
+- [ ] bin/init.mjs renderer installs kit into a fresh project without
+      errors; --force and --only flags behave as documented.
+- [ ] (Gemini only) bin/spawn-wave.mjs + bin/spawn-page-subagent.mjs
+      complete a 3-task / 3-page synthetic run with `--dry-run` AND with
+      a real `gemini` binary.
+- [ ] ask-user-adapter invoker wires to host primitive without error;
+      single-select / multi-select / free-form fallback all round-trip.
+
+## Coverage of follow-up implementation since the original checklist
+
+Items checked off in commits between `e8d9494` and HEAD that previously
+appeared in the "deferred" list:
+
+- ✅ `bin/init.mjs` install renderers per platform (commit `97cf8ac`).
+- ✅ Gemini subprocess dispatch libs (commit `b0e5d6b`).
+- ✅ `ask-user-adapter` per-platform implementations (commit `d63808a`).
+- ✅ `harness-thrift` design spec (commit follows this refresh).
+
+Still deferred (require live CLI access OR are future scope):
+- Live verification of all `bin/init.mjs` outputs (above checklist).
+- Subprocess dispatcher run with real `gemini` binary.
+- `ask_user` response-shape confirmation per platform.
+- `harness-thrift` implementation (~3 weeks per its design spec).
 
 ## Tracking
 
