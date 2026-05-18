@@ -13,6 +13,89 @@
 - Anthropic SDK / OpenAI SDK / Vertex SDK 실제 API 연결 (현재 mock
   toolCaller 사용).
 
+## `/agent-all --loop` 대화형 break-condition 해석 — 2026-05-19
+
+### 추가 — Phase 0 대화형 프롬프트 + 4가지 break-condition 프리셋
+
+기존엔 `breakCondition`이 `.agent-all.json`의 정적 shell 문자열이었음.
+"무엇이 완료인가"라는 가장 유용한 결정이 config 파일 잡일로 전락 —
+test 명령, visual QA, composite 게이트 중 in-the-flow로 고를 방법
+없었음.
+
+새 동작 (5 플랫폼 — Claude Code native + cursor / copilot / codex /
+gemini):
+
+- **Phase 0 break-condition 해석.** `--loop` 설정 시 coordinator가 4
+  프리셋 중 선택을 요청:
+  - `test-auto` — 스택(npm / pytest / cargo / go / …) 자동 감지 후
+    표준 테스트 명령 사용.
+  - `visual-qa` — 매 iter `visual-qa` 스킬을 subagent로 디스패치.
+    선택적 `spec` 경로 지원.
+  - `custom shell` — 자유 형식 한 줄 (기존 동작).
+  - `composite` — 위의 sequential AND. 첫 실패 시 short-circuit —
+    빠른 lint/type 체크로 느린 visual-qa를 게이팅 가능.
+  선택 후 `.agent-all.json`에 저장 여부를 묻습니다.
+- **`--break-condition=<spec>` CLI 플래그.** 비대화형 override. JSON
+  객체 (예: `'{"type":"visual-qa"}'`) 또는 plain shell 문자열
+  (`{"type":"shell","cmd":<문자열>}`로 처리).
+- **`--reconfigure` CLI 플래그.** `.agent-all.json`에 이미 non-default
+  값이 있어도 대화형 프롬프트 강제.
+- **비대화형 fallback.** `--yes`, non-TTY 실행, 또는 이미 커스터마이즈된
+  `.agent-all.json`은 기존 config를 조용히 재사용 — CI에서 깜짝
+  프롬프트 없음.
+
+### 추가 — `lib/break-resolver.mjs` (source-of-truth)
+
+`plugins/harness-floor/skills/agent-all/lib/`에 새 공유 lib. 4 플랫폼
+sibling에 byte-identical로 vendor됨:
+
+- `normalizeBreakCondition(input)` — 문자열 또는 `{type, ...}` 객체
+  수용; canonical 정규화 spec 또는 잘못된 경우 `null` 리턴.
+- `detectStackTestCommand(cwd)` — 파일 기반 스택 감지 (package.json →
+  npm test, pyproject.toml → pytest, Cargo.toml → cargo test, go.mod →
+  go test, plus Gemfile / composer.json / pom.xml / build.gradle).
+- `buildShellCommand(spec, {cwd})` — shell / test-auto / pure composite
+  spec을 단일 실행 가능 shell 한 줄로 해석; visual-qa 스텝이 포함된
+  경우 `null` 리턴 (non-shell runner 필요).
+- `needsVisualQARunner(spec)` — spec 또는 중첩 스텝이 `visual-qa`이면
+  true.
+- `isDefaultOrMissing(spec)` — Phase 0이 프롬프트 여부 결정에 사용.
+- `PRESET_CATALOGUE` — 4 엔트리 (`test-auto`, `visual-qa`, `custom`,
+  `composite`) — 각각 `key`, `label`, `description`, 프롬프트 UI용
+  `build(opts)`.
+
+### 추가 — Phase 6 spec routing
+
+`phases/6-loop.md`가 더 이상 `breakCondition`을 shell 문자열로 가정하지
+않습니다. iteration 시작 시 spec을 정규화하고 `spec.type`에 따라
+라우팅:
+
+- `shell` / `test-auto` / pure `composite` → 단일 shell 한 줄로
+  빌드, 플랫폼의 shell 프리미티브(`spawnSync sh -c` / `read_bash` /
+  `shell_command` / `run_shell_command`)로 실행.
+- `visual-qa` → `visual-qa-<플랫폼>` 스킬을 subagent로 디스패치;
+  shell로 실행 안 함. throw된 에러는 exit 1로 처리 — visual-qa는
+  명시적으로 success를 리포트해야 함.
+- visual-qa 포함 `composite` → 각 스텝 순차 실행, 첫 non-zero exit에
+  short-circuit.
+
+`config-loader.mjs` 검증을 양쪽 형태 수용하도록 확장; cursor + copilot
+vendored 사본 동기화.
+
+### 추가 — 27 + 45 신규 테스트
+
+- `tests/lib/break-resolver.test.mjs` (27 테스트) — 정규화, 스택 감지,
+  shell-command 빌드, composite short-circuit 추론, 프리셋 catalogue
+  계약.
+- `tests/lib/agent-all-loop-interactive.test.mjs` (45 테스트) — 5
+  플랫폼 doc-level 계약: Phase 0이 4 프리셋 + 비대화형 fallback +
+  save-confirmation + break-resolver lib 참조 문서화; Phase 6가
+  `spec.type`에 라우팅, visual-qa에 subagent 디스패치(`sh -c` 안 함),
+  composite short-circuit; SKILL.md가 `--break-condition` +
+  `--reconfigure` 문서화.
+
+총 스위트: **1019 → 1091 통과**.
+
 ## 검증 안전망 + 배포-등급 README polish — 2026-05-19
 
 ### 추가 — `/agent-all --loop` 2-레이어 검증 안전망

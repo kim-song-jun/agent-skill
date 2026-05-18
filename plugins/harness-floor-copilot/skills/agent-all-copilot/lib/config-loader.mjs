@@ -23,6 +23,19 @@ function validate(cfg) {
   if (cfg.defaults?.waveSize !== undefined && !["small", "medium", "large"].includes(cfg.defaults.waveSize)) {
     errors.push({ path: "defaults.waveSize", message: "must be small|medium|large" });
   }
+  if (cfg.loop?.breakCondition !== undefined) {
+    const bc = cfg.loop.breakCondition;
+    if (typeof bc === "string") {
+      if (!bc.trim()) errors.push({ path: "loop.breakCondition", message: "string must be non-empty" });
+    } else if (bc && typeof bc === "object") {
+      const allowed = ["shell", "test-auto", "visual-qa", "composite"];
+      if (!allowed.includes(bc.type)) {
+        errors.push({ path: "loop.breakCondition.type", message: `must be one of ${allowed.join("|")}` });
+      }
+    } else {
+      errors.push({ path: "loop.breakCondition", message: "must be string or {type,...}" });
+    }
+  }
   return errors;
 }
 

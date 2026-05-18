@@ -18,15 +18,23 @@ Runs a complete multi-agent pipeline from a free-form prompt or an existing task
 
 ## Flags
 
-- `--loop` — enable Phase 6 looping.
+- `--loop` — enable Phase 6 looping. Interactively prompts for the break-condition
+  preset (Test auto-detect / visual-qa skill / Custom shell / Composite) on first
+  use, then offers to save the choice to `.agent-all.json`.
 - `--max-iter=<N>` — cap loop iterations (default from config, hard cap 50).
 - `--max-cost=<USD>` — cap accumulated cost.
+- `--break-condition=<spec>` — non-interactive override for the loop break
+  spec. Accepts either a JSON object (e.g. `'{"type":"visual-qa"}'`) or a
+  plain shell string (treated as `{type:"shell", cmd:<string>}`).
+- `--reconfigure` — force the interactive break-condition prompt even when
+  `.agent-all.json` already has a non-default value.
 - `--wave-size=small|medium|large` — override config default.
 - `--no-pr` — skip Phase 5 (PR creation).
 - `--no-brainstorm` — skip Phase 1's brainstorming for free-form prompts.
 - `--resume` — skip phases already complete per `.agent-all-state.json`.
 - `--force` — wipe state and restart.
-- `--yes` — skip interactive confirms.
+- `--yes` — skip all interactive confirms (including the break-condition prompt;
+  falls back to the config or built-in default).
 
 ## Pipeline
 

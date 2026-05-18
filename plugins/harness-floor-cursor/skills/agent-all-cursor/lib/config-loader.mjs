@@ -1,11 +1,3 @@
-// Vendored from plugins/harness-floor/skills/agent-all/lib/config-loader.mjs
-// Keep BYTE-FOR-BYTE identical to the source-of-truth — the vendor-sync test
-// checks this, and the cursor kit must be self-contained so users installing
-// only `harness-floor-cursor` don't need to add `harness-floor` to their
-// plugin marketplace.
-//
-// Why vendored: Cursor's coordinator invokes this from `read_bash`, and the
-// skill is shipped on its own plugin path.
 import { readFileSync, existsSync } from "node:fs";
 
 export const DEFAULTS = {
@@ -30,6 +22,19 @@ function validate(cfg) {
   }
   if (cfg.defaults?.waveSize !== undefined && !["small", "medium", "large"].includes(cfg.defaults.waveSize)) {
     errors.push({ path: "defaults.waveSize", message: "must be small|medium|large" });
+  }
+  if (cfg.loop?.breakCondition !== undefined) {
+    const bc = cfg.loop.breakCondition;
+    if (typeof bc === "string") {
+      if (!bc.trim()) errors.push({ path: "loop.breakCondition", message: "string must be non-empty" });
+    } else if (bc && typeof bc === "object") {
+      const allowed = ["shell", "test-auto", "visual-qa", "composite"];
+      if (!allowed.includes(bc.type)) {
+        errors.push({ path: "loop.breakCondition.type", message: `must be one of ${allowed.join("|")}` });
+      }
+    } else {
+      errors.push({ path: "loop.breakCondition", message: "must be string or {type,...}" });
+    }
   }
   return errors;
 }

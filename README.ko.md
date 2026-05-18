@@ -289,11 +289,24 @@ git clone <repo> && cd <repo>
 
 | Knob | 소유 | 기본값 | 효과 |
 |---|---|---|---|
-| `--loop` | flag | off | Phase 5 후 breakCondition 재진입 활성화 |
+| `--loop` | flag | off | Phase 5 후 breakCondition 재진입 활성화. 첫 실행 시 Phase 0이 대화형으로 break-condition 프리셋을 물어봄. |
 | `--max-iter=N` | flag | 1 | iteration 하드캡 (서버 50으로 클램프) |
 | `--max-cost=USD` | flag | 500 | 누적 API 비용 하드캡; 매 wave 후 체크 |
-| `breakCondition` | `.agent-all.json` | `npm test` (또는 자동 감지) | Shell 명령; exit 0 = "완료" |
+| `--break-condition=<spec>` | flag | — | 비대화형 override. JSON 객체 (예: `'{"type":"visual-qa"}'`) 또는 plain shell 문자열 (`{"type":"shell","cmd":<문자열>}`로 처리). |
+| `--reconfigure` | flag | — | `.agent-all.json`에 이미 non-default 값이 있어도 대화형 프롬프트 강제. |
+| `breakCondition` | `.agent-all.json` | `npm test` (또는 자동 감지) | 저장된 spec. 문자열 = shell 명령; 객체 형태는 4 프리셋 지원 (`shell`, `test-auto`, `visual-qa`, `composite`). |
 | `stableIters` | `.agent-all.json` | 1 | loop이 깔끔히 종료되기 전 필요한 연속 통과 breakCondition 수 |
+
+#### Break-condition 프리셋
+
+`--loop` 사용 시, Phase 0이 다음 중 하나를 선택하게 합니다:
+
+- **Test command (자동 감지)** — `package.json` / `pyproject.toml` / `Cargo.toml` / `go.mod` 등을 보고 해당 스택의 표준 테스트 명령 실행.
+- **visual-qa skill** — 매 iter `visual-qa` orchestrator를 subagent로 디스패치. UI 회귀가 없을 때 통과. 선택적 `spec` 경로 지원.
+- **Custom shell command** — 자유 형식 한 줄. 기존 `breakCondition` 동작과 동일.
+- **Composite (sequential AND)** — 위 옵션 여러 개를 순차 실행; 모두 exit 0이어야 "완료". 첫 실패 시 short-circuit — 빠른 lint/type 체크로 느린 visual-qa를 게이팅 가능.
+
+선택 후 Phase 0은 `.agent-all.json`에 저장할지도 물어봐서 다음번엔 다시 묻지 않습니다. `--yes`나 비대화형(non-TTY) 실행은 프롬프트를 건너뛰고 `.agent-all.json`의 값(또는 빌트인 기본값)을 사용합니다.
 
 ### 레시피 — 무인 야간 기능 출시
 

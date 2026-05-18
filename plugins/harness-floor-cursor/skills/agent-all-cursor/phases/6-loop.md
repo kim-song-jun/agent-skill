@@ -7,20 +7,42 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
 
 ## Steps
 
-1. Run the breakCondition shell command:
+1. **Resolve the break-condition spec** via the vendored
+   `lib/break-resolver.mjs`:
    ```bash
-   sh -c "$config.loop.breakCondition"
+   node -e 'import("./.cursor/agent-all/lib/break-resolver.mjs").then(m => { const spec = m.normalizeBreakCondition(JSON.parse(process.argv[1])); console.log(spec ? JSON.stringify(spec) : ""); })' "$(jq .loop.breakCondition .agent-all.json)"
    ```
-   Capture exit code.
+   If the result is empty: abort with exit 2 + a clear message.
 
-2. Compute action:
+2. **Route on `spec.type`:**
+
+   - **`shell` / `test-auto` / pure `composite`** (no visual-qa anywhere):
+     resolve to a single shell line via `buildShellCommand(spec)` then
+     run via `read_bash`:
+     ```bash
+     CMD="$(node -e 'import("./.cursor/agent-all/lib/break-resolver.mjs").then(m => process.stdout.write(m.buildShellCommand(JSON.parse(process.argv[1])) ?? ""))' "$SPEC")"
+     sh -c "$CMD"; echo "exit=$?"
+     ```
+
+   - **`visual-qa`**: dispatch a background agent
+     `@visual-qa-coordinator` (or `@visual-qa-cursor`) via the same
+     mechanism Phase 3 uses for implementers, then await its `STATUS:`
+     line. Treat `STATUS: passed` (or exit code 0) as runner exit 0,
+     anything else as 1. Never run via `sh -c`.
+
+   - **composite containing visual-qa**: run each step in declared order
+     and **short-circuit on the first non-zero exit**. Use the shell
+     branch for shell/test-auto/inner-composite steps; use the visual-qa
+     subagent dispatcher for visual-qa steps.
+
+3. Compute action:
    - Exit 0: `state.consecutivePass++`. If `consecutivePass >= stableIters`:
      action = `break`. Else action = `continue`.
    - Exit ≠ 0: `state.consecutivePass = 0`. action = `continue`.
    - If `state.iter >= maxIter`: action = `exhausted`.
    - If `state.costUSD >= maxCostUSD`: action = `exhausted`.
 
-3. Branch on action:
+4. Branch on action:
    - `break`: push `{phase: 6, completedAt, status: "broken"}`, exit 0.
    - `continue`: increment `state.iter`. Drop `state.phases` entries with
      `phase >= 1`. Re-invoke `@agent-all-coordinator` from Phase 1 — in
@@ -41,16 +63,24 @@ script the re-invocation via `cursor-cli` (when GA).
 
 ## Output
 
-Per iter: `Iter <N>/<max>: break check exit=<code>, consecutive=<N>/<stableIters>`.
+Per iter: `Iter <N>/<max>: break check (<type>) exit=<code>, consecutive=<N>/<stableIters>`.
 On final exit: `Loop <broken|exhausted> after <N> iter(s). Cost ~$<costUSD>.`
+
+## Notes
+
+- For `visual-qa` steps, treat **any** thrown error from the subagent as
+  exit 1, never as exit 0 — visual-qa must explicitly report success.
+- Composite short-circuits as soon as a step fails, saving subprocess
+  cost when an early cheap check (lint/type) gates a slower one
+  (visual-qa).
 
 ## Shell helpers
 
 ```bash
-# Step 1 — execute the break-condition; capture exit code in the coordinator.
-sh -c "$BREAK_CONDITION"; echo "exit=$?"
+# Step 1 — normalise the spec.
+node -e 'import("./.cursor/agent-all/lib/break-resolver.mjs").then(m => process.stdout.write(JSON.stringify(m.normalizeBreakCondition(JSON.parse(process.argv[1])) ?? null)))' "$RAW_SPEC"
 
-# Steps 2-3 — update iter counters + consecutivePass atomically.
+# Steps 3-4 — update iter counters + consecutivePass atomically.
 node .cursor/agent-all/lib/state-rw.mjs read  .agent-all-state.json
 # ... mutate state.iter / state.consecutivePass / state.phases ...
 node .cursor/agent-all/lib/state-rw.mjs write .agent-all-state.json '<mutated-json>'

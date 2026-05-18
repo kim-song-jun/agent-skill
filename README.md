@@ -289,11 +289,24 @@ You can run `/agent-all --loop` alone for short loops (1–3 iterations). For ov
 
 | Knob | Owned by | Default | Effect |
 |---|---|---|---|
-| `--loop` | flag | off | Enable post-phase-5 breakCondition re-entry |
+| `--loop` | flag | off | Enable post-phase-5 breakCondition re-entry. On first use, Phase 0 prompts you to pick the break-condition preset interactively. |
 | `--max-iter=N` | flag | 1 | Hard cap on iterations (server-clamped to 50) |
 | `--max-cost=USD` | flag | 500 | Hard cap on accumulated API cost; checked after each wave |
-| `breakCondition` | `.agent-all.json` | `npm test` (or auto-detected) | Shell command; exit 0 = "done" |
+| `--break-condition=<spec>` | flag | — | Non-interactive override. Accepts a JSON object (e.g. `'{"type":"visual-qa"}'`) or a plain shell string (treated as `{"type":"shell","cmd":<string>}`). |
+| `--reconfigure` | flag | — | Force the interactive break-condition prompt even when `.agent-all.json` already has a non-default value. |
+| `breakCondition` | `.agent-all.json` | `npm test` (or auto-detected) | The persisted spec. String form = shell command; object form supports four preset types: `shell`, `test-auto`, `visual-qa`, `composite`. |
 | `stableIters` | `.agent-all.json` | 1 | Consecutive passing breakConditions required before loop exits clean |
+
+#### Break-condition presets
+
+When `--loop` is set, Phase 0 asks you to pick one:
+
+- **Test command (auto-detected)** — looks at `package.json` / `pyproject.toml` / `Cargo.toml` / `go.mod` / etc. and runs the standard test invocation for that stack.
+- **visual-qa skill** — dispatches the `visual-qa` orchestrator as a subagent each iter. Passes when no UI regressions are detected. Optional `spec` path supported.
+- **Custom shell command** — free-form one-liner. Same as the original `breakCondition` behavior.
+- **Composite (sequential AND)** — run multiple of the above in order; all must exit 0 to count as "done". Short-circuits on first failure so a cheap lint/type check can gate a slow visual-qa.
+
+After you pick, Phase 0 also asks if it should save the choice to `.agent-all.json` so it's not prompted again. `--yes` and non-TTY invocations skip the prompt and fall back to whatever's already in `.agent-all.json` (or the built-in default).
 
 ### Recipe — unattended overnight feature ship
 

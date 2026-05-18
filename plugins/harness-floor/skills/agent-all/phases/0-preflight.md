@@ -22,8 +22,72 @@
    - If ends with `.md`: must exist as a file. If not: abort `task file not found: <path>`. Stash as `taskPath`.
    - Otherwise: must be non-empty string. Stash as `prompt`. If empty: abort `provide a prompt or task path`.
 
-7. Push `{phase: 0, completedAt: "<iso>"}` to state. Use atomic write (temp + rename). Create `.agent-all-state.json` with `{"phases": []}` if missing.
+7. **Resolve loop break-condition (if `--loop` is set).** See `### Break-condition resolution` below. Mutates `config.loop.breakCondition` in memory; may rewrite `.agent-all.json` if user opts in.
+
+8. Push `{phase: 0, completedAt: "<iso>"}` to state. Use atomic write (temp + rename). Create `.agent-all-state.json` with `{"phases": []}` if missing.
+
+## Break-condition resolution
+
+Triggered only when `--loop` is set. Skipped entirely otherwise.
+
+```javascript
+import {
+  normalizeBreakCondition,
+  isDefaultOrMissing,
+  serializeBreakCondition,
+  PRESET_CATALOGUE,
+} from "./lib/break-resolver.mjs";
+```
+
+Decision tree:
+
+1. **CLI override:** if user passed `--break-condition=<json-or-string>`,
+   parse it (try JSON first, fall back to plain shell string), normalise,
+   and use that. Skip the prompt. Do not persist (per-invocation only).
+
+2. **Non-interactive paths** — skip the prompt and use `config.loop.breakCondition` as-is:
+   - `--yes` passed
+   - stdin is not a TTY (CI environments)
+   - `--reconfigure` is NOT set AND `!isDefaultOrMissing(config.loop.breakCondition)`
+     (already customised, no need to ask)
+
+3. **Interactive prompt** — when none of the above apply:
+
+   a. Ask: "Loop break-condition?" with the four presets from
+      `PRESET_CATALOGUE` (Test command auto-detected / visual-qa skill /
+      Custom shell command / Composite).
+
+   b. **Custom**: follow-up prompt for the shell one-liner. Validate
+      non-empty.
+
+   c. **visual-qa**: follow-up prompt for optional `spec` path (file
+      under `docs/`); leave empty to use the visual-qa skill's own
+      defaults.
+
+   d. **Composite**: repeatedly prompt for each step (1-based index) by
+      offering the first three preset types only. Stop when the user
+      selects "Done" or after a hard cap of 5 steps.
+
+   e. Echo the resolved spec via `serializeBreakCondition(resolved)`.
+
+   f. Save-confirmation prompt: "Save this as the default in
+      `.agent-all.json`?" yes/no. On yes: deep-merge into the config
+      object and atomically write `.agent-all.json` (temp + rename).
+      On no: keep only in memory for this invocation.
+
+4. **Assignment:** set `config.loop.breakCondition = resolved` for the
+   rest of the run. State file is not used for the spec itself — Phase 6
+   re-reads from `config` each iteration.
+
+### Fallback when stack detection finds no test command
+
+If the user selects "Test command (auto-detected)" but
+`detectStackTestCommand()` returns null, downgrade the choice: show the
+"Custom shell command" prompt with `true` pre-filled (a no-op that always
+exits 0) and a warning explaining what happened. Better to make the user
+think than silently ship a no-op.
 
 ## Output to user
 
-Print: `Preflight OK. <input mode: prompt|task>.`
+Print: `Preflight OK. <input mode: prompt|task>.` plus, when `--loop` set,
+`Break-condition: <serialized>.`

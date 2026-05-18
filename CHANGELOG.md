@@ -13,6 +13,92 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Anthropic SDK / OpenAI SDK / Vertex SDK actual API hookups (currently
   mock toolCallers used in tests).
 
+## Interactive break-condition resolution for `/agent-all --loop` — 2026-05-19
+
+### Added — Phase 0 interactive prompt + four break-condition preset types
+
+Previously `breakCondition` was a static shell string in `.agent-all.json`,
+forcing users to hand-craft it before running `/agent-all --loop`. That
+made the most useful "what does done look like" decision a config-file
+chore, with no in-the-flow choice between test commands, visual QA, or a
+composite gate.
+
+New behavior, all five platforms (Claude Code native + cursor / copilot /
+codex / gemini):
+
+- **Phase 0 break-condition resolution.** When `--loop` is set, the
+  coordinator prompts the user to pick one of four presets:
+  - `test-auto` — auto-detect the stack (npm / pytest / cargo / go / …)
+    and use its standard test command.
+  - `visual-qa` — dispatch the `visual-qa` skill as a subagent each
+    iteration. Optional `spec` path supported.
+  - `custom shell` — free-form one-liner (the original behavior).
+  - `composite` — sequential AND of the above. Short-circuits on first
+    failure so a cheap lint/type check can gate a slow visual-qa.
+  After picking, the user is asked whether to save the choice to
+  `.agent-all.json`.
+- **`--break-condition=<spec>` CLI flag.** Non-interactive override.
+  Accepts a JSON object (e.g. `'{"type":"visual-qa"}'`) or a plain shell
+  string (treated as `{"type":"shell","cmd":<string>}`).
+- **`--reconfigure` CLI flag.** Force the interactive prompt even when
+  `.agent-all.json` already has a non-default value.
+- **Non-interactive fallback.** `--yes`, non-TTY invocations, or an
+  already-customised `.agent-all.json` silently reuse the existing
+  config — no surprise prompt in CI.
+
+### Added — `lib/break-resolver.mjs` (source-of-truth)
+
+New shared lib in `plugins/harness-floor/skills/agent-all/lib/`, vendored
+byte-identical to each of the four platform siblings:
+
+- `normalizeBreakCondition(input)` — accepts a string or `{type, ...}`
+  object; returns a canonical normalised spec or `null` for invalid.
+- `detectStackTestCommand(cwd)` — file-based stack sniffing
+  (package.json → npm test, pyproject.toml → pytest, Cargo.toml → cargo
+  test, go.mod → go test, plus Gemfile / composer.json / pom.xml /
+  build.gradle).
+- `buildShellCommand(spec, {cwd})` — resolves to a single runnable shell
+  line for shell / test-auto / pure composite specs; returns `null`
+  whenever a visual-qa step is involved (those need a non-shell runner).
+- `needsVisualQARunner(spec)` — true when the spec or any nested step is
+  `visual-qa`.
+- `isDefaultOrMissing(spec)` — used by Phase 0 to decide whether to
+  prompt.
+- `PRESET_CATALOGUE` — four entries (`test-auto`, `visual-qa`, `custom`,
+  `composite`) with `key`, `label`, `description`, and `build(opts)` for
+  the prompt UI.
+
+### Added — Phase 6 spec routing
+
+`phases/6-loop.md` no longer assumes `breakCondition` is a shell string.
+At iteration start it normalises the spec and routes per `spec.type`:
+
+- `shell` / `test-auto` / pure `composite` → built into a single shell
+  line, run via the platform's shell primitive (`spawnSync sh -c` /
+  `read_bash` / `shell_command` / `run_shell_command`).
+- `visual-qa` → dispatch the `visual-qa-<platform>` skill as a subagent;
+  never run via shell. Treat thrown errors as exit 1 — visual-qa must
+  explicitly report success.
+- `composite` containing visual-qa → run each step in order, short-circuit
+  on first non-zero exit.
+
+`config-loader.mjs` validation extended to accept either form; vendored
+copies in cursor + copilot synced to match.
+
+### Added — 27 + 45 tests
+
+- `tests/lib/break-resolver.test.mjs` (27 tests) — covers normalisation,
+  stack detection, shell-command build, composite short-circuit
+  reasoning, and the preset catalogue contract.
+- `tests/lib/agent-all-loop-interactive.test.mjs` (45 tests) — doc-level
+  contracts across all five platforms: Phase 0 documents the four
+  presets + non-interactive fallback + save-confirmation + break-resolver
+  lib reference; Phase 6 routes on `spec.type`, dispatches a subagent
+  for visual-qa (never `sh -c`), and short-circuits composites; SKILL.md
+  documents `--break-condition` + `--reconfigure`.
+
+Total suite: **1019 → 1091 passing**.
+
 ## Verification safety net + release-grade README polish — 2026-05-19
 
 ### Added — two-layer verification safety net for `/agent-all --loop`

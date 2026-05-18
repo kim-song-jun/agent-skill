@@ -39,6 +39,20 @@ this skill installs into the target project. The pipeline lives in
 @agent-all-coordinator run /agent-all using docs/tasks/x.md --no-pr --wave-size=large
 ```
 
+## Flags
+
+Same as Claude Code: `--loop`, `--max-iter=<N>`, `--max-cost=<USD>`,
+`--wave-size=small|medium|large`, `--no-pr`, `--no-brainstorm`,
+`--resume`, `--force`, `--yes`,
+`--break-condition=<spec>`, `--reconfigure`.
+
+When `--loop` is set, Phase 0 prompts the user interactively for the
+break-condition preset (test-auto / visual-qa / Custom shell / Composite)
+and offers to save the choice to `.agent-all.json`. Use
+`--break-condition=<spec>` (JSON object or plain shell string) to skip
+the prompt for one invocation, or `--reconfigure` to re-prompt even when
+a non-default value already lives in config.
+
 ## Pipeline
 
 | Phase | File | Purpose |

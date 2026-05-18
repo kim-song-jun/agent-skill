@@ -26,7 +26,15 @@ awaits via Copilot's `subagentStop` hook (or polls `list_agents`).
 
 Same as Claude Code: `--loop`, `--max-iter=<N>`, `--max-cost=<USD>`,
 `--wave-size=small|medium|large`, `--no-pr`, `--no-brainstorm`,
-`--resume`, `--force`, `--yes`.
+`--resume`, `--force`, `--yes`,
+`--break-condition=<spec>`, `--reconfigure`.
+
+When `--loop` is set, Phase 0 prompts the user interactively (via Copilot's
+`ask_user`) for the break-condition preset (test-auto / visual-qa /
+Custom shell / Composite) and offers to save the choice to
+`.agent-all.json`. Use `--break-condition=<spec>` to skip the prompt for
+one invocation, or `--reconfigure` to re-prompt even when a non-default
+value already lives in config.
 
 ## Pipeline
 
