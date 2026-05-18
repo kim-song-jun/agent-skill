@@ -111,6 +111,14 @@ const CASES = [
     tpl: "plugins/harness-floor-codex/skills/agent-all-codex/templates/codex-hooks-snippet.toml.hbs",
     contains: ["[[hooks.agent]]", "agent-all/wave/", "codex-agent-dispatch"],
   },
+  {
+    tpl: "plugins/harness-floor-gemini/skills/agent-all-gemini/templates/agent-all.config.json.hbs",
+    contains: ["\"maxIter\": 10", "\"subprocessTimeout\": 1800", "\"maxSubprocesses\": 8", "npm test --silent"],
+  },
+  {
+    tpl: "plugins/harness-floor-gemini/skills/agent-all-gemini/templates/pr-body.md.hbs",
+    contains: ["agent-all-gemini", "Gemini CLI", "## Summary", "## Iteration"],
+  },
 ];
 
 for (const c of CASES) {
