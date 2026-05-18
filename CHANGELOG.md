@@ -13,6 +13,31 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Anthropic SDK / OpenAI SDK / Vertex SDK actual API hookups (currently
   mock toolCallers used in tests).
 
+## README — user-friendly rewrite — 2026-05-18
+
+### Changed
+
+Both READMEs rewritten with a friendlier voice:
+- **Above-the-fold value prop** in plain language: "One marketplace,
+  five slash commands, every AI coding tool." No jargon.
+- **60-second install** + single-command update path up top.
+- **Per-command sections** (`/agent-init` / `/agent-all` / `/visual-qa`
+  / `/thrift` / `/explore` / `/debug`) each show what the command does
+  in 2-3 sentences plus the most useful flags. No phase tables, no
+  internal lib references in the user-facing path.
+- **Common workflows** section with concrete copy-paste recipes
+  (new project, onboarding, flaky test, pre-launch, long debugging).
+- **"Going deeper"** section at the bottom links to architecture /
+  specs / changelog for users who want the technical details — kept
+  out of the way for the 90% who don't.
+
+Cut from the user-facing path (still in docs/ for those who need it):
+- Phase-by-phase walkthroughs of every command
+- Architecture trees + per-plugin layout
+- Composition patterns / Codex rescue / cross-platform deep dive
+
+Length: README.md ~290 lines (was ~530), README.ko.md mirrors.
+
 ## README + plugin-update documentation — 2026-05-18
 
 ### Updated

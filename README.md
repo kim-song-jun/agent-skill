@@ -2,382 +2,298 @@
 
 # agent-skill
 
-A 17-plugin Claude Code marketplace covering 5 themes: **builder** (`/agent-init` scaffolding), **floor** (cost-unrestricted `/visual-qa` + `/agent-all`), **thrift** (`/thrift` long-session cost optimization), **explore** (`/explore` codebase mapping), and **debug** (`/debug` systematic debugging). Each runtime theme ships with per-platform ports (Cursor, GitHub Copilot CLI, Codex CLI, Gemini CLI) for cross-tool portability.
+**One marketplace, five slash commands, every AI coding tool.**
 
-## Table of contents
+Type `/agent-init` once in any git repo. Claude Code (or Cursor, Copilot CLI, Codex CLI, Gemini CLI) gains five new superpowers:
 
-- [Quick start](#quick-start)
-- [Updating plugins](#updating-plugins)
-- [The 5 themes](#the-5-themes)
-- [All 17 plugins](#all-17-plugins)
-- [Command reference](#command-reference)
-- [Examples by stack](#examples-by-stack)
-- [Architecture](#architecture)
-- [Cross-platform support](#cross-platform-support)
-- [Versioning](#versioning)
-- [FAQ](#faq)
+- `/agent-all "Add login form"` — full feature → PR, in one command
+- `/visual-qa` — screenshot every page, get an LLM design review
+- `/thrift` — keep long sessions affordable (auto-summarize, cache, audit)
+- `/explore` — instant codebase map (`where is X?` answered in O(1))
+- `/debug "tests are flaky"` — reproduce → bisect → fix workflow
 
-## Quick start
+That's it. The rest of this README is reference material — skim the parts you need.
+
+---
+
+## Install in 60 seconds
 
 ```
 /plugin marketplace add https://github.com/kim-song-jun/agent-skill
 /plugin install harness-builder@agent-skill
 /plugin install harness-floor@agent-skill
-/plugin install harness-thrift@agent-skill       # NEW — long-session cost optimization
-/plugin install harness-explore@agent-skill      # NEW — codebase mapping
-/plugin install harness-debug@agent-skill        # NEW — systematic debugging
+/plugin install harness-thrift@agent-skill
+/plugin install harness-explore@agent-skill
+/plugin install harness-debug@agent-skill
 ```
 
-Then in any git repo:
+Then in your project:
 
 ```
-/agent-init                        # full Floor harness (DEFAULT)
-/agent-init --theme=lite           # minimal: CLAUDE.md + agents + hooks only
-/agent-init --theme=floor          # explicit Floor (default)
-/agent-init --theme=thrift         # NOW SHIPPING — Theme B cost-conscious
-/agent-init --size=large --force   # rebuild with 9-agent roster
+cd my-project
+/agent-init
 ```
 
-Then run any of:
+You're done. Try `/agent-all "small feature"` to see it work.
+
+---
+
+## Keep plugins up to date
 
 ```
-/agent-all "Add user signup form"               # full pipeline → PR (Theme C)
-/agent-all "Fix flaky test" --loop --max-iter=5 # iterate until green
-/visual-qa                                      # screenshot matrix + LLM analysis
-/thrift                                         # NEW — set up cost-optimization hooks
-/explore                                        # NEW — build codebase map
-/explore where Foo                              # query the cached map
-/debug "npm test failing on auth flow"          # NEW — systematic debugging
-```
-
-## Updating plugins
-
-Plugins ship updates regularly. Three update paths exist depending on your host:
-
-### Claude Code (primary host)
-
-```
-# Update a single plugin to the marketplace's latest version
-/plugin update harness-floor@agent-skill
-
-# Update ALL plugins from this marketplace at once
 /plugin update --marketplace agent-skill
-
-# Update every installed plugin (across all marketplaces)
-/plugin update --all
-
-# Refresh the marketplace listing first (if you suspect new plugins exist)
-/plugin marketplace update agent-skill
-/plugin install harness-explore@agent-skill   # install a newly listed plugin
 ```
 
-After updating, the global `SessionStart` hook (`context-mode-cache-heal.mjs`) auto-heals stale plugin symlinks on the next Claude Code session start. If a plugin's behavior seems frozen at the old version, restart Claude Code or run `/plugin reload`.
+That single command updates everything from this marketplace. For other CLIs, see [Updating on other tools](#updating-on-other-tools) below.
 
-### Per-platform CLI hosts (Codex / Copilot / Gemini / Cursor)
+---
 
-Each platform has its own update mechanism. These plugins live under `harness-floor-<platform>`, `harness-thrift-<platform>`, `harness-builder-<platform>`:
+## What each command does
+
+### `/agent-init` — set up the project
+
+Run once per project. Creates `CLAUDE.md`, the agent roster (`.claude/agents/*.md`), 3 hooks, and configs for visual-qa + agent-all.
+
+```
+/agent-init                 # default: full Floor harness
+/agent-init --theme=lite    # minimal: just CLAUDE.md + agents
+/agent-init --size=large    # 9-agent roster for monorepos
+/agent-init --merge         # append to existing CLAUDE.md (don't overwrite)
+```
+
+### `/agent-all` — ship a feature
+
+Takes a free-form prompt OR an existing task file. Plans → writes code → tests → opens a PR.
+
+```
+/agent-all "Add Google OAuth"                        # prompt → PR
+/agent-all docs/tasks/12.md                          # use a written task
+/agent-all "fix flaky test" --loop --max-iter=5      # keep trying till tests pass
+/agent-all "..." --no-pr                             # local-only (no PR)
+```
+
+Bounded by `--max-iter` (hard cap 50), `--max-cost` (default $500), and the test command in `.agent-all.json`. It can't run forever.
+
+### `/visual-qa` — design review every page
+
+Captures screenshots at mobile/tablet/desktop, runs LLM analysis per image, writes a Markdown report. Needs Playwright MCP + a dev server.
+
+```
+npm run dev                     # in another terminal
+/visual-qa                      # captures + analyzes
+/visual-qa --slug="launch"      # custom output folder
+/visual-qa --budget=20          # cap LLM cost at $20
+```
+
+Output lands in `docs/visual-qa/<date-or-slug>/report.md`.
+
+### `/thrift` — keep long sessions cheap
+
+For sessions over an hour. Auto-suggests `ctx_execute` for big tool outputs, summarizes the conversation at thresholds, audits cost at session end.
+
+```
+/thrift              # one-time setup
+/thrift summarise    # manual summary trigger
+/thrift audit        # cost report
+```
+
+Edit `.thrift.json` to tune turn/token thresholds. Cache priming is **off by default** — sessions under 15 min don't benefit.
+
+### `/explore` — fast codebase navigation
+
+Builds a structured map of your project (~2 minutes for 100K lines), caches it per git commit, lets you query without re-grepping.
+
+```
+/explore                              # build/refresh the map
+/explore where AuthService            # cached lookup
+/explore deps src/auth/jwt.ts         # imports + reverse-imports
+```
+
+### `/debug` — methodical debugging
+
+Step-by-step workflow with persistent state so you don't lose context across long debugging sessions.
+
+```
+/debug "auth flow test fails 30% of runs"
+/debug --resume                       # pick up where you left off
+/debug --bisect <good-sha> <bad-sha>  # git bisect wrapper
+```
+
+Parses 10 error formats (Python tracebacks, JS stack traces, pytest/jest/rust/tsc/gcc/ESLint output, etc.) into clickable citations.
+
+---
+
+## Common workflows
+
+**Start a new project, ship a feature:**
+```
+mkdir my-app && cd my-app && git init && git commit --allow-empty -m "init"
+/agent-init
+/agent-all "Build a CLI to convert Markdown to PDF"
+```
+
+**Onboard to an unfamiliar codebase:**
+```
+git clone <repo> && cd <repo>
+/agent-init --theme=lite
+/explore
+/explore where MainController
+```
+
+**Fix a flaky test:**
+```
+/debug "tests/integration/checkout.test.ts is flaky"
+# Walks you through: reproduce → bisect → hypothesize → verify
+```
+
+**Pre-launch checklist:**
+```
+/agent-all "Polish landing page, add analytics events" --loop
+/visual-qa --slug="pre-launch"     # design review
+/thrift audit                       # how much did this session cost?
+```
+
+**Long debugging marathon (keep cost down):**
+```
+/thrift                  # set up cost optimization first
+/debug "..."             # then debug — thrift's hooks fire automatically
+```
+
+---
+
+## Pick a theme
+
+Themes bundle plugins for a specific kind of work:
+
+| Theme | Command | What it gives you |
+|---|---|---|
+| **Builder** (A) | `/agent-init` | Project scaffolding. Run once. |
+| **Floor** (C) | `/agent-all`, `/visual-qa` | Ship features. Cost-unrestricted. |
+| **Thrift** (B) | `/thrift` | Cost optimization for long sessions. |
+| **Explore** (D) | `/explore` | Codebase mapping & queries. |
+| **Debug** (E) | `/debug` | Systematic debugging. |
+
+Themes compose freely. A typical session uses Builder once, then Floor for the actual work, with Thrift quietly running in the background.
+
+---
+
+## Stack examples
+
+### Next.js + TypeScript
+
+```bash
+npx create-next-app@latest my-app --typescript
+cd my-app && git init && git add -A && git commit -m "init"
+```
+```
+/agent-init                                # detects TS, sets breakCondition: npm test
+/agent-all "Add Google OAuth with profile upload"
+/visual-qa --slug="oauth"
+```
+
+### Python FastAPI
+
+```bash
+mkdir api && cd api && touch pyproject.toml main.py
+git init && git add -A && git commit -m "init"
+```
+```
+/agent-init --size=small
+# Open .agent-all.json, change "breakCondition" to "pytest"
+/agent-all "JWT auth middleware" --loop --max-iter=5
+```
+
+### Rust CLI (no visual-qa needed)
+
+```bash
+cargo new mycli && cd mycli && git init && git add -A && git commit -m "init"
+```
+```
+/agent-init --theme=lite                   # detects Cargo.toml → "cargo test"
+/agent-all "Add git-style subcommands" --loop --max-cost=25
+```
+
+---
+
+## Use it on other AI tools
+
+Every command above also works on Cursor, GitHub Copilot CLI, Codex CLI, and Gemini CLI — just install the matching `*-<platform>` plugin.
+
+| Tool | Install command |
+|---|---|
+| **Claude Code** | `/plugin install harness-floor@agent-skill` |
+| **Cursor** | `node plugins/harness-floor-cursor/bin/init.mjs /path/to/project` |
+| **Copilot CLI** | `gh copilot plugins install harness-floor-copilot` |
+| **Codex CLI** | `codex plugins install harness-floor-codex` |
+| **Gemini CLI** | `gemini extensions install harness-floor-gemini` |
+
+Same for `harness-builder-*`, `harness-thrift-*` (e.g. `harness-thrift-codex`). 17 plugins total cover Claude Code natively + per-platform ports for the 4 other CLIs.
+
+`/explore` and `/debug` ship for Claude Code only today — per-platform ports are planned.
+
+---
+
+## Updating on other tools
 
 ```bash
 # Codex CLI
-codex plugins update                       # all
-codex plugins update harness-floor-codex   # one
+codex plugins update                    # all
+codex plugins update harness-floor-codex
 
 # GitHub Copilot CLI
-gh copilot plugins update                  # all
-gh copilot plugins update harness-floor-copilot
+gh copilot plugins update
 
 # Gemini CLI (a.k.a. antigravity)
-gemini extensions update                   # all
-gemini extensions update harness-floor-gemini
+gemini extensions update
 
-# Cursor — no plugin loader; re-run the bundled install renderer
-node plugins/harness-builder-cursor/bin/init.mjs /path/to/project --force
+# Cursor — re-run the install script with --force
 node plugins/harness-floor-cursor/bin/init.mjs /path/to/project --force
-node plugins/harness-thrift-cursor/bin/install.mjs /path/to/project --force
 ```
 
-For the renderer-style plugins (`harness-explore`, `harness-debug`, and the per-platform `bin/install.mjs` scripts), updating means re-running the install command with `--force` after pulling the latest plugin code. The renderer is idempotent: re-running won't double-register hooks (it detects existing entries via the `thrift-` / `floor-` command-path sentinel — see `docs/superpowers/specs/2026-05-18-hook-precedence-integration.md`).
+Cursor installs are renderer-style: re-running won't double-register hooks (handled by sentinel-based idempotency). For a clean uninstall on Claude Code or any platform, see [Common questions](#common-questions) below.
 
-### When you need to clean install
+---
 
-If a plugin update fails or you want a clean slate:
+## Common questions
 
+**Will `/agent-init` overwrite my CLAUDE.md?**
+No. It aborts if CLAUDE.md exists. Use `--merge` to append, or `--force` to overwrite.
+
+**Is `/agent-all --loop` safe?**
+Yes. Hard-bounded by `--max-iter` (cap 50), `--max-cost` (default $500), and a clear test command. Set tight values and it can't run away.
+
+**Does `/thrift` change my context behavior right away?**
+Yes. After `/thrift`, hooks fire on every subsequent turn. You'll see PreToolUse suggestions inline. The summariser fires at the configured threshold (`.thrift.json`) and asks you to run `/compact`.
+
+**How do I uninstall just the hooks `/thrift` added?**
 ```
-/plugin uninstall harness-floor@agent-skill
-/plugin marketplace remove agent-skill
-/plugin marketplace add https://github.com/kim-song-jun/agent-skill
-/plugin install harness-floor@agent-skill
-```
-
-For per-project artifacts the plugins wrote (config files, hook scripts), you can also revert them surgically:
-
-```bash
-# Remove thrift's instrument layer without touching other plugins' hooks
 node plugins/harness-thrift/bin/install.mjs /path/to/project --uninstall
-# Equivalent for each thrift port — runs the lib/settings-patcher unpatch with the thrift- sentinel
 ```
+This removes only the `thrift-*` hook entries from `.claude/settings.local.json` — your other hooks stay untouched.
 
-## The 5 themes
-
-| Theme | Plugin family | Posture | Best for |
-|---|---|---|---|
-| **A** | `harness-builder` (+ 4 platform siblings) | Install scaffolding (one-shot, low cost) | Starting a new project; adopting Claude Code on an existing one |
-| **C** | `harness-floor` (+ 4 platform siblings) | Cost-unrestricted multi-agent pipelines | Big features, visual QA, parallel wave execution |
-| **B** | `harness-thrift` (+ 4 platform siblings) | Cost-conscious long-session runtime | Sessions ≥1 hour where context accumulation drives cost |
-| **D** | `harness-explore` | Codebase mapping (read-only) | Onboarding to a new codebase; "where is X" queries |
-| **E** | `harness-debug` | Systematic debugging workflow | Multi-hour debugging marathons; bisecting elusive bugs |
-
-Themes compose. A typical "ship a feature" session uses A (one-time `/agent-init`), then C (`/agent-all "..."`), with B running invisibly in the background to keep cost down, and E + D available on-demand for bug hunting and orientation.
-
-## All 17 plugins
-
+**How do I completely remove a plugin?**
 ```
-harness-builder                ← A core (Claude Code)
-harness-builder-cursor         ← A port for Cursor
-harness-builder-copilot        ← A port for Copilot CLI
-harness-builder-codex          ← A port for Codex CLI
-harness-builder-gemini         ← A port for Gemini CLI
-
-harness-floor                  ← C core: /visual-qa + /agent-all
-harness-floor-cursor           ← C port for Cursor
-harness-floor-copilot          ← C port for Copilot CLI
-harness-floor-codex            ← C port for Codex CLI
-harness-floor-gemini           ← C port for Gemini CLI
-
-harness-thrift                 ← B core: /thrift
-harness-thrift-cursor          ← B port for Cursor (advisory-only)
-harness-thrift-copilot         ← B port for Copilot CLI (store_memory bridge)
-harness-thrift-codex           ← B port for Codex CLI (TOML config patcher)
-harness-thrift-gemini          ← B port for Gemini CLI (Vertex AI rates)
-
-harness-explore                ← D (single platform — Claude Code; ports deferred)
-harness-debug                  ← E (single platform — Claude Code; ports deferred)
+/plugin uninstall <name>@agent-skill
 ```
+Then optionally clean per-project artifacts (`.thrift.json`, `.visual-qa.json`, etc.) by hand.
 
-## Command reference
+**Does this work with my CLI/IDE that isn't listed?**
+The libs (`plugins/*/skills/*/lib/*.mjs`) are pure Node — vendor them into your tool. Phase docs in `phases/*.md` are language-agnostic. See the per-platform impl specs under `docs/superpowers/specs/2026-05-18-*-impl-spec.md` for porting patterns.
 
-### `/agent-init` — Theme A
+**Where do bug reports go?**
+[GitHub Issues](https://github.com/kim-song-jun/agent-skill/issues). Prefix the title with the plugin name (e.g. `[harness-thrift] cache prime fails on Windows`).
 
-Bootstraps `CLAUDE.md`, `.claude/agents/`, hooks, plugin wiring, and (by default) the full Floor theme bundle.
+---
 
-```
-/agent-init [--theme=floor|lite|thrift] [--size=small|medium|large] [--qa=<persona>[,<persona>]]
-            [--merge] [--force] [--dry-run] [--resume]
-```
+## Going deeper
 
-Flag summary: `--theme` chooses bundle (floor default), `--size` controls agent count (3/6/9), `--qa` overrides QA personas, `--merge` appends rather than aborts on existing CLAUDE.md, `--force` overwrites, `--dry-run` previews, `--resume` picks up from last completed phase.
+If you want the technical details, design specs, or are porting to a new platform:
 
-### `/agent-all` — Theme C
+- **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for design docs per plugin.
+- **All 17 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
+- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 981+ tests, all green.
+- **Per-platform porting** — see specs ending in `-impl-spec.md` or `-decomposition.md` under `docs/superpowers/specs/`.
+- **Cross-platform support matrix** — see [docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md](docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md).
+- **Hook precedence (if you're mixing plugins that all register hooks)** — see [docs/superpowers/specs/2026-05-18-hook-precedence-integration.md](docs/superpowers/specs/2026-05-18-hook-precedence-integration.md).
 
-Runs intent → plan → wave-dispatch → gate → PR over the `.claude/agents/` roster. Optional `--loop` until a break-condition succeeds.
-
-```
-/agent-all <prompt-or-path> [--loop] [--max-iter=<N>] [--max-cost=<USD>]
-           [--wave-size=small|medium|large] [--no-pr] [--no-brainstorm]
-           [--resume] [--force] [--yes]
-```
-
-### `/visual-qa` — Theme C
-
-Captures a configured matrix of screenshots (pages × components × states × breakpoints + flows), runs LLM analysis per image, diffs vs prior run, writes a markdown+JSON report. Requires `.visual-qa.json` config and Playwright MCP.
-
-```
-/visual-qa [--resume] [--force] [--yes] [--budget=<USD>] [--skip-health] [--slug=<custom>]
-```
-
-### `/thrift` — Theme B (NEW)
-
-Sets up cost-conscious long-session optimization: context-mode integration, prompt cache priming (opt-in), summariser hooks at threshold, end-of-session audit.
-
-```
-/thrift                          # one-time setup; idempotent
-/thrift summarise                # manual summariser trigger
-/thrift audit                    # ad-hoc audit report
-/thrift --force                  # re-seed .thrift.json
-```
-
-Config at `.thrift.json` controls turn/token thresholds, summariser model, cache priming strategy, and audit output path.
-
-### `/explore` — Theme D (NEW)
-
-Builds a structured codebase map (~<2 min for 100K LOC) via parallel-dispatch reader subagents, caches it keyed by `git rev-parse HEAD`, and exposes fast query commands against the cache.
-
-```
-/explore                         # build/refresh map; writes docs/explore/<sha>-map.md
-/explore where <symbol>          # locate symbol; first checks cached map (O(1) lookup)
-/explore deps <file>             # show imports + reverse-imports for a file
-```
-
-### `/debug` — Theme E (NEW)
-
-Disciplined debugging workflow: reproduce → isolate → hypothesize → verify. State persists in `.debug-state.json` (failure desc, hypotheses tried, checkpoints, current candidate). Parses 10 common error formats into structured citations. Wraps `superpowers:systematic-debugging` skill.
-
-```
-/debug "<failure description>"   # full workflow from scratch
-/debug --resume                  # pick up from last checkpoint
-/debug --bisect <good> <bad>     # git bisect wrapper
-```
-
-## Examples by stack
-
-### React + Next.js (full Floor + Thrift)
-
-```bash
-npx create-next-app@latest my-app --typescript --eslint
-cd my-app && git init && git add -A && git commit -m "initial: next.js"
-```
-
-```
-/agent-init                                    # Floor scaffold
-/thrift                                        # set up cost optimization
-/agent-all "Add Google OAuth with profile upload"
-/visual-qa --slug="oauth-feature"
-```
-
-### Python FastAPI (lite + manual breakCondition)
-
-```bash
-mkdir api && cd api && git init && touch pyproject.toml main.py
-git add -A && git commit -m "initial: fastapi"
-```
-
-```
-/agent-init --size=small
-# Edit .agent-all.json: change "breakCondition": "npm test" → "pytest"
-/agent-all "Add JWT auth middleware" --loop --max-iter=5
-```
-
-### Rust CLI (lite)
-
-```bash
-cargo new mycli && cd mycli && git init && git add -A && git commit -m "initial: rust"
-```
-
-```
-/agent-init --theme=lite
-# .agent-all.json auto-detects "breakCondition": "cargo test"
-/agent-all "Add subcommands for git-like workflow" --loop --max-cost=25
-```
-
-### Onboarding to an unfamiliar codebase
-
-```bash
-git clone https://github.com/some/large-repo
-cd large-repo
-```
-
-```
-/agent-init --theme=lite       # minimal scaffold
-/explore                       # build the codebase map (cached)
-/explore where AuthService     # O(1) lookup against cache
-/explore deps src/auth/jwt.ts  # forward + reverse imports
-```
-
-### Debugging a flaky test
-
-```
-/debug "tests/integration/checkout.test.ts is flaky — fails ~30% of runs"
-# Phase 1: reproduce → captures failing run
-# Phase 2: isolate → minimizes test input via ddmin
-# Phase 3: hypothesize → 3 candidate causes
-# Phase 4: verify → tests each hypothesis
-# Phase 5: summarise → .debug/debug-log-<date>.md
-```
-
-## Architecture
-
-```
-agent-skill/
-├── .claude-plugin/
-│   └── marketplace.json                      # registers all 17 plugins
-├── plugins/                                  # the plugins themselves
-│   ├── harness-builder/                      # Theme A core + 4 platform siblings
-│   ├── harness-floor/                        # Theme C core + 4 platform siblings
-│   ├── harness-thrift/                       # Theme B core + 4 platform siblings
-│   ├── harness-explore/                      # Theme D
-│   └── harness-debug/                        # Theme E
-├── scripts/
-│   └── sync-lib.mjs                          # syncs vendored render.mjs across plugins
-├── tests/                                    # 981+ tests (node --test)
-├── docs/superpowers/
-│   ├── specs/                                # design docs per plugin/feature
-│   ├── plans/                                # implementation plans
-│   └── research-notes/                       # sandbox-bound spike findings
-├── CHANGELOG.md / CHANGELOG.ko.md
-└── README.md / README.ko.md
-```
-
-**Per-plugin layout** (standard for all 17):
-
-```
-plugins/<name>/
-├── .claude-plugin/plugin.json
-├── README.md
-├── skills/<skill>/
-│   ├── SKILL.md
-│   ├── phases/                               # phase docs (orchestrator reads in order)
-│   ├── lib/                                  # pure-Node helpers (testable in isolation)
-│   ├── templates/                            # *.hbs Handlebars templates
-│   └── references/                           # design notes, porting notes
-└── bin/                                      # install/runtime helpers
-    ├── install.mjs                           # automated install renderer
-    └── lib/render.mjs                        # vendored Handlebars-lite renderer
-```
-
-**Why duplicate `render.mjs` per plugin:** The `cross-platform-isolation.test.mjs` test forbids cross-plugin imports — each plugin must be self-contained. `scripts/sync-lib.mjs --check` enforces that all vendored copies stay byte-identical to the canonical source at `plugins/harness-builder/skills/agent-init/lib/render.mjs`.
-
-## Cross-platform support
-
-| Capability | Claude Code | Cursor | Copilot CLI | Codex CLI | Gemini CLI |
-|---|---|---|---|---|---|
-| Theme A (`/agent-init`) | ✅ | ✅ (`bin/init.mjs`) | ✅ | ✅ | ✅ |
-| Theme C `/visual-qa` | ✅ | ✅ (scaffold) | ✅ (scaffold) | ✅ (scaffold) | ✅ (scaffold + subprocess dispatch) |
-| Theme C `/agent-all` | ✅ | ✅ (prompt template) | ✅ (`task` tool) | ✅ (`agent` hook OR sequential) | ✅ (subprocess fan-out) |
-| Theme B `/thrift` | ✅ | ✅ (advisory-only, no hooks) | ✅ | ✅ (TOML config patcher) | ✅ (Vertex rate table) |
-| Theme D `/explore` | ✅ | — (port deferred) | — | — | — |
-| Theme E `/debug` | ✅ | — (port deferred) | — | — | — |
-
-Each "scaffold" entry means the config + hook templates ship today and the orchestrator runtime is documented in spec form (`docs/superpowers/specs/2026-05-18-*-impl-spec.md`); production lib modules ship for Claude Code and incrementally for each platform per the impl specs.
-
-Live CLI runtime verification is tracked in `docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md`.
-
-## Versioning
-
-All plugins ship at **v0.1.0** (cross-platform ports) or **v0.2.0** (Claude Code originals). See [CHANGELOG.md](CHANGELOG.md) for full release history.
-
-Major iterations in 2026-05-18:
-- 41 commits — initial Themes A + C + cross-platform scaffolds
-- 7 commits — visual-qa 6-phase + agent-all 4 sub-projects + design specs
-- 5 commits — install renderers + spawn dispatchers + ask-user adapters + thrift design
-- 4 commits — harness-thrift v0.1
-- 1 commit (`11d8b10`) — 12 specs + 6 host invoker / install / SDK implementations from 7 parallel agents
-- 2 commits (`0aa3cea` + `5d6fbe5`) — 6 new plugins (4 thrift ports + explore + debug) + per-platform agent-all/visual-qa implementations from 10 parallel agents (554 new tests; 981/981 pass)
-
-## FAQ
-
-**Q: Will `/agent-init` overwrite my CLAUDE.md?**
-No. Default aborts if CLAUDE.md exists. Use `--merge` to append a harness section, or `--force` to overwrite.
-
-**Q: Is `/agent-all --loop` safe?**
-Bounded by `--max-iter` (hard cap 50), `--max-cost` (default $500), and `breakCondition`. If you set a tight cost cap and a clear test command, it can't run forever.
-
-**Q: Does `/thrift` change my context behavior immediately?**
-Yes. After `/thrift`, the installed hooks fire on every subsequent Claude Code turn in this project. PreToolUse coercion suggestions appear inline; PostToolUse counts tokens; the summariser fires at threshold (advisory v1 — writes a summary file and asks you to run `/compact`). Phase 5 audit fires on session end.
-
-**Q: Is the prompt cache priming worth it?**
-Often no for short sessions. `cache.enabled = false` by default. Enable only if your session lasts ≥15 min AND you pause >5 min between turns (the ROI gate at `evaluateCachePrimeROI` will warn you otherwise).
-
-**Q: Can `/explore` see private files?**
-Honors `.gitignore` by default. Add `node_modules`, build dirs, etc. to ignore globs in `.explore.json` if needed.
-
-**Q: Does `/debug` actually run my code?**
-Only via the `repro` command you supply in Phase 1 (and only if you confirm). The reproducer is invoked through `shell_command` with your project's existing test runner; no other code execution happens.
-
-**Q: How do I update the plugins?**
-See [Updating plugins](#updating-plugins) above. TL;DR: `/plugin update --marketplace agent-skill` from Claude Code.
-
-**Q: What if my CLI host isn't listed?**
-The lib modules (`plugins/*/skills/*/lib/*.mjs`) are pure Node.js with no host dependencies — vendor them into your tool. The phase docs in `phases/*.md` are language-agnostic. The skill-orchestration layer is what differs per host; see the `docs/superpowers/specs/2026-05-18-*-impl-spec.md` files for porting templates.
-
-**Q: Where do bugs go?**
-File issues at https://github.com/kim-song-jun/agent-skill/issues. Per-plugin bugs: prefix the title with the plugin name (`[harness-thrift] …`).
+Versioning: Claude Code core plugins are at `v0.2.0`, per-platform ports at `v0.1.0`.
