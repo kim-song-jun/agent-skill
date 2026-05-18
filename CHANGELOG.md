@@ -7,6 +7,90 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 ## [Unreleased]
 - Theme B (`harness-thrift`) — context-mode aggressive integration, prompt cache, summariser hooks — design pending.
 
+## cross-platform full-pipeline porting (scaffold) — 2026-05-18
+
+### Added — agent-all per-platform ports (4 sub-projects)
+
+Per the agent-all porting decomposition spec, ships scaffold-only ports
+of the 7-phase /agent-all pipeline across 4 platforms with platform-
+specific dispatch primitives:
+
+- `harness-floor-cursor/skills/agent-all-cursor/` — prompt template
+  approach (3d estimate). Cursor delegates via description-matching;
+  ships `.cursor/rules/agent-all.mdc` + 3 subagent files
+  (`is_background: true` for parallel).
+- `harness-floor-copilot/skills/agent-all-copilot/` — uses Copilot's
+  `task` tool for parallel wave dispatch (1w estimate). Awaiter prefers
+  `subagentStop` hook, falls back to `list_agents` polling. Plan persists
+  to `store_memory(scope=repository)`.
+- `harness-floor-codex/skills/agent-all-codex/` — dual dispatch: `agent`
+  hook (preferred) OR sequential `.codex/skills/<role>/SKILL.md` (fallback,
+  auto-detected at preflight; 1w estimate). Ships
+  `codex-hooks-snippet.toml.hbs` for `[[hooks.agent]]` matcher.
+- `harness-floor-gemini/skills/agent-all-gemini/` — subprocess-based
+  dispatch via `run_shell_command("gemini chat ... &")` (1.5w estimate,
+  heaviest because Gemini has no native subagent primitive). Config
+  adds `dispatch.{subprocessTimeout, maxSubprocesses, subprocessTmpDir}`.
+
+All 4 ports preserve the 7-phase contract (preflight → intent → plan →
+dispatch → gate → PR → loop). Each ships SKILL.md + 7 phase docs +
+templates + references/porting-notes.md documenting platform-specific
+limits and open research questions.
+
+### Added — visual-qa per-platform ports (4 plugins graduated)
+
+Graduates all 4 cross-platform `visual-qa-<platform>` plugins from
+scaffold-only (config + MCP snippet) to full 6-phase pipeline (Phase 3
+fan-out uses platform-native primitive):
+
+- Cursor: `@visual-qa-page` subagent with `is_background: true`
+- Copilot: `task()` per page + `subagentStop`/polling awaiter
+- Codex: `[[hooks.agent]]` matcher OR sequential `.codex/skills/visual-qa-page`
+- Gemini: parallel `gemini chat` subprocess spawn with PID waiter
+
+Per platform adds 6 phase files + page-prompt + analysis-prompt + report
+templates + porting-notes. Codex also gets `codex-hooks-snippet.toml.hbs`.
+
+### Added — design specs
+
+- `docs/superpowers/specs/2026-05-18-native-ask-user-brainstorm-integration.md`
+  — design for unifying brainstorming Q&A across Claude Code AskUserQuestion,
+  Cursor chat, Copilot/Codex/Gemini ask_user. ~10d implementation effort
+  estimated; deferred to per-platform sessions.
+- `docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md`
+  — handoff doc for runtime checks that require live CLI access (sandbox
+  cannot install Codex/Copilot/Gemini/Cursor). Enumerates per-plugin
+  verification matrix + acceptance criteria.
+
+### Added — Cursor visual-qa scaffold baseline
+
+New `harness-floor-cursor` plugin (was missing from the original 3-plugin
+scaffold). Completes the 4-platform matrix. Adds 10th plugin to marketplace.
+
+### Tests
+
+- `tests/lib/agent-all-{cursor,copilot,codex,gemini}.test.mjs` —
+  per-platform structure validation (8 tests each × 4 = 32 tests)
+- `tests/lib/visual-qa-cross-platform.test.mjs` — graduation + phase
+  contract validation (6 tests × 4 platforms = 24 tests)
+- `tests/lib/cross-platform-render.test.mjs` — extended with 13 new
+  template render cases (4 agent-all + 7 visual-qa)
+- `tests/lib/cross-platform-{manifest,isolation}.test.mjs` — registers
+  harness-floor-cursor (8th entry)
+- 280/280 tests pass (was 203, +77)
+
+### Still deferred
+
+- Implementation of subprocess machinery (Gemini), `agent` hook research
+  (Codex), `task` tool concurrency probe (Copilot), background-chat
+  awaiter (Cursor) — all require live CLI access; see runtime checklist.
+- `bin/init.mjs` renderers per cross-platform `harness-floor-*` plugin
+  for automated install (current scaffolds are docs-only for some).
+- `ask-user-adapter` implementations per platform — design spec exists;
+  implementation is ~10d follow-up.
+- End-to-end agent-all + visual-qa runs on actual CLIs — per the runtime
+  checklist's acceptance criteria.
+
 ## visual-qa porting scaffold — 2026-05-18
 
 ### Added
