@@ -62,6 +62,10 @@ const CASES = [
     tpl: "plugins/harness-floor-gemini/skills/visual-qa-gemini/templates/mcp-snippet.json.hbs",
     contains: ["\"playwright\"", "@playwright/mcp@latest"],
   },
+  {
+    tpl: "plugins/harness-floor-cursor/skills/visual-qa-cursor/templates/mcp-snippet.json.hbs",
+    contains: ["\"playwright\"", "@playwright/mcp@latest"],
+  },
 ];
 
 for (const c of CASES) {

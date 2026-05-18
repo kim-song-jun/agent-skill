@@ -21,6 +21,7 @@ const PLUGINS = [
   "harness-floor-codex",
   "harness-floor-copilot",
   "harness-floor-gemini",
+  "harness-floor-cursor",
 ];
 
 for (const p of PLUGINS) {

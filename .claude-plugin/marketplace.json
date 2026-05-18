@@ -50,6 +50,11 @@
       "name": "harness-floor-gemini",
       "source": "./plugins/harness-floor-gemini",
       "description": "visual-qa scaffold for Gemini CLI"
+    },
+    {
+      "name": "harness-floor-cursor",
+      "source": "./plugins/harness-floor-cursor",
+      "description": "visual-qa scaffold for Cursor"
     }
   ]
 }
