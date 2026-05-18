@@ -1,0 +1,27 @@
+# {{purpose}}
+
+> Project memory for Gemini CLI. Scaffolded by `/gemini-init`.
+
+## Stack
+
+{{stack}}{{#if runtime}} (on {{runtime}}{{#if services_str}}: {{services_str}}{{/if}}){{/if}}{{#if deploy_targets}} — deploys to {{deploy_targets}}{{/if}}
+
+## Operating Principles
+
+1. **Plan first.**
+2. **Edit via `replace` / `write_file`.**
+3. **Shell via `run_shell_command`.**
+4. **Skills load via `activate_skill`.**
+
+## Roles
+
+| Role | When | Skill file |
+|------|------|------------|
+{{#each agents}}| {{name}} | {{when}} | `.gemini/skills/{{name}}/SKILL.md` |
+{{/each}}
+
+{{#if constraints}}
+## Special Constraints
+
+{{constraints}}
+{{/if}}
