@@ -1,0 +1,28 @@
+# {{purpose}}
+
+> Project memory for Codex CLI. Scaffolded by `/codex-init`.
+
+## Stack
+
+{{stack}}{{#if runtime}} (on {{runtime}}{{#if services_str}}: {{services_str}}{{/if}}){{/if}}{{#if deploy_targets}} — deploys to {{deploy_targets}}{{/if}}
+
+## Operating Principles
+
+These apply to the main agent and to every role in `.codex/skills/`:
+
+1. **Plan first.** For any non-trivial change, draft a brief plan before editing.
+2. **Edit via `apply_patch`.** All file modifications go through the apply_patch tool.
+3. **Shell via `shell_command` / `exec_command`.** Long-running tasks use `exec_command` to keep a PTY session.
+
+## Roles
+
+| Role | When to use | File |
+|------|-------------|------|
+{{#each agents}}| {{name}} | {{when}} | `.codex/skills/{{name}}/SKILL.md` |
+{{/each}}
+
+{{#if constraints}}
+## Special Constraints
+
+{{constraints}}
+{{/if}}
