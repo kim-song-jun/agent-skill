@@ -15,6 +15,26 @@
       "name": "harness-floor",
       "source": "./plugins/harness-floor",
       "description": "Cost-unrestricted patterns starting with /visual-qa (visual regression + LLM analysis via Playwright MCP)"
+    },
+    {
+      "name": "harness-builder-codex",
+      "source": "./plugins/harness-builder-codex",
+      "description": "Run agent-init for Codex CLI projects — emits AGENTS.md + .codex/skills/"
+    },
+    {
+      "name": "harness-builder-copilot",
+      "source": "./plugins/harness-builder-copilot",
+      "description": "Run agent-init for GitHub Copilot CLI — emits .github/copilot-instructions.md + AGENTS.md"
+    },
+    {
+      "name": "harness-builder-gemini",
+      "source": "./plugins/harness-builder-gemini",
+      "description": "Run agent-init for Gemini CLI (a.k.a. 'antigravity') — emits GEMINI.md + .gemini/skills/"
+    },
+    {
+      "name": "harness-builder-cursor",
+      "source": "./plugins/harness-builder-cursor",
+      "description": "Run agent-init for Cursor — emits .cursor/rules + .cursor/agents/"
     }
   ]
 }
