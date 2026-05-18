@@ -2,15 +2,26 @@
 
 # agent-skill
 
-**하나의 마켓플레이스, 다섯 개의 슬래시 명령, 모든 AI 코딩 도구.**
+**스스로 굴러가는 agent-first 워크플로.** 프로젝트당 `/agent-init` 한 번, 기능당 `/agent-all "..."` 한 번 — agent가 brainstorm → 계획 → 구현 → 테스트 → PR을 알아서 진행하고, **테스트가 통과할 때까지 알아서 반복**합니다. 매 턴 babysitting 필요 없음.
 
-git 저장소에서 `/agent-init` 한 번만 실행하세요. Claude Code (또는 Cursor, Copilot CLI, Codex CLI, Gemini CLI)에 다섯 가지 슈퍼파워가 추가됩니다:
+오늘 Claude Code에서 동작, 그리고 **Cursor, GitHub Copilot CLI, Codex CLI, Gemini CLI** 크로스 플랫폼 포트 포함. 17개 플러그인, 5개 슬래시 명령, 하나의 마켓플레이스.
 
-- `/agent-all "로그인 폼 추가"` — 기능 한 줄로 PR까지
-- `/visual-qa` — 모든 페이지 스크린샷 + LLM 디자인 리뷰
-- `/thrift` — 긴 세션을 저렴하게 (자동 요약, 캐시, 비용 audit)
-- `/explore` — 즉시 코드베이스 맵 (`X는 어디에?`를 O(1)로 답변)
-- `/debug "테스트가 flaky해요"` — 재현 → bisect → 수정 워크플로
+```
+/agent-init                              # 모든 git 저장소 부트스트랩 (Phase A — 프로젝트당 한 번)
+/agent-all "Google OAuth 추가" --loop    # brainstorm → 계획 → 코드 → 테스트 → PR (Phase C — 기능당)
+/visual-qa                               # 모든 페이지 스크린샷, LLM 디자인 리뷰
+/thrift                                  # 긴 세션 저렴하게 (자동 요약, audit)
+/explore                                 # 코드베이스 맵; /explore where Foo → O(1) lookup
+/debug "테스트가 30% 실행에서 flaky"     # 재현 → bisect → 가설 → 검증
+```
+
+**핵심 3가지:**
+
+1. **Project-first 스캐폴딩.** `/agent-init`은 어떤 git 저장소에서든 동작 — Next.js, FastAPI, Rust CLI, 모노레포. 스택 감지, 올바른 테스트 명령 선택, `CLAUDE.md` + agents + hooks + config를 한 번의 commit에 생성. 같은 명령, 모든 프로젝트.
+
+2. **Agent-first 실행.** `/agent-all "..."`은 20개 질문 안 함. brainstorming, plan 작성, 병렬 implementer 디스패치, 코드 리뷰, PR 생성을 **하나의 파이프라인**으로 실행. 코드가 들어가기 전 plan을 승인 — 그 외엔 스스로 진행.
+
+3. **Self-sustaining 루프.** `--loop --max-iter=15 --max-cost=$50` 으로 테스트 통과 시 또는 cap 도달 시까지 반복. Claude Code의 `/goal`과 페어링하면 goal 조건 만족 시 깔끔히 종료되는 무인 야간 실행. [Self-sustaining 워크플로](#self-sustaining-워크플로) 참조.
 
 그게 전부입니다. README의 나머지는 참고용 — 필요한 부분만 훑어보세요.
 
@@ -174,6 +185,59 @@ git clone <repo> && cd <repo>
 | **Debug** (E) | `/debug` | 체계적 디버깅. |
 
 테마는 자유롭게 조합. 전형적 세션은 Builder 한 번 → 실제 작업에 Floor → Thrift는 백그라운드 조용히.
+
+---
+
+## Self-sustaining 워크플로
+
+harness는 **스스로 완료까지 굴러가도록** 설계됨. 매 턴 앉아서 지켜볼 필요 없음. 세 가지 knob이 안전하게 결합:
+
+### 구성요소
+
+| 요소 | 소유 | 하는 일 |
+|---|---|---|
+| `--loop` | `/agent-all` | Phase 5 (PR) 후 `breakCondition` 평가. 실패 시 같은 task로 Phase 1부터 재진입. 조건이 `stableIters` 연속 실행 통과 시 정지. |
+| `--max-iter=N` | `/agent-all` | 루프 반복 하드캡 (서버에서 50으로 클램프). |
+| `--max-cost=USD` | `/agent-all` | 모든 iteration에 걸친 누적 API 비용 하드캡. 기본 $500. |
+| `breakCondition` | `.agent-all.json` | Shell 명령. Exit 0 = "완료". 보통 테스트 명령: `npm test`, `pytest`, `cargo test`. |
+| `/goal "..."` | Claude Code 내장 | 세션 범위 Stop 훅. goal 조건 만족 시까지 iteration 전반에 세션 살림. **harness가 자동 설정 안 함 — 무인 실행 원할 때 직접 설정.** |
+| `/thrift` | 이 저장소 | 백그라운드 비용 최적화 — 긴 세션 자동 요약, 캐시 priming (opt-in), 종료 시 비용 audit. 프로젝트당 한 번 설정. |
+
+### 무인 야간 기능 출시
+
+```
+/thrift                                                 # 비용 가드레일 설정
+/goal "analytics 대시보드를 모든 CI 통과 상태로 출시"  # 세션이 스스로 살아있음
+/agent-all "analytics 대시보드 빌드 (차트, 필터, export)" \
+  --loop --max-iter=15 --max-cost=80
+# 자리 비움 — 돌아오면 PR (또는 state 보존된 명확한 실패 리포트)
+```
+
+내부 동작:
+- `/agent-all`이 phase 0–5 실행: brainstorm → 계획 → 구현 → 리뷰 → PR
+- Phase 5 후 `breakCondition` (예: `npm test`) 실행. 실패하면 루프가 같은 task로 phase 1에 재진입하여 다른 접근 시도.
+- `--max-iter=15` OR `--max-cost=80` 도달 시 루프 깔끔히 정지. `.agent-all-state.json`에 state 보존돼서 나중에 `--resume`로 picking up 가능.
+- `/goal`이 Claude Code가 턴 사이에 세션 중지하지 못하게 막음. "모든 CI 통과" 조건 만족 시 자동 clear.
+- `/thrift`의 hooks가 지속적으로 발사: PreToolUse 큰 출력 강제, PostToolUse 토큰 회계, 세션 종료 시 audit.
+
+깨어나면 merged PR 또는 "iteration 7에서 auth flow 테스트 여전히 실패로 정지" 정밀한 리포트.
+
+### 루프 의미 — harness vs Ralph Loop
+
+`--loop` 플래그는 `ralph-loop` 플러그인을 wrap한 게 아니라 **harness 자체 루프**. Ralph의 "계속 시도" 패턴을 재구현하되 추가:
+
+- **State** — `.agent-all-state.json`이 iter 수, 누적 비용, 마지막 실패 보존
+- **Cost-bounded** — `--max-cost`가 매 wave 후 enforce, 실행당이 아님
+- **Phase-aware** — `breakCondition`이 올바른 시점에 평가 (구현 도중이 아닌 post-PR)
+- **Resume-from-failure** — `--resume`이 루프가 crash한 지점 이어감
+
+```
+# 개념 비교:
+/agent-all "flaky 테스트 수정" --loop --max-iter=10     # harness stateful 루프 (권장)
+/ralph-loop 5m /agent-all "flaky 테스트 수정"           # Ralph가 one-shot wrap; wall-clock 간격
+```
+
+phase state와 비용 cap이 있는 harness-aware 루프엔 `--loop` 사용. Wall-clock 간격 실행 (예: "deploy 5분마다 재확인")이나 loop-aware하지 않은 명령 chain엔 Ralph Loop wrap.
 
 ---
 
@@ -372,6 +436,13 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 - `context-mode` 없음 → `/thrift`의 강제 hooks와 `mcp__plugin_context-mode_*` 도구가 사용 불가; 다른 모든 것은 동작. PreToolUse 훅은 no-op이 됨.
 
 둘 다 몇 초 만에 설치 가능하고 경험을 극적으로 향상 — 강력 권장.
+
+### 인접 도구 — Ralph Loop와 `/goal`
+
+둘 다 harness가 **자동 invoke하지 않습니다**. 하지만 직접 조합 가능. 레시피는 위 [Self-sustaining 워크플로](#self-sustaining-워크플로) 참조.
+
+- **`/goal` (Claude Code 내장)** — 세션 범위 Stop 훅. goal 설정 시 조건 만족까지 iteration 전반에 세션 살아있음. `/agent-all --loop`과 자연스럽게 페어링 (무인 야간 실행).
+- **`ralph-loop` (별도 플러그인)** — 범용 간격 스케줄러. `/agent-all --loop`이 Ralph 패턴을 phase state + 비용 cap + break-condition을 추가하여 stateful로 재구현 — 둘 다 필요한 경우 드뭄. Wall-clock 주기성 필요 시 (예: "5분마다 deploy 재확인") 또는 loop-aware하지 않은 명령 chain에 `ralph-loop` 사용.
 
 ---
 

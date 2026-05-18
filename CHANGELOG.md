@@ -13,6 +13,40 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Anthropic SDK / OpenAI SDK / Vertex SDK actual API hookups (currently
   mock toolCallers used in tests).
 
+## README — agent-first value prop + self-sustaining workflows — 2026-05-18
+
+### Added & Changed
+
+- **Top-of-README value prop rewritten** to lead with the actual
+  strengths: "Agent-first workflows that run themselves."
+  Three numbered pillars now explicit:
+  1. **Project-first scaffolding** — `/agent-init` works on any git
+     repo, detects stack, picks the right test command.
+  2. **Agent-first execution** — `/agent-all` runs brainstorm → plan
+     → implement → review → PR as ONE pipeline (you approve the plan;
+     it drives itself).
+  3. **Self-sustaining loops** — `--loop` + `--max-iter` + `--max-cost`
+     + `breakCondition` + Claude Code's `/goal` enable unattended
+     overnight runs.
+
+- **New "Self-sustaining workflows" section** (placed after "Pick a
+  theme", before "Stack examples"). Documents:
+  - Components table: `--loop`, `--max-iter`, `--max-cost`,
+    `breakCondition`, `/goal`, `/thrift`
+  - Concrete "unattended overnight feature ship" recipe combining
+    `/thrift` + `/goal` + `/agent-all --loop`
+  - Step-by-step explanation of what happens under the hood
+  - Harness `--loop` vs Ralph Loop comparison with criteria for when
+    to use which
+
+- **"Adjacent tools" subsection trimmed** to a cross-ref pointing back
+  to "Self-sustaining workflows" (eliminates duplication).
+
+This addresses three feedback points: (1) the value prop wasn't selling
+what makes this different, (2) `/goal` and Ralph Loop integration
+wasn't visible, (3) "auto-bootstrap per project" strength wasn't called
+out as a numbered pillar.
+
 ## README — ecosystem context section — 2026-05-18
 
 ### Added

@@ -2,15 +2,26 @@
 
 # agent-skill
 
-**One marketplace, five slash commands, every AI coding tool.**
+**Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..."` per feature; the agent brainstorms → plans → writes → tests → opens the PR — and keeps iterating until the tests pass — without you babysitting every turn.
 
-Type `/agent-init` once in any git repo. Claude Code (or Cursor, Copilot CLI, Codex CLI, Gemini CLI) gains five new superpowers:
+Works on Claude Code today, with cross-platform ports for **Cursor, GitHub Copilot CLI, Codex CLI, and Gemini CLI**. 17 plugins, 5 slash commands, one marketplace.
 
-- `/agent-all "Add login form"` — full feature → PR, in one command
-- `/visual-qa` — screenshot every page, get an LLM design review
-- `/thrift` — keep long sessions affordable (auto-summarize, cache, audit)
-- `/explore` — instant codebase map (`where is X?` answered in O(1))
-- `/debug "tests are flaky"` — reproduce → bisect → fix workflow
+```
+/agent-init                            # bootstrap any git repo (Phase A — once per project)
+/agent-all "Add Google OAuth" --loop   # brainstorm → plan → code → test → PR (Phase C — per feature)
+/visual-qa                             # screenshot every page, LLM design review
+/thrift                                # keep long sessions affordable (auto-summarize, audit)
+/explore                               # codebase map; /explore where Foo → O(1) lookup
+/debug "tests flaky 30% of runs"       # reproduce → bisect → hypothesize → verify
+```
+
+**Three things that make it click:**
+
+1. **Project-first scaffolding.** `/agent-init` works on any git repo — Next.js, FastAPI, Rust CLI, monorepo. It detects your stack, picks the right test command, and creates `CLAUDE.md` + agents + hooks + config in one commit. Same command, every project.
+
+2. **Agent-first execution.** `/agent-all "..."` doesn't ask you 20 questions. It runs brainstorming, plan-writing, parallel implementer dispatch, code review, and PR creation as **one pipeline**. You approve the plan before code lands; otherwise it drives itself.
+
+3. **Self-sustaining loops.** `--loop --max-iter=15 --max-cost=$50` keeps iterating until tests pass — or the cap hits. Pair with Claude Code's `/goal` for unattended overnight runs that exit cleanly when the goal condition holds. See [Self-sustaining workflows](#self-sustaining-workflows).
 
 That's it. The rest of this README is reference material — skim the parts you need.
 
@@ -174,6 +185,59 @@ Themes bundle plugins for a specific kind of work:
 | **Debug** (E) | `/debug` | Systematic debugging. |
 
 Themes compose freely. A typical session uses Builder once, then Floor for the actual work, with Thrift quietly running in the background.
+
+---
+
+## Self-sustaining workflows
+
+The harness is designed to **drive itself to completion**. You don't sit through every turn. Three knobs combine to make this safe:
+
+### The pieces
+
+| Piece | Owned by | What it does |
+|---|---|---|
+| `--loop` | `/agent-all` | After phase 5 (PR), evaluate `breakCondition`. If it fails, re-enter from phase 1 with the same task. Stops when condition passes for `stableIters` consecutive runs. |
+| `--max-iter=N` | `/agent-all` | Hard cap on loop iterations (server-clamped to 50). |
+| `--max-cost=USD` | `/agent-all` | Hard cap on accumulated API cost across all iterations. Default $500. |
+| `breakCondition` | `.agent-all.json` | Shell command. Exit 0 = "done". Typically your test command: `npm test`, `pytest`, `cargo test`. |
+| `/goal "..."` | Claude Code built-in | Session-scoped Stop hook. Keeps the session alive across iterations until the goal condition holds. **The harness doesn't auto-set it — you do, when you want unattended execution.** |
+| `/thrift` | This repo | Background cost optimizer — auto-summarizes long sessions, primes cache (opt-in), audits cost at end. Set up once per project. |
+
+### Unattended overnight feature ship
+
+```
+/thrift                                                 # set up cost guardrails
+/goal "ship the analytics dashboard with all CI green" # session keeps itself alive
+/agent-all "Build analytics dashboard (charts, filters, export)" \
+  --loop --max-iter=15 --max-cost=80
+# walk away — comes back to a PR (or a clear failure report with state preserved)
+```
+
+What happens under the hood:
+- `/agent-all` runs phase 0–5: brainstorm → plan → implement → review → PR
+- After phase 5, `breakCondition` (e.g. `npm test`) runs. If it fails, the loop re-enters phase 1 with the same task and tries a different approach.
+- If `--max-iter=15` is hit OR `--max-cost=80` is hit, the loop stops cleanly. State preserved in `.agent-all-state.json` so `--resume` picks up later.
+- `/goal` keeps Claude Code from stopping the session between turns. Auto-clears once "all CI green" holds.
+- `/thrift`'s hooks fire continuously: PreToolUse coercion of large outputs, PostToolUse token accounting, end-of-session audit.
+
+You wake up to either a merged PR or a precise "stopped at iteration 7 because tests still failing on auth flow" report.
+
+### Loop semantics — harness vs Ralph Loop
+
+The `--loop` flag is the **harness's own loop**, not a wrapper around the `ralph-loop` plugin. It reimplements Ralph's "keep trying" pattern but adds:
+
+- **State** — `.agent-all-state.json` preserves iter count, accumulated cost, last failure
+- **Cost-bounded** — `--max-cost` enforced after each wave, not just per-run
+- **Phase-aware** — `breakCondition` evaluated at the right point (post-PR, not mid-implementation)
+- **Resume-from-failure** — `--resume` picks up where the loop crashed
+
+```
+# Concept comparison:
+/agent-all "fix flaky test" --loop --max-iter=10        # harness's stateful loop (preferred)
+/ralph-loop 5m /agent-all "fix flaky test"              # Ralph wrapping a one-shot; wall-clock interval
+```
+
+Use `--loop` for harness-aware loops with phase state and cost caps. Use Ralph Loop wrapping a one-shot when you need wall-clock interval execution (e.g. "re-check the deploy every 5 minutes") or when chaining commands that aren't loop-aware.
 
 ---
 
@@ -372,6 +436,13 @@ If you don't have `superpowers` or `context-mode` installed, the harness command
 - Missing `context-mode` → `/thrift`'s coercion hooks and the `mcp__plugin_context-mode_*` tools are unavailable; everything else works. The PreToolUse hook becomes a no-op.
 
 Both are installable in seconds and dramatically improve the experience — strongly recommended.
+
+### Adjacent tools — Ralph Loop and `/goal`
+
+Neither is **auto-invoked** by the harness, but both compose with it directly. See [Self-sustaining workflows](#self-sustaining-workflows) above for the recipe.
+
+- **`/goal` (Claude Code built-in)** — Session-scoped Stop hook. You set a goal; session stays alive across iterations until the condition holds. Pairs naturally with `/agent-all --loop` for unattended overnight runs.
+- **`ralph-loop` (separate plugin)** — General-purpose interval scheduler. `/agent-all --loop` is a stateful reimplementation of Ralph's pattern with phase state + cost caps + break-condition, so you rarely need both. Use `ralph-loop` when you need wall-clock periodicity (e.g. "re-check deploy every 5 min") or to chain non-loop-aware commands.
 
 ---
 

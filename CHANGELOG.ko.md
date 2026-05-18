@@ -13,6 +13,36 @@
 - Anthropic SDK / OpenAI SDK / Vertex SDK 실제 API 연결 (현재 mock
   toolCaller 사용).
 
+## README — agent-first 가치 제안 + self-sustaining 워크플로 — 2026-05-18
+
+### 추가 & 변경
+
+- **README 상단 가치 제안 재작성** — 실제 강점을 앞으로:
+  "스스로 굴러가는 agent-first 워크플로." 번호 매겨진 세 pillar 명시:
+  1. **Project-first 스캐폴딩** — `/agent-init`이 어떤 git 저장소
+     에서든 동작, 스택 감지, 올바른 테스트 명령 선택.
+  2. **Agent-first 실행** — `/agent-all`이 brainstorm → 계획 →
+     구현 → 리뷰 → PR을 하나의 파이프라인으로 실행 (사용자는 plan만
+     승인; 그 외 스스로 진행).
+  3. **Self-sustaining 루프** — `--loop` + `--max-iter` + `--max-cost`
+     + `breakCondition` + Claude Code의 `/goal`로 무인 야간 실행 가능.
+
+- **신규 "Self-sustaining 워크플로" 섹션** ("테마 고르기" 다음,
+  "스택별 예제" 전에 배치). 다루는 내용:
+  - 구성요소 테이블: `--loop`, `--max-iter`, `--max-cost`,
+    `breakCondition`, `/goal`, `/thrift`
+  - 구체적 "무인 야간 기능 출시" 레시피 — `/thrift` + `/goal` +
+    `/agent-all --loop` 조합
+  - 내부 동작 단계별 설명
+  - harness `--loop` vs Ralph Loop 비교 + 언제 어느 것을 쓰는지 기준
+
+- **"인접 도구" 서브섹션 축약** — "Self-sustaining 워크플로"로 되돌리는
+  cross-ref만 남김 (중복 제거).
+
+피드백 세 가지 처리: (1) 가치 제안이 차별점을 못 팔고 있었음,
+(2) `/goal`과 Ralph Loop 통합이 안 보였음, (3) "프로젝트마다 자동
+하니싱" 강점이 번호 매겨진 pillar로 부각 안 됐었음.
+
 ## README — 생태계 컨텍스트 섹션 — 2026-05-18
 
 ### 추가
