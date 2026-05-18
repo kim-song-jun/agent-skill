@@ -13,6 +13,103 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Anthropic SDK / OpenAI SDK / Vertex SDK actual API hookups (currently
   mock toolCallers used in tests).
 
+## Comprehensive visual-qa + `/agent-all --qa` E2E gate — 2026-05-19
+
+### Added — `/agent-all "..." --loop --qa` one-flag E2E verification
+
+`--qa` is a new shortcut that wires loop completion to a real
+end-to-end check, not just "did the tests pass". It expands to:
+
+```
+--break-condition='{"type":"composite","steps":[
+  {"type":"test-auto"},
+  {"type":"visual-qa","mode":"comprehensive"}
+]}'
+```
+
+Tests run first as a cheap gate; visual-qa (comprehensive mode) runs
+as the final E2E. Loop only breaks when both pass. `.visual-qa.json`
+is auto-scaffolded with sane defaults if missing, so a fresh project
+can run `/agent-all "build X" --loop --qa` with zero pre-setup.
+
+Five-platform parity: Claude Code native + cursor / copilot / codex /
+gemini all support `--qa`. Phase 0 of agent-all wires the shortcut at
+highest priority — above CLI override, above interactive prompt, above
+saved config.
+
+### Added — visual-qa comprehensive mode
+
+`.visual-qa.json` grows a `mode` field (default `declared`, back-compat).
+When set to `comprehensive`, visual-qa stops requiring a hand-written
+selector list and instead discovers everything automatically:
+
+- **Crawl** from `baseUrl` with BFS, scope.include / scope.exclude
+  globs, depth cap, maxPages cap. Same-origin only. (`lib/crawler.mjs`)
+- **DOM walk** each crawled page for interactive elements — button,
+  link, input, select, textarea, [role=tab|menuitem|switch|checkbox],
+  [data-testid], [data-qa-id]. Stable selector preference:
+  data-testid > data-qa-id > id > stable CSS path. Never class-based
+  (Tailwind / CSS-in-JS unstable). (`lib/dom-walker.mjs`)
+- **Shallow click** each non-input element. Captures the 1-step result
+  state then reverts via re-navigation. Dialog-triggering clicks are
+  caught; revert failures escalate to blocker severity.
+  (`lib/shallow-clicker.mjs`)
+- **DOM-hash cache** stores SHA-256 of the normalised DOM serialisation
+  plus relevant computed styles, keyed against the prior LLM verdict.
+  Components whose hash hasn't changed skip the LLM call entirely.
+  30-day TTL eviction. (`lib/dom-hash.mjs`)
+- **Git-diff scoping** — framework auto-detect (Next App Router /
+  Pages / Remix) maps changed files to affected routes; falls back to
+  "rebuild everything" for shared-component changes and "skip
+  everything" for docs/tests-only diffs. (`lib/git-diff-scoper.mjs`)
+- **Verdict** — issue set keyed by (page, component, category,
+  message-hash) diffed against the baseline (prior accepted run). New
+  critical/major (configurable) or any severity-bump regression fails
+  the loop; severity drops count as fixes. First run with no baseline
+  defaults to auto-pass + write baseline. (`lib/verdict.mjs`)
+
+### Added — Phase doc updates
+
+- Phase 1 (`config-mode`) branches on mode. Comprehensive runs crawler
+  → DOM walker → git-diff filter → matrix.
+- Phase 2 (`discover`) loads + evicts the DOM-hash cache in
+  comprehensive mode.
+- Phase 3 (`capture`) checks the DOM-hash cache before every LLM call;
+  invokes shallow-click expander when `interactions.click` is true.
+- Phase 4 (`aggregate`) computes the verdict, writes `verdict.json`,
+  persists the DOM-hash cache.
+- Phase 5 (`summary`) exit code is `verdict.pass ? 0 : 1` in
+  comprehensive mode; declared-mode exit semantics unchanged.
+
+### Added — 6 new libs, vendored byte-for-byte across 4 sibling plugins
+
+Source-of-truth at `plugins/harness-floor/skills/visual-qa/lib/`;
+copies in cursor/copilot/codex/gemini visual-qa-* skills. Sync test
+catches drift.
+
+### Tests
+
+- 38 unit (crawler scope/depth/dedup/globs/errors, DOM walker
+  classification + selector preference, config mode branch + autoscaffold)
+- 9 unit (shallow-clicker normal path, skip-by-kind, dialog catch,
+  throw containment, revert escalation)
+- 28 unit (DOM-hash stability + I/O + TTL, git-diff framework
+  auto-detect + route mapping)
+- 12 unit (verdict diff algorithm + first-run policies)
+- 27 doc-level (--qa flag contract across 5 platforms)
+- 13 doc-level (visual-qa comprehensive mode mention across 5 platforms)
+- 24 cross-platform sync (6 libs × 4 sibling platforms byte-identical)
+- 4 integration (crawler → walker → clicker → cache → verdict pipeline
+  composes coherently)
+
+Total: **+155 tests, suite 1091 → 1246 passing.**
+
+### Spec
+
+`docs/superpowers/specs/2026-05-19-visual-qa-comprehensive-design.md`
+records the brainstormed design decisions (discovery strategy,
+interaction depth, cost strategy, verdict semantics, staging plan).
+
 ## Interactive break-condition resolution for `/agent-all --loop` — 2026-05-19
 
 ### Added — Phase 0 interactive prompt + four break-condition preset types

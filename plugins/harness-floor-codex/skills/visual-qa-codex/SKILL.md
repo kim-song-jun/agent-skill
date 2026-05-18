@@ -2,8 +2,10 @@
 name: visual-qa-codex
 description: >
   Codex CLI port of /visual-qa — Playwright MCP capture matrix + per-image LLM
-  analysis + diff vs prior run. Phase 3 uses Codex's `agent` hook (preferred)
-  or sequential `.codex/skills/visual-qa-page` (fallback). See
+  analysis + diff vs prior run. Supports `declared` and `comprehensive` modes
+  (crawl + DOM walk auto-discovery, shallow click, baseline-relative verdict).
+  Phase 3 uses Codex's `agent` hook (preferred) or sequential
+  `.codex/skills/visual-qa-page` (fallback). See
   plugins/harness-floor/skills/visual-qa/SKILL.md for source-of-truth.
 ---
 

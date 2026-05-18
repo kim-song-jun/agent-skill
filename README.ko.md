@@ -294,6 +294,7 @@ git clone <repo> && cd <repo>
 | `--max-cost=USD` | flag | 500 | 누적 API 비용 하드캡; 매 wave 후 체크 |
 | `--break-condition=<spec>` | flag | — | 비대화형 override. JSON 객체 (예: `'{"type":"visual-qa"}'`) 또는 plain shell 문자열 (`{"type":"shell","cmd":<문자열>}`로 처리). |
 | `--reconfigure` | flag | — | `.agent-all.json`에 이미 non-default 값이 있어도 대화형 프롬프트 강제. |
+| `--qa` | flag | — | 한-플래그 E2E 단축형. `test-auto → visual-qa(comprehensive)` composite spec으로 확장. `.visual-qa.json` 없으면 sane defaults로 자동 생성. tests 먼저 (저렴한 게이트), 통과 시 visual-qa(comprehensive)가 crawl + DOM-walk + shallow-click으로 전체 검증 후 baseline 대비 verdict로 loop 게이팅. |
 | `breakCondition` | `.agent-all.json` | `npm test` (또는 자동 감지) | 저장된 spec. 문자열 = shell 명령; 객체 형태는 4 프리셋 지원 (`shell`, `test-auto`, `visual-qa`, `composite`). |
 | `stableIters` | `.agent-all.json` | 1 | loop이 깔끔히 종료되기 전 필요한 연속 통과 breakCondition 수 |
 
@@ -307,6 +308,16 @@ git clone <repo> && cd <repo>
 - **Composite (sequential AND)** — 위 옵션 여러 개를 순차 실행; 모두 exit 0이어야 "완료". 첫 실패 시 short-circuit — 빠른 lint/type 체크로 느린 visual-qa를 게이팅 가능.
 
 선택 후 Phase 0은 `.agent-all.json`에 저장할지도 물어봐서 다음번엔 다시 묻지 않습니다. `--yes`나 비대화형(non-TTY) 실행은 프롬프트를 건너뛰고 `.agent-all.json`의 값(또는 빌트인 기본값)을 사용합니다.
+
+#### 한-플래그 E2E: `--qa`
+
+`/agent-all "build user dashboard" --loop --qa`가 단축형입니다:
+
+1. break-condition을 composite spec으로 설정 — tests 먼저(저렴한 게이트), 통과 시 visual-qa **comprehensive 모드** (최종 E2E)
+2. `.visual-qa.json` 없으면 sane defaults로 자동 생성 (`baseUrl=http://localhost:3000`, scope `/`, maxPages 50, depth 3, click 1-level, vs-baseline verdict, auto-pass first run)
+3. 대화형 프롬프트 완전 건너뜀 — non-persistent override
+
+Comprehensive visual-qa 한 줄 요약: **baseUrl에서 crawl → 각 페이지 DOM에서 모든 button/link/form/data-testid 발견 → 모든 상태(default, hover, focus) 스크린샷 + 각 clickable shallow-click → baseline accepted run 대비 issue set 비교 → 새 critical/major regression 없으면 exit 0**. 레이어드 캐싱(git-diff scope + DOM-hash cache)으로 loop iteration 비용 합리적 유지.
 
 ### 레시피 — 무인 야간 기능 출시
 

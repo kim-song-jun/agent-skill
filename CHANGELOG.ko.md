@@ -13,6 +13,100 @@
 - Anthropic SDK / OpenAI SDK / Vertex SDK 실제 API 연결 (현재 mock
   toolCaller 사용).
 
+## Comprehensive visual-qa + `/agent-all --qa` E2E 게이트 — 2026-05-19
+
+### 추가 — `/agent-all "..." --loop --qa` 한-플래그 E2E 검증
+
+`--qa`는 loop 완료를 "tests 통과"가 아닌 진짜 end-to-end 체크로 묶는
+새 단축형. 다음으로 확장됨:
+
+```
+--break-condition='{"type":"composite","steps":[
+  {"type":"test-auto"},
+  {"type":"visual-qa","mode":"comprehensive"}
+]}'
+```
+
+tests 먼저 저렴한 게이트로 실행; visual-qa(comprehensive)가 최종
+E2E로 실행. 둘 다 통과해야 loop break. `.visual-qa.json` 없으면 sane
+defaults로 자동 생성되어 fresh 프로젝트에서 사전 설정 0으로
+`/agent-all "build X" --loop --qa` 가능.
+
+5 플랫폼 parity: Claude Code native + cursor / copilot / codex /
+gemini 모두 `--qa` 지원. agent-all Phase 0이 최고 우선순위로
+처리 — CLI override보다, 대화형 프롬프트보다, 저장된 config보다 위.
+
+### 추가 — visual-qa comprehensive 모드
+
+`.visual-qa.json`에 `mode` 필드 추가 (기본 `declared`, back-compat).
+`comprehensive`로 설정 시 visual-qa가 수동 selector 리스트 요구
+중단하고 모든 것을 자동 발견:
+
+- **Crawl** — baseUrl에서 BFS, scope.include / scope.exclude 글롭,
+  depth cap, maxPages cap. Same-origin only. (`lib/crawler.mjs`)
+- **DOM walk** — 각 crawl된 페이지에서 interactive 요소 발견 —
+  button, link, input, select, textarea, [role=tab|menuitem|switch|
+  checkbox], [data-testid], [data-qa-id]. 안정적 selector 선호도:
+  data-testid > data-qa-id > id > stable CSS path. Class 기반 절대
+  안 함 (Tailwind / CSS-in-JS 불안정). (`lib/dom-walker.mjs`)
+- **Shallow click** — 각 non-input 요소 클릭. 1-step 결과 상태 캡처
+  후 re-navigation으로 revert. Dialog 트리거 클릭 catch; revert 실패
+  blocker severity로 escalate. (`lib/shallow-clicker.mjs`)
+- **DOM-hash cache** — 정규화된 DOM serialisation + 관련 computed
+  style의 SHA-256, 이전 LLM verdict와 키로 매칭. hash 안 변한
+  컴포넌트는 LLM 호출 전체 스킵. 30일 TTL eviction.
+  (`lib/dom-hash.mjs`)
+- **Git-diff scoping** — Framework 자동 감지 (Next App Router /
+  Pages / Remix), 변경 파일 → 영향 route 매핑; shared-component
+  변경 시 "전체 재실행", docs/tests-only diff 시 "전체 스킵"으로
+  fallback. (`lib/git-diff-scoper.mjs`)
+- **Verdict** — (page, component, category, message-hash) 키의
+  issue set을 baseline(prior accepted run) 대비 diff. 새 critical/
+  major (구성 가능) 또는 모든 severity-bump regression 시 loop 실패;
+  severity drop은 fix로 카운트. baseline 없는 첫 실행은 auto-pass +
+  baseline 작성 default. (`lib/verdict.mjs`)
+
+### 추가 — Phase 문서 업데이트
+
+- Phase 1 (`config`) mode 분기. comprehensive는 crawler → DOM walker
+  → git-diff 필터 → matrix.
+- Phase 2 (`discover`) comprehensive에서 DOM-hash cache 로드 + evict.
+- Phase 3 (`capture`) 매 LLM 호출 전 DOM-hash cache 체크;
+  `interactions.click` true 시 shallow-click expander invoke.
+- Phase 4 (`aggregate`) verdict 계산, `verdict.json` 작성, DOM-hash
+  cache 영구화.
+- Phase 5 (`summary`) comprehensive 모드 exit code = `verdict.pass ?
+  0 : 1`; declared-mode 의미 그대로.
+
+### 추가 — 6 신규 lib, 4 sibling 플러그인에 byte-identical vendor
+
+Source-of-truth `plugins/harness-floor/skills/visual-qa/lib/`; copies
+in cursor/copilot/codex/gemini visual-qa-* skills. Sync test가 drift
+잡아냄.
+
+### 테스트
+
+- 38 unit (crawler scope/depth/dedup/glob/error, DOM walker 분류 +
+  selector 선호, config mode 분기 + autoscaffold)
+- 9 unit (shallow-clicker 정상 경로, skip-by-kind, dialog catch,
+  throw 봉쇄, revert escalate)
+- 28 unit (DOM-hash 안정성 + I/O + TTL, git-diff framework 자동 감지
+  + route 매핑)
+- 12 unit (verdict diff 알고리즘 + first-run 정책)
+- 27 doc-level (--qa flag 계약 5 플랫폼)
+- 13 doc-level (visual-qa comprehensive 모드 언급 5 플랫폼)
+- 24 cross-platform sync (6 libs × 4 sibling 플랫폼 byte-identical)
+- 4 integration (crawler → walker → clicker → cache → verdict 파이프
+  일관 구성)
+
+총 **+155 테스트, 스위트 1091 → 1246 통과.**
+
+### Spec
+
+`docs/superpowers/specs/2026-05-19-visual-qa-comprehensive-design.md`에
+브레인스토밍 설계 결정 (discovery 전략, 상호작용 깊이, 비용 전략,
+verdict 의미, 스테이징 플랜) 기록.
+
 ## `/agent-all --loop` 대화형 break-condition 해석 — 2026-05-19
 
 ### 추가 — Phase 0 대화형 프롬프트 + 4가지 break-condition 프리셋

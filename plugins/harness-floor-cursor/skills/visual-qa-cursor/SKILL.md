@@ -2,8 +2,10 @@
 name: visual-qa-cursor
 description: >
   Cursor port of /visual-qa — Playwright MCP capture matrix + per-image LLM
-  analysis + diff vs prior run. Phase 3 uses Cursor's `is_background: true`
-  subagents for parallel per-page capture+analyze. See
+  analysis + diff vs prior run. Supports `declared` and `comprehensive`
+  modes (crawl + DOM walk auto-discovery, shallow click, baseline-relative
+  verdict). Phase 3 uses Cursor's `is_background: true` subagents for
+  parallel per-page capture+analyze. See
   plugins/harness-floor/skills/visual-qa/SKILL.md for the source-of-truth pipeline.
 ---
 

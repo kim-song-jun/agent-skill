@@ -294,6 +294,7 @@ You can run `/agent-all --loop` alone for short loops (1–3 iterations). For ov
 | `--max-cost=USD` | flag | 500 | Hard cap on accumulated API cost; checked after each wave |
 | `--break-condition=<spec>` | flag | — | Non-interactive override. Accepts a JSON object (e.g. `'{"type":"visual-qa"}'`) or a plain shell string (treated as `{"type":"shell","cmd":<string>}`). |
 | `--reconfigure` | flag | — | Force the interactive break-condition prompt even when `.agent-all.json` already has a non-default value. |
+| `--qa` | flag | — | One-flag E2E shortcut. Expands to a composite spec `test-auto → visual-qa(comprehensive)`. Auto-scaffolds `.visual-qa.json` with sane defaults if missing. Tests run as a cheap gate; visual-qa (comprehensive mode, see below) crawls + DOM-walks + shallow-clicks everything and gates the loop on a baseline-relative verdict. |
 | `breakCondition` | `.agent-all.json` | `npm test` (or auto-detected) | The persisted spec. String form = shell command; object form supports four preset types: `shell`, `test-auto`, `visual-qa`, `composite`. |
 | `stableIters` | `.agent-all.json` | 1 | Consecutive passing breakConditions required before loop exits clean |
 
@@ -307,6 +308,16 @@ When `--loop` is set, Phase 0 asks you to pick one:
 - **Composite (sequential AND)** — run multiple of the above in order; all must exit 0 to count as "done". Short-circuits on first failure so a cheap lint/type check can gate a slow visual-qa.
 
 After you pick, Phase 0 also asks if it should save the choice to `.agent-all.json` so it's not prompted again. `--yes` and non-TTY invocations skip the prompt and fall back to whatever's already in `.agent-all.json` (or the built-in default).
+
+#### One-flag E2E: `--qa`
+
+`/agent-all "build user dashboard" --loop --qa` is the shortcut form. It:
+
+1. Sets the break-condition to a composite spec — tests first (cheap gate), then visual-qa in **comprehensive mode** (final E2E check)
+2. Auto-scaffolds `.visual-qa.json` with sane defaults (`baseUrl=http://localhost:3000`, scope `/`, maxPages 50, depth 3, click 1-level, vs-baseline verdict, auto-pass first run) if the file doesn't exist
+3. Skips the interactive prompt entirely — non-persistent override
+
+Comprehensive visual-qa, in one sentence: **crawl from baseUrl → walk each page's DOM for every button/link/form/data-testid → screenshot every state (default, hover, focus) + shallow-click each clickable → compare the issue set vs the baseline accepted run → exit 0 if no new critical/major regressions**. Layered caching (git-diff scope + DOM-hash cache) keeps the cost reasonable across loop iterations.
 
 ### Recipe — unattended overnight feature ship
 

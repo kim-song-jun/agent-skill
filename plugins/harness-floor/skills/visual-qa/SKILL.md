@@ -1,11 +1,18 @@
 ---
 name: visual-qa
-description: Cost-unrestricted visual QA. Drives Playwright MCP to capture a configured matrix of screenshots (pages × components × states × breakpoints + flows), runs LLM analysis per image, diffs vs prior run, writes a markdown+JSON report. Requires `.visual-qa.json` config at project root.
+description: Cost-unrestricted visual QA. Drives Playwright MCP to capture a configured matrix of screenshots (pages × components × states × breakpoints + flows), runs LLM analysis per image, diffs vs prior run, writes a markdown+JSON report. Supports two modes — `declared` (manual selector list) and `comprehensive` (crawl + DOM walk auto-discovery, shallow click expansion, baseline-relative verdict). Requires `.visual-qa.json` at project root.
 ---
 
 # /visual-qa
 
 Drives the visual QA pipeline for the current project. Reads `.visual-qa.json`, captures the matrix via Playwright MCP, analyses each image with the configured LLM, and produces `docs/visual-qa/<date-slug>/report.md`.
+
+## Modes
+
+`.visual-qa.json` declares the mode in its top-level `mode` field. Default is `declared` (back-compat).
+
+- **`declared`** (the original): you list pages, components, selectors, and states in the config. Cost is controlled by what you put in the file.
+- **`comprehensive`**: the orchestrator auto-discovers pages by crawling from `baseUrl` (BFS within `comprehensive.scope.include`, respecting `exclude` globs and depth/maxPages caps), walks each page's DOM for interactive elements (button / link / input / select / textarea / [role=*] / [data-testid] / [data-qa-id]), and optionally shallow-clicks each non-input element to capture the 1-step result state. Cost is controlled by `comprehensive.cache` — `gitDiffScope` skips pages unaffected by the iteration's git diff, and `domHashCache` reuses prior LLM verdicts for components whose DOM hasn't changed. Verdict is computed by comparing the issue set vs the baseline (prior accepted run); first run with no baseline defaults to auto-pass + write baseline. Exit code 0 on pass, 1 on fail. This mode is what `/agent-all --loop --qa` uses.
 
 ## Flags
 

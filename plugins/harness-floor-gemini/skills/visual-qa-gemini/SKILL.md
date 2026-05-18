@@ -2,9 +2,11 @@
 name: visual-qa-gemini
 description: >
   Gemini CLI port of /visual-qa — Playwright MCP capture matrix + per-image
-  LLM analysis + diff vs prior run. Phase 3 forks N parallel `gemini chat`
-  subprocesses for per-page capture+analyze. See
-  plugins/harness-floor/skills/visual-qa/SKILL.md for source-of-truth.
+  LLM analysis + diff vs prior run. Supports `declared` and `comprehensive`
+  modes (crawl + DOM walk auto-discovery, shallow click, baseline-relative
+  verdict). Phase 3 forks N parallel `gemini chat` subprocesses for per-page
+  capture+analyze. See plugins/harness-floor/skills/visual-qa/SKILL.md for
+  source-of-truth.
 ---
 
 # /visual-qa (Gemini port)
