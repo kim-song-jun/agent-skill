@@ -364,40 +364,96 @@ cargo new mycli && cd mycli && git init && git add -A && git commit -m "init"
 
 ## 다른 AI 도구에서 사용
 
-위 모든 명령은 Cursor, GitHub Copilot CLI, Codex CLI, Gemini CLI에서도 동작 — 해당 `*-<platform>` 플러그인만 설치하면 됨.
+Claude Code는 native 마켓플레이스를 가짐 (`/plugin install`). 다른 AI 도구들 — Cursor, GitHub Copilot, Codex CLI, Gemini CLI, VS Code — **는 AI 워크플로용 비교 가능한 플러그인 마켓플레이스가 아직 없음**, 그래서 우리는 프로젝트에 올바른 파일을 쓰는 렌더러 스크립트를 ship. 각 플랫폼별 플러그인은 그 도구가 기대하는 레이아웃의 config + hook + skill 파일을 emit.
 
-| 도구 | 설치 명령 |
+### 플랫폼별 원-라이너 설치
+
+```bash
+git clone https://github.com/kim-song-jun/agent-skill /tmp/agent-skill
+cd /tmp/agent-skill
+
+# Cursor
+./scripts/install-platform.sh --platform=cursor --target=/path/to/my-project
+
+# GitHub Copilot CLI
+./scripts/install-platform.sh --platform=copilot --target=/path/to/my-project
+
+# VS Code + Copilot 확장 (Copilot CLI와 동일한 emitter)
+./scripts/install-platform.sh --platform=vscode-copilot --target=/path/to/my-project
+
+# OpenAI Codex CLI
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project
+
+# Google Gemini CLI / antigravity
+./scripts/install-platform.sh --platform=gemini --target=/path/to/my-project
+```
+
+기본값은 세 테마 모두 (builder + floor + thrift) 설치. `--theme=floor` 또는 `--theme=thrift`로 하나만 설치.
+
+### 각 플랫폼이 받는 파일
+
+| 플랫폼 | 작성되는 파일 | 비고 |
+|---|---|---|
+| **Cursor** | `.cursor/rules/*.mdc`, `.cursor/agents/*.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | 모두 native. 병렬 subagent에 `is_background: true`. |
+| **Copilot CLI** | `.github/copilot-instructions.md`, `.github/hooks/*.json`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | hooks가 `gh copilot`과 통합. |
+| **VS Code Copilot** | `.github/copilot-instructions.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | VS Code Copilot 확장이 `.github/copilot-instructions.md` 자동 읽음. hooks 디렉토리 작성되지만 에디터에서 사용 안 함. |
+| **Codex CLI** | `AGENTS.md`, `.codex/skills/<role>/SKILL.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | `[mcp_servers.playwright]` + `[[hooks.agent]]` 스니펫이 stdout으로 출력 — `~/.codex/config.toml`에 **수동 merge**. |
+| **Gemini CLI** | `GEMINI.md`, `.gemini/skills/<role>/SKILL.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | `mcpServers` 스니펫이 stdout으로 출력 — `~/.gemini/settings.json`에 **수동 merge**. |
+
+### 설치 후 실제로 어떻게 사용하나?
+
+각 도구가 스킬을 자체 방식으로 invoke. harness는 같음; 진입점이 다름:
+
+| 도구 | `/agent-all` 동등 호출 방법 |
 |---|---|
-| **Claude Code** | `/plugin install harness-floor@agent-skill` |
-| **Cursor** | `node plugins/harness-floor-cursor/bin/init.mjs /path/to/project` |
-| **Copilot CLI** | `gh copilot plugins install harness-floor-copilot` |
-| **Codex CLI** | `codex plugins install harness-floor-codex` |
-| **Gemini CLI** | `gemini extensions install harness-floor-gemini` |
+| **Claude Code** | `/agent-all "..."` 슬래시 명령 직접 |
+| **Cursor** | Cursor 채팅 열기 → "@agent-all-coordinator run /agent-all for ..." (방금 설치한 `.cursor/agents/agent-all-coordinator.md` 사용) |
+| **Copilot CLI** | `gh copilot suggest -t "follow .github/copilot-instructions.md to run agent-all for ..."` 또는 저장소 안에서 Copilot 채팅 열기 |
+| **VS Code Copilot** | 프로젝트에서 Copilot Chat 열기, 확장이 `.github/copilot-instructions.md` 자동 로드 |
+| **Codex CLI** | `codex` → `AGENTS.md` 및 `.codex/skills/` 로드; `run /agent-all for ...` 입력 |
+| **Gemini CLI** | `gemini` → `GEMINI.md` 및 `.gemini/skills/` 로드; 워크플로 요청 입력 |
 
-`harness-builder-*`, `harness-thrift-*` (예: `harness-thrift-codex`) 도 동일. 총 17개 플러그인이 Claude Code native + 다른 4개 CLI 포트 커버.
-
-`/explore`와 `/debug`는 오늘 Claude Code에서만 — 플랫폼별 포트 계획 중.
+`/explore`와 `/debug`는 오늘 Claude Code 전용 — 플랫폼별 포트 연기됨 (`docs/superpowers/specs/2026-05-18-harness-thrift-per-platform-decomposition.md` spec에 작업 설명).
 
 ---
 
 ## 다른 도구에서 업데이트
 
+설치와 동일 — **`--force`로 스크립트 재실행**. 렌더러는 idempotent (hooks 중복 등록 안 함; `thrift-` / `floor-` 명령 경로 센티널 사용) 하지만 `.visual-qa.json` 같은 기존 config 파일 덮어쓰려면 `--force` 필요:
+
 ```bash
-# Codex CLI
-codex plugins update                    # 전체
-codex plugins update harness-floor-codex
-
-# GitHub Copilot CLI
-gh copilot plugins update
-
-# Gemini CLI (a.k.a. antigravity)
-gemini extensions update
-
-# Cursor — install 스크립트를 --force로 재실행
-node plugins/harness-floor-cursor/bin/init.mjs /path/to/project --force
+cd /tmp/agent-skill
+git pull                                                          # 최신 버전 가져오기
+./scripts/install-platform.sh --platform=cursor --target=/path/to/my-project --force
 ```
 
-Cursor 설치는 renderer 스타일: 재실행해도 hooks 중복 등록 안 됨 (sentinel 기반 idempotency). Claude Code 또는 다른 플랫폼의 클린 uninstall은 [자주 묻는 질문](#자주-묻는-질문) 참조.
+### 실제로 없는 명령들 (실행하지 마세요)
+
+다음 명령들은 자연스러워 보이지만 **저 CLI들의 플러그인 시스템에 오늘 존재 안 함**:
+
+```
+❌ gh copilot plugins install harness-floor-copilot
+❌ codex plugins install harness-floor-codex
+❌ gemini extensions install harness-floor-gemini
+```
+
+이 플랫폼들은 아직 AI 워크플로용 플러그인 마켓플레이스가 없음. 대신 `./scripts/install-platform.sh` 사용.
+
+### 플랫폼별 제거
+
+```bash
+# 플러그인별 깔끔한 제거 — 해당 플러그인 artifact만 제거
+node plugins/harness-thrift-cursor/bin/install.mjs /path/to/project --uninstall
+
+# 나머지는 수동 — 삭제:
+# - .cursor/ (Cursor)
+# - .github/copilot-instructions.md + .github/hooks/ (Copilot)
+# - AGENTS.md + .codex/ (Codex)
+# - GEMINI.md + .gemini/ (Gemini)
+# - .visual-qa.json + .agent-all.json + .thrift.json (모든 플랫폼)
+```
+
+향후 `install-platform.sh --uninstall` 플래그 계획; 지금은 각 플러그인의 bin 스크립트 통한 플러그인별 제거.
 
 ---
 

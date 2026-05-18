@@ -364,40 +364,96 @@ cargo new mycli && cd mycli && git init && git add -A && git commit -m "init"
 
 ## Use it on other AI tools
 
-Every command above also works on Cursor, GitHub Copilot CLI, Codex CLI, and Gemini CLI — just install the matching `*-<platform>` plugin.
+Claude Code has a native marketplace (`/plugin install`). The other AI tools — Cursor, GitHub Copilot, Codex CLI, Gemini CLI, VS Code — **don't have a comparable plugin marketplace for AI workflows**, so we ship renderer scripts that write the right files into your project. Each per-platform plugin emits the config + hook + skill files in that tool's expected layout.
 
-| Tool | Install command |
+### One-command install per platform
+
+```bash
+git clone https://github.com/kim-song-jun/agent-skill /tmp/agent-skill
+cd /tmp/agent-skill
+
+# Cursor
+./scripts/install-platform.sh --platform=cursor --target=/path/to/my-project
+
+# GitHub Copilot CLI
+./scripts/install-platform.sh --platform=copilot --target=/path/to/my-project
+
+# VS Code with Copilot extension (same emitter as Copilot CLI)
+./scripts/install-platform.sh --platform=vscode-copilot --target=/path/to/my-project
+
+# OpenAI Codex CLI
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project
+
+# Google Gemini CLI / antigravity
+./scripts/install-platform.sh --platform=gemini --target=/path/to/my-project
+```
+
+Default installs all three themes (builder + floor + thrift). Use `--theme=floor` or `--theme=thrift` to install just one.
+
+### What each platform receives
+
+| Platform | Files written | Notes |
+|---|---|---|
+| **Cursor** | `.cursor/rules/*.mdc`, `.cursor/agents/*.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | All native. `is_background: true` on parallel subagents. |
+| **Copilot CLI** | `.github/copilot-instructions.md`, `.github/hooks/*.json`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | Hooks integrate with `gh copilot`. |
+| **VS Code Copilot** | `.github/copilot-instructions.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | VS Code Copilot extension reads `.github/copilot-instructions.md` automatically. Hooks dir written but unused by the editor. |
+| **Codex CLI** | `AGENTS.md`, `.codex/skills/<role>/SKILL.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | A `[mcp_servers.playwright]` + `[[hooks.agent]]` snippet is printed to stdout — **merge manually** into `~/.codex/config.toml`. |
+| **Gemini CLI** | `GEMINI.md`, `.gemini/skills/<role>/SKILL.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | A `mcpServers` snippet is printed to stdout — **merge manually** into `~/.gemini/settings.json`. |
+
+### Once installed, how do you actually use it?
+
+Each tool invokes skills its own way. The harness is the same; the entry point differs:
+
+| Tool | Invoke `/agent-all` equivalent |
 |---|---|
-| **Claude Code** | `/plugin install harness-floor@agent-skill` |
-| **Cursor** | `node plugins/harness-floor-cursor/bin/init.mjs /path/to/project` |
-| **Copilot CLI** | `gh copilot plugins install harness-floor-copilot` |
-| **Codex CLI** | `codex plugins install harness-floor-codex` |
-| **Gemini CLI** | `gemini extensions install harness-floor-gemini` |
+| **Claude Code** | `/agent-all "..."` slash command directly |
+| **Cursor** | Open Cursor chat → "@agent-all-coordinator run /agent-all for ..." (uses `.cursor/agents/agent-all-coordinator.md` you just installed) |
+| **Copilot CLI** | `gh copilot suggest -t "follow .github/copilot-instructions.md to run agent-all for ..."` OR open Copilot chat in the repo and reference the workflow |
+| **VS Code Copilot** | Open Copilot Chat in the project, the extension auto-loads `.github/copilot-instructions.md` |
+| **Codex CLI** | `codex` → it loads `AGENTS.md` and `.codex/skills/`; type `run /agent-all for ...` |
+| **Gemini CLI** | `gemini` → loads `GEMINI.md` and `.gemini/skills/`; type the workflow request |
 
-Same for `harness-builder-*`, `harness-thrift-*` (e.g. `harness-thrift-codex`). 17 plugins total cover Claude Code natively + per-platform ports for the 4 other CLIs.
-
-`/explore` and `/debug` ship for Claude Code only today — per-platform ports are planned.
+`/explore` and `/debug` ship for Claude Code only today — per-platform ports are deferred (specs at `docs/superpowers/specs/2026-05-18-harness-thrift-per-platform-decomposition.md` describe the work).
 
 ---
 
 ## Updating on other tools
 
+Updates work the same as install — **re-run the script** with `--force`. The renderers are idempotent (won't double-register hooks; uses `thrift-` / `floor-` command-path sentinel) but `--force` is needed to overwrite existing config files like `.visual-qa.json`:
+
 ```bash
-# Codex CLI
-codex plugins update                    # all
-codex plugins update harness-floor-codex
-
-# GitHub Copilot CLI
-gh copilot plugins update
-
-# Gemini CLI (a.k.a. antigravity)
-gemini extensions update
-
-# Cursor — re-run the install script with --force
-node plugins/harness-floor-cursor/bin/init.mjs /path/to/project --force
+cd /tmp/agent-skill
+git pull                                                          # get latest version
+./scripts/install-platform.sh --platform=cursor --target=/path/to/my-project --force
 ```
 
-Cursor installs are renderer-style: re-running won't double-register hooks (handled by sentinel-based idempotency). For a clean uninstall on Claude Code or any platform, see [Common questions](#common-questions) below.
+### What's NOT real (don't run these)
+
+The following commands look natural but **don't exist** in those CLIs' plugin systems today:
+
+```
+❌ gh copilot plugins install harness-floor-copilot
+❌ codex plugins install harness-floor-codex
+❌ gemini extensions install harness-floor-gemini
+```
+
+These platforms don't have plugin marketplaces for AI workflows yet. Use `./scripts/install-platform.sh` instead.
+
+### Uninstall per platform
+
+```bash
+# Per-plugin clean removal — only removes that plugin's artifacts
+node plugins/harness-thrift-cursor/bin/install.mjs /path/to/project --uninstall
+
+# Manually for the rest — delete:
+# - .cursor/ (Cursor)
+# - .github/copilot-instructions.md + .github/hooks/ (Copilot)
+# - AGENTS.md + .codex/ (Codex)
+# - GEMINI.md + .gemini/ (Gemini)
+# - .visual-qa.json + .agent-all.json + .thrift.json (all platforms)
+```
+
+A future `install-platform.sh --uninstall` flag is planned; for now uninstall is per-plugin via each plugin's bin script.
 
 ---
 
