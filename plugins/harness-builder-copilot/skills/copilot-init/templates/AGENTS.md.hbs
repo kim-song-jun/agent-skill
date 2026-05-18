@@ -1,0 +1,27 @@
+# {{purpose}}
+
+> Project memory. Read by Copilot CLI, Codex, Cursor, and Gemini.
+
+## Stack
+
+{{stack}}{{#if runtime}} (on {{runtime}}{{#if services_str}}: {{services_str}}{{/if}}){{/if}}{{#if deploy_targets}} — deploys to {{deploy_targets}}{{/if}}
+
+## Operating Principles
+
+1. **Plan first.** Sketch a brief plan before editing.
+2. **Edits via `apply_patch`.** All file modifications go through it.
+3. **Shell via `read_bash`.** Use it for builds, tests, lint.
+4. **Memory via `store_memory`.** Capture durable decisions there with scope=`repository`.
+
+## Roles
+
+| Role | When to use |
+|------|-------------|
+{{#each agents}}| {{name}} | {{when}} |
+{{/each}}
+
+{{#if constraints}}
+## Special Constraints
+
+{{constraints}}
+{{/if}}
