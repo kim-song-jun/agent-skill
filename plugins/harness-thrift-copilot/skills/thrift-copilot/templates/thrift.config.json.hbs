@@ -1,0 +1,33 @@
+{
+  "version": "0.1.0",
+  "platform": "copilot",
+  "summariser": {
+    "everyNTurns": {{everyNTurns}},
+    "everyMTokensOutput": {{everyMTokensOutput}},
+    "preserveLastTurns": 6,
+    "preserveSpecPaths": true,
+    "model": "{{summariserModel}}"
+  },
+  "cache": {
+    "primingStrategy": "{{cachePrimingStrategy}}",
+    "warmInterval": 240,
+    "shareCohortAcross": ["session"],
+    "enabled": false,
+    "intermediationWarning": true
+  },
+  "storeMemory": {
+    "enabled": {{storeMemoryEnabled}},
+    "scope": "{{storeMemoryScope}}",
+    "keyPrefix": "thrift/"
+  },
+  "contextMode": {
+    "coerceBashWhenOutputExceeds": 20,
+    "coerceReadWhenOutputExceeds": 200,
+    "blockedTools": []
+  },
+  "audit": {
+    "estimateBaseline": "naive-copilot",
+    "outputPath": "docs/thrift/audit-{{date}}.md",
+    "mirrorToStoreMemory": true
+  }
+}

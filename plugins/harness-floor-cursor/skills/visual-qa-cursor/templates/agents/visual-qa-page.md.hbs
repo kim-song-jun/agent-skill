@@ -35,20 +35,33 @@ parameters (see description).
    - Send the prompt + image to the configured LLM.
    - Save the parsed response to `<image>.analysis.json` (structured
      issues) and `<image>.analysis.md` (human-readable).
-5. Return structured JSON:
+5. Write the per-page result file **before** posting the chat reply. This is
+   the awaiter signal the coordinator polls in Phase 3/4:
+   ```
+   <OUTPUT_DIR>/_result.json
+   ```
+   Shape:
    ```json
    {
      "page": "<name>",
+     "status": "completed" | "incomplete" | "failed",
      "captures": <number>,
      "analyses": <number>,
-     "status": "completed" | "incomplete",
+     "issues": [...],
      "errors": [...]
    }
    ```
+   Use `read_bash` with a tmp-and-rename:
+   `node -e "require('fs').renameSync('<OUTPUT_DIR>/_result.json.tmp','<OUTPUT_DIR>/_result.json')"`
+   so the coordinator never reads a partial file.
+6. Then return the same JSON in the chat body so the coordinator can short-
+   circuit polling when it sees the message.
 
 ## Rules
 
 - Do not edit files outside OUTPUT_DIR.
+- **Always** write `_result.json` — even on failure (`status: "failed"`).
+  Without this file the coordinator's awaiter hangs at timeout.
 - If a capture fails (selector missing, network error): record in errors[]
   and continue with other captures.
 - If LLM call fails: retry once with exponential backoff before recording.

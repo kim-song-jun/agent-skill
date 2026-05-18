@@ -1,0 +1,81 @@
+#!/usr/bin/env node
+// thrift-posttool-summariser-trigger (Copilot) — after each tool call,
+// accumulate output size and fire the summariser (advisory) when thresholds
+// hit. Mirrors a "pending summariser" marker into store_memory.
+//
+// Input: postToolUse hook payload (JSON via stdin) with tool_output /
+// tool_response.
+
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+
+const ROOT = process.env.COPILOT_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR || ".";
+const STATE_PATH = resolve(ROOT, ".thrift-state.json");
+const CONFIG_PATH = resolve(ROOT, ".thrift.json");
+
+async function main() {
+  let payload = {};
+  try {
+    const stdin = readFileSync(0, "utf-8");
+    if (stdin.trim()) payload = JSON.parse(stdin);
+  } catch {
+    process.exit(0);
+  }
+
+  const output = payload?.tool_response?.output || payload?.tool_output || "";
+  const outputBytes = typeof output === "string" ? output.length : JSON.stringify(output).length;
+
+  const { readState, writeState, recordTurn, metricsSinceLastSummary } = await import(
+    resolve(import.meta.dirname || ".", "../../lib/metrics-collector.mjs")
+  );
+  const { loadConfig } = await import(
+    resolve(import.meta.dirname || ".", "../../lib/config-loader.mjs")
+  );
+  const { shouldFireSummariser, estimateTokensFromBytes } = await import(
+    resolve(import.meta.dirname || ".", "../../lib/threshold-evaluator.mjs")
+  );
+  const { storeMemoryWrite } = await import(
+    resolve(import.meta.dirname || ".", "../../lib/store-memory-bridge.mjs")
+  );
+
+  const configRes = loadConfig(CONFIG_PATH);
+  if (!configRes.ok) process.exit(0);
+  const config = configRes.config;
+
+  const state = readState(STATE_PATH);
+  const estTokens = estimateTokensFromBytes(outputBytes);
+  recordTurn(state, { tokensOut: estTokens, model: config?.summariser?.model || "gpt-5-nano" });
+
+  const m = metricsSinceLastSummary(state);
+  const verdict = shouldFireSummariser({
+    turnsSinceLastSummary: m.turnsSinceLastSummary,
+    tokensSinceLastSummary: m.tokensSinceLastSummary,
+    config,
+  });
+
+  writeState(STATE_PATH, state);
+
+  if (verdict.fire) {
+    const notify = resolve(ROOT, ".thrift/notifications/summarise.md");
+    mkdirSync(dirname(notify), { recursive: true });
+    writeFileSync(notify, `Summariser threshold hit (reason: ${verdict.reason}, turns=${m.turnsSinceLastSummary}, tokens≈${m.tokensSinceLastSummary}).\n\nRun \`/thrift-copilot summarise\` then consider starting a fresh Copilot session referencing the produced summary path.\n`);
+
+    // Best-effort store_memory marker. Invoker is null at hook scope
+    // (no host context); bridge transparently falls back to file mode.
+    try {
+      await storeMemoryWrite({
+        key: `${config?.storeMemory?.keyPrefix || "thrift/"}pending-summary`,
+        value: { reason: verdict.reason, turns: m.turnsSinceLastSummary, tokens: m.tokensSinceLastSummary, at: new Date().toISOString() },
+        scope: config?.storeMemory?.scope || "repository",
+        invoker: null,
+        fallbackRoot: ROOT,
+      });
+    } catch { /* non-fatal */ }
+
+    console.error(`<system-reminder>thrift-copilot summariser ready: run /thrift-copilot summarise (reason=${verdict.reason})</system-reminder>`);
+  }
+
+  process.exit(0);
+}
+
+main().catch(() => process.exit(0));

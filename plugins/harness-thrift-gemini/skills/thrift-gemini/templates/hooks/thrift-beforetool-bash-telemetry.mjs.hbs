@@ -1,0 +1,72 @@
+#!/usr/bin/env node
+// thrift-beforetool-bash-telemetry (Gemini port) — observes
+// run_shell_command tool calls and records telemetry for the audit
+// report. Does NOT coerce (that's context-mode-router-gemini's job).
+//
+// Input: BeforeTool hook payload from Gemini CLI stdin (JSON):
+//   { tool_name: "run_shell_command", tool_input: { command: "..." }, ... }
+// Output: passes through (exit 0); appends a coercion record to
+//   .thrift-state.json.
+//
+// NB: Gemini event name is `BeforeTool` (not `PreToolUse`); the matcher
+// in settings.json is `run_shell_command` (not `Bash`).
+
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
+
+const ROOT = process.env.GEMINI_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR || ".";
+const STATE_PATH = resolve(ROOT, ".thrift-state.json");
+
+function readState() {
+  if (!existsSync(STATE_PATH)) return { coercions: [], phases: [] };
+  try {
+    return JSON.parse(readFileSync(STATE_PATH, "utf-8"));
+  } catch {
+    return { coercions: [], phases: [] };
+  }
+}
+
+function writeState(state) {
+  try {
+    writeFileSync(STATE_PATH, JSON.stringify(state, null, 2));
+  } catch {
+    // Don't fail the hook on telemetry errors.
+  }
+}
+
+async function main() {
+  let payload = {};
+  try {
+    const stdin = readFileSync(0, "utf-8");
+    if (stdin.trim()) payload = JSON.parse(stdin);
+  } catch {
+    process.exit(0);
+  }
+
+  const cmd = payload?.tool_input?.command || "";
+  if (!cmd) process.exit(0);
+
+  // Heuristic: commands that often produce large output.
+  const largeBashPatterns = [
+    /^find\b/, /^git log\b/, /^git diff\b/, /^cat\b/,
+    /^ls -[lR]/, /^grep -r\b/, /^npm test\b/, /^tree\b/,
+  ];
+  const likelyLarge = largeBashPatterns.some((re) => re.test(cmd));
+
+  if (likelyLarge) {
+    const state = readState();
+    state.coercions ??= [];
+    state.coercions.push({
+      at: new Date().toISOString(),
+      tool: "run_shell_command",
+      suggestion: `ctx_execute(language: "shell", code: ${JSON.stringify(cmd)})`,
+      accepted: false,
+    });
+    writeState(state);
+  }
+
+  // Always exit 0 — telemetry-only, never blocks.
+  process.exit(0);
+}
+
+main().catch(() => process.exit(0));

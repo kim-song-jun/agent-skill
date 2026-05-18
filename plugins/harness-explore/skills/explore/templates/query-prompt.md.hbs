@@ -1,0 +1,37 @@
+{{#if isWhere}}
+Symbol `{{symbol}}` — {{matchCount}} match{{#if multipleMatches}}es{{/if}} (source: {{source}}).
+{{#if hasFuzzy}}
+_Fuzzy match — closest symbols by edit distance._
+{{/if}}
+
+{{#each matches}}- `{{this.file}}`{{#if this.line}}:{{this.line}}{{/if}} — {{this.kind}}{{#if this.suggested}} (matched `{{this.suggested}}`){{/if}}
+{{/each}}
+
+{{#if noMatches}}
+No matches in the cached map. Suggestions:
+- Run `/explore --force` to rescan (the symbol may have been added since the last scan).
+- Try ripgrep directly: `rg -n "{{symbol}}"`
+{{/if}}
+{{/if}}
+
+{{#if isDeps}}
+File `{{file}}` — imports **{{importCount}}**, used by **{{importedByCount}}**.
+
+### Imports
+
+{{#each imports}}- `{{this}}`
+{{/each}}
+{{#if noImports}}_(none in the map)_{{/if}}
+
+### Imported by
+
+{{#each importedBy}}- `{{this}}`
+{{/each}}
+{{#if noImportedBy}}_(none in the map — possible orphan)_{{/if}}
+
+{{#if notInMap}}
+**File not in cached map.** Suggestions:
+- Run `/explore --force` to rescan.
+- Verify the path is repo-relative and uses forward slashes.
+{{/if}}
+{{/if}}

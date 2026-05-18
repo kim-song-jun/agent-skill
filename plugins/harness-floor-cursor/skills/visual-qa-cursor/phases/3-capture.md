@@ -62,3 +62,18 @@ The `@visual-qa-page` subagent template (shipped as
 ## Output
 
 Per-page: `Page <name>: <captured>/<expected> captures, <analyzed>/<expected> analyses`.
+
+## Shell helpers — awaiter
+
+The per-page subagent writes `<slug-dir>/<page>/_result.json` on completion
+(see `templates/agents/visual-qa-page.md.hbs`). The coordinator polls until
+all pages settle, or a timeout fires:
+
+```bash
+node .cursor/visual-qa/lib/page-result-collector.mjs await \
+  <slug-dir> <page1>,<page2>,<...> [timeoutMs] [intervalMs]
+```
+
+Exit code 0 = all pages settled, 1 = at least one still pending after
+timeout. On pending: prompt user `Pages still running: <list>. Type 'go'
+when ready to aggregate.` and re-poll once on confirmation.

@@ -1,0 +1,106 @@
+#!/usr/bin/env node
+// thrift-aftertool-summariser-trigger (Gemini port) — after each tool
+// call, accumulate output size and fire the summariser (advisory v1) if
+// thresholds hit.
+//
+// Input: AfterTool hook payload (JSON via stdin) with tool_response /
+// tool_output. Gemini variants use `tool_response.output` typically.
+
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+
+const ROOT = process.env.GEMINI_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR || ".";
+const STATE_PATH = resolve(ROOT, ".thrift-state.json");
+const CONFIG_PATH = resolve(ROOT, ".thrift.json");
+
+// Naive 3-bytes-per-token estimate; matches the CC heuristic. Verify
+// per-model in v2.
+function estimateTokensFromBytes(bytes) {
+  return Math.round(bytes / 3);
+}
+
+function readState() {
+  if (!existsSync(STATE_PATH)) return { turns: [], summarisers: [], coercions: [], phases: [] };
+  try {
+    return JSON.parse(readFileSync(STATE_PATH, "utf-8"));
+  } catch {
+    return { turns: [], summarisers: [], coercions: [], phases: [] };
+  }
+}
+
+function writeState(state) {
+  try {
+    writeFileSync(STATE_PATH, JSON.stringify(state, null, 2));
+  } catch {}
+}
+
+function loadConfigSafe() {
+  if (!existsSync(CONFIG_PATH)) return null;
+  try {
+    return JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+function metricsSinceLastSummary(state) {
+  const summarisers = state.summarisers || [];
+  const turns = state.turns || [];
+  const lastSummaryIdx = summarisers.length === 0 ? -1 : (summarisers[summarisers.length - 1].turnsAtFire ?? 0);
+  const turnsSinceLastSummary = turns.length - lastSummaryIdx;
+  const tokensSinceLastSummary = turns
+    .slice(lastSummaryIdx)
+    .reduce((sum, t) => sum + (t.tokensOut || 0), 0);
+  return { turnsSinceLastSummary, tokensSinceLastSummary };
+}
+
+function shouldFireSummariser({ turnsSinceLastSummary, tokensSinceLastSummary, config }) {
+  if (turnsSinceLastSummary >= config.summariser.everyNTurns) {
+    return { fire: true, reason: "turns" };
+  }
+  if (tokensSinceLastSummary >= config.summariser.everyMTokensOutput) {
+    return { fire: true, reason: "tokens" };
+  }
+  return { fire: false };
+}
+
+async function main() {
+  let payload = {};
+  try {
+    const stdin = readFileSync(0, "utf-8");
+    if (stdin.trim()) payload = JSON.parse(stdin);
+  } catch {
+    process.exit(0);
+  }
+
+  const output = payload?.tool_response?.output || payload?.tool_output || "";
+  const outputBytes = typeof output === "string" ? output.length : JSON.stringify(output).length;
+
+  const config = loadConfigSafe();
+  if (!config) process.exit(0);
+
+  const state = readState();
+  const estTokens = estimateTokensFromBytes(outputBytes);
+  state.turns ??= [];
+  state.turns.push({ at: new Date().toISOString(), tokensOut: estTokens, model: config.summariser?.model || "gemini-flash" });
+
+  const m = metricsSinceLastSummary(state);
+  const verdict = shouldFireSummariser({
+    turnsSinceLastSummary: m.turnsSinceLastSummary,
+    tokensSinceLastSummary: m.tokensSinceLastSummary,
+    config,
+  });
+
+  writeState(state);
+
+  if (verdict.fire) {
+    const notify = resolve(ROOT, ".thrift/notifications/summarise.md");
+    mkdirSync(dirname(notify), { recursive: true });
+    writeFileSync(notify, `Summariser threshold hit (reason: ${verdict.reason}, turns=${m.turnsSinceLastSummary}, tokens≈${m.tokensSinceLastSummary}).\n\nRun \`/thrift-gemini summarise\` then \`/compress\` and paste the resulting summary path.\n`);
+    console.error(`<system-reminder>thrift-gemini summariser ready: run /thrift-gemini summarise (reason=${verdict.reason})</system-reminder>`);
+  }
+
+  process.exit(0);
+}
+
+main().catch(() => process.exit(0));

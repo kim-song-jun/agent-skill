@@ -23,3 +23,18 @@
 ## Output
 
 Print: `Plan written: <plan.path>`.
+
+## Shell helpers
+
+After drafting, confirm the plan parses cleanly before Phase 3 dispatch:
+
+```bash
+node .cursor/agent-all/lib/plan-parser.mjs <plan.path>
+```
+
+The parser prints `{ tasks: [{id,title,role?,files[]}], errors: [...] }`.
+If `errors[]` contains a `bad task id` entry, abort with
+`plan parse failed — fix heading format and re-run`.
+
+If a task has no `Create:`/`Modify:` bullets, the parser warns (not fatal)
+but Phase 3 cannot dispatch zero-file tasks — re-prompt the user.

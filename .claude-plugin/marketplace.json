@@ -60,6 +60,36 @@
       "name": "harness-thrift",
       "source": "./plugins/harness-thrift",
       "description": "Theme B — cost-conscious long-session optimisation: context-mode integration, prompt cache priming, summariser hooks, end-of-session audit"
+    },
+    {
+      "name": "harness-thrift-cursor",
+      "source": "./plugins/harness-thrift-cursor",
+      "description": "Theme B port for Cursor — advisory-only thrift via .cursor/rules/thrift.mdc"
+    },
+    {
+      "name": "harness-thrift-copilot",
+      "source": "./plugins/harness-thrift-copilot",
+      "description": "Theme B port for GitHub Copilot CLI — store_memory bridge + .github/hooks/ patches"
+    },
+    {
+      "name": "harness-thrift-codex",
+      "source": "./plugins/harness-thrift-codex",
+      "description": "Theme B port for Codex CLI — TOML-aware ~/.codex/config.toml patcher + OpenAI rate table"
+    },
+    {
+      "name": "harness-thrift-gemini",
+      "source": "./plugins/harness-thrift-gemini",
+      "description": "Theme B port for Gemini CLI — Vertex AI rate table with min-token + storage-hour terms"
+    },
+    {
+      "name": "harness-explore",
+      "source": "./plugins/harness-explore",
+      "description": "Theme D — codebase exploration: parallel-dispatch tree-walker + dependency graph, cached by git HEAD, /explore where + /explore deps queries"
+    },
+    {
+      "name": "harness-debug",
+      "source": "./plugins/harness-debug",
+      "description": "Theme E — systematic debugging: reproduce → isolate → hypothesize → verify workflow with .debug-state.json checkpointing + 10-format error parser + bisection lib"
     }
   ]
 }

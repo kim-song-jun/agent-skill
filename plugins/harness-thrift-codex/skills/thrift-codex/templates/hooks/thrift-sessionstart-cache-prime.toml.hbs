@@ -1,0 +1,8 @@
+# thrift: thrift-sessionstart-cache-prime
+# Records SessionStart and (if cache.enabled) seeds the first prime.
+# Codex's cache-prime is exec_command-based and best-effort — see
+# phases/4-cache-prime.md.
+[[hooks.session_start]]
+command = "node \"{{hooksDir}}/thrift-sessionstart-cache-prime.mjs\""
+timeout_seconds = 15
+# end thrift: thrift-sessionstart-cache-prime

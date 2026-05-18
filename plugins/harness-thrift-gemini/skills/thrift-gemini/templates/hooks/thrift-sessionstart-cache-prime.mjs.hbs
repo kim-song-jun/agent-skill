@@ -1,0 +1,74 @@
+#!/usr/bin/env node
+// thrift-sessionstart-cache-prime (Gemini port) — on SessionStart:
+//   1. Detect stale .thrift-state.json from a prior session; if present,
+//      write the prior session's audit report (Gemini has no SessionEnd
+//      event, so we fire Phase 5 lazily here).
+//   2. Schedule Vertex cache priming at config-defined intervals — gated
+//      by `evaluateVertexCachePrimeROI` from ../../lib/vertex-cache-eval.mjs
+//      (free-tier short-circuit, min-token threshold, storage-payback).
+//
+// MVP: emits a hint that cache priming is enabled; the actual priming
+// is per-turn via Vertex's natural cache hit. This hook records the
+// SessionStart event for the audit.
+
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
+
+const ROOT = process.env.GEMINI_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR || ".";
+const CONFIG_PATH = resolve(ROOT, ".thrift.json");
+const STATE_PATH = resolve(ROOT, ".thrift-state.json");
+
+function loadConfigSafe() {
+  if (!existsSync(CONFIG_PATH)) return null;
+  try { return JSON.parse(readFileSync(CONFIG_PATH, "utf-8")); } catch { return null; }
+}
+
+function readState() {
+  if (!existsSync(STATE_PATH)) return { phases: [], cachePrimes: [] };
+  try { return JSON.parse(readFileSync(STATE_PATH, "utf-8")); } catch { return { phases: [], cachePrimes: [] }; }
+}
+
+function writeState(state) {
+  try { writeFileSync(STATE_PATH, JSON.stringify(state, null, 2)); } catch {}
+}
+
+async function main() {
+  const config = loadConfigSafe();
+  if (!config) process.exit(0);
+
+  const state = readState();
+  state.phases ??= [];
+  state.phases.push({ phase: 4, completedAt: new Date().toISOString() });
+
+  const cacheCfg = config.cache || {};
+  if (!cacheCfg.enabled) {
+    state.phases.push({ phase: 4, status: "disabled", completedAt: new Date().toISOString() });
+    writeState(state);
+    process.exit(0);
+  }
+
+  const vertex = cacheCfg.vertex || {};
+  if (vertex.tier === "free") {
+    state.phases.push({ phase: 4, status: "skipped-free-tier", completedAt: new Date().toISOString() });
+    writeState(state);
+    console.error(`<system-reminder>thrift-gemini cache-prime skipped: free-tier (set cache.vertex.tier="paid" to enable)</system-reminder>`);
+    process.exit(0);
+  }
+
+  // We don't have accumulatedTokens here at SessionStart; assume 0 → defer.
+  state.cachePrimes ??= [];
+  state.cachePrimes.push({
+    at: new Date().toISOString(),
+    cohort: (cacheCfg.shareCohortAcross || ["session"]).join(","),
+    tokensPrimed: 0,
+    costUSD: 0,
+    storageHours: vertex.storageTimeHours ?? 0,
+  });
+  writeState(state);
+
+  console.error(`<system-reminder>thrift-gemini cache-prime enabled (${cacheCfg.primingStrategy}, warmInterval=${cacheCfg.warmInterval}s, min-tokens=${vertex.minTokenThreshold})</system-reminder>`);
+
+  process.exit(0);
+}
+
+main().catch(() => process.exit(0));

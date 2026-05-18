@@ -1,0 +1,10 @@
+# thrift: thrift-pretool-read-coerce
+# Suggests ctx_execute_file via context-mode-codex (when present) for
+# large file reads. Codex's "read" surface is implicit (the model reads
+# files directly), so this matcher targets apply_patch read-side calls
+# and the explicit `read_file` MCP tool if present.
+[[hooks.pre_tool_use]]
+matcher = "read_file"
+command = "node \"{{hooksDir}}/thrift-pretool-read-coerce.mjs\""
+timeout_seconds = 10
+# end thrift: thrift-pretool-read-coerce

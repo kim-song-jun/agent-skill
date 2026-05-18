@@ -11,3 +11,10 @@
    ```
 2. Push `{phase: 5, completedAt}` to state.
 3. Exit code: 0 if no critical issues, 1 if any critical.
+
+## Shell helpers
+
+```bash
+# Render the markdown report from the aggregated JSON.
+node .cursor/visual-qa/lib/report-renderer.mjs <slug-dir>/report.json > <slug-dir>/report.md
+```

@@ -39,3 +39,32 @@
 ## Output
 
 Print one line per wave: `Wave <i>: <completed>/<total> tasks succeeded`.
+
+## Shell helpers
+
+```bash
+# Re-parse the plan to get the canonical task list (step 1).
+node .cursor/agent-all/lib/plan-parser.mjs <plan.path>
+
+# Persist wave results after each wave (step 4).
+node .cursor/agent-all/lib/state-rw.mjs read  .agent-all-state.json
+# ... mutate the parsed JSON in memory ...
+node .cursor/agent-all/lib/state-rw.mjs write .agent-all-state.json '<mutated-json>'
+```
+
+Wave construction (step 2) stays inline — greedy bin-packing by
+file-overlap conflict is short enough to compute in the coordinator's
+working memory. Pseudocode:
+
+```
+waves = []
+remaining = tasks.filter(t => rolesAllowed.includes(t.role) || t.role == null)
+while remaining:
+  wave = []
+  used = new Set()  // files claimed by tasks already in this wave
+  for t in remaining:
+    if wave.length >= maxParallel: break
+    if t.files.some(f => used.has(f)): continue  // file conflict, defer
+    wave.push(t); for f of t.files: used.add(f)
+  waves.push(wave); remaining = remaining.filter(t => !wave.includes(t))
+```

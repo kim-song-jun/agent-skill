@@ -13,6 +13,12 @@ const PLUGINS = [
   "harness-floor-gemini",
   "harness-floor-cursor",
   "harness-thrift",
+  "harness-thrift-cursor",
+  "harness-thrift-copilot",
+  "harness-thrift-codex",
+  "harness-thrift-gemini",
+  "harness-explore",
+  "harness-debug",
 ];
 
 for (const p of PLUGINS) {
@@ -39,7 +45,13 @@ test("harness-floor-gemini: gemini-extension.json is valid", () => {
   assert.equal(data.name, "harness-floor-gemini");
 });
 
-test("marketplace.json lists all eleven plugins", () => {
+test("harness-thrift-gemini: gemini-extension.json is valid", () => {
+  const path = resolve("plugins", "harness-thrift-gemini", "gemini-extension.json");
+  const data = JSON.parse(readFileSync(path, "utf-8"));
+  assert.equal(data.name, "harness-thrift-gemini");
+});
+
+test("marketplace.json lists all seventeen plugins", () => {
   const data = JSON.parse(readFileSync(".claude-plugin/marketplace.json", "utf-8"));
   const names = data.plugins.map((p) => p.name).sort();
   assert.deepEqual(names, [
@@ -48,11 +60,17 @@ test("marketplace.json lists all eleven plugins", () => {
     "harness-builder-copilot",
     "harness-builder-cursor",
     "harness-builder-gemini",
+    "harness-debug",
+    "harness-explore",
     "harness-floor",
     "harness-floor-codex",
     "harness-floor-copilot",
     "harness-floor-cursor",
     "harness-floor-gemini",
     "harness-thrift",
+    "harness-thrift-codex",
+    "harness-thrift-copilot",
+    "harness-thrift-cursor",
+    "harness-thrift-gemini",
   ]);
 });

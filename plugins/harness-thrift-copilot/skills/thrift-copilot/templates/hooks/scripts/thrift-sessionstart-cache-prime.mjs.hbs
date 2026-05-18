@@ -1,0 +1,44 @@
+#!/usr/bin/env node
+// thrift-sessionstart-cache-prime (Copilot) — disabled by default.
+//
+// Per the decomposition spec, Phase 4 is a no-op on Copilot unless the
+// user explicitly sets BOTH cache.enabled = true AND
+// cache.intermediationWarning = false. Even when opted in, the priming
+// effectiveness is unmeasurable on Copilot's intermediated model layer.
+
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const ROOT = process.env.COPILOT_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR || ".";
+const CONFIG_PATH = resolve(ROOT, ".thrift.json");
+const STATE_PATH = resolve(ROOT, ".thrift-state.json");
+
+async function main() {
+  const { loadConfig } = await import(
+    resolve(import.meta.dirname || ".", "../../lib/config-loader.mjs")
+  );
+  const { readState, writeState, recordPhase, recordCachePrime } = await import(
+    resolve(import.meta.dirname || ".", "../../lib/metrics-collector.mjs")
+  );
+
+  const cr = loadConfig(CONFIG_PATH);
+  if (!cr.ok) process.exit(0);
+  const config = cr.config;
+
+  const state = readState(STATE_PATH);
+  recordPhase(state, 4);
+
+  const optedIn = config.cache.enabled === true && config.cache.intermediationWarning === false;
+  if (optedIn) {
+    recordCachePrime(state, { cohort: (config.cache.shareCohortAcross || ["session"]).join(","), costUSD: 0 });
+    console.error(`<system-reminder>thrift-copilot cache-prime opted in (${config.cache.primingStrategy}, warmInterval=${config.cache.warmInterval}s) — note: priming is unmeasurable on Copilot</system-reminder>`);
+  } else {
+    // Disabled-by-default path: emit nothing user-visible. Phase 5
+    // audit will mark this as "disabled-by-default-copilot".
+  }
+
+  writeState(STATE_PATH, state);
+  process.exit(0);
+}
+
+main().catch(() => process.exit(0));

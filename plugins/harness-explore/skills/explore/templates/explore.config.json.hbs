@@ -1,0 +1,24 @@
+{
+  "version": "0.1.0",
+  "concurrency": {{concurrency}},
+  "subagentOutputTokenBudget": {{subagentOutputTokenBudget}},
+  "ignorePatterns": [
+    ".git",
+    "node_modules",
+    "dist",
+    "build",
+    ".next",
+    ".turbo",
+    "target",
+    "__pycache__",
+    ".venv",
+    "venv",
+    ".tox",
+    "vendor",
+    ".explore-cache"
+  ],
+  "languages": ["ts", "tsx", "js", "jsx", "mjs", "cjs", "py", "rs", "go"],
+  "query": {
+    "autoScan": {{autoScan}}
+  }
+}

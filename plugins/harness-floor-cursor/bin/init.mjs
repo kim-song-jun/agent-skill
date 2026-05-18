@@ -18,7 +18,7 @@
 // Runtime templates (analysis-prompt, report, pr-body, page-prompt) stay
 // in the plugin — the skills render them at run time.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { render } from "./lib/render.mjs";
@@ -37,6 +37,38 @@ const INSTALL_MAP = {
     { src: "skills/agent-all-cursor/templates/agents/agent-all-coordinator.md.hbs", dst: ".cursor/agents/agent-all-coordinator.md" },
     { src: "skills/agent-all-cursor/templates/agents/agent-all-implementer.md.hbs", dst: ".cursor/agents/agent-all-implementer.md" },
     { src: "skills/agent-all-cursor/templates/agents/agent-all-reviewer.md.hbs", dst: ".cursor/agents/agent-all-reviewer.md" },
+  ],
+};
+
+// Lib modules copied verbatim (no Handlebars rendering) into the user's
+// workspace so the coordinator can shell out via `read_bash` against them
+// without touching the plugin install path.
+//
+// Cursor's coordinator invokes these like:
+//   node .cursor/visual-qa/lib/config-loader.mjs .visual-qa.json
+//   node .cursor/agent-all/lib/plan-parser.mjs docs/.../plan.md
+const LIB_MAP = {
+  "visual-qa": {
+    files: ["config-loader.mjs", "matrix-builder.mjs", "cost-estimator.mjs",
+            "diff-runs.mjs", "state-rw.mjs", "report-renderer.mjs",
+            "page-result-collector.mjs"],
+    srcDir: "skills/visual-qa-cursor/lib",
+    dstDir: ".cursor/visual-qa/lib",
+  },
+  "agent-all": {
+    files: ["config-loader.mjs", "plan-parser.mjs", "state-rw.mjs"],
+    srcDir: "skills/agent-all-cursor/lib",
+    dstDir: ".cursor/agent-all/lib",
+  },
+};
+
+// Auxiliary verbatim files (templates) that the lib modules expect to find
+// at install-relative paths. Same idempotency rules as INSTALL_MAP entries.
+const AUX_FILES = {
+  "visual-qa": [
+    // report-renderer's DEFAULT_TEMPLATE resolves to ../templates/report.md.hbs.
+    { src: "skills/visual-qa-cursor/templates/report.md.hbs", dst: ".cursor/visual-qa/templates/report.md.hbs" },
+    { src: "skills/visual-qa-cursor/templates/analysis-prompt.md.hbs", dst: ".cursor/visual-qa/templates/analysis-prompt.md.hbs" },
   ],
 };
 
@@ -107,6 +139,42 @@ function main() {
       const tpl = readFileSync(srcPath, "utf-8");
       const rendered = render(tpl, ctx);
       writeFileSync(dstPath, rendered);
+      installed.push(dstPath);
+      console.log(`wrote ${dstPath}`);
+    }
+
+    // Copy lib modules verbatim (no template rendering — they're .mjs source).
+    const libGroup = LIB_MAP[bucket];
+    if (libGroup) {
+      for (const file of libGroup.files) {
+        const srcPath = resolve(pluginRoot, libGroup.srcDir, file);
+        const dstPath = resolve(target, libGroup.dstDir, file);
+        if (!existsSync(srcPath)) {
+          // Spec allows lib modules to be optional; skip silently.
+          continue;
+        }
+        if (existsSync(dstPath) && !args.force) {
+          console.error(`Refusing to overwrite ${dstPath} (use --force)`);
+          process.exit(2);
+        }
+        mkdirSync(dirname(dstPath), { recursive: true });
+        copyFileSync(srcPath, dstPath);
+        installed.push(dstPath);
+        console.log(`wrote ${dstPath}`);
+      }
+    }
+
+    // Copy auxiliary verbatim files (templates depended on by lib modules).
+    for (const aux of AUX_FILES[bucket] ?? []) {
+      const srcPath = resolve(pluginRoot, aux.src);
+      const dstPath = resolve(target, aux.dst);
+      if (!existsSync(srcPath)) continue;
+      if (existsSync(dstPath) && !args.force) {
+        console.error(`Refusing to overwrite ${dstPath} (use --force)`);
+        process.exit(2);
+      }
+      mkdirSync(dirname(dstPath), { recursive: true });
+      copyFileSync(srcPath, dstPath);
       installed.push(dstPath);
       console.log(`wrote ${dstPath}`);
     }

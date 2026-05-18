@@ -1,0 +1,6 @@
+{
+  "name": "harness-thrift-gemini",
+  "version": "0.1.0",
+  "description": "Theme B for Gemini CLI — cost-conscious long-session optimisation: BeforeTool/AfterTool telemetry hooks, Vertex prompt-cache priming with minimum-token gating + storage-time cost, gemini-flash summariser, end-of-session audit",
+  "keywords": ["harness", "thrift", "gemini", "vertex", "cost-optimization", "context-mode", "summariser"]
+}

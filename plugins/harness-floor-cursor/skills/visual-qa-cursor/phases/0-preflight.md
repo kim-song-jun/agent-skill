@@ -14,3 +14,16 @@
    `max(state.phases[*].phase) >= 0`, skip rest of Phase 0.
 5. Push `{phase: 0, completedAt: "<iso>"}` to `phases` via Cursor's
    edit surface. Atomic via write-tmp + rename in Cursor's terminal.
+
+## Shell helpers
+
+```bash
+# Step 1 — validate `.visual-qa.json` against the schema.
+node -e 'import("./.cursor/visual-qa/lib/config-loader.mjs").then(m => { const r = m.loadConfig(".visual-qa.json", process.env); console.log(JSON.stringify(r, null, 2)); process.exit(r.ok ? 0 : 1); })'
+
+# Step 2 — confirm Playwright MCP entry exists (rough JSON check).
+node -e 'const j=JSON.parse(require("fs").readFileSync(".cursor/mcp.json","utf-8")); console.log(j.mcpServers && j.mcpServers.playwright ? "ok" : (process.exit(2),""))'
+
+# Step 4 — read state for `--resume` detection.
+node .cursor/visual-qa/lib/state-rw.mjs read .visual-qa-state.json
+```

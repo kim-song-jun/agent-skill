@@ -43,3 +43,19 @@ script the re-invocation via `cursor-cli` (when GA).
 
 Per iter: `Iter <N>/<max>: break check exit=<code>, consecutive=<N>/<stableIters>`.
 On final exit: `Loop <broken|exhausted> after <N> iter(s). Cost ~$<costUSD>.`
+
+## Shell helpers
+
+```bash
+# Step 1 — execute the break-condition; capture exit code in the coordinator.
+sh -c "$BREAK_CONDITION"; echo "exit=$?"
+
+# Steps 2-3 — update iter counters + consecutivePass atomically.
+node .cursor/agent-all/lib/state-rw.mjs read  .agent-all-state.json
+# ... mutate state.iter / state.consecutivePass / state.phases ...
+node .cursor/agent-all/lib/state-rw.mjs write .agent-all-state.json '<mutated-json>'
+```
+
+Cursor cannot re-invoke the coordinator from inside the same chat. After
+writing state, print the loop-continue prompt and wait for the user (see
+Cursor-specific section above).

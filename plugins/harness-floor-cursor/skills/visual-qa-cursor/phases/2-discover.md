@@ -11,3 +11,11 @@
    first run).
 6. Create slug dir + subdirs per `pages[]` (also `flows/` if flows exist).
 7. Push `{phase: 2, completedAt, slugDir, priorRunDir}` to state.
+
+## Shell helpers
+
+```bash
+# Initialise the state file (slug-scoped) on the first run.
+node .cursor/visual-qa/lib/state-rw.mjs read  .visual-qa-state.json
+node .cursor/visual-qa/lib/state-rw.mjs write .visual-qa-state.json '{"slug":"<slug>","slugDir":"<dir>","priorRunDir":<dir-or-null>,"phases":[]}'
+```

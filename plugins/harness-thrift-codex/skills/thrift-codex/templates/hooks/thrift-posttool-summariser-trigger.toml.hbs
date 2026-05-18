@@ -1,0 +1,9 @@
+# thrift: thrift-posttool-summariser-trigger
+# After each tool call, accumulate output size and emit a stderr
+# system reminder if the summariser threshold is hit. Codex routes
+# stderr from hooks to the TUI as a system reminder.
+[[hooks.post_tool_use]]
+matcher = ".*"
+command = "node \"{{hooksDir}}/thrift-posttool-summariser-trigger.mjs\""
+timeout_seconds = 15
+# end thrift: thrift-posttool-summariser-trigger

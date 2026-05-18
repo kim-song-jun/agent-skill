@@ -24,3 +24,16 @@ The coordinator (`agent-all-coordinator`) runs these checks before any pipeline 
 ## Output to user
 
 Print: `Preflight OK. <input mode: prompt|task>.`
+
+## Shell helpers
+
+The coordinator runs these via `read_bash`. The lib modules are copied into
+`<repo>/.cursor/agent-all/lib/` by `harness-floor-cursor/bin/init.mjs`.
+
+```bash
+# Step 4 — load + validate `.agent-all.json` (returns built-in DEFAULTS if missing).
+node -e 'import("./.cursor/agent-all/lib/config-loader.mjs").then(m => { const r = m.loadConfig(".agent-all.json"); console.log(JSON.stringify(r, null, 2)); process.exit(r.ok ? 0 : 1); })'
+
+# Step 5 — read existing state for --resume detection (returns {} if missing).
+node .cursor/agent-all/lib/state-rw.mjs read .agent-all-state.json
+```

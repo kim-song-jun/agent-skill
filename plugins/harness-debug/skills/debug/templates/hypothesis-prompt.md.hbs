@@ -1,0 +1,40 @@
+# Hypothesis enumeration request
+
+You are inside Phase 3 of the `/debug` skill. The failure has been
+reproduced and parsed into structured form. Propose **2-3 candidate
+root causes**, ranked easiest-to-test first.
+
+Output each hypothesis as a single bullet starting with `- H:`
+followed by one sentence. Do not propose fixes; only hypotheses.
+
+## Failure
+
+- **Description:** {{failure.description}}
+- **Command:** `{{failure.command}}`
+- **Kind:** `{{failure.errorParsed.kind}}`
+
+{{#if failure.errorParsed.rootException}}
+- **Root exception:** `{{failure.errorParsed.rootException.type}}: {{failure.errorParsed.rootException.value}}`
+{{/if}}
+
+### Top frames
+
+{{#each failure.errorParsed.frames}}
+- `{{file}}:{{line}}` {{function}}{{test}}{{message}}
+{{/each}}
+
+## Already-rejected hypotheses (do not re-propose)
+
+{{#each rejectedHypotheses}}
+- H{{id}} (rejected): {{text}}
+{{/each}}
+
+## Constraints
+
+- Each hypothesis must be falsifiable in a single experiment.
+- Each hypothesis must be testable from the current working tree
+  (no remote services, no production data).
+- Prefer hypotheses where the experiment is *inspection* over those
+  that require a code change.
+
+Begin enumeration:

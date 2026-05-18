@@ -29,14 +29,20 @@ const VENDORED_LIBS = [
   "plugins/harness-builder-cursor/skills/cursor-init/lib",
 ].map((p) => resolve(repoRoot, p));
 
-// harness-floor-* plugins keep render.mjs at bin/lib/ (only used by
-// bin/init.mjs install renderer; detect-stack not needed there).
+// harness-floor-* and harness-thrift-* plugins keep render.mjs at bin/lib/
+// (only used by bin/init.mjs install renderer; detect-stack not needed there).
 const VENDORED_RENDER_ONLY = [
   "plugins/harness-floor-cursor/bin/lib",
   "plugins/harness-floor-copilot/bin/lib",
   "plugins/harness-floor-codex/bin/lib",
   "plugins/harness-floor-gemini/bin/lib",
   "plugins/harness-thrift/bin/lib",
+  "plugins/harness-thrift-cursor/bin/lib",
+  "plugins/harness-thrift-copilot/bin/lib",
+  "plugins/harness-thrift-codex/bin/lib",
+  "plugins/harness-thrift-gemini/bin/lib",
+  "plugins/harness-explore/bin/lib",
+  "plugins/harness-debug/bin/lib",
 ].map((p) => resolve(repoRoot, p));
 
 const FILES = ["render.mjs", "detect-stack.mjs"];

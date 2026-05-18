@@ -1,0 +1,90 @@
+---
+description: thrift workflow rules — planner reads these every turn to keep long sessions cheap
+alwaysApply: true
+---
+
+# thrift (Cursor port) — workspace rules
+
+This workspace has the `harness-thrift-cursor` kit installed. Cursor has
+no programmatic hooks and no exposed prompt cache, so the cost-conscious
+workflow lives entirely in this rule. The planner reads it on every turn.
+
+## Origin
+
+Source-of-truth design: `plugins/harness-thrift/skills/thrift/SKILL.md`
+(Claude Code). Per-platform spec:
+`docs/superpowers/specs/2026-05-18-harness-thrift-per-platform-decomposition.md`
+(Cursor section). Local skill: `plugins/harness-thrift-cursor/skills/thrift-cursor/SKILL.md`.
+
+## Cost-conscious rules
+
+### 1. Coerce large tool outputs to context-mode
+
+If context-mode-cursor is installed (check `.cursor/mcp.json` for a
+`context-mode` MCP entry), prefer its `ctx_execute` and
+`ctx_execute_file` tools over `run_shell_command` for any command
+expected to produce more than `{{coerceBashWhenOutputExceeds}}` lines
+of output, or any file Read above `{{coerceReadWhenOutputExceeds}}`
+lines. The MCP tools keep raw output in a sandbox and return only the
+summary you need, which keeps the chat window short.
+
+If context-mode-cursor is **not** installed, this clause is a no-op —
+proceed with the default tool, but be aware large outputs eat your
+context budget.
+
+### 2. Suggest summarisation at thresholds
+
+After roughly `{{everyNTurns}}` of your turns, OR whenever you have
+produced ~`{{everyMTokensOutput}}` output tokens (estimate from your
+own reply lengths — Cursor does not surface exact counts), propose a
+summarisation pass to the user:
+
+> "This chat is getting long. Per the thrift rule, I can write a
+> one-page summary of the work so far to
+> `docs/thrift/cursor-summary-<date>-<HHMM>.md` so you can start a
+> fresh chat with that file in context. Proceed?"
+
+When the user accepts:
+1. Keep the last 6 turns verbatim in the summary as quoted blocks.
+2. For earlier turns, produce a one-line bullet per turn with the
+   action taken + the file path(s) touched.
+3. List open TODOs.
+4. Write the file. Tell the user where it is.
+
+### 3. End-of-session recap
+
+Before the user ends a long session (heuristic: ≥30 minutes wall clock
+or ≥`{{everyNTurns}}` turns), proactively offer to write an end-of-session
+recap to `docs/thrift/cursor-recap-<date>.md`. The recap covers:
+
+- What was attempted.
+- Files touched (paths only, with one-line descriptions).
+- What worked, what didn't.
+- Outstanding TODOs / unresolved questions.
+
+This recap replaces the Claude Code skill's quantified token-cost audit
+report — Cursor does not surface token counts, so we deliver a narrative
+recap instead.
+
+### 4. What this rule does NOT do
+
+- **No cache priming.** Cursor exposes no prompt-cache surface; the
+  Claude Code skill's Phase 4 is removed entirely.
+- **No automatic enforcement.** This is an advisory rule. Cursor's
+  planner reads it but the user can ignore the suggestions at any time.
+- **No state file.** `.thrift-state.json` is not produced. Metrics that
+  would have lived there (turn counts, token totals, coercion telemetry,
+  cache hit rate) are not collected.
+
+## Configuration
+
+Edit `.thrift.json` at the workspace root to tune thresholds. The rule
+re-reads them on the next chat turn (rules are reloaded per turn).
+
+## Source-of-truth
+
+For the full design rationale, see
+`plugins/harness-thrift/skills/thrift/SKILL.md`. Cursor's port adapts
+the contract but preserves the intent: keep raw output off the
+conversation surface, summarise long sessions, and write a recap at
+session end.

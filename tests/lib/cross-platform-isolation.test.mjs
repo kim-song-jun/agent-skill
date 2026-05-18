@@ -23,6 +23,12 @@ const PLUGINS = [
   "harness-floor-gemini",
   "harness-floor-cursor",
   "harness-thrift",
+  "harness-thrift-cursor",
+  "harness-thrift-copilot",
+  "harness-thrift-codex",
+  "harness-thrift-gemini",
+  "harness-explore",
+  "harness-debug",
 ];
 
 for (const p of PLUGINS) {

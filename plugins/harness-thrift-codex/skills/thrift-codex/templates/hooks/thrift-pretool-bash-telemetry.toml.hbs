@@ -1,0 +1,8 @@
+# thrift: thrift-pretool-bash-telemetry
+# Observes Codex shell_command calls and records coercion telemetry.
+# Append into the [hooks] block of ~/.codex/config.toml.
+[[hooks.pre_tool_use]]
+matcher = "shell_command"
+command = "node \"{{hooksDir}}/thrift-pretool-bash-telemetry.mjs\""
+timeout_seconds = 10
+# end thrift: thrift-pretool-bash-telemetry

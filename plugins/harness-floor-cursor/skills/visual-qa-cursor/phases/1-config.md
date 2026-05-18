@@ -11,3 +11,20 @@
 4. Unless `--yes` or estimate ≤ `--budget`: ask in chat
    `<matrix.length> captures, est. cost $<X>. Proceed? [y/N]`. Abort on N.
 5. Push `{phase: 1, completedAt, matrixSize, estCostUSD}` to state.
+
+## Shell helpers
+
+```bash
+# Build the matrix + estimate cost in one pipeline.
+node -e '
+const cfg = require("fs").readFileSync(".visual-qa.json","utf-8");
+Promise.all([
+  import("./.cursor/visual-qa/lib/matrix-builder.mjs"),
+  import("./.cursor/visual-qa/lib/cost-estimator.mjs"),
+]).then(([mb, ce]) => {
+  const parsed = JSON.parse(cfg);
+  const matrix = mb.buildMatrix(parsed);
+  const usd = ce.estimateCost(matrix, parsed.analysis?.model ?? "claude-sonnet-4-6");
+  console.log(JSON.stringify({ matrixSize: matrix.length, estCostUSD: usd }, null, 2));
+});'
+```

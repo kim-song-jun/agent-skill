@@ -1,0 +1,36 @@
+{
+  "slug": "2026-05-18-abc1234",
+  "runDate": "2026-05-18T10:00:00Z",
+  "baseUrl": "http://localhost:3000",
+  "capturedCount": 6,
+  "expectedCount": 6,
+  "analyzedCount": 6,
+  "issueCount": 2,
+  "criticalCount": 0,
+  "majorCount": 1,
+  "minorCount": 1,
+  "priorRunDir": null,
+  "perPageStatus": [
+    {
+      "page": "home",
+      "captures": 3,
+      "expected": 3,
+      "analyses": 3,
+      "issueCount": 1,
+      "critical": 0,
+      "major": 1,
+      "minor": 0,
+      "status": "completed"
+    }
+  ],
+  "issues": [
+    {
+      "severity": "major",
+      "category": "alignment",
+      "page": "home",
+      "breakpoint": "desktop",
+      "component": "hero",
+      "description": "Logo not centered"
+    }
+  ]
+}

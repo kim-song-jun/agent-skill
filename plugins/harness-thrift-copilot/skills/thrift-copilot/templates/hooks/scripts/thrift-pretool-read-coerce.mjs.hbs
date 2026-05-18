@@ -1,0 +1,55 @@
+#!/usr/bin/env node
+// thrift-pretool-read-coerce (Copilot) — suggests ctx_execute_file for
+// large read_file calls. Copilot's primitive is `read_file`; the matcher
+// in the registering hook JSON points here.
+//
+// Input: preToolUse hook payload from Copilot via stdin (JSON):
+//   { tool_input: { file_path: "..." }, ... }
+//
+// > TODO: verify Copilot tool-name and payload field names against live
+//   CLI (read_file? read? open_file?).
+
+import { readFileSync, statSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
+
+const STATE_PATH = resolve(process.env.COPILOT_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR || ".", ".thrift-state.json");
+const COERCE_THRESHOLD_BYTES = 200 * 80;
+
+async function main() {
+  let payload = {};
+  try {
+    const stdin = readFileSync(0, "utf-8");
+    if (stdin.trim()) payload = JSON.parse(stdin);
+  } catch {
+    process.exit(0);
+  }
+
+  const filePath = payload?.tool_input?.file_path || payload?.tool_input?.path;
+  if (!filePath || !existsSync(filePath)) process.exit(0);
+
+  let bytes = 0;
+  try { bytes = statSync(filePath).size; } catch { process.exit(0); }
+
+  if (bytes < COERCE_THRESHOLD_BYTES) process.exit(0);
+
+  console.error(`<system-reminder>thrift-copilot: ${filePath} is ${bytes} bytes. If you're reading to analyze (not edit), prefer ctx_execute_file to keep raw contents out of context.</system-reminder>`);
+
+  try {
+    const { readState, writeState, recordCoercion } = await import(
+      resolve(import.meta.dirname || ".", "../../lib/metrics-collector.mjs")
+    );
+    const state = readState(STATE_PATH);
+    recordCoercion(state, {
+      tool: "read_file",
+      suggestion: `ctx_execute_file(path: ${JSON.stringify(filePath)})`,
+      accepted: false,
+    });
+    writeState(STATE_PATH, state);
+  } catch {
+    // Telemetry failure is non-fatal.
+  }
+
+  process.exit(0);
+}
+
+main().catch(() => process.exit(0));
