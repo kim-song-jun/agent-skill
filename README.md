@@ -222,22 +222,32 @@ What happens under the hood:
 
 You wake up to either a merged PR or a precise "stopped at iteration 7 because tests still failing on auth flow" report.
 
-### Loop semantics — harness vs Ralph Loop
+### How this is different from `/goal` and Ralph Loop
 
-The `--loop` flag is the **harness's own loop**, not a wrapper around the `ralph-loop` plugin. It reimplements Ralph's "keep trying" pattern but adds:
+These solve **different problems**. Harness isn't "Ralph Loop plus features" — it's an orchestrator that happens to loop.
 
-- **State** — `.agent-all-state.json` preserves iter count, accumulated cost, last failure
-- **Cost-bounded** — `--max-cost` enforced after each wave, not just per-run
-- **Phase-aware** — `breakCondition` evaluated at the right point (post-PR, not mid-implementation)
-- **Resume-from-failure** — `--resume` picks up where the loop crashed
+| Tool | What it solves | What it knows about |
+|---|---|---|
+| **`/goal`** | "Don't let the session stop until X." | Nothing about your work. Just blocks Claude Code's Stop event. Pure keep-alive. |
+| **Ralph Loop** | "Re-run this prompt every N minutes." | Nothing between runs. Stateless re-fire of the same prompt. |
+| **`/agent-all --loop`** | "Drive a complete dev workflow (brainstorm → plan → code → review → PR) to a verified end state, within cost bounds." | **Phases, plan, dispatched agents, what was tried, accumulated cost, where it failed.** |
+
+The harness pulls the **good idea** from each — "don't stop until done" from `/goal`, "auto-retry" from Ralph — and adds the structural pieces neither has:
+
+- **Multi-phase workflow** — knows the difference between "still planning" and "tests failing after PR"
+- **Stateful retries** — each iteration re-enters phase 1 with the *previous failure visible*, so it tries a different approach (not the same prompt blindly re-fired)
+- **Wave-granularity cost cap** — `--max-cost` checked after each wave, not just at end-of-run, so it can bail mid-feature if cost explodes
+- **Resume-from-failure** — `.agent-all-state.json` preserves phase progress; `--resume` continues from where the loop crashed
+- **Phase-aware break-condition** — `breakCondition` evaluated *after* PR creation (when tests should actually pass), not mid-implementation
+
+`/goal` and Ralph are **complements**, not alternatives:
 
 ```
-# Concept comparison:
-/agent-all "fix flaky test" --loop --max-iter=10        # harness's stateful loop (preferred)
-/ralph-loop 5m /agent-all "fix flaky test"              # Ralph wrapping a one-shot; wall-clock interval
+/goal "ship analytics dashboard"           # keep-alive (so /agent-all --loop can run for hours)
+/agent-all "..." --loop --max-iter=15      # does the actual work
 ```
 
-Use `--loop` for harness-aware loops with phase state and cost caps. Use Ralph Loop wrapping a one-shot when you need wall-clock interval execution (e.g. "re-check the deploy every 5 minutes") or when chaining commands that aren't loop-aware.
+Ralph wrapping a `/agent-all` *one-shot* (no `--loop`) makes sense only for wall-clock periodicity (`/ralph-loop 5m /agent-all "check deploy"`) — not for retry semantics, which the harness already handles natively and better.
 
 ---
 

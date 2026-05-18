@@ -13,6 +13,34 @@
 - Anthropic SDK / OpenAI SDK / Vertex SDK 실제 API 연결 (현재 mock
   toolCaller 사용).
 
+## README — `/goal` + Ralph Loop 차별화 sharpen — 2026-05-18
+
+### 변경
+
+이전 "루프 의미 — harness vs Ralph Loop" 서브섹션이 harness를
+"Ralph + 기능 추가"처럼 만들었음. "`/goal`이나 Ralph Loop와 어떻게
+다른가"로 교체 — harness를 **다른 카테고리**로 프레임 (오케스트레이션
+하는 루프가 아닌 루프하는 orchestrator), 명시적으로:
+
+- **비교 테이블**이 각 도구가 실제로 무엇을 *해결*하고 무엇을 *아는지*
+  보여줌:
+  - `/goal`: "X까지 멈추지 말 것" 해결; 작업에 대해 모름
+  - Ralph Loop: "간격마다 재실행" 해결; stateless
+  - `/agent-all --loop`: "완전한 dev 워크플로를 비용 한도 내 검증된
+    종료 상태까지 드라이브" 해결; phases, plan, agents, 시도한 것,
+    비용, 실패 지점 모두 앎
+- **명시적 프레이밍**: harness는 각각에서 "좋은 아이디어"를 흡수
+  (`/goal`의 keep-alive, Ralph의 auto-retry) + 둘 다 없는 구조적
+  조각 추가 — multi-phase 인식, stateful 재시도 (다음 iteration이
+  이전 실패를 봄), wave-granularity 비용 cap, resume-from-failure,
+  phase-aware break-condition
+- **`/goal`과 Ralph를 대안이 아닌 보완재로 재정의** — `/goal`이
+  세션을 살려서 `--loop`이 몇 시간 돌게; Ralph가 one-shot wrap하는
+  건 wall-clock 주기성에만 의미 있음
+
+이는 이전 작성이 harness를 "같은 카테고리의 또 다른 옵션"으로 보이게
+한 피드백 해결 — 실제로는 둘의 좋은 부분을 흡수한 다른 카테고리.
+
 ## README — agent-first 가치 제안 + self-sustaining 워크플로 — 2026-05-18
 
 ### 추가 & 변경

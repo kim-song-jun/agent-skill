@@ -13,6 +13,36 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Anthropic SDK / OpenAI SDK / Vertex SDK actual API hookups (currently
   mock toolCallers used in tests).
 
+## README — sharpen `/goal` + Ralph Loop differentiation — 2026-05-18
+
+### Changed
+
+The previous "Loop semantics — harness vs Ralph Loop" subsection
+implied harness was Ralph-with-features. Replaced with "How this is
+different from `/goal` and Ralph Loop" — frames the harness as a
+**different category** (orchestrator that loops, not a loop with
+orchestration), with explicit:
+
+- **Comparison table** showing what each tool actually *solves* +
+  what it *knows about*:
+  - `/goal` solves "don't stop until X"; knows nothing about work
+  - Ralph Loop solves "re-run on interval"; stateless
+  - `/agent-all --loop` solves "drive a complete dev workflow to
+    verified end state within cost bounds"; knows phases, plan,
+    agents, what was tried, cost, where it failed
+- **Explicit framing**: harness pulls the "good idea" from each
+  (keep-alive from `/goal`, auto-retry from Ralph) and adds structural
+  pieces neither has — multi-phase awareness, stateful retries (next
+  iteration sees previous failure), wave-granularity cost cap,
+  resume-from-failure, phase-aware break-condition
+- **`/goal` and Ralph reframed as complements, not alternatives** —
+  `/goal` keeps the session alive so `--loop` can run for hours;
+  Ralph wrapping a one-shot only makes sense for wall-clock periodicity
+
+This addresses the feedback that the prior writeup made harness look
+like "another option in the same category" when it's actually a
+different category that absorbs the best parts of both.
+
 ## README — agent-first value prop + self-sustaining workflows — 2026-05-18
 
 ### Added & Changed
