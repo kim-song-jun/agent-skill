@@ -19,9 +19,9 @@ Works on Claude Code today, with cross-platform ports for **Cursor, GitHub Copil
 
 1. **Project-first scaffolding.** `/agent-init` works on any git repo — Next.js, FastAPI, Rust CLI, monorepo. It detects your stack, picks the right test command, and creates `CLAUDE.md` + agents + hooks + config in one commit. Same command, every project.
 
-2. **Agent-first execution.** `/agent-all "..."` doesn't ask you 20 questions. It runs brainstorming, plan-writing, parallel implementer dispatch, code review, and PR creation as **one pipeline**. You approve the plan before code lands; otherwise it drives itself.
+2. **Agent-first execution that preserves your main thread.** `/agent-all "..."` isn't a chat. It runs brainstorm → plan → implement → review → PR as **one pipeline**, and the implementation/review heavy lifting happens in **isolated subagents** — their turn-by-turn output never enters your main conversation. Your main session stays small (planning + judgment) so the same Claude Code session can keep going for hours without context bloat.
 
-3. **Self-sustaining loops.** `--loop --max-iter=15 --max-cost=$50` keeps iterating until tests pass — or the cap hits. Pair with Claude Code's `/goal` for unattended overnight runs that exit cleanly when the goal condition holds. See [Self-sustaining workflows](#self-sustaining-workflows).
+3. **Composable for unattended runs.** Three pieces — `/agent-all --loop` (drives the work), `/thrift` (compresses what does accumulate in main), `/goal` (keeps the session alive across iterations) — combine into overnight runs that exit cleanly when CI is green or your cost cap hits. See [Self-sustaining workflows](#self-sustaining-workflows).
 
 That's it. The rest of this README is reference material — skim the parts you need.
 
@@ -210,37 +210,70 @@ Themes compose freely. A typical session uses Builder once, then Floor for the a
 
 ## Self-sustaining workflows
 
-The harness is designed to **drive itself to completion**. You don't sit through every turn. Three knobs combine to make this safe:
+Three independent mechanisms compose. Once you understand how they divide the work, the rest is just configuration.
 
-### The pieces
+### Why this works — main-thread isolation
 
-| Piece | Owned by | What it does |
+`/agent-all`'s real trick isn't the loop. It's **where the work happens.**
+
+| Phase | Where it runs | What enters main context |
 |---|---|---|
-| `--loop` | `/agent-all` | After phase 5 (PR), evaluate `breakCondition`. If it fails, re-enter from phase 1 with the same task. Stops when condition passes for `stableIters` consecutive runs. |
-| `--max-iter=N` | `/agent-all` | Hard cap on loop iterations (server-clamped to 50). |
-| `--max-cost=USD` | `/agent-all` | Hard cap on accumulated API cost across all iterations. Default $500. |
-| `breakCondition` | `.agent-all.json` | Shell command. Exit 0 = "done". Typically your test command: `npm test`, `pytest`, `cargo test`. |
-| `/goal "..."` | Claude Code built-in | Session-scoped Stop hook. Keeps the session alive across iterations until the goal condition holds. **The harness doesn't auto-set it — you do, when you want unattended execution.** |
-| `/thrift` | This repo | Background cost optimizer — auto-summarizes long sessions, primes cache (opt-in), audits cost at end. Set up once per project. |
+| 0 Preflight | main | git checks (~tiny) |
+| 1 Intent (brainstorm) | main | Q&A with you (moderate accumulation) |
+| 2 Plan | main | the plan file (moderate) |
+| **3 Dispatch** | **fresh subagents** | only `{status, commits, costUSD}` summaries — implementer's trial-and-error stays isolated |
+| **4 Gate** | **fresh subagents** | only spec/quality verdicts — reviewer's reading stays isolated |
+| 5 PR | main | `gh pr create` output (small) |
+| 6 Loop | main | breakCondition exit code (one number) |
 
-### Unattended overnight feature ship
+The heavy lifting — reading code, writing patches, running tests, fixing failures — happens **inside subagents** dispatched via `superpowers:subagent-driven-development`. Each subagent is a fresh conversation. Their turn-by-turn output never enters your main session. The main session sees only the verdict.
+
+This is **why** `/agent-all` can keep going for hours where a flat chat session would have drowned in context. Each loop iteration adds maybe 2–5K tokens to main (plan + wave summaries + gate verdicts), not 50K.
+
+But that "moderate accumulation" eventually catches up. That's where `/thrift` comes in.
+
+### The three pieces and how they divide the work
+
+| Piece | Solves | Knows about |
+|---|---|---|
+| **`/agent-all --loop`** | Drive the actual workflow to verified completion within cost bounds | Phases, plan, dispatched agents, what was tried, accumulated cost, where it failed |
+| **`/thrift`** | Compress what *does* accumulate in main (plans, wave summaries, gate verdicts) before it bloats the session | Token-count thresholds, cache priming, end-of-session audit |
+| **`/goal`** | Keep Claude Code from ending the session between iterations | Nothing about your work. Just a Stop-event blocker. |
+
+You can run `/agent-all --loop` alone for short loops (1–3 iterations). For overnight or multi-hour runs, you want all three:
+
+- `/agent-all --loop` handles **per-iteration work isolation** (subagent fan-out)
+- `/thrift` handles **across-iteration main-thread compression** (auto-summarize at threshold)
+- `/goal` handles **session liveness** (don't quit between iterations)
+
+### `/agent-all --loop` config knobs
+
+| Knob | Owned by | Default | Effect |
+|---|---|---|---|
+| `--loop` | flag | off | Enable post-phase-5 breakCondition re-entry |
+| `--max-iter=N` | flag | 1 | Hard cap on iterations (server-clamped to 50) |
+| `--max-cost=USD` | flag | 500 | Hard cap on accumulated API cost; checked after each wave |
+| `breakCondition` | `.agent-all.json` | `npm test` (or auto-detected) | Shell command; exit 0 = "done" |
+| `stableIters` | `.agent-all.json` | 1 | Consecutive passing breakConditions required before loop exits clean |
+
+### Recipe — unattended overnight feature ship
 
 ```
-/thrift                                                 # set up cost guardrails
-/goal "ship the analytics dashboard with all CI green" # session keeps itself alive
+/thrift                                                 # set up cost guardrails (once per project)
+/goal "ship the analytics dashboard with all CI green"  # session keeps itself alive
 /agent-all "Build analytics dashboard (charts, filters, export)" \
   --loop --max-iter=15 --max-cost=80
-# walk away — comes back to a PR (or a clear failure report with state preserved)
+# walk away
 ```
 
-What happens under the hood:
-- `/agent-all` runs phase 0–5: brainstorm → plan → implement → review → PR
-- After phase 5, `breakCondition` (e.g. `npm test`) runs. If it fails, the loop re-enters phase 1 with the same task and tries a different approach.
-- If `--max-iter=15` is hit OR `--max-cost=80` is hit, the loop stops cleanly. State preserved in `.agent-all-state.json` so `--resume` picks up later.
-- `/goal` keeps Claude Code from stopping the session between turns. Auto-clears once "all CI green" holds.
-- `/thrift`'s hooks fire continuously: PreToolUse coercion of large outputs, PostToolUse token accounting, end-of-session audit.
+What happens, step by step:
+1. **`/agent-all` runs phase 0–5** for iter 1: brainstorm with you in main → plan in main → **dispatch implementer subagents in isolation** (Phase 3 — their work doesn't bloat your context) → **dispatch reviewer subagents in isolation** (Phase 4) → PR
+2. **`breakCondition` runs** (e.g. `npm test`). If it passes, loop exits clean. If it fails, loop re-enters phase 1 with the same task and *the previous failure visible* — so iter 2 tries a different approach.
+3. **`/thrift`'s hooks fire continuously**: PreToolUse coerces large tool output to `ctx_execute`, PostToolUse counts tokens, and at the configured threshold the summariser proposes compressing the older iter results. Main context stays small.
+4. **`/goal` blocks Claude Code's Stop event** every time `/agent-all` finishes an iteration. Session stays alive. Auto-clears once "all CI green" holds.
+5. **Caps fire cleanly**: hit `--max-iter=15` or `--max-cost=80`, loop stops, state preserved in `.agent-all-state.json` so `--resume` picks up later.
 
-You wake up to either a merged PR or a precise "stopped at iteration 7 because tests still failing on auth flow" report.
+You wake up to either a merged PR or a precise "stopped at iteration 7 because tests still failing on auth flow" report — not a stalled session with 200K tokens of unread output.
 
 ### How this is different from `/goal` and Ralph Loop
 

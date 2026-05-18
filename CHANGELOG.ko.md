@@ -13,6 +13,44 @@
 - Anthropic SDK / OpenAI SDK / Vertex SDK 실제 API 연결 (현재 mock
   toolCaller 사용).
 
+## README — 진짜 가치 제안으로서 메인 스레드 격리 — 2026-05-18
+
+### 변경
+
+이전 버전이 `/agent-all`을 "하나의 파이프라인으로 실행"으로 설명하면서
+long-running loop을 가능하게 하는 실제 메커니즘을 설명 안 했음. 양쪽
+README에 진짜 스토리 surface:
+
+**상단 pillar #2 재작성** — "Agent-first 실행" → **"메인 스레드를
+보존하는 agent-first 실행"** — 왜 이것이 scale하는지 명시:
+- Phase 3 (Dispatch)와 Phase 4 (Gate)가
+  `superpowers:subagent-driven-development` 통해 **격리된 subagents
+  에서** 실행
+- Subagents의 turn-by-turn 출력 (code 읽기, 패치 시도, 실패한 테스트
+  실행)이 메인 대화에 들어오지 않음
+- 메인 세션은 verdict만 봄 (`{status, commits, costUSD}`)
+- 그것이 같은 Claude Code 세션이 몇 시간 계속 갈 수 있는 이유
+
+**Pillar #3 재정의** — "Self-sustaining 루프" → **"무인 실행을 위한
+조합성"** — 세 조각과 그들의 분업 명시 (loop이 작업 드라이브, thrift가
+누적되는 것 압축, goal이 세션 살림).
+
+**"Self-sustaining 워크플로" 섹션 재구성**:
+- 신규 "왜 동작하는가 — 메인 스레드 격리" 서브섹션 상단, phase별
+  테이블로 메인 context에 정확히 무엇이 들어오고 무엇이 격리된
+  subagent에 머무는지 보여줌
+- 신규 "세 조각이 일을 어떻게 나누는가" 테이블로 loop/thrift/goal
+  협업 명시 ("agent-all이 iteration별 격리; thrift가 iteration 간
+  압축; goal이 세션 살림")
+- Recipe walkthrough가 어느 phase가 어디서 실행되는지 명시 ("main에서
+  사용자와 brainstorm → main에서 plan → 격리된 implementer subagent
+  디스패치")
+
+이는 이전 작성이 "왜 이게 scale하는가"를 사용자가 추론하게 둔 피드백
+해결 — 이제 상단의 번호 매겨진 설명 + 후반의 phase별 메커니즘 테이블.
+
+영문 + 한글 모두 갱신.
+
 ## README — `/goal` + Ralph Loop 차별화 sharpen — 2026-05-18
 
 ### 변경

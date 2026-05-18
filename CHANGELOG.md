@@ -13,6 +13,47 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Anthropic SDK / OpenAI SDK / Vertex SDK actual API hookups (currently
   mock toolCallers used in tests).
 
+## README — main-thread isolation as the real value prop — 2026-05-18
+
+### Changed
+
+The previous version described `/agent-all` as "runs as one pipeline"
+without explaining the actual mechanism that makes long-running loops
+possible. Updated both READMEs to surface the real story:
+
+**Top-of-README pillar #2 rewritten** from "Agent-first execution" to
+**"Agent-first execution that preserves your main thread"** — explicit
+about WHY this scales:
+- Phase 3 (Dispatch) and Phase 4 (Gate) run in **isolated subagents**
+  via `superpowers:subagent-driven-development`
+- Subagents' turn-by-turn output (code reads, patch attempts, failed
+  test runs) never enters main conversation
+- Main session sees only verdicts (`{status, commits, costUSD}`)
+- That's why the same Claude Code session can keep going for hours
+
+**Pillar #3 reframed** from "Self-sustaining loops" to **"Composable
+for unattended runs"** — names the three pieces and their division of
+labor (loop drives work, thrift compresses what does accumulate, goal
+keeps session alive).
+
+**"Self-sustaining workflows" section restructured**:
+- New "Why this works — main-thread isolation" subsection up front,
+  with a per-phase table showing exactly what enters main context vs
+  what stays in isolated subagents
+- New "Three pieces and how they divide the work" table making the
+  loop/thrift/goal collaboration explicit ("agent-all isolates per-
+  iteration; thrift compresses across iterations; goal keeps session
+  alive")
+- Recipe walkthrough now names which phases run where ("brainstorm
+  with you in main → plan in main → dispatch implementer subagents
+  in isolation")
+
+This addresses the feedback that the prior writeup left users to
+infer "why does this scale" — now it's a numbered explanation up top
+with a per-phase mechanism table later.
+
+Both English + Korean updated.
+
 ## README — sharpen `/goal` + Ralph Loop differentiation — 2026-05-18
 
 ### Changed

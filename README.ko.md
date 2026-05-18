@@ -19,9 +19,9 @@
 
 1. **Project-first 스캐폴딩.** `/agent-init`은 어떤 git 저장소에서든 동작 — Next.js, FastAPI, Rust CLI, 모노레포. 스택 감지, 올바른 테스트 명령 선택, `CLAUDE.md` + agents + hooks + config를 한 번의 commit에 생성. 같은 명령, 모든 프로젝트.
 
-2. **Agent-first 실행.** `/agent-all "..."`은 20개 질문 안 함. brainstorming, plan 작성, 병렬 implementer 디스패치, 코드 리뷰, PR 생성을 **하나의 파이프라인**으로 실행. 코드가 들어가기 전 plan을 승인 — 그 외엔 스스로 진행.
+2. **메인 스레드를 보존하는 agent-first 실행.** `/agent-all "..."`은 채팅이 아닙니다. brainstorm → 계획 → 구현 → 리뷰 → PR을 **하나의 파이프라인**으로 실행하고, 구현/리뷰 같은 무거운 작업은 **격리된 subagent**에서 일어남 — 그들의 turn-by-turn 출력은 메인 대화에 들어오지 않음. 메인 세션은 작게 유지 (계획 + 판단) → 같은 Claude Code 세션이 context bloat 없이 몇 시간 지속 가능.
 
-3. **Self-sustaining 루프.** `--loop --max-iter=15 --max-cost=$50` 으로 테스트 통과 시 또는 cap 도달 시까지 반복. Claude Code의 `/goal`과 페어링하면 goal 조건 만족 시 깔끔히 종료되는 무인 야간 실행. [Self-sustaining 워크플로](#self-sustaining-워크플로) 참조.
+3. **무인 실행을 위한 조합성.** 세 조각 — `/agent-all --loop` (작업 드라이브), `/thrift` (메인에 누적되는 것 압축), `/goal` (iteration 간 세션 살림) — 이 합쳐져 CI green 또는 비용 cap 도달 시 깔끔히 종료되는 야간 실행. [Self-sustaining 워크플로](#self-sustaining-워크플로) 참조.
 
 그게 전부입니다. README의 나머지는 참고용 — 필요한 부분만 훑어보세요.
 
@@ -210,37 +210,70 @@ git clone <repo> && cd <repo>
 
 ## Self-sustaining 워크플로
 
-harness는 **스스로 완료까지 굴러가도록** 설계됨. 매 턴 앉아서 지켜볼 필요 없음. 세 가지 knob이 안전하게 결합:
+세 가지 독립 메커니즘이 조합. 일을 어떻게 나누는지 이해하면 나머지는 설정일 뿐.
 
-### 구성요소
+### 왜 동작하는가 — 메인 스레드 격리
 
-| 요소 | 소유 | 하는 일 |
+`/agent-all`의 진짜 trick은 loop이 아니라 **어디서 작업이 일어나는가**입니다.
+
+| Phase | 어디서 실행 | 메인 context로 들어오는 것 |
 |---|---|---|
-| `--loop` | `/agent-all` | Phase 5 (PR) 후 `breakCondition` 평가. 실패 시 같은 task로 Phase 1부터 재진입. 조건이 `stableIters` 연속 실행 통과 시 정지. |
-| `--max-iter=N` | `/agent-all` | 루프 반복 하드캡 (서버에서 50으로 클램프). |
-| `--max-cost=USD` | `/agent-all` | 모든 iteration에 걸친 누적 API 비용 하드캡. 기본 $500. |
-| `breakCondition` | `.agent-all.json` | Shell 명령. Exit 0 = "완료". 보통 테스트 명령: `npm test`, `pytest`, `cargo test`. |
-| `/goal "..."` | Claude Code 내장 | 세션 범위 Stop 훅. goal 조건 만족 시까지 iteration 전반에 세션 살림. **harness가 자동 설정 안 함 — 무인 실행 원할 때 직접 설정.** |
-| `/thrift` | 이 저장소 | 백그라운드 비용 최적화 — 긴 세션 자동 요약, 캐시 priming (opt-in), 종료 시 비용 audit. 프로젝트당 한 번 설정. |
+| 0 Preflight | main | git 체크 (~매우 적음) |
+| 1 Intent (brainstorm) | main | 사용자와 Q&A (적당히 누적) |
+| 2 Plan | main | plan 파일 (적당히) |
+| **3 Dispatch** | **fresh subagents** | `{status, commits, costUSD}` 요약만 — implementer의 시행착오는 격리 |
+| **4 Gate** | **fresh subagents** | spec/quality verdict만 — reviewer의 읽기는 격리 |
+| 5 PR | main | `gh pr create` 결과 (작음) |
+| 6 Loop | main | breakCondition exit code (숫자 하나) |
 
-### 무인 야간 기능 출시
+무거운 작업 — 코드 읽기, 패치 작성, 테스트 실행, 실패 수정 — 은 `superpowers:subagent-driven-development`로 dispatch된 **subagent 내부에서** 일어남. 각 subagent는 fresh 대화. 그들의 turn-by-turn 출력은 메인 세션에 들어오지 않음. 메인 세션은 verdict만 봄.
+
+이것이 `/agent-all`이 flat chat 세션이라면 context로 빠져 죽었을 시간을 몇 시간 버틸 수 있는 **이유**. 매 loop iteration은 메인에 2~5K 토큰만 추가 (plan + wave 요약 + gate verdicts) — 50K가 아님.
+
+하지만 그 "적당한 누적"도 결국 따라잡힘. 거기서 `/thrift`가 등장.
+
+### 세 조각이 일을 어떻게 나누는가
+
+| 조각 | 해결 | 아는 것 |
+|---|---|---|
+| **`/agent-all --loop`** | 실제 워크플로를 비용 한도 내 검증된 완료까지 드라이브 | Phases, plan, 디스패치된 agents, 시도한 것, 누적 비용, 실패 지점 |
+| **`/thrift`** | 메인에 *실제로 누적되는* 것 (plans, wave 요약, gate verdicts) 을 세션 bloat 전에 압축 | 토큰 카운트 임계값, 캐시 priming, 세션 종료 audit |
+| **`/goal`** | iteration 간 Claude Code가 세션을 끝내지 못하게 막기 | 작업에 대해 모름. 단순 Stop-event blocker. |
+
+짧은 loop (1–3 iteration)엔 `/agent-all --loop` 단독 OK. 야간 또는 multi-hour 실행엔 셋 다 필요:
+
+- `/agent-all --loop`이 **iteration별 작업 격리** 처리 (subagent fan-out)
+- `/thrift`가 **iteration 간 메인 스레드 압축** 처리 (임계값에서 자동 요약)
+- `/goal`이 **세션 생존성** 처리 (iteration 사이에 종료하지 말 것)
+
+### `/agent-all --loop` 설정 knob
+
+| Knob | 소유 | 기본값 | 효과 |
+|---|---|---|---|
+| `--loop` | flag | off | Phase 5 후 breakCondition 재진입 활성화 |
+| `--max-iter=N` | flag | 1 | iteration 하드캡 (서버 50으로 클램프) |
+| `--max-cost=USD` | flag | 500 | 누적 API 비용 하드캡; 매 wave 후 체크 |
+| `breakCondition` | `.agent-all.json` | `npm test` (또는 자동 감지) | Shell 명령; exit 0 = "완료" |
+| `stableIters` | `.agent-all.json` | 1 | loop이 깔끔히 종료되기 전 필요한 연속 통과 breakCondition 수 |
+
+### 레시피 — 무인 야간 기능 출시
 
 ```
-/thrift                                                 # 비용 가드레일 설정
-/goal "analytics 대시보드를 모든 CI 통과 상태로 출시"  # 세션이 스스로 살아있음
+/thrift                                                 # 비용 가드레일 설정 (프로젝트당 한 번)
+/goal "analytics 대시보드를 모든 CI 통과 상태로 출시"   # 세션이 스스로 살아있음
 /agent-all "analytics 대시보드 빌드 (차트, 필터, export)" \
   --loop --max-iter=15 --max-cost=80
-# 자리 비움 — 돌아오면 PR (또는 state 보존된 명확한 실패 리포트)
+# 자리 비움
 ```
 
-내부 동작:
-- `/agent-all`이 phase 0–5 실행: brainstorm → 계획 → 구현 → 리뷰 → PR
-- Phase 5 후 `breakCondition` (예: `npm test`) 실행. 실패하면 루프가 같은 task로 phase 1에 재진입하여 다른 접근 시도.
-- `--max-iter=15` OR `--max-cost=80` 도달 시 루프 깔끔히 정지. `.agent-all-state.json`에 state 보존돼서 나중에 `--resume`로 picking up 가능.
-- `/goal`이 Claude Code가 턴 사이에 세션 중지하지 못하게 막음. "모든 CI 통과" 조건 만족 시 자동 clear.
-- `/thrift`의 hooks가 지속적으로 발사: PreToolUse 큰 출력 강제, PostToolUse 토큰 회계, 세션 종료 시 audit.
+단계별로 무엇이 일어나는가:
+1. **`/agent-all`이 iter 1 phase 0–5 실행**: main에서 사용자와 brainstorm → main에서 plan → **격리된 implementer subagent 디스패치** (Phase 3 — 그들 작업은 context를 bloat 안 함) → **격리된 reviewer subagent 디스패치** (Phase 4) → PR
+2. **`breakCondition` 실행** (예: `npm test`). 통과 시 loop 깔끔히 종료. 실패 시 같은 task로 phase 1 재진입 + *이전 실패가 보임* → iter 2는 다른 접근 시도.
+3. **`/thrift`의 hooks가 지속적으로 발사**: PreToolUse가 큰 도구 출력을 `ctx_execute`로 강제, PostToolUse가 토큰 카운트, 설정된 임계값에서 summariser가 이전 iter 결과 압축 제안. 메인 context 작게 유지.
+4. **`/goal`이 매 `/agent-all` iteration 종료 시 Claude Code의 Stop 이벤트 차단**. 세션 살아있음. "모든 CI 통과" 조건 만족 시 자동 clear.
+5. **Cap이 깔끔히 발사**: `--max-iter=15` 또는 `--max-cost=80` 도달 시 loop 정지, state가 `.agent-all-state.json`에 보존돼 나중에 `--resume` picking up.
 
-깨어나면 merged PR 또는 "iteration 7에서 auth flow 테스트 여전히 실패로 정지" 정밀한 리포트.
+깨어나면 merged PR 또는 "iteration 7에서 auth flow 테스트 여전히 실패로 정지" 정밀한 리포트 — 200K 토큰 미읽기 출력으로 stall된 세션이 아님.
 
 ### `/goal`이나 Ralph Loop와 어떻게 다른가
 
