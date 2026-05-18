@@ -285,6 +285,96 @@ lib (`plugins/*/skills/*/lib/*.mjs`)는 순수 Node — 도구에 vendor 가능.
 
 ---
 
+## Claude 생태계의 다른 플러그인과의 관계
+
+agent-skill은 두 개의 기반 Claude Code 플러그인 위의 **상위 레이어 조합**입니다. 둘 없이도 사용 가능하지만, 함께 사용하면 훨씬 잘 동작하고 — 설치는 몇 초입니다.
+
+```
+        ┌──────────────────────────────────────────┐
+        │  당신의 프로젝트                          │
+        │  /agent-init, /agent-all, /thrift ...    │
+        └──────────────────────────────────────────┘
+                          ▲
+                          │  조합
+                          │
+        ┌──────────────────────────────────────────┐
+        │  agent-skill (이 저장소)                  │
+        │  17 플러그인, 5 테마 (A/B/C/D/E)          │
+        └──────────────────────────────────────────┘
+                ▲                          ▲
+                │ wrap                     │ 사용
+                │                          │
+   ┌────────────────────────┐  ┌────────────────────────────┐
+   │  superpowers           │  │  context-mode              │
+   │  기반 skills:           │  │  raw 도구 출력을 대화에서  │
+   │  brainstorming,        │  │  격리:                     │
+   │  writing-plans,        │  │  ctx_execute, ctx_search,  │
+   │  dispatching-parallel, │  │  ctx_batch_execute,        │
+   │  subagent-driven-dev,  │  │  ctx_fetch_and_index, ...  │
+   │  systematic-debugging  │  │                            │
+   └────────────────────────┘  └────────────────────────────┘
+```
+
+### `superpowers` — 기반 skills
+
+harness 명령들이 모두 wrap하는 재사용 가능한 skill primitives 라이브러리:
+
+| Skill | 하는 일 | 누가 사용 |
+|---|---|---|
+| `superpowers:brainstorming` | 작업 시작 전 의도 정렬을 위한 구조화된 Q&A | `/agent-init` (Phase 1), `/agent-all` (Phase 1) |
+| `superpowers:writing-plans` | 브리프로부터 단계별 plan 작성 | `/agent-all` (Phase 2) |
+| `superpowers:dispatching-parallel-agents` | N개 독립 서브에이전트 fan-out 패턴 | `/agent-init` (Phase 3 agents), `/visual-qa` (Phase 3 pages) |
+| `superpowers:subagent-driven-development` | task별 implementer + reviewer 사이클 | `/agent-all` (Phase 3 wave dispatch) |
+| `superpowers:systematic-debugging` | 체계적 reproduce → isolate → fix 워크플로 | `/debug`가 wrap |
+| `superpowers:test-driven-development` | TDD 규율 (테스트 먼저) | `/agent-all` implementer agents에 권장 |
+| `superpowers:verification-before-completion` | "주장 전 증거" — 완료 선언 전 테스트 실행 | 모든 harness 명령이 이걸로 마무리 |
+| `superpowers:requesting-code-review` | 코드 리뷰 scoping + 수집 패턴 | `/agent-all` (Phase 4 gate) |
+
+**왜 이렇게 레이어링했나?** harness 명령들은 **얇은 코디네이터** — 어느 skill을 언제 invoke할지 오케스트레이트하지만, "어떻게 잘 brainstorm하나"의 실제 prompt engineering은 `superpowers`에 있습니다. superpowers가 skill을 개선하면 모든 harness 명령이 자동으로 혜택을 받습니다.
+
+**설치:** `/plugin install superpowers@claude-plugins-official` (Claude Code 공식 마켓플레이스).
+
+### `context-mode` — raw 출력을 컨텍스트에서 격리
+
+큰 도구 출력 (긴 `git log`, 파일 덤프, MCP 응답)을 가로채서 로컬 SQLite 기반 sandbox에 저장하는 플러그인. 인쇄된 *요약*만 대화 컨텍스트에 들어가고 — raw 콘텐츠는 search로 쿼리 가능한 상태로 sandbox에 머뭅니다.
+
+| 도구 | 언제 쓰나 |
+|---|---|
+| `ctx_execute(language, code)` | shell/Python/JS 실행; 인쇄된 결과만 컨텍스트에 |
+| `ctx_execute_file(path)` | 파일 전체를 로드하지 않고 분석 |
+| `ctx_batch_execute(commands, queries)` | 여러 명령을 한 번에 실행; 자동 인덱싱 |
+| `ctx_search(queries)` | 인덱싱된 sandbox에 FTS5 쿼리 |
+| `ctx_fetch_and_index(url)` | 웹 콘텐츠를 컨텍스트에 덤프하지 않고 fetch + 인덱싱 |
+| `ctx_stats` | 이 플러그인이 얼마나 컨텍스트를 절약했는지 확인 |
+
+**harness에 왜 중요한가:** 긴 `/agent-all --loop` 실행이나 `/debug` 세션은 도구 출력을 빠르게 축적합니다. `context-mode` 없이는 raw `git log` / `npm test` 출력이 이후 모든 턴을 bloat. 있으면 그 출력은 sandbox로 가고 요약만 남습니다. **`/thrift`는 직접 통합:** 그 PreToolUse 훅이 큰 출력 명령 (`find`, `git log` 등)을 감지하고 자동으로 `ctx_execute`로 라우팅 제안.
+
+**설치:** `/plugin install context-mode@context-mode` (별도 마켓플레이스).
+
+### harness가 둘을 어떻게 사용
+
+`/agent-all "OAuth 추가"` 실행 시:
+
+1. **Phase 1 (Intent)** → `superpowers:brainstorming` invoke하여 프로젝트에서 "OAuth"가 무엇을 의미하는지 명확화
+2. **Phase 2 (Plan)** → `superpowers:writing-plans` invoke하여 단계별 구현 plan 작성
+3. **Phase 3 (Dispatch)** → `superpowers:subagent-driven-development` invoke하여 task당 implementer 하나씩 fan-out. implementer는 `superpowers:test-driven-development` 사용 권장. task가 `git log` 등 큰 명령 실행 시, PreToolUse 훅 (`/thrift` 활성 시 설치)이 `context-mode`의 `ctx_execute`로 라우팅하여 컨텍스트 클린 유지.
+4. **Phase 4 (Gate)** → `superpowers:requesting-code-review` invoke하여 spec + quality 리뷰
+5. **Phase 5 (PR)** → `gh pr create` 직접 사용 (superpowers wrapper 없음)
+6. **전반에 걸쳐** → `superpowers:verification-before-completion`이 어떤 phase가 성공 선언 전 `npm test` (또는 스택의 테스트 명령) 실행
+
+harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap, 크로스 플랫폼 포팅 레이어로 둘을 묶습니다. 각 레이어가 한 가지를 잘 합니다.
+
+### 이 의존성 없이 사용하기
+
+`superpowers` 또는 `context-mode`가 설치 안 됐다면 harness 명령은 **graceful degrade**:
+
+- `superpowers` 없음 → superpowers skill을 invoke할 harness phase는 "skill not available; please install superpowers@claude-plugins-official to enable this phase" 메시지를 emit하고 계속 또는 skip.
+- `context-mode` 없음 → `/thrift`의 강제 hooks와 `mcp__plugin_context-mode_*` 도구가 사용 불가; 다른 모든 것은 동작. PreToolUse 훅은 no-op이 됨.
+
+둘 다 몇 초 만에 설치 가능하고 경험을 극적으로 향상 — 강력 권장.
+
+---
+
 ## 더 깊이 들어가기
 
 기술적 상세, 디자인 spec, 새 플랫폼 포팅이 필요한 경우:

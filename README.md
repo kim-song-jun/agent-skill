@@ -285,6 +285,96 @@ The libs (`plugins/*/skills/*/lib/*.mjs`) are pure Node — vendor them into you
 
 ---
 
+## How this fits with the rest of the Claude ecosystem
+
+agent-skill is a **higher-layer composition** on top of two foundational Claude Code plugins. You can use it without them, but it works much better with them — and they install in seconds.
+
+```
+        ┌──────────────────────────────────────────┐
+        │  YOUR PROJECT                            │
+        │  /agent-init, /agent-all, /thrift ...    │
+        └──────────────────────────────────────────┘
+                          ▲
+                          │  composes
+                          │
+        ┌──────────────────────────────────────────┐
+        │  agent-skill (this repo)                 │
+        │  17 plugins, 5 themes (A/B/C/D/E)        │
+        └──────────────────────────────────────────┘
+                ▲                          ▲
+                │ wraps                    │ uses
+                │                          │
+   ┌────────────────────────┐  ┌────────────────────────────┐
+   │  superpowers           │  │  context-mode              │
+   │  Foundational skills:  │  │  Keep raw tool output out  │
+   │  brainstorming,        │  │  of the conversation:      │
+   │  writing-plans,        │  │  ctx_execute, ctx_search,  │
+   │  dispatching-parallel, │  │  ctx_batch_execute,        │
+   │  subagent-driven-dev,  │  │  ctx_fetch_and_index, ...  │
+   │  systematic-debugging  │  │                            │
+   └────────────────────────┘  └────────────────────────────┘
+```
+
+### `superpowers` — foundational skills
+
+A library of reusable skill primitives that the harness commands all wrap:
+
+| Skill | What it does | Who uses it |
+|---|---|---|
+| `superpowers:brainstorming` | Structured Q&A to align on intent before any work | `/agent-init` (Phase 1), `/agent-all` (Phase 1) |
+| `superpowers:writing-plans` | Drafts a step-by-step plan from a brief | `/agent-all` (Phase 2) |
+| `superpowers:dispatching-parallel-agents` | Pattern for fanning out N independent subagents | `/agent-init` (Phase 3 agents), `/visual-qa` (Phase 3 pages) |
+| `superpowers:subagent-driven-development` | Per-task implementer + reviewer cycle | `/agent-all` (Phase 3 wave dispatch) |
+| `superpowers:systematic-debugging` | Methodical reproduce → isolate → fix workflow | `/debug` wraps this |
+| `superpowers:test-driven-development` | TDD discipline (write test first) | Recommended for `/agent-all` implementer agents |
+| `superpowers:verification-before-completion` | "Evidence before assertions" — run the tests before claiming done | Every harness command finishes with this |
+| `superpowers:requesting-code-review` | Pattern for scoping + collecting code review | `/agent-all` (Phase 4 gate) |
+
+**Why this layering?** The harness commands are **thin coordinators** — they orchestrate WHICH skill to invoke and WHEN, but the actual prompt engineering for "how do I brainstorm well" lives in `superpowers`. When superpowers improves a skill, every harness command benefits automatically.
+
+**Install:** `/plugin install superpowers@claude-plugins-official` (Claude Code's official marketplace).
+
+### `context-mode` — keep raw output out of context
+
+A plugin that intercepts large tool outputs (long `git log`, file dumps, MCP responses) and stores them in a local SQLite-backed sandbox. Only a printed *summary* enters your conversation context — the raw content stays queryable via search.
+
+| Tool | When to use it |
+|---|---|
+| `ctx_execute(language, code)` | Run shell/Python/JS; only printed result enters context |
+| `ctx_execute_file(path)` | Analyze a file without loading its full contents |
+| `ctx_batch_execute(commands, queries)` | Run many commands at once; auto-indexed for later search |
+| `ctx_search(queries)` | FTS5 query against the indexed sandbox |
+| `ctx_fetch_and_index(url)` | Fetch + index web content without dumping it into context |
+| `ctx_stats` | See how much context this plugin has saved you |
+
+**Why it matters for the harness:** Long `/agent-all --loop` runs or `/debug` sessions accumulate tool output fast. Without `context-mode`, raw `git log` / `npm test` output bloats every subsequent turn. With it, that output goes to the sandbox and only the summary stays. **`/thrift` integrates directly:** its PreToolUse hook detects large-output commands (`find`, `git log`, etc.) and suggests routing through `ctx_execute` automatically.
+
+**Install:** `/plugin install context-mode@context-mode` (separate marketplace).
+
+### How the harness uses both
+
+When you run `/agent-all "Add OAuth"`:
+
+1. **Phase 1 (Intent)** → invokes `superpowers:brainstorming` to clarify what "OAuth" means for your project
+2. **Phase 2 (Plan)** → invokes `superpowers:writing-plans` to draft a step-by-step implementation plan
+3. **Phase 3 (Dispatch)** → invokes `superpowers:subagent-driven-development` to fan out one implementer per task. The implementer is encouraged to use `superpowers:test-driven-development`. If a task runs `git log` or similar large commands, the PreToolUse hook (installed by `/thrift` if active) routes them through `context-mode`'s `ctx_execute` to keep context clean.
+4. **Phase 4 (Gate)** → invokes `superpowers:requesting-code-review` for spec + quality review
+5. **Phase 5 (PR)** → uses `gh pr create` directly (no superpowers wrapper)
+6. **Throughout** → `superpowers:verification-before-completion` runs `npm test` (or your stack's test command) before any phase claims success
+
+The harness ties them together with state files (`.agent-all-state.json`), resume-from-failure, cost caps, and the cross-platform porting layer. Each layer does one thing well.
+
+### Working without these dependencies
+
+If you don't have `superpowers` or `context-mode` installed, the harness commands **degrade gracefully**:
+
+- Missing `superpowers` → harness phases that would invoke a superpowers skill instead emit a "skill not available; please install superpowers@claude-plugins-official to enable this phase" message and continue or skip.
+- Missing `context-mode` → `/thrift`'s coercion hooks and the `mcp__plugin_context-mode_*` tools are unavailable; everything else works. The PreToolUse hook becomes a no-op.
+
+Both are installable in seconds and dramatically improve the experience — strongly recommended.
+
+---
+
 ## Going deeper
 
 If you want the technical details, design specs, or are porting to a new platform:

@@ -13,6 +13,33 @@
 - Anthropic SDK / OpenAI SDK / Vertex SDK 실제 API 연결 (현재 mock
   toolCaller 사용).
 
+## README — 생태계 컨텍스트 섹션 — 2026-05-18
+
+### 추가
+
+양쪽 README에 새 섹션: **"Claude 생태계의 다른 플러그인과의 관계"**.
+agent-skill (이 저장소), `superpowers`, `context-mode` 간 레이어링
+설명:
+
+- agent-skill이 superpowers (skill들 wrap) + context-mode (도구 사용)
+  위에 조합됨을 보여주는 ASCII 다이어그램.
+- harness가 invoke하는 모든 `superpowers:*` skill + 어느 명령이 사용
+  하는지 테이블 (brainstorming, writing-plans, dispatching-parallel-
+  agents, subagent-driven-development, systematic-debugging, TDD,
+  verification-before-completion, requesting-code-review).
+- 모든 `context-mode` 도구 (`ctx_execute`, `ctx_execute_file`,
+  `ctx_batch_execute`, `ctx_search`, `ctx_fetch_and_index`,
+  `ctx_stats`) + 사용 사례 테이블.
+- `/agent-all "OAuth 추가"`의 단계별 walkthrough — 각 phase에서 정확히
+  어느 superpowers skill과 어느 context-mode 도구가 발사되는지.
+- Graceful-degradation 노트: 둘 중 하나가 설치 안 돼도 harness 명령
+  동작 (phase skip 또는 no-op 훅); 둘 다 권장.
+- 설치 명령: `superpowers@claude-plugins-official`,
+  `context-mode@context-mode`.
+
+이는 사용자가 agent-skill 설치는 했지만 `superpowers:brainstorming`이
+무엇인지, 왜 harness가 계속 그것을 참조하는지 모르는 갭을 해결.
+
 ## README — 사용자 친화적 재작성 — 2026-05-18
 
 ### 변경

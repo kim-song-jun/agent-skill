@@ -13,6 +13,34 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Anthropic SDK / OpenAI SDK / Vertex SDK actual API hookups (currently
   mock toolCallers used in tests).
 
+## README — ecosystem context section — 2026-05-18
+
+### Added
+
+New section in both READMEs: **"How this fits with the rest of the
+Claude ecosystem"**. Explains the layering between agent-skill (this
+repo), `superpowers`, and `context-mode`:
+
+- ASCII diagram showing agent-skill composes ON TOP of superpowers
+  (wraps its skills) and context-mode (uses its tools).
+- Table of every `superpowers:*` skill the harness invokes + which
+  command uses it (brainstorming, writing-plans, dispatching-parallel-
+  agents, subagent-driven-development, systematic-debugging, TDD,
+  verification-before-completion, requesting-code-review).
+- Table of every `context-mode` tool (`ctx_execute`,
+  `ctx_execute_file`, `ctx_batch_execute`, `ctx_search`,
+  `ctx_fetch_and_index`, `ctx_stats`) with use cases.
+- Step-by-step walkthrough of `/agent-all "Add OAuth"` showing exactly
+  which superpowers skill and which context-mode tool fires at each phase.
+- Graceful-degradation note: harness commands work without either
+  plugin installed (skip phases or no-op hooks); both are recommended.
+- Install commands for both: `superpowers@claude-plugins-official` and
+  `context-mode@context-mode`.
+
+This addresses a gap users hit when they install agent-skill but don't
+know what `superpowers:brainstorming` means or why the harness keeps
+referring to it.
+
 ## README — user-friendly rewrite — 2026-05-18
 
 ### Changed
