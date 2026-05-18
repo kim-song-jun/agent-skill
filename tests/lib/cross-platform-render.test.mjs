@@ -91,6 +91,14 @@ const CASES = [
     tpl: "plugins/harness-floor-cursor/skills/agent-all-cursor/templates/agents/agent-all-reviewer.md.hbs",
     contains: ["name: agent-all-reviewer", "is_background: true", "mode=spec", "mode=quality"],
   },
+  {
+    tpl: "plugins/harness-floor-copilot/skills/agent-all-copilot/templates/agent-all.config.json.hbs",
+    contains: ["\"maxIter\": 10", "\"maxCostUSD\": 5", "\"waveSize\": \"medium\"", "npm test --silent"],
+  },
+  {
+    tpl: "plugins/harness-floor-copilot/skills/agent-all-copilot/templates/pr-body.md.hbs",
+    contains: ["agent-all-copilot", "GitHub Copilot CLI", "## Summary", "## Iteration"],
+  },
 ];
 
 for (const c of CASES) {
