@@ -29,16 +29,36 @@
 
 ## 60초 설치
 
+먼저 마켓플레이스 등록 (머신당 한 번):
+
 ```
 /plugin marketplace add https://github.com/kim-song-jun/agent-skill
+```
+
+### 옵션 A: 원-라이너 (권장)
+
+```bash
+# Claude Code 밖, 터미널에서:
+git clone https://github.com/kim-song-jun/agent-skill /tmp/agent-skill
+bash /tmp/agent-skill/scripts/install-all.sh
+```
+
+`claude` CLI를 통해 Claude Code 필수 5개를 한 번에 설치. `--all`로 17개 전체 (CLI-platform sibling 포함) 또는 `--cli=codex|copilot|gemini|cursor`로 특정 플랫폼 세트 설치.
+
+### 옵션 B: Claude Code에 붙여넣기
+
+```
 /plugin install harness-builder@agent-skill
 /plugin install harness-floor@agent-skill
 /plugin install harness-thrift@agent-skill
 /plugin install harness-explore@agent-skill
 /plugin install harness-debug@agent-skill
+/reload-plugins
 ```
 
-프로젝트에서:
+(Claude Code의 `/plugin install`은 한 번에 하나만 받음 — 옵션 A의 스크립트가 더 빠름.)
+
+### 프로젝트에서
 
 ```
 cd my-project

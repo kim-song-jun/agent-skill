@@ -29,16 +29,36 @@ That's it. The rest of this README is reference material — skim the parts you 
 
 ## Install in 60 seconds
 
+First, register the marketplace (once per machine):
+
 ```
 /plugin marketplace add https://github.com/kim-song-jun/agent-skill
+```
+
+### Option A: one-liner (recommended)
+
+```bash
+# Outside Claude Code, in a terminal:
+git clone https://github.com/kim-song-jun/agent-skill /tmp/agent-skill
+bash /tmp/agent-skill/scripts/install-all.sh
+```
+
+Installs all 5 Claude Code essentials at once via the `claude` CLI. Run `--all` for all 17 plugins (CLI-platform siblings too), or `--cli=codex|copilot|gemini|cursor` for a single platform set.
+
+### Option B: paste into Claude Code
+
+```
 /plugin install harness-builder@agent-skill
 /plugin install harness-floor@agent-skill
 /plugin install harness-thrift@agent-skill
 /plugin install harness-explore@agent-skill
 /plugin install harness-debug@agent-skill
+/reload-plugins
 ```
 
-Then in your project:
+(Claude Code's `/plugin install` accepts only one plugin at a time, so the script in Option A is faster.)
+
+### Then in your project
 
 ```
 cd my-project
