@@ -49,16 +49,34 @@ Once Cursor supports skill invocation, a future `cursor-init` runtime will:
 
    Refuse to overwrite existing files unless `--force`.
 
-## Mode B — Manual install (today)
+## Mode B — Automated install (today, recommended)
 
 ```bash
-bash plugins/harness-builder-cursor/bin/install.sh /path/to/your/project
+node plugins/harness-builder-cursor/bin/init.mjs /path/to/your/project \
+     --ctx ctx.json [--force]
 ```
 
-The script copies the four `.hbs` template files into `.cursor/rules/` and
-`.cursor/agents/` of the target project without rendering. Substitute
-`{{stack}}`, `{{purpose}}`, `{{deploy_targets}}`, etc. by hand, then rename
-the files by dropping the `.hbs` suffix.
+The renderer:
+
+1. Reads `ctx.json` (or env vars `PURPOSE`, `SIZE`, `QA_PERSONAS`, `DEPLOY_TARGETS`, `CONSTRAINTS` if no JSON).
+2. Runs `detectProject(target)` to fill `stack`/`runtime`/`services`.
+3. Renders all `.hbs` templates and writes them to `.cursor/rules/` and
+   `.cursor/agents/` in the target project.
+4. Refuses to overwrite existing files unless `--force`.
+
+`bin/install.sh` is deprecated — it now prints a hint and exits non-zero.
+
+Example `ctx.json`:
+
+```json
+{
+  "purpose": "Demo app",
+  "size": "small",
+  "qa_personas": ["auth"],
+  "deploy_targets": "fly.io",
+  "constraints": ""
+}
+```
 
 ## Cross-tool compatibility
 
