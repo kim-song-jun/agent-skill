@@ -4,7 +4,7 @@
 
 ## Stack
 
-{{stack}}{{#if deploy_targets}} — deploys to {{deploy_targets}}{{/if}}
+{{stack}}{{#if runtime}} (on {{runtime}}{{#if services_str}}: {{services_str}}{{/if}}){{/if}}{{#if deploy_targets}} — deploys to {{deploy_targets}}{{/if}}
 
 ## Operating Principles
 

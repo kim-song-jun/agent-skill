@@ -46,7 +46,7 @@ The skill runs 5 phases strictly in order. Each phase is described in a separate
 Deterministic mechanics live in `lib/`. Import them when a phase says so:
 
 - `lib/render.mjs` — `render(tpl, ctx)` for `.hbs` templates
-- `lib/detect-stack.mjs` — `detectStack(projectDir)`
+- `lib/detect-stack.mjs` — `detectProject(projectDir)` → `{ stack, runtime, services }` (`detectStack(projectDir)` kept as a back-compat wrapper returning the stack string)
 - `lib/plugin-scan.mjs` — `scanPlugins({ installedPlugins, enabledPlugins, required })`
 - `lib/manifest-merge.mjs` — `mergeSettings(current, additions)`
 
