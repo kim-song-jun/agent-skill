@@ -62,3 +62,41 @@ unless the user passes `--force`.
 
 Print a 3-line summary: detected stack, runtime (if any), and the roles
 scaffolded. Note that hooks/MCP wiring is out of scope for this MVP.
+
+## Phase 4 — Optional: emit Codex config stub
+
+Ask the user (via `ask_user` or equivalent) whether to also emit
+`.codex/config.toml` with hook and MCP stubs. If yes:
+
+1. Prompt for MCP servers (optional, empty list OK). For each, capture
+   either `{ name, command, args }` (stdio) or `{ name, url }` (HTTP).
+
+2. Build the `mcp_servers_block` as a TOML string:
+
+   ```javascript
+   const lines = [];
+   for (const s of mcp_servers) {
+     lines.push(`[mcp_servers.${s.name}]`);
+     if (s.command) {
+       lines.push(`command = ${JSON.stringify(s.command)}`);
+       lines.push(`args = ${JSON.stringify(s.args ?? [])}`);
+     } else if (s.url) {
+       lines.push(`url = ${JSON.stringify(s.url)}`);
+     }
+     lines.push("");
+   }
+   const mcp_servers_block = lines.join("\n");
+   ```
+
+3. Extend the ctx with defaults:
+
+   ```javascript
+   ctx.hook_command_pretool = "echo 'pre apply_patch'";
+   ctx.hook_command_sessionstart = "echo 'session start'";
+   ctx.mcp_servers_block = mcp_servers_block;
+   ```
+
+4. Render `templates/codex-config.toml.hbs` and write to `.codex/config.toml`
+   in the project root. Refuse to overwrite unless `--force`.
+
+The hook commands are no-ops by default; users edit them.

@@ -1,0 +1,14 @@
+# Stub Codex config produced by /codex-init.
+# Merge with your existing ~/.codex/config.toml or use as a starting point.
+
+[hooks]
+PreToolUse = [
+  { matcher = "apply_patch", hooks = [{ type = "command", command = "{{hook_command_pretool}}" }] }
+]
+SessionStart = [
+  { hooks = [{ type = "command", command = "{{hook_command_sessionstart}}" }] }
+]
+{{#if mcp_servers_block}}
+
+{{mcp_servers_block}}
+{{/if}}
