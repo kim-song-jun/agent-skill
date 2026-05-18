@@ -13,6 +13,70 @@
 - Anthropic SDK / OpenAI SDK / Vertex SDK 실제 API 연결 (현재 mock
   toolCaller 사용).
 
+## 검증 안전망 + 배포-등급 README polish — 2026-05-19
+
+### 추가 — `/agent-all --loop` 2-레이어 검증 안전망
+
+이전 루프 의미는 `breakCondition` + `--max-iter` + `--max-cost`에 의존.
+implementer subagent가 실제 verify 없이 STATUS: completed라고 주장하면
+깨진 코드가 PR로 sneak through 가능했음. Phase 3 + Phase 4 문서에 강제
+지시 추가하여 갭 해소:
+
+**Phase 3 (Dispatch) — implementer 지시 (5 플랫폼):**
+
+> 완료 선언 전 `superpowers:verification-before-completion` invoke하여
+> 프로젝트의 테스트 명령 실행. verification 실패 시 task 완료 표시
+> 안 됨 — 대신 `STATUS: blocked, REASON: verification failed` 리포트.
+>
+> 새 동작 추가 task (feature 작업, hotfix 아님)는
+> `superpowers:test-driven-development` invoke하여 구현 전 테스트 작성.
+> 권장이며 strict 강제 아님.
+
+**Phase 4 (Gate) — reviewer 지시 (5 플랫폼):**
+
+> wave diff 평가 시, 각 implementer가 `superpowers:verification-before-completion`
+> 실제 실행했고 verification 통과했는지 명시적 확인. 건너뛴/실패한
+> 경우 코드 품질 verdict 무관 `critical` 이슈로 escalate — Phase 4에서
+> wave 블록.
+
+2-레이어 net: implementer가 verify; reviewer가 verification 실제 일어
+났는지 audit. 하드 캡 + breakCondition과 결합 — 긴 무인 `--loop` 실행에서
+도 깨진 코드 PR로 sneak in 못 함.
+
+5 플랫폼 phase 문서 갱신:
+- `plugins/harness-floor/skills/agent-all/phases/{3-dispatch,4-gate}.md`
+- `plugins/harness-floor-{cursor,copilot,codex,gemini}/skills/agent-all-<p>/phases/{3-dispatch,4-gate}.md`
+
+20개 신규 테스트 (`tests/lib/agent-all-verification-directive.test.mjs`)
+가 10개 파일 모두에서 지시 언급 + TDD가 권장이고 강제 아님 flag + 2-레이어
+안전망 명명 확인.
+
+### 변경 — README 배포 polish
+
+- **상태 배지** README 헤더에 추가 (tests/plugins/themes/license)
+- **신규 "사전 요구사항" 섹션** — Node ≥ 20, git, gh, 마켓플레이스
+  지원, 플랫폼별 설치를 위한 타겟 CLI 설치됨. `superpowers` +
+  `context-mode`를 강력 권장 peer 플러그인으로 명시.
+- **Pillar #2** 확장하여 2-레이어 검증 안전망 언급 (깨진 코드 PR로
+  sneak in 못 함).
+- **FAQ "/agent-all --loop 안전한가요?"** 모든 4 레이어 (하드 캡,
+  breakCondition, implementer 검증, reviewer audit) 명시하도록 재작성.
+- **신규 "상태" 테이블** 하단 — 무엇이 검증됐는지 (tests, install
+  렌더러, 마켓플레이스, Claude Code skills) vs 라이브 CLI 검증 필요한
+  것 vs 연기된 것 (v2 thrift, SDK 연결)의 솔직한 매트릭스.
+- **신규 "로드맵" 섹션** — 라이브 런타임 검증, v2 thrift, SDK 연결,
+  explore/debug 포트, transcript-listener bridge, telemetry opt-in.
+- **신규 "라이선스 & 기여" 푸터** — MIT, PR 컨벤션, 제출 전 체크
+  (node --test, sync-lib --check), 저장소 컨벤션 (cross-plugin
+  import 금지, sentinel 기반 hook 프로토콜).
+- 테스트 카운트 전체에서 981 → 1019 갱신.
+
+### 결과
+
+**1019/1019 tests pass** (+20 verification-directive 테스트).
+
+영문 + 한글 README 동기화. 양쪽 CHANGELOG 동기화.
+
 ## 크로스 플랫폼 설치 — 누락 builder 렌더러 + orchestrator — 2026-05-18
 
 ### 추가

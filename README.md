@@ -2,9 +2,11 @@
 
 # agent-skill
 
+![status](https://img.shields.io/badge/status-stable--cli--verification--pending-blue) ![tests](https://img.shields.io/badge/tests-1019%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+
 **Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..."` per feature; the agent brainstorms → plans → writes → tests → opens the PR — and keeps iterating until the tests pass — without you babysitting every turn.
 
-Works on Claude Code today, with cross-platform ports for **Cursor, GitHub Copilot CLI, Codex CLI, and Gemini CLI**. 17 plugins, 5 slash commands, one marketplace.
+Works on Claude Code today, with cross-platform ports for **Cursor, GitHub Copilot CLI, VS Code Copilot, Codex CLI, and Gemini CLI**. 17 plugins, 5 slash commands, one marketplace.
 
 ```
 /agent-init                            # bootstrap any git repo (Phase A — once per project)
@@ -19,11 +21,28 @@ Works on Claude Code today, with cross-platform ports for **Cursor, GitHub Copil
 
 1. **Project-first scaffolding.** `/agent-init` works on any git repo — Next.js, FastAPI, Rust CLI, monorepo. It detects your stack, picks the right test command, and creates `CLAUDE.md` + agents + hooks + config in one commit. Same command, every project.
 
-2. **Agent-first execution that preserves your main thread.** `/agent-all "..."` isn't a chat. It runs brainstorm → plan → implement → review → PR as **one pipeline**, and the implementation/review heavy lifting happens in **isolated subagents** — their turn-by-turn output never enters your main conversation. Your main session stays small (planning + judgment) so the same Claude Code session can keep going for hours without context bloat.
+2. **Agent-first execution that preserves your main thread.** `/agent-all "..."` isn't a chat. It runs brainstorm → plan → implement → review → PR as **one pipeline**, and the implementation/review heavy lifting happens in **isolated subagents** — their turn-by-turn output never enters your main conversation. A built-in two-layer safety net mandates `superpowers:verification-before-completion` per implementer + cross-checks at Phase 4 review, so broken code can't sneak into a PR. Your main session stays small (planning + judgment) so the same Claude Code session can keep going for hours without context bloat.
 
 3. **Composable for unattended runs.** Three pieces — `/agent-all --loop` (drives the work), `/thrift` (compresses what does accumulate in main), `/goal` (keeps the session alive across iterations) — combine into overnight runs that exit cleanly when CI is green or your cost cap hits. See [Self-sustaining workflows](#self-sustaining-workflows).
 
 That's it. The rest of this README is reference material — skim the parts you need.
+
+---
+
+## Prerequisites
+
+- **Node.js ≥ 20** — required for all install renderers (`bin/init.mjs`, `bin/install.mjs`, `scripts/install-all.sh`, `scripts/install-platform.sh`)
+- **git** — required by `/agent-init`, `/agent-all`, and `/explore` (HEAD-keyed cache)
+- **gh CLI** (optional) — for `/agent-all` Phase 5 PR creation; without it, `/agent-all` falls back to `--no-pr` mode
+- **For Claude Code**: marketplace plugin support (any recent build)
+- **For per-platform install**: target CLI installed (Cursor, gh copilot, codex, gemini) AND its config dir writable
+
+Strongly recommended (the harness composes on top of these — degrades gracefully if missing):
+
+- `superpowers@claude-plugins-official` — foundational skills (brainstorming, writing-plans, subagent-driven-development, verification-before-completion, etc.)
+- `context-mode@context-mode` — keeps raw tool output out of main conversation
+
+See [How this fits with the rest of the Claude ecosystem](#how-this-fits-with-the-rest-of-the-claude-ecosystem) for details on how they integrate.
 
 ---
 
@@ -462,8 +481,13 @@ A future `install-platform.sh --uninstall` flag is planned; for now uninstall is
 **Will `/agent-init` overwrite my CLAUDE.md?**
 No. It aborts if CLAUDE.md exists. Use `--merge` to append, or `--force` to overwrite.
 
-**Is `/agent-all --loop` safe?**
-Yes. Hard-bounded by `--max-iter` (cap 50), `--max-cost` (default $500), and a clear test command. Set tight values and it can't run away.
+**Is `/agent-all --loop` safe to leave unattended?**
+Yes — four layers of safety make it boring to walk away from:
+1. **Hard caps**: `--max-iter` (clamped at 50), `--max-cost` (default $500), evaluated after each wave.
+2. **`breakCondition`**: shell command (your test suite) must exit 0; otherwise loop re-enters Phase 1.
+3. **Implementer verification (mandatory)**: every dispatched implementer subagent MUST invoke `superpowers:verification-before-completion` before claiming done; failure → `STATUS: blocked` (not silently merged).
+4. **Reviewer audit at Phase 4**: every reviewer subagent MUST confirm the implementer actually verified; skipped/failed verification → escalated as `critical`, blocks PR.
+Combined: broken code can't sneak through, costs can't explode, and the session can't run forever.
 
 **Does `/thrift` change my context behavior right away?**
 Yes. After `/thrift`, hooks fire on every subsequent turn. You'll see PreToolUse suggestions inline. The summariser fires at the configured threshold (`.thrift.json`) and asks you to run `/compact`.
@@ -591,9 +615,48 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 - **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for design docs per plugin.
 - **All 17 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
-- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 981+ tests, all green.
+- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1019+ tests, all green.
 - **Per-platform porting** — see specs ending in `-impl-spec.md` or `-decomposition.md` under `docs/superpowers/specs/`.
 - **Cross-platform support matrix** — see [docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md](docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md).
 - **Hook precedence (if you're mixing plugins that all register hooks)** — see [docs/superpowers/specs/2026-05-18-hook-precedence-integration.md](docs/superpowers/specs/2026-05-18-hook-precedence-integration.md).
 
-Versioning: Claude Code core plugins are at `v0.2.0`, per-platform ports at `v0.1.0`.
+---
+
+## Status
+
+| Layer | Status | Note |
+|---|---|---|
+| Unit/integration tests | ✅ **1019/1019 passing** | Mock toolCallers + isolated lib tests |
+| Install renderers (5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
+| Marketplace registration | ✅ 17 plugins listed | sync between local + origin |
+| Claude Code skills | ✅ ship today | core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug` |
+| Cross-platform CLI runtime | ⚠️ **CLI verification pending** | Sandbox lacks Codex/Copilot/Gemini binaries; checklist in `docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md` |
+| `/thrift` v2 programmatic compact | ⏳ deferred | Waits on Claude Code's programmatic compact API |
+| Anthropic/OpenAI/Vertex SDK hookup | ⏳ deferred | Currently mock toolCallers; production hookup needs peer deps |
+
+Versioning: Claude Code core plugins at `v0.2.0`, per-platform ports at `v0.1.0`.
+
+## Roadmap
+
+- Live CC + per-platform CLI runtime verification (follow the runtime checklist)
+- `/thrift` v2 summariser using Claude Code's programmatic compact API
+- Real Anthropic/OpenAI/Vertex SDK hookups (replace mock toolCallers)
+- `/explore` and `/debug` per-platform ports (Cursor/Copilot/Codex/Gemini)
+- Subagent transcript-listener bridge for Cursor's `is_background: true` awaiter
+- Telemetry opt-in for thrift audit (which coercions actually fired, real-world cost savings)
+
+## License & Contributing
+
+MIT License. PRs welcome — open an issue first for design discussion on anything beyond a one-file fix.
+
+Before submitting:
+```bash
+node --test                              # 1019/1019 must pass
+node scripts/sync-lib.mjs --check        # vendored render.mjs copies in sync
+```
+
+Repository conventions:
+- All plugin libs (`plugins/*/skills/*/lib/*.mjs`) are pure Node — no host dependencies; cross-plugin imports forbidden (enforced by `tests/lib/cross-platform-isolation.test.mjs`)
+- Vendored `render.mjs` copies stay byte-identical to `plugins/harness-builder/skills/agent-init/lib/render.mjs` (canonical source); sync via `node scripts/sync-lib.mjs`
+- New plugins must register in `.claude-plugin/marketplace.json` AND update `tests/lib/cross-platform-{manifest,isolation}.test.mjs`
+- New hook registrations must follow the sentinel-based protocol in `docs/superpowers/specs/2026-05-18-hook-precedence-integration.md`

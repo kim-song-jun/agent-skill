@@ -36,3 +36,13 @@ in its prompt body — the `/gemini-init` default roster ships such a reviewer.
 ## Output
 
 Print one line per wave: `Wave <i> gate: <issuesCount> issues (<critical>c <major>m <minor>n), <retries> retries`.
+
+## Per-reviewer verification check (mandatory)
+
+Every reviewer `gemini chat` subprocess's prompt MUST include the following directive:
+
+> When evaluating the wave's diff, explicitly verify that each implementer ran `superpowers:verification-before-completion` and the verification passed. Look for the verification command output in commit messages, the implementer's reported output, or run the verification command yourself against the wave's tip commit.
+>
+> If verification was skipped OR failed, escalate as a `critical` issue regardless of code quality verdict — this blocks the wave at Phase 4 even if everything else looks fine.
+
+This complements the Phase 3 verification directive. Two-layer safety net.

@@ -36,6 +36,16 @@
 - If a wave's subagent-driven-development reports BLOCKED for >1 task: mark wave `incomplete`. Phase 4 will decide whether to retry or abort.
 - If `tasks.length === 0`: abort with `plan has no '### Task N' headings`.
 
+## Per-subagent verification (safety net for unattended runs)
+
+Every dispatched subagent's prompt MUST include the following directive (append to the synthesized mini-plan):
+
+> Before reporting `STATUS: completed`, invoke `superpowers:verification-before-completion` to run the project's test command (from `.agent-all.json` `breakCondition`, falling back to the stack-detected default). Do not mark a task complete if verification fails — report `STATUS: blocked, REASON: verification failed` instead, with the failing output captured.
+>
+> For tasks adding new behavior (feature work, not hotfixes), invoke `superpowers:test-driven-development` to write tests before implementation. This is recommended, not strictly enforced — judgment calls allowed for trivial changes (typos, docs, config tweaks).
+
+This is the safety net that makes `--loop` runs safe to leave unattended. Verification is mandatory; TDD is recommended for feature-shaped tasks.
+
 ## Output to user
 
 Print one line per wave: `Wave <i>: <completed>/<total> tasks succeeded`.

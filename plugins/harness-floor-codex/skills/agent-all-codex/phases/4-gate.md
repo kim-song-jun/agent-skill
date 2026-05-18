@@ -33,3 +33,13 @@ parameter, abort with `reviewer SKILL.md missing mode parameter — upgrade /cod
 ## Output
 
 Print one line per wave: `Wave <i> gate: <issuesCount> issues (<critical>c <major>m <minor>n), <retries> retries`.
+
+## Per-reviewer verification check (mandatory)
+
+Every dispatched reviewer subagent (via `codex agent dispatch` OR sequential `.codex/skills/reviewer/SKILL.md` invocation) MUST receive the following directive in its prompt body:
+
+> When evaluating the wave's diff, explicitly verify that each implementer ran `superpowers:verification-before-completion` and the verification passed. Look for the verification command output in commit messages, the implementer's reported output, or run the verification command yourself against the wave's tip commit.
+>
+> If verification was skipped OR failed, escalate as a `critical` issue regardless of code quality verdict — this blocks the wave at Phase 4 even if everything else looks fine.
+
+This complements the Phase 3 verification directive. Two-layer safety net.

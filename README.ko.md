@@ -2,9 +2,11 @@
 
 # agent-skill
 
+![status](https://img.shields.io/badge/status-stable--cli--verification--pending-blue) ![tests](https://img.shields.io/badge/tests-1019%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+
 **스스로 굴러가는 agent-first 워크플로.** 프로젝트당 `/agent-init` 한 번, 기능당 `/agent-all "..."` 한 번 — agent가 brainstorm → 계획 → 구현 → 테스트 → PR을 알아서 진행하고, **테스트가 통과할 때까지 알아서 반복**합니다. 매 턴 babysitting 필요 없음.
 
-오늘 Claude Code에서 동작, 그리고 **Cursor, GitHub Copilot CLI, Codex CLI, Gemini CLI** 크로스 플랫폼 포트 포함. 17개 플러그인, 5개 슬래시 명령, 하나의 마켓플레이스.
+오늘 Claude Code에서 동작, 그리고 **Cursor, GitHub Copilot CLI, VS Code Copilot, Codex CLI, Gemini CLI** 크로스 플랫폼 포트 포함. 17개 플러그인, 5개 슬래시 명령, 하나의 마켓플레이스.
 
 ```
 /agent-init                              # 모든 git 저장소 부트스트랩 (Phase A — 프로젝트당 한 번)
@@ -19,11 +21,28 @@
 
 1. **Project-first 스캐폴딩.** `/agent-init`은 어떤 git 저장소에서든 동작 — Next.js, FastAPI, Rust CLI, 모노레포. 스택 감지, 올바른 테스트 명령 선택, `CLAUDE.md` + agents + hooks + config를 한 번의 commit에 생성. 같은 명령, 모든 프로젝트.
 
-2. **메인 스레드를 보존하는 agent-first 실행.** `/agent-all "..."`은 채팅이 아닙니다. brainstorm → 계획 → 구현 → 리뷰 → PR을 **하나의 파이프라인**으로 실행하고, 구현/리뷰 같은 무거운 작업은 **격리된 subagent**에서 일어남 — 그들의 turn-by-turn 출력은 메인 대화에 들어오지 않음. 메인 세션은 작게 유지 (계획 + 판단) → 같은 Claude Code 세션이 context bloat 없이 몇 시간 지속 가능.
+2. **메인 스레드를 보존하는 agent-first 실행.** `/agent-all "..."`은 채팅이 아닙니다. brainstorm → 계획 → 구현 → 리뷰 → PR을 **하나의 파이프라인**으로 실행하고, 구현/리뷰 같은 무거운 작업은 **격리된 subagent**에서 일어남 — 그들의 turn-by-turn 출력은 메인 대화에 들어오지 않음. 내장 2-레이어 안전망이 구현자별 `superpowers:verification-before-completion` 호출을 강제하고 Phase 4 리뷰에서 그것을 cross-check — 깨진 코드가 PR로 sneak in 못 함. 메인 세션은 작게 유지 (계획 + 판단) → 같은 Claude Code 세션이 context bloat 없이 몇 시간 지속 가능.
 
 3. **무인 실행을 위한 조합성.** 세 조각 — `/agent-all --loop` (작업 드라이브), `/thrift` (메인에 누적되는 것 압축), `/goal` (iteration 간 세션 살림) — 이 합쳐져 CI green 또는 비용 cap 도달 시 깔끔히 종료되는 야간 실행. [Self-sustaining 워크플로](#self-sustaining-워크플로) 참조.
 
 그게 전부입니다. README의 나머지는 참고용 — 필요한 부분만 훑어보세요.
+
+---
+
+## 사전 요구사항
+
+- **Node.js ≥ 20** — 모든 install 렌더러에 필요 (`bin/init.mjs`, `bin/install.mjs`, `scripts/install-all.sh`, `scripts/install-platform.sh`)
+- **git** — `/agent-init`, `/agent-all`, `/explore` (HEAD 키 캐시)에 필요
+- **gh CLI** (선택) — `/agent-all` Phase 5 PR 생성용; 없으면 `/agent-all`이 `--no-pr` 모드로 fallback
+- **Claude Code**: 마켓플레이스 플러그인 지원 (최근 빌드 아무거나)
+- **플랫폼별 설치**: 타겟 CLI 설치 (Cursor, gh copilot, codex, gemini) + 그 config 디렉토리 쓰기 가능
+
+강력 권장 (harness가 그 위에 조합 — 없으면 graceful degrade):
+
+- `superpowers@claude-plugins-official` — 기반 skills (brainstorming, writing-plans, subagent-driven-development, verification-before-completion 등)
+- `context-mode@context-mode` — raw 도구 출력을 메인 대화에서 격리
+
+[Claude 생태계의 다른 플러그인과의 관계](#claude-생태계의-다른-플러그인과의-관계)에서 통합 방식 자세히 참조.
 
 ---
 
@@ -462,8 +481,13 @@ node plugins/harness-thrift-cursor/bin/install.mjs /path/to/project --uninstall
 **`/agent-init`이 내 CLAUDE.md를 덮어쓰나요?**
 아니요. CLAUDE.md 존재 시 abort. `--merge`로 추가, `--force`로 덮어쓰기.
 
-**`/agent-all --loop`이 안전한가요?**
-네. `--max-iter` (캡 50), `--max-cost` (기본 $500), 명확한 테스트 명령으로 하드-bounded. 빠듯한 값 설정하면 무한 실행 불가.
+**`/agent-all --loop`을 무인으로 두기 안전한가요?**
+네 — 네 가지 레이어가 자리 비우기 안전하게 만듦:
+1. **하드 캡**: `--max-iter` (50으로 클램프), `--max-cost` (기본 $500), 매 wave 후 평가.
+2. **`breakCondition`**: shell 명령 (테스트 suite) 이 exit 0 해야 함; 아니면 루프 Phase 1 재진입.
+3. **구현자 검증 (강제)**: 디스패치된 모든 implementer subagent는 완료 선언 전 `superpowers:verification-before-completion` invoke MUST; 실패 → `STATUS: blocked` (조용히 merge 안 됨).
+4. **Phase 4 리뷰어 audit**: 모든 reviewer subagent는 구현자가 실제로 verify 했는지 확인 MUST; 건너뛴/실패한 verification → `critical`로 escalate, PR block.
+조합: 깨진 코드 sneak through 못 함, 비용 폭발 못 함, 세션 무한 실행 못 함.
 
 **`/thrift`가 컨텍스트 동작을 즉시 바꾸나요?**
 네. `/thrift` 이후 매 턴마다 hooks 발사. PreToolUse 제안이 inline으로 표시. summariser가 `.thrift.json`의 설정 임계값에서 발사하고 `/compact` 실행을 요청.
@@ -591,9 +615,48 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 
 - **아키텍처 & 레이아웃** — 플러그인별 design 문서는 [docs/superpowers/specs/](docs/superpowers/specs/) 참조.
 - **17개 플러그인 전체 목록** — [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json) 참조.
-- **변경 히스토리** — [CHANGELOG.md](CHANGELOG.md) 참조. 981+ tests, 모두 통과.
+- **변경 히스토리** — [CHANGELOG.md](CHANGELOG.md) 참조. 1019+ tests, 모두 통과.
 - **플랫폼별 포팅** — `docs/superpowers/specs/`의 `-impl-spec.md` 또는 `-decomposition.md`로 끝나는 spec 참조.
 - **크로스 플랫폼 지원 매트릭스** — [docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md](docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md) 참조.
 - **Hook precedence (hooks 등록하는 플러그인 여러개 섞을 때)** — [docs/superpowers/specs/2026-05-18-hook-precedence-integration.md](docs/superpowers/specs/2026-05-18-hook-precedence-integration.md) 참조.
 
-버전: Claude Code 코어 플러그인은 `v0.2.0`, 플랫폼별 포트는 `v0.1.0`.
+---
+
+## 상태
+
+| 레이어 | 상태 | 비고 |
+|---|---|---|
+| Unit/integration 테스트 | ✅ **1019/1019 통과** | Mock toolCaller + 격리된 lib 테스트 |
+| 5개 플랫폼 install 렌더러 | ✅ end-to-end 검증 | `install-all.sh` + `install-platform.sh` |
+| 마켓플레이스 등록 | ✅ 17 플러그인 등록 | local + origin 동기화 |
+| Claude Code skills | ✅ 오늘 출시 | core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug` |
+| 크로스 플랫폼 CLI 런타임 | ⚠️ **CLI 검증 대기** | Sandbox에 Codex/Copilot/Gemini 바이너리 없음; 체크리스트 `docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md` |
+| `/thrift` v2 programmatic compact | ⏳ 연기 | Claude Code의 programmatic compact API 대기 |
+| Anthropic/OpenAI/Vertex SDK 연결 | ⏳ 연기 | 현재 mock toolCaller; 프로덕션 연결은 peer dep 필요 |
+
+버전: Claude Code 코어 플러그인 `v0.2.0`, 플랫폼별 포트 `v0.1.0`.
+
+## 로드맵
+
+- 라이브 CC + 플랫폼별 CLI 런타임 검증 (런타임 체크리스트 따르기)
+- `/thrift` v2 summariser, Claude Code의 programmatic compact API 사용
+- 실제 Anthropic/OpenAI/Vertex SDK 연결 (mock toolCaller 대체)
+- `/explore` 및 `/debug` 플랫폼별 포트 (Cursor/Copilot/Codex/Gemini)
+- Cursor `is_background: true` awaiter용 subagent transcript-listener bridge
+- thrift audit telemetry opt-in (어느 강제가 실제 발사됐는지, 실제 비용 절감)
+
+## 라이선스 & 기여
+
+MIT 라이선스. PR 환영 — 1파일 fix 이상은 design discussion을 위해 issue 먼저.
+
+제출 전:
+```bash
+node --test                              # 1019/1019 통과 필수
+node scripts/sync-lib.mjs --check        # vendored render.mjs 사본 동기화 확인
+```
+
+저장소 컨벤션:
+- 모든 플러그인 libs (`plugins/*/skills/*/lib/*.mjs`)는 순수 Node — 호스트 의존성 없음; cross-plugin import 금지 (`tests/lib/cross-platform-isolation.test.mjs`로 enforce)
+- Vendored `render.mjs` 사본은 `plugins/harness-builder/skills/agent-init/lib/render.mjs` (canonical 소스)와 byte-identical 유지; `node scripts/sync-lib.mjs`로 동기화
+- 신규 플러그인은 `.claude-plugin/marketplace.json` 등록 + `tests/lib/cross-platform-{manifest,isolation}.test.mjs` 갱신 필수
+- 신규 hook 등록은 `docs/superpowers/specs/2026-05-18-hook-precedence-integration.md`의 sentinel 기반 프로토콜 따라야 함

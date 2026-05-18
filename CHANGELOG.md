@@ -13,6 +13,74 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Anthropic SDK / OpenAI SDK / Vertex SDK actual API hookups (currently
   mock toolCallers used in tests).
 
+## Verification safety net + release-grade README polish — 2026-05-19
+
+### Added — two-layer verification safety net for `/agent-all --loop`
+
+The previous loop semantics relied on `breakCondition` + `--max-iter` +
+`--max-cost`. Broken code could still pass through if an implementer
+subagent claimed STATUS: completed without actually verifying. Closed
+this gap with mandatory directives in Phase 3 + Phase 4 docs:
+
+**Phase 3 (Dispatch) — implementer directive (5 platforms):**
+
+> Before reporting `STATUS: completed`, invoke `superpowers:verification-before-completion`
+> to run the project's test command. Do not mark a task complete if
+> verification fails — report `STATUS: blocked, REASON: verification failed`
+> instead.
+>
+> For tasks adding new behavior (feature work, not hotfixes), invoke
+> `superpowers:test-driven-development` to write tests before
+> implementation. Recommended, not strictly enforced.
+
+**Phase 4 (Gate) — reviewer directive (5 platforms):**
+
+> When evaluating the wave's diff, explicitly verify that each implementer
+> ran `superpowers:verification-before-completion` and the verification
+> passed. If skipped OR failed, escalate as a `critical` issue regardless
+> of code quality verdict — this blocks the wave at Phase 4.
+
+Two-layer net: implementers verify; reviewers audit that verification
+actually happened. Combined with hard caps and breakCondition, broken
+code can't sneak into a PR even on long unattended `--loop` runs.
+
+Updated phase docs in all 5 platforms:
+- `plugins/harness-floor/skills/agent-all/phases/{3-dispatch,4-gate}.md`
+- `plugins/harness-floor-{cursor,copilot,codex,gemini}/skills/agent-all-<p>/phases/{3-dispatch,4-gate}.md`
+
+20 new tests (`tests/lib/agent-all-verification-directive.test.mjs`)
+checking all 10 files mention the directive + flag TDD as recommendation
+not enforcement + name the two-layer safety net.
+
+### Changed — README release polish
+
+- **Status badges** added to README header (tests/plugins/themes/license)
+- **NEW "Prerequisites" section** — Node ≥ 20, git, gh, marketplace
+  support, target CLI installed for per-platform install. Also names
+  `superpowers` + `context-mode` as strongly recommended peer plugins.
+- **Pillar #2** expanded to mention the two-layer verification safety
+  net (broken code can't sneak into a PR).
+- **FAQ "Is /agent-all --loop safe?"** rewritten to spell out all four
+  layers (hard caps, breakCondition, implementer verification, reviewer
+  audit).
+- **NEW "Status" table** at bottom — honest matrix of what's verified
+  (tests, install renderers, marketplace, Claude Code skills) vs what
+  needs live CLI verification vs what's deferred (v2 thrift, SDK
+  hookups).
+- **NEW "Roadmap" section** — live runtime verification, v2 thrift,
+  SDK hookups, explore/debug ports, transcript-listener bridge,
+  telemetry opt-in.
+- **NEW "License & Contributing" footer** — MIT, PR conventions,
+  pre-submit checks (node --test, sync-lib --check), repo conventions
+  (no cross-plugin imports, sentinel-based hook protocol).
+- Test count updated 981 → 1019 throughout.
+
+### Result
+
+**1019/1019 tests pass** (+20 verification-directive tests).
+
+Both English + Korean READMEs synced. Both CHANGELOGs synced.
+
 ## Cross-platform install — fill missing builder renderers + orchestrator — 2026-05-18
 
 ### Added

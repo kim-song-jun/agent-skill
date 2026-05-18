@@ -68,3 +68,13 @@ while remaining:
     wave.push(t); for f of t.files: used.add(f)
   waves.push(wave); remaining = remaining.filter(t => !wave.includes(t))
 ```
+
+## Per-subagent verification (safety net for unattended runs)
+
+Every `@agent-all-implementer` invocation's chat body MUST include the following directive:
+
+> Before reporting `STATUS: completed`, invoke `superpowers:verification-before-completion` to run the project's test command (from `.agent-all.json` `breakCondition`, falling back to the stack-detected default). Do not mark a task complete if verification fails — report `STATUS: blocked, REASON: verification failed` instead, with the failing output captured.
+>
+> For tasks adding new behavior (feature work, not hotfixes), invoke `superpowers:test-driven-development` to write tests before implementation. This is recommended, not strictly enforced — judgment calls allowed for trivial changes.
+
+This is the safety net that makes `--loop` runs safe to leave unattended.
