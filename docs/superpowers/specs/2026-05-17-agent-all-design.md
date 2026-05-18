@@ -1,3 +1,5 @@
+> 🇰🇷 한국어: [2026-05-17-agent-all-design.ko.md](2026-05-17-agent-all-design.ko.md)
+
 # /agent-all Skill — Design Spec (Theme C, sub-specs C-2 + C-3)
 
 **Status:** Approved (brainstorming complete, awaiting plan)

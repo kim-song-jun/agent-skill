@@ -1,3 +1,5 @@
+> 🇰🇷 한국어: [2026-05-17-harness-builder-design.ko.md](2026-05-17-harness-builder-design.ko.md)
+
 # Harness Builder Skill — Design Spec
 
 **Status:** Approved (brainstorming complete, awaiting plan)

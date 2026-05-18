@@ -1,3 +1,5 @@
+> 🇰🇷 한국어: [README.ko.md](README.ko.md)
+
 # agent-skill
 
 Claude Code plugin marketplace for `/agent-init` and (eventually) sibling skills that bootstrap project-level agent harnesses.

@@ -1,3 +1,5 @@
+> 🇰🇷 한국어: [2026-05-17-visual-qa-design.ko.md](2026-05-17-visual-qa-design.ko.md)
+
 # Visual-QA Skill — Design Spec (Theme C, sub-spec C-1)
 
 **Status:** Approved (brainstorming complete, awaiting plan)

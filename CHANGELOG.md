@@ -1,3 +1,5 @@
+> 🇰🇷 한국어: [CHANGELOG.ko.md](CHANGELOG.ko.md)
+
 # Changelog
 
 ## [Unreleased]
