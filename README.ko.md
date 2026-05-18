@@ -55,7 +55,27 @@ cd my-project
 /plugin update --marketplace agent-skill
 ```
 
-이 한 명령으로 마켓플레이스의 모든 것이 업데이트됩니다. 다른 CLI에서는 아래 [다른 도구에서 업데이트](#다른-도구에서-업데이트) 참조.
+이 한 명령으로 마켓플레이스에서 **이미 설치된** 모든 것이 업데이트됩니다. 다른 CLI는 [다른 도구에서 업데이트](#다른-도구에서-업데이트) 참조.
+
+### 신규 추가된 플러그인 설치
+
+중요: `/plugin update`는 **이미 설치한 플러그인만** 업데이트. 마켓플레이스는 시간이 지나며 늘어남 (2026-05-18 하루에 6개 신규 추가 — `harness-thrift`, `harness-explore`, `harness-debug` + 3개 thrift CLI 포트). 이들 가져오려면:
+
+```
+/plugin marketplace update agent-skill        # 목록 새로고침
+/plugin install harness-thrift@agent-skill    # 원하는 신규 플러그인 각각 설치
+/plugin install harness-explore@agent-skill
+/plugin install harness-debug@agent-skill
+/reload-plugins                               # 적용
+```
+
+**빠른 확인** — 현재 이 마켓플레이스에서 무엇이 설치돼 있는지:
+
+```bash
+cat ~/.claude/plugins/installed_plugins.json | python3 -m json.tool | grep -B1 agent-skill
+```
+
+카운트가 4 미만이면 (Claude Code 권장 최소: builder + floor + thrift + explore + debug = 5) 최근 추가분이 빠져 있는 것.
 
 ---
 

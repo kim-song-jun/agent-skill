@@ -55,7 +55,27 @@ You're done. Try `/agent-all "small feature"` to see it work.
 /plugin update --marketplace agent-skill
 ```
 
-That single command updates everything from this marketplace. For other CLIs, see [Updating on other tools](#updating-on-other-tools) below.
+That single command updates everything **already installed** from this marketplace. For other CLIs, see [Updating on other tools](#updating-on-other-tools).
+
+### Install newly added plugins
+
+Important: `/plugin update` only updates plugins you've already installed. The marketplace can grow over time (we added 6 new plugins on 2026-05-18 alone — `harness-thrift`, `harness-explore`, `harness-debug`, plus 3 thrift CLI ports). To pick those up:
+
+```
+/plugin marketplace update agent-skill        # refresh the listing
+/plugin install harness-thrift@agent-skill    # install each new plugin you want
+/plugin install harness-explore@agent-skill
+/plugin install harness-debug@agent-skill
+/reload-plugins                               # apply
+```
+
+**Quick check** — see what you currently have installed from this marketplace:
+
+```bash
+cat ~/.claude/plugins/installed_plugins.json | python3 -m json.tool | grep -B1 agent-skill
+```
+
+If the count is below 4 (the recommended Claude Code minimum: builder + floor + thrift + explore + debug = 5) you're missing the recent additions.
 
 ---
 
