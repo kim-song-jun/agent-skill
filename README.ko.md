@@ -4,17 +4,17 @@
 
 ![status](https://img.shields.io/badge/status-stable--cli--verification--pending-blue) ![tests](https://img.shields.io/badge/tests-1246%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
-**스스로 굴러가는 agent-first 워크플로.** 프로젝트당 `/agent-init` 한 번, 기능당 `/agent-all "..."` 한 번 — agent가 brainstorm → 계획 → 구현 → 테스트 → PR을 알아서 진행하고, **테스트가 통과할 때까지 알아서 반복**합니다. 매 턴 babysitting 필요 없음.
+**스스로 굴러가는 agent-first 워크플로.** 프로젝트당 `/agent-init` 한 번, 기능당 `/agent-all "..." --loop --qa` 한 번 — agent가 brainstorm → 계획 → 구현 → 테스트 → **모든 페이지 visual QA** → PR을 알아서 진행하고, **테스트와 UI 둘 다 통과할 때까지 알아서 반복**합니다. 매 턴 babysitting 필요 없음.
 
 오늘 Claude Code에서 동작, 그리고 **Cursor, GitHub Copilot CLI, VS Code Copilot, Codex CLI, Gemini CLI** 크로스 플랫폼 포트 포함. 17개 플러그인, 5개 슬래시 명령, 하나의 마켓플레이스.
 
 ```
-/agent-init                              # 모든 git 저장소 부트스트랩 (Phase A — 프로젝트당 한 번)
-/agent-all "Google OAuth 추가" --loop    # brainstorm → 계획 → 코드 → 테스트 → PR (Phase C — 기능당)
-/visual-qa                               # 모든 페이지 스크린샷, LLM 디자인 리뷰
-/thrift                                  # 긴 세션 저렴하게 (자동 요약, audit)
-/explore                                 # 코드베이스 맵; /explore where Foo → O(1) lookup
-/debug "테스트가 30% 실행에서 flaky"     # 재현 → bisect → 가설 → 검증
+/agent-init                                    # 모든 git 저장소 부트스트랩 (Phase A — 프로젝트당 한 번)
+/agent-all "OAuth 추가" --loop --qa             # 테스트 + visual-qa 둘 다 통과까지, PR 열기 (Phase C)
+/visual-qa                                     # 모든 페이지 스크린샷 + LLM 디자인 리뷰 (declared/comprehensive)
+/thrift                                        # 긴 세션 저렴하게 (자동 요약, audit)
+/explore                                       # 코드베이스 맵; /explore where Foo → O(1) lookup
+/debug "테스트가 30% 실행에서 flaky"            # 재현 → bisect → 가설 → 검증
 ```
 
 **핵심 3가지:**
@@ -23,7 +23,7 @@
 
 2. **메인 스레드를 보존하는 agent-first 실행.** `/agent-all "..."`은 채팅이 아닙니다. brainstorm → 계획 → 구현 → 리뷰 → PR을 **하나의 파이프라인**으로 실행하고, 구현/리뷰 같은 무거운 작업은 **격리된 subagent**에서 일어남 — 그들의 turn-by-turn 출력은 메인 대화에 들어오지 않음. 내장 2-레이어 안전망이 구현자별 `superpowers:verification-before-completion` 호출을 강제하고 Phase 4 리뷰에서 그것을 cross-check — 깨진 코드가 PR로 sneak in 못 함. 메인 세션은 작게 유지 (계획 + 판단) → 같은 Claude Code 세션이 context bloat 없이 몇 시간 지속 가능.
 
-3. **무인 실행을 위한 조합성.** 세 조각 — `/agent-all --loop` (작업 드라이브), `/thrift` (메인에 누적되는 것 압축), `/goal` (iteration 간 세션 살림) — 이 합쳐져 CI green 또는 비용 cap 도달 시 깔끔히 종료되는 야간 실행. [Self-sustaining 워크플로](#self-sustaining-워크플로) 참조.
+3. **한-플래그 end-to-end 검증.** `--qa`가 loop의 "완료" 체크를 **tests + visual UI check**에 연결: visual-qa가 모든 페이지를 crawl, 모든 interactive 요소를 DOM-walk, 각 버튼 shallow-click, 모든 상태 스크린샷, baseline 대비 diff — tests와 UI verdict 둘 다 통과해야 loop break. 무인 야간 실행은 `/thrift` + `/goal`과 조합. [Self-sustaining 워크플로](#self-sustaining-워크플로) 참조.
 
 그게 전부입니다. README의 나머지는 참고용 — 필요한 부분만 훑어보세요.
 
@@ -114,7 +114,7 @@ cd my-project
 cat ~/.claude/plugins/installed_plugins.json | python3 -m json.tool | grep -B1 agent-skill
 ```
 
-카운트가 4 미만이면 (Claude Code 권장 최소: builder + floor + thrift + explore + debug = 5) 최근 추가분이 빠져 있는 것.
+카운트가 5 미만이면 (Claude Code 권장 세트: builder + floor + thrift + explore + debug) 최근 추가분이 빠져 있는 것.
 
 ---
 
@@ -148,6 +148,11 @@ cat ~/.claude/plugins/installed_plugins.json | python3 -m json.tool | grep -B1 a
 
 모바일/태블릿/데스크탑에서 스크린샷 캡처, 이미지별 LLM 분석, Markdown 보고서 작성. Playwright MCP + dev 서버 필요.
 
+두 가지 모드 (`.visual-qa.json`의 `mode` 필드):
+
+- **`declared`** (기본, back-compat): 페이지 + selector + states를 직접 명시.
+- **`comprehensive`**: 모든 것 자동 발견. `baseUrl`에서 crawl, 각 페이지 DOM에서 모든 interactive 요소 (button, link, input, `[data-testid]`, `[role=*]`) walk, 각 non-input을 shallow-click해서 1-step 결과 캡처. 이전 accepted run 대비 verdict 계산; git-diff scope + DOM-hash cache로 비용 제한. `/agent-all --loop --qa`가 매 iter 호출하는 게 이 모드.
+
 ```
 npm run dev                     # 다른 터미널에서
 /visual-qa                      # 캡처 + 분석
@@ -155,7 +160,7 @@ npm run dev                     # 다른 터미널에서
 /visual-qa --budget=20          # LLM 비용 $20로 제한
 ```
 
-결과: `docs/visual-qa/<date-or-slug>/report.md`.
+결과: `docs/visual-qa/<date-or-slug>/report.md` (+ comprehensive 모드에선 `verdict.json`).
 
 ### `/thrift` — 긴 세션을 저렴하게
 
@@ -194,6 +199,13 @@ npm run dev                     # 다른 터미널에서
 ---
 
 ## 자주 쓰는 워크플로
+
+**UI 기능을 end-to-end로 출시 (가장 강력한 플로):**
+```
+npm run dev            # 다른 터미널에서 — dev 서버 http://localhost:3000
+/agent-all "차트 + 필터 있는 사용자 대시보드 빌드" --loop --qa --max-iter=10
+# 자리 비움 — tests와 visual-qa 둘 다 통과해야 loop break
+```
 
 **새 프로젝트 시작, 기능 출시:**
 ```
@@ -249,8 +261,6 @@ git clone <repo> && cd <repo>
 
 ## Self-sustaining 워크플로
 
-세 가지 독립 메커니즘이 조합. 일을 어떻게 나누는지 이해하면 나머지는 설정일 뿐.
-
 ### 왜 동작하는가 — 메인 스레드 격리
 
 `/agent-all`의 진짜 trick은 loop이 아니라 **어디서 작업이 일어나는가**입니다.
@@ -265,25 +275,25 @@ git clone <repo> && cd <repo>
 | 5 PR | main | `gh pr create` 결과 (작음) |
 | 6 Loop | main | breakCondition exit code (숫자 하나) |
 
-무거운 작업 — 코드 읽기, 패치 작성, 테스트 실행, 실패 수정 — 은 `superpowers:subagent-driven-development`로 dispatch된 **subagent 내부에서** 일어남. 각 subagent는 fresh 대화. 그들의 turn-by-turn 출력은 메인 세션에 들어오지 않음. 메인 세션은 verdict만 봄.
+무거운 작업(코드 읽기, 패치 작성, 테스트 실행, 실패 수정)은 `superpowers:subagent-driven-development`로 디스패치된 **subagent 내부에서** 일어남. 각 subagent는 fresh 대화; turn-by-turn 출력은 메인 세션에 안 들어옴. 메인은 verdict만 봄 — 그래서 loop iteration이 50K 토큰이 아닌 2~5K만 추가.
 
-이것이 `/agent-all`이 flat chat 세션이라면 context로 빠져 죽었을 시간을 몇 시간 버틸 수 있는 **이유**. 매 loop iteration은 메인에 2~5K 토큰만 추가 (plan + wave 요약 + gate verdicts) — 50K가 아님.
+### 조합 가능한 셋
 
-하지만 그 "적당한 누적"도 결국 따라잡힘. 거기서 `/thrift`가 등장.
-
-### 세 조각이 일을 어떻게 나누는가
+야간 실행에는 세 가지가 함께 동작:
 
 | 조각 | 해결 | 아는 것 |
 |---|---|---|
-| **`/agent-all --loop`** | 실제 워크플로를 비용 한도 내 검증된 완료까지 드라이브 | Phases, plan, 디스패치된 agents, 시도한 것, 누적 비용, 실패 지점 |
-| **`/thrift`** | 메인에 *실제로 누적되는* 것 (plans, wave 요약, gate verdicts) 을 세션 bloat 전에 압축 | 토큰 카운트 임계값, 캐시 priming, 세션 종료 audit |
-| **`/goal`** | iteration 간 Claude Code가 세션을 끝내지 못하게 막기 | 작업에 대해 모름. 단순 Stop-event blocker. |
+| **`/agent-all --loop`** | 워크플로를 비용 한도 내 검증된 완료까지 드라이브 | Phases, plan, 디스패치된 agents, 시도한 것, 누적 비용, 실패 지점 |
+| **`/thrift`** | 메인에 *실제로 누적되는* 것을 세션 bloat 전에 압축 | 토큰 카운트 임계값, 캐시 priming, 세션 종료 audit |
+| **`/goal`** | iteration 간 Claude Code가 세션을 끝내지 못하게 막기 | 작업에 대해 모름 — 순수 Stop-event blocker |
 
-짧은 loop (1–3 iteration)엔 `/agent-all --loop` 단독 OK. 야간 또는 multi-hour 실행엔 셋 다 필요:
-
-- `/agent-all --loop`이 **iteration별 작업 격리** 처리 (subagent fan-out)
-- `/thrift`가 **iteration 간 메인 스레드 압축** 처리 (임계값에서 자동 요약)
-- `/goal`이 **세션 생존성** 처리 (iteration 사이에 종료하지 말 것)
+```
+/thrift                                                 # 비용 가드레일 (프로젝트당 한 번)
+/goal "analytics 대시보드를 모든 CI 통과 상태로 출시"   # 세션이 스스로 살아있음
+/agent-all "analytics 대시보드 빌드" --loop --qa \
+  --max-iter=15 --max-cost=80
+# 자리 비움 — 깨어나면 merged PR 또는 "iter 7에서 <이유>로 정지" 정밀 리포트
+```
 
 ### Loop 완료 — "완료"의 정의
 
@@ -345,51 +355,19 @@ Loop는 매 PR 후 Phase 1로 재진입하며, **break-condition**이 통과할 
 | iter 1이 "통과"인데 UI가 명백히 깨져있음 | first-run 정책이 `report` (기본) — loop 통과지만 이슈는 report에 기록됨. `docs/visual-qa/loop-iter-1/report.md` 읽기 | 이슈 수정 후 iter 2가 iter-1 baseline 대비 검증 |
 | `--qa`가 config를 썼는데 다른 설정 쓰고 싶음 | `--qa` autoscaffold는 `.visual-qa.json` 없을 때만 동작 | `.visual-qa.json` 직접 편집 (scope, breakpoints, baseUrl 등) — 이후 실행은 그 파일 사용 |
 
-### 레시피 — 무인 야간 기능 출시
-
-```
-/thrift                                                 # 비용 가드레일 설정 (프로젝트당 한 번)
-/goal "analytics 대시보드를 모든 CI 통과 상태로 출시"   # 세션이 스스로 살아있음
-/agent-all "analytics 대시보드 빌드 (차트, 필터, export)" \
-  --loop --max-iter=15 --max-cost=80
-# 자리 비움
-```
-
-단계별로 무엇이 일어나는가:
-1. **`/agent-all`이 iter 1 phase 0–5 실행**: main에서 사용자와 brainstorm → main에서 plan → **격리된 implementer subagent 디스패치** (Phase 3 — 그들 작업은 context를 bloat 안 함) → **격리된 reviewer subagent 디스패치** (Phase 4) → PR
-2. **`breakCondition` 실행** (예: `npm test`). 통과 시 loop 깔끔히 종료. 실패 시 같은 task로 phase 1 재진입 + *이전 실패가 보임* → iter 2는 다른 접근 시도.
-3. **`/thrift`의 hooks가 지속적으로 발사**: PreToolUse가 큰 도구 출력을 `ctx_execute`로 강제, PostToolUse가 토큰 카운트, 설정된 임계값에서 summariser가 이전 iter 결과 압축 제안. 메인 context 작게 유지.
-4. **`/goal`이 매 `/agent-all` iteration 종료 시 Claude Code의 Stop 이벤트 차단**. 세션 살아있음. "모든 CI 통과" 조건 만족 시 자동 clear.
-5. **Cap이 깔끔히 발사**: `--max-iter=15` 또는 `--max-cost=80` 도달 시 loop 정지, state가 `.agent-all-state.json`에 보존돼 나중에 `--resume` picking up.
-
-깨어나면 merged PR 또는 "iteration 7에서 auth flow 테스트 여전히 실패로 정지" 정밀한 리포트 — 200K 토큰 미읽기 출력으로 stall된 세션이 아님.
-
 ### `/goal`이나 Ralph Loop와 어떻게 다른가
 
-이들은 **다른 문제**를 해결합니다. harness는 "Ralph Loop + 기능 추가"가 아니라 — 루프하는 orchestrator입니다.
+`/agent-all --loop`은 **"Ralph Loop + 기능 추가"가 아닙니다** — 루프하는 orchestrator입니다. 차이가 중요한 이유:
 
 | 도구 | 해결하는 문제 | 아는 것 |
 |---|---|---|
-| **`/goal`** | "조건 만족까지 세션 중지하지 말 것." | 작업에 대해 아무것도 모름. Claude Code의 Stop 이벤트만 block. 순수 keep-alive. |
-| **Ralph Loop** | "이 프롬프트를 N분마다 재실행." | 실행 사이에 아무것도 모름. 같은 프롬프트를 stateless로 재발사. |
-| **`/agent-all --loop`** | "완전한 dev 워크플로 (brainstorm → 계획 → 코드 → 리뷰 → PR)를 비용 한도 내에서 검증된 종료 상태까지 드라이브." | **Phases, plan, 디스패치된 agents, 시도한 것, 누적 비용, 실패 지점.** |
+| **`/goal`** | "조건 만족까지 세션 중지하지 말 것." | 작업에 대해 모름. 순수 Stop-event blocker. |
+| **Ralph Loop** | "이 프롬프트를 N분마다 재실행." | 실행 사이에 모름. Stateless 재발사. |
+| **`/agent-all --loop`** | "완전한 워크플로(brainstorm → 계획 → 코드 → 리뷰 → PR)를 비용 한도 내 검증된 완료까지 드라이브." | Phases, plan, 디스패치된 agents, 시도한 것, 누적 비용, 실패 지점. |
 
-harness는 각각의 **좋은 아이디어**를 흡수 — `/goal`의 "끝날 때까지 멈추지 말 것", Ralph의 "자동 재시도" — 하고, 둘 다 없는 구조적 조각을 추가:
+harness가 둘 다 없는 것을 추가: multi-phase 워크플로 인지, **stateful 재시도** (매 iter이 이전 실패를 봄), **wave-granularity 비용 cap** (`--max-cost`이 매 wave 후 체크 → 비용 폭발 시 기능 중간 bail 가능), **`.agent-all-state.json` 기반 resume-from-failure**, **phase-aware break-condition** (PR 생성 후 평가, 구현 도중 아님).
 
-- **Multi-phase 워크플로** — "아직 계획 중"과 "PR 후 테스트 실패"의 차이를 앎
-- **Stateful 재시도** — 매 iteration이 phase 1에 재진입할 때 *이전 실패가 보임*, 그래서 다른 접근 시도 (같은 프롬프트를 맹목적으로 재발사하지 않음)
-- **Wave-granularity 비용 cap** — `--max-cost`이 매 wave 후 확인, 실행 종료 시만이 아님, 그래서 비용 폭발 시 기능 중간에 bail 가능
-- **Resume-from-failure** — `.agent-all-state.json`이 phase 진행 보존; `--resume`이 루프가 crash한 지점 이어감
-- **Phase-aware break-condition** — `breakCondition`이 PR 생성 *후* 평가 (테스트가 실제로 통과해야 하는 시점), 구현 도중이 아님
-
-`/goal`과 Ralph는 **대안**이 아니라 **보완재**:
-
-```
-/goal "analytics 대시보드 출시"             # keep-alive (그래서 /agent-all --loop이 몇 시간 돌 수 있음)
-/agent-all "..." --loop --max-iter=15       # 실제 작업 수행
-```
-
-Ralph가 `/agent-all` *one-shot* (`--loop` 없이) wrap하는 건 wall-clock 주기성에만 의미 있음 (`/ralph-loop 5m /agent-all "deploy 확인"`) — 재시도 의미는 harness가 이미 native하고 더 잘 처리.
+`/goal`과 Ralph는 **대안이 아니라 보완재**. `/goal` + `/agent-all --loop`은 위에 보여준 무인 야간 패턴. Ralph가 non-`--loop` `/agent-all` 감싸는 건 wall-clock 주기성에만 의미 (예: `/ralph-loop 5m /agent-all "deploy 확인"`).
 
 ---
 

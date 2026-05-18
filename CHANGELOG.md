@@ -13,6 +13,38 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Anthropic SDK / OpenAI SDK / Vertex SDK actual API hookups (currently
   mock toolCallers used in tests).
 
+## README overall improvement — 2026-05-19
+
+Coordinated polish pass making the `--qa` story the README's headline
+instead of a bolted-on section.
+
+- **Opening tagline + command list** now lead with
+  `/agent-all "..." --loop --qa` as the canonical featured command,
+  and the one-line summaries promise "tests AND UI both pass" rather
+  than just tests. `/visual-qa` description gains a sentence on
+  `declared` vs `comprehensive` modes (was missing in the command
+  reference).
+- **Pillar #3 rewritten** from "three pieces compose" (generic) to
+  "one-flag end-to-end verification" (concrete) — the actual selling
+  point of the recent work.
+- **New "Common workflows" headline**: "Ship a UI feature end-to-end
+  (the killer flow)" — `npm run dev` + `--loop --qa` two-liner.
+- **Self-sustaining workflows section consolidated** (lines 250-393
+  → 264-372). Merged "Recipe" subsection into "The composable trio"
+  (was duplicating the same /thrift + /goal + /agent-all snippet),
+  tightened "How this differs from Ralph Loop" by 60% without losing
+  the substance, removed the duplicate "step-by-step" prose (the
+  `--qa` walkthrough already covers it).
+- **Stale numbers** swept: 1019 → 1246 in 6 places (badge, status
+  table, going-deeper, contributing checklist, README.ko.md).
+- **Math error fixed**: "below 4" → "below 5" in the
+  installed-plugins check (the recommended set is 5: builder + floor
+  + thrift + explore + debug).
+- README.ko.md fully synced.
+
+Net result: 712 → 690 lines despite adding the --qa story; no fewer
+sections, just less overlap. Tests still 1246/1246.
+
 ## Loop / visual-qa hardening + README clarity pass — 2026-05-19
 
 Closing real gaps uncovered while documenting the comprehensive-mode

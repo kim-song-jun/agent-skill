@@ -4,17 +4,17 @@
 
 ![status](https://img.shields.io/badge/status-stable--cli--verification--pending-blue) ![tests](https://img.shields.io/badge/tests-1246%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
-**Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..."` per feature; the agent brainstorms → plans → writes → tests → opens the PR — and keeps iterating until the tests pass — without you babysitting every turn.
+**Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..." --loop --qa` per feature; the agent brainstorms → plans → writes → tests → **visually QAs every page** → opens the PR — and keeps iterating until tests AND the UI both pass — without you babysitting every turn.
 
 Works on Claude Code today, with cross-platform ports for **Cursor, GitHub Copilot CLI, VS Code Copilot, Codex CLI, and Gemini CLI**. 17 plugins, 5 slash commands, one marketplace.
 
 ```
-/agent-init                            # bootstrap any git repo (Phase A — once per project)
-/agent-all "Add Google OAuth" --loop   # brainstorm → plan → code → test → PR (Phase C — per feature)
-/visual-qa                             # screenshot every page, LLM design review
-/thrift                                # keep long sessions affordable (auto-summarize, audit)
-/explore                               # codebase map; /explore where Foo → O(1) lookup
-/debug "tests flaky 30% of runs"       # reproduce → bisect → hypothesize → verify
+/agent-init                                  # bootstrap any git repo (Phase A — once per project)
+/agent-all "Add Google OAuth" --loop --qa    # tests + visual-qa until both pass, opens PR (Phase C)
+/visual-qa                                   # screenshot every page, LLM design review (declared or comprehensive)
+/thrift                                      # keep long sessions affordable (auto-summarize, audit)
+/explore                                     # codebase map; /explore where Foo → O(1) lookup
+/debug "tests flaky 30% of runs"             # reproduce → bisect → hypothesize → verify
 ```
 
 **Three things that make it click:**
@@ -23,7 +23,7 @@ Works on Claude Code today, with cross-platform ports for **Cursor, GitHub Copil
 
 2. **Agent-first execution that preserves your main thread.** `/agent-all "..."` isn't a chat. It runs brainstorm → plan → implement → review → PR as **one pipeline**, and the implementation/review heavy lifting happens in **isolated subagents** — their turn-by-turn output never enters your main conversation. A built-in two-layer safety net mandates `superpowers:verification-before-completion` per implementer + cross-checks at Phase 4 review, so broken code can't sneak into a PR. Your main session stays small (planning + judgment) so the same Claude Code session can keep going for hours without context bloat.
 
-3. **Composable for unattended runs.** Three pieces — `/agent-all --loop` (drives the work), `/thrift` (compresses what does accumulate in main), `/goal` (keeps the session alive across iterations) — combine into overnight runs that exit cleanly when CI is green or your cost cap hits. See [Self-sustaining workflows](#self-sustaining-workflows).
+3. **One-flag end-to-end verification.** `--qa` wires the loop's "done" check to **tests + visual UI check**: visual-qa crawls every page, DOM-walks every interactive element, shallow-clicks each button, screenshots every state, diffs vs baseline — and only breaks the loop when both tests and the UI verdict pass. Compose with `/thrift` + `/goal` for unattended overnight runs. See [Self-sustaining workflows](#self-sustaining-workflows).
 
 That's it. The rest of this README is reference material — skim the parts you need.
 
@@ -114,7 +114,7 @@ Important: `/plugin update` only updates plugins you've already installed. The m
 cat ~/.claude/plugins/installed_plugins.json | python3 -m json.tool | grep -B1 agent-skill
 ```
 
-If the count is below 4 (the recommended Claude Code minimum: builder + floor + thrift + explore + debug = 5) you're missing the recent additions.
+If the count is below 5 (the recommended Claude Code set: builder + floor + thrift + explore + debug) you're missing the recent additions.
 
 ---
 
@@ -148,6 +148,11 @@ Bounded by `--max-iter` (hard cap 50), `--max-cost` (default $500), and the test
 
 Captures screenshots at mobile/tablet/desktop, runs LLM analysis per image, writes a Markdown report. Needs Playwright MCP + a dev server.
 
+Two modes (set via `.visual-qa.json` `mode` field):
+
+- **`declared`** (default, back-compat): you list pages + selectors + states yourself.
+- **`comprehensive`**: auto-discover everything. Crawls from `baseUrl`, walks each page's DOM for every interactive element (button, link, input, `[data-testid]`, `[role=*]`), shallow-clicks each non-input to capture the 1-step result state. Verdict is computed vs the prior accepted run; cost stays bounded by git-diff scoping + a DOM-hash cache. This is what `/agent-all --loop --qa` invokes per iter.
+
 ```
 npm run dev                     # in another terminal
 /visual-qa                      # captures + analyzes
@@ -155,7 +160,7 @@ npm run dev                     # in another terminal
 /visual-qa --budget=20          # cap LLM cost at $20
 ```
 
-Output lands in `docs/visual-qa/<date-or-slug>/report.md`.
+Output lands in `docs/visual-qa/<date-or-slug>/report.md` (+ `verdict.json` in comprehensive mode).
 
 ### `/thrift` — keep long sessions cheap
 
@@ -194,6 +199,13 @@ Parses 10 error formats (Python tracebacks, JS stack traces, pytest/jest/rust/ts
 ---
 
 ## Common workflows
+
+**Ship a UI feature end-to-end (the killer flow):**
+```
+npm run dev            # in another terminal — dev server at http://localhost:3000
+/agent-all "Build user dashboard with charts + filters" --loop --qa --max-iter=10
+# walk away — loop only breaks when tests AND visual-qa both pass
+```
 
 **Start a new project, ship a feature:**
 ```
@@ -249,8 +261,6 @@ Themes compose freely. A typical session uses Builder once, then Floor for the a
 
 ## Self-sustaining workflows
 
-Three independent mechanisms compose. Once you understand how they divide the work, the rest is just configuration.
-
 ### Why this works — main-thread isolation
 
 `/agent-all`'s real trick isn't the loop. It's **where the work happens.**
@@ -265,25 +275,25 @@ Three independent mechanisms compose. Once you understand how they divide the wo
 | 5 PR | main | `gh pr create` output (small) |
 | 6 Loop | main | breakCondition exit code (one number) |
 
-The heavy lifting — reading code, writing patches, running tests, fixing failures — happens **inside subagents** dispatched via `superpowers:subagent-driven-development`. Each subagent is a fresh conversation. Their turn-by-turn output never enters your main session. The main session sees only the verdict.
+Heavy lifting (reading code, writing patches, running tests, fixing failures) happens **inside subagents** dispatched via `superpowers:subagent-driven-development`. Each subagent is a fresh conversation; their turn-by-turn output never enters your main session. Main sees only the verdict — so a loop iteration adds maybe 2–5K tokens, not 50K.
 
-This is **why** `/agent-all` can keep going for hours where a flat chat session would have drowned in context. Each loop iteration adds maybe 2–5K tokens to main (plan + wave summaries + gate verdicts), not 50K.
+### The composable trio
 
-But that "moderate accumulation" eventually catches up. That's where `/thrift` comes in.
-
-### The three pieces and how they divide the work
+For overnight runs you want three things working together:
 
 | Piece | Solves | Knows about |
 |---|---|---|
-| **`/agent-all --loop`** | Drive the actual workflow to verified completion within cost bounds | Phases, plan, dispatched agents, what was tried, accumulated cost, where it failed |
-| **`/thrift`** | Compress what *does* accumulate in main (plans, wave summaries, gate verdicts) before it bloats the session | Token-count thresholds, cache priming, end-of-session audit |
-| **`/goal`** | Keep Claude Code from ending the session between iterations | Nothing about your work. Just a Stop-event blocker. |
+| **`/agent-all --loop`** | Drive the workflow to verified completion within cost bounds | Phases, plan, dispatched agents, what was tried, accumulated cost, where it failed |
+| **`/thrift`** | Compress what *does* accumulate in main before it bloats the session | Token-count thresholds, cache priming, end-of-session audit |
+| **`/goal`** | Keep Claude Code from ending the session between iterations | Nothing about your work — pure Stop-event blocker |
 
-You can run `/agent-all --loop` alone for short loops (1–3 iterations). For overnight or multi-hour runs, you want all three:
-
-- `/agent-all --loop` handles **per-iteration work isolation** (subagent fan-out)
-- `/thrift` handles **across-iteration main-thread compression** (auto-summarize at threshold)
-- `/goal` handles **session liveness** (don't quit between iterations)
+```
+/thrift                                                 # cost guardrails (once per project)
+/goal "ship the analytics dashboard with all CI green"  # session keeps itself alive
+/agent-all "Build analytics dashboard" --loop --qa \
+  --max-iter=15 --max-cost=80
+# walk away — wake up to a merged PR or a precise "stopped at iter 7 because <reason>"
+```
 
 ### Loop completion — what counts as "done"
 
@@ -345,51 +355,19 @@ On the **first** `/agent-all --loop` in a project, Phase 0 prompts interactively
 | iter 1 "passes" but UI is clearly broken | first-run policy is `report` (default) — loop passes but issues are reported. Read `docs/visual-qa/loop-iter-1/report.md` | Fix the issues, then iter 2 will hold the bar against the iter-1 baseline |
 | `--qa` writes a config but I want different settings | `--qa` autoscaffold runs only when `.visual-qa.json` is missing | Edit `.visual-qa.json` (change scope, breakpoints, baseUrl, etc.) — subsequent runs use the file as-is |
 
-### Recipe — unattended overnight feature ship
-
-```
-/thrift                                                 # set up cost guardrails (once per project)
-/goal "ship the analytics dashboard with all CI green"  # session keeps itself alive
-/agent-all "Build analytics dashboard (charts, filters, export)" \
-  --loop --max-iter=15 --max-cost=80
-# walk away
-```
-
-What happens, step by step:
-1. **`/agent-all` runs phase 0–5** for iter 1: brainstorm with you in main → plan in main → **dispatch implementer subagents in isolation** (Phase 3 — their work doesn't bloat your context) → **dispatch reviewer subagents in isolation** (Phase 4) → PR
-2. **`breakCondition` runs** (e.g. `npm test`). If it passes, loop exits clean. If it fails, loop re-enters phase 1 with the same task and *the previous failure visible* — so iter 2 tries a different approach.
-3. **`/thrift`'s hooks fire continuously**: PreToolUse coerces large tool output to `ctx_execute`, PostToolUse counts tokens, and at the configured threshold the summariser proposes compressing the older iter results. Main context stays small.
-4. **`/goal` blocks Claude Code's Stop event** every time `/agent-all` finishes an iteration. Session stays alive. Auto-clears once "all CI green" holds.
-5. **Caps fire cleanly**: hit `--max-iter=15` or `--max-cost=80`, loop stops, state preserved in `.agent-all-state.json` so `--resume` picks up later.
-
-You wake up to either a merged PR or a precise "stopped at iteration 7 because tests still failing on auth flow" report — not a stalled session with 200K tokens of unread output.
-
 ### How this is different from `/goal` and Ralph Loop
 
-These solve **different problems**. Harness isn't "Ralph Loop plus features" — it's an orchestrator that happens to loop.
+`/agent-all --loop` is **not** "Ralph Loop plus features" — it's an orchestrator that happens to loop. The differences matter:
 
 | Tool | What it solves | What it knows about |
 |---|---|---|
-| **`/goal`** | "Don't let the session stop until X." | Nothing about your work. Just blocks Claude Code's Stop event. Pure keep-alive. |
-| **Ralph Loop** | "Re-run this prompt every N minutes." | Nothing between runs. Stateless re-fire of the same prompt. |
-| **`/agent-all --loop`** | "Drive a complete dev workflow (brainstorm → plan → code → review → PR) to a verified end state, within cost bounds." | **Phases, plan, dispatched agents, what was tried, accumulated cost, where it failed.** |
+| **`/goal`** | "Don't let the session stop until X." | Nothing about your work. Pure Stop-event blocker. |
+| **Ralph Loop** | "Re-run this prompt every N minutes." | Nothing between runs. Stateless re-fire. |
+| **`/agent-all --loop`** | "Drive a complete workflow (brainstorm → plan → code → review → PR) to verified completion within cost bounds." | Phases, plan, dispatched agents, what was tried, cost, where it failed. |
 
-The harness pulls the **good idea** from each — "don't stop until done" from `/goal`, "auto-retry" from Ralph — and adds the structural pieces neither has:
+What the harness adds that neither has: multi-phase workflow awareness, **stateful retries** (each iter sees the previous failure), **wave-granularity cost caps** (`--max-cost` checked after each wave so it can bail mid-feature), **resume-from-failure** via `.agent-all-state.json`, and **phase-aware break-conditions** (evaluated after PR creation, not mid-implementation).
 
-- **Multi-phase workflow** — knows the difference between "still planning" and "tests failing after PR"
-- **Stateful retries** — each iteration re-enters phase 1 with the *previous failure visible*, so it tries a different approach (not the same prompt blindly re-fired)
-- **Wave-granularity cost cap** — `--max-cost` checked after each wave, not just at end-of-run, so it can bail mid-feature if cost explodes
-- **Resume-from-failure** — `.agent-all-state.json` preserves phase progress; `--resume` continues from where the loop crashed
-- **Phase-aware break-condition** — `breakCondition` evaluated *after* PR creation (when tests should actually pass), not mid-implementation
-
-`/goal` and Ralph are **complements**, not alternatives:
-
-```
-/goal "ship analytics dashboard"           # keep-alive (so /agent-all --loop can run for hours)
-/agent-all "..." --loop --max-iter=15      # does the actual work
-```
-
-Ralph wrapping a `/agent-all` *one-shot* (no `--loop`) makes sense only for wall-clock periodicity (`/ralph-loop 5m /agent-all "check deploy"`) — not for retry semantics, which the harness already handles natively and better.
+`/goal` and Ralph are **complements**, not alternatives. `/goal` + `/agent-all --loop` is the unattended-overnight pattern shown above. Ralph wrapping a non-`--loop` `/agent-all` makes sense only for wall-clock periodicity (e.g. `/ralph-loop 5m /agent-all "check deploy"`).
 
 ---
 
@@ -665,7 +643,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 - **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for design docs per plugin.
 - **All 17 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
-- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1019+ tests, all green.
+- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1246+ tests, all green.
 - **Per-platform porting** — see specs ending in `-impl-spec.md` or `-decomposition.md` under `docs/superpowers/specs/`.
 - **Cross-platform support matrix** — see [docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md](docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md).
 - **Hook precedence (if you're mixing plugins that all register hooks)** — see [docs/superpowers/specs/2026-05-18-hook-precedence-integration.md](docs/superpowers/specs/2026-05-18-hook-precedence-integration.md).
@@ -676,7 +654,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 | Layer | Status | Note |
 |---|---|---|
-| Unit/integration tests | ✅ **1019/1019 passing** | Mock toolCallers + isolated lib tests |
+| Unit/integration tests | ✅ **1246/1246 passing** | Mock toolCallers + isolated lib tests |
 | Install renderers (5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
 | Marketplace registration | ✅ 17 plugins listed | sync between local + origin |
 | Claude Code skills | ✅ ship today | core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug` |
@@ -701,7 +679,7 @@ MIT License. PRs welcome — open an issue first for design discussion on anythi
 
 Before submitting:
 ```bash
-node --test                              # 1019/1019 must pass
+node --test                              # 1246/1246 must pass
 node scripts/sync-lib.mjs --check        # vendored render.mjs copies in sync
 ```
 

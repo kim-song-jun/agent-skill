@@ -13,6 +13,33 @@
 - Anthropic SDK / OpenAI SDK / Vertex SDK 실제 API 연결 (현재 mock
   toolCaller 사용).
 
+## README 전반 개선 — 2026-05-19
+
+`--qa` 스토리를 README의 headline으로 만든 정리 패스 (이전엔 bolt-on
+섹션처럼 붙어있었음).
+
+- **오프닝 태그라인 + 명령 리스트**가 이제 `/agent-all "..." --loop
+  --qa`를 대표 featured 명령으로 리드, 한 줄 요약은 "tests만"이
+  아니라 "tests와 UI 둘 다 통과" 약속. `/visual-qa` 설명에
+  `declared` vs `comprehensive` 모드 한 문장 추가 (명령 레퍼런스에서
+  빠져있었음).
+- **Pillar #3 재작성** — "세 조각 조합" (일반적)에서 "한-플래그
+  end-to-end 검증" (구체적)으로. 최근 작업의 실제 selling point.
+- **새 "자주 쓰는 워크플로" 헤드라인**: "UI 기능을 end-to-end로
+  출시 (가장 강력한 플로)" — `npm run dev` + `--loop --qa` 두 줄.
+- **Self-sustaining 워크플로 섹션 통합**. "Recipe" 서브섹션을
+  "조합 가능한 셋"에 병합 (같은 /thrift + /goal + /agent-all 스니펫
+  중복이었음), "Ralph Loop와 차이"를 60% 압축 (substance는 유지),
+  중복 "단계별" 산문 제거 (`--qa` walkthrough가 이미 커버).
+- **Stale 숫자** 정리: 6곳 1019 → 1246 (badge, status 표, going-deeper,
+  contributing 체크리스트).
+- **수학 오류 수정**: 설치된 플러그인 체크에서 "4 미만" → "5 미만"
+  (권장 세트는 5개: builder + floor + thrift + explore + debug).
+- 영어/한국어 README 완전 sync.
+
+순 결과: --qa 스토리 추가에도 불구 712 → 690 줄; 섹션 수는 동일,
+중복만 감소. 테스트 1246/1246 유지.
+
 ## Loop / visual-qa 보강 + README 명확화 패스 — 2026-05-19
 
 Comprehensive 모드 rollout 문서화 중 발견한 진짜 갭들 마감. 각각이
