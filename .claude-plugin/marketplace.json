@@ -35,6 +35,21 @@
       "name": "harness-builder-cursor",
       "source": "./plugins/harness-builder-cursor",
       "description": "Run agent-init for Cursor — emits .cursor/rules + .cursor/agents/"
+    },
+    {
+      "name": "harness-floor-codex",
+      "source": "./plugins/harness-floor-codex",
+      "description": "visual-qa scaffold for Codex CLI — emits .visual-qa.json + Playwright MCP entry"
+    },
+    {
+      "name": "harness-floor-copilot",
+      "source": "./plugins/harness-floor-copilot",
+      "description": "visual-qa scaffold for Copilot CLI"
+    },
+    {
+      "name": "harness-floor-gemini",
+      "source": "./plugins/harness-floor-gemini",
+      "description": "visual-qa scaffold for Gemini CLI"
     }
   ]
 }

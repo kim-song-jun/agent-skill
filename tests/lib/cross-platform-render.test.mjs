@@ -50,6 +50,18 @@ const CASES = [
     contains: ["\"mcpServers\""],
     extraCtx: { mcp_servers_json_body: "" },
   },
+  {
+    tpl: "plugins/harness-floor-codex/skills/visual-qa-codex/templates/mcp-snippet.toml.hbs",
+    contains: ["[mcp_servers.playwright]", "@playwright/mcp@latest"],
+  },
+  {
+    tpl: "plugins/harness-floor-copilot/skills/visual-qa-copilot/templates/mcp-snippet.json.hbs",
+    contains: ["\"playwright\"", "@playwright/mcp@latest"],
+  },
+  {
+    tpl: "plugins/harness-floor-gemini/skills/visual-qa-gemini/templates/mcp-snippet.json.hbs",
+    contains: ["\"playwright\"", "@playwright/mcp@latest"],
+  },
 ];
 
 for (const c of CASES) {
