@@ -5,7 +5,215 @@
 모든 주요 변경 사항. 각 릴리스 후보에 대한 날짜 스탬프 태그가 존재합니다.
 
 ## [미출시]
-- Theme B (`harness-thrift`) — context-mode 공격적 통합, 프롬프트 캐시, 요약 훅 — 설계 보류 중.
+- `harness-thrift` v2 summariser — Claude Code programmatic compact API
+  출시 시 도입 (현재 v1 advisory).
+- 9개의 per-platform impl spec 구현 (agent-all + visual-qa × 4 플랫폼 +
+  harness-thrift 분해) — 설계는 아래에 완료.
+- `harness-explore` 및 `harness-debug` 구현 — 설계 완료.
+- hook precedence integration spec의 라이브 CC 검증.
+
+## sub-project spec + host invoker + thrift 설치 — 2026-05-18
+
+### 설계 spec (12개 신규 — 모두 design-only)
+
+- `2026-05-18-agent-all-{codex,copilot,cursor,gemini}-impl-spec.md` (4개)
+  — agent-all 스캐폴드 포트의 플랫폼별 구현 계획. 각 spec은 작성할 lib
+  모듈 + hook 스크립트 + tests를 열거하고, 플랫폼별 추정치(Cursor 3d,
+  Copilot 1w, Codex 1w, Gemini 1.5w)에 맞춘 작업량 분해, 미해결 질문,
+  acceptance 기준 포함.
+- `2026-05-18-visual-qa-{codex,copilot,cursor,gemini}-impl-spec.md` (4개)
+  — visual-qa 6-phase 오케스트레이터 포트에 대한 동일 형식.
+- `2026-05-18-harness-thrift-per-platform-decomposition.md` — Theme B의
+  4-플랫폼 분해 (Cursor ~5d, Copilot ~1.5w, Codex ~1.5w, Gemini ~2w).
+  주요 결정: 독립 rate-table 사본(상속 아님), Cursor 포트는 단일 `.mdc`
+  규칙으로 축소, 순서는 Cursor → Copilot → Codex → Gemini.
+- `2026-05-18-harness-explore-design.md` — 신규 플러그인 설계. 코드베이스
+  매핑 스킬, 5단계, 병렬-디스패치 reader 패턴, `git rev-parse HEAD`
+  키로 캐시된 맵, `/explore where` + `/explore deps` 슬래시 커맨드.
+  총 ~3주.
+- `2026-05-18-harness-debug-design.md` — 신규 플러그인 설계. Reproduce →
+  isolate → hypothesize → verify 워크플로 + `.debug-state.json`
+  체크포인팅, 구조화된 에러 파싱 (10개 포맷), bisection lib;
+  `superpowers:systematic-debugging`을 대체하지 않고 WRAP. 총 ~3주.
+- `2026-05-18-hook-precedence-integration.md` — harness-floor +
+  harness-thrift + context-mode 훅 공존 프로토콜 spec. Event별 firing
+  순서 매트릭스, 센티널 기반 등록 계약, settings 우선순위 정책, 기존
+  훅-등록 플러그인 마이그레이션 계획.
+
+### 구현
+
+- `plugins/harness-floor-{cursor,copilot,codex,gemini}/skills/agent-all-<p>/lib/host-invoker.mjs`
+  — ask-user-adapter 계약을 위한 4개의 프로덕션 호스트 invoker 래퍼.
+  Cursor: 채팅 I/O (stdout + readline) 래퍼.
+  Copilot/Codex: `ask_user` 도구 래퍼; Codex는 `exec_command`/FZF TTY
+  경로 스텁도 포함.
+  Gemini: 응답 형태 정규화를 포함한 free-text `ask_user` 래퍼.
+- `plugins/harness-thrift/bin/install.mjs` — /thrift 스킬 자동 설치
+  렌더러. 템플릿 hooks를 walk + `<target>/.claude/hooks/lib/`로 lib
+  복사 + 렌더 후 import 경로 재작성 + `patchSettings` 적용. Flags:
+  `--ctx`, `--force`, `--dry-run`, `--no-instrument`. `scripts/sync-lib.mjs`
+  를 통해 harness-builder에서 vendored된 `bin/lib/render.mjs` 번들.
+- `plugins/harness-thrift/skills/thrift/lib/anthropic-summariser.mjs`
+  — `--use-haiku` summariser 경로를 위한 `anthropicSummariseFn({apiKey,
+  model, sdkPath, sdkLoader})` 팩토리. 깔끔한 "Install
+  @anthropic-ai/sdk" 에러를 포함한 동적 SDK import; `sdkLoader` 주입으
+  로 실제 SDK 없이도 테스트 가능.
+
+### 테스트
+
+- `tests/lib/ask-user-host-invoker.test.mjs` — 4 플랫폼에 걸쳐 팩토리
+  형태, 인자 pass-through, 응답 형태 정규화, end-to-end 통합을 다루는
+  20개 테스트.
+- `tests/lib/thrift-install.test.mjs` — 8개 테스트 (usage, full install
+  layout, dry-run, force-overwrite, --no-instrument, default patch,
+  --ctx variables).
+- `tests/lib/thrift-anthropic-summariser.test.mjs` — 9개 테스트 (missing
+  SDK error, stub sdkLoader returns text, named export resolution,
+  empty turns shortcut, SDK error wrapping).
+- `scripts/sync-lib.mjs` 확장: VENDORED_RENDER_ONLY에
+  `plugins/harness-thrift/bin/lib` 추가 (총 13개 vendored 파일 추적).
+
+### 결과
+
+427/427 tests pass (이전 390, +37). 작업 폴더 깨끗함. 12개 신규 spec +
+6개 신규 구현 파일 + 테스트.
+
+### 여전히 보류 중
+
+- 9개의 per-platform impl spec 구현 (Cursor/Copilot/Codex/Gemini ×
+  agent-all + visual-qa + harness-thrift per-platform).
+- `harness-explore` (~3주) 및 `harness-debug` (~3주) 구현.
+- `2026-05-18-hook-precedence-integration.md` 미해결 질문 라이브 CC
+  검증 (CC priority hints? hook 간 state 가시성? Notification
+  semantics?).
+- v2 thrift summariser, programmatic compact API 사용.
+
+## harness-thrift v0.1 — 2026-05-18
+
+Theme B 구현 완료. 신규 플러그인 `harness-thrift` (마켓플레이스 11번째)가
+디자인 spec에 따라 비용 최적화 long-session 최적화를 출시.
+
+### 추가됨 — research-notes (sandbox 한정 spike)
+
+- `docs/superpowers/research-notes/2026-05-18-cc-compact-api-spike.md`
+  — 결정: v1은 advisory summariser 출시 (파일 + Notification); programmatic
+  compact는 CC plugin API 대기 후 v2로 연기.
+- `docs/superpowers/research-notes/2026-05-18-hook-precedence-spike.md`
+  — 결정: thrift PreToolUse(Bash)는 telemetry-only (context-mode-router
+  가 권위 유지); `.claude/settings.local.json` append-only로 패치하며
+  안전한 revert를 위한 `thrift-` 센티널 사용.
+
+### 추가됨 — 플러그인
+
+- `plugins/harness-thrift/` (v0.1.0). 6개 phase 스킬 `/thrift`:
+  - Phase 0 — preflight (context-mode 감지, 기존 hooks 스캔)
+  - Phase 1 — config (`.thrift.json` seed/load)
+  - Phase 2 — instrument (append-only `.claude/settings.local.json` 패치)
+  - Phase 3 — summariser (v1 advisory: 파일 + Notification 알림)
+  - Phase 4 — cache-prime (기본 비활성화; ROI gate)
+  - Phase 5 — audit (세션 종료 시 보고서)
+
+### 추가됨 — lib 모듈
+
+- `config-loader.mjs`, `threshold-evaluator.mjs`, `cost-estimator.mjs`,
+  `metrics-collector.mjs`, `audit-renderer.mjs`, `settings-patcher.mjs`,
+  `summariser.mjs`, `cache-prime.mjs` — 8개 모듈.
+
+### 추가됨 — 템플릿
+
+- `thrift.config.json.hbs` (seed), `audit-report.md.hbs` (보고서), 5개
+  hook 템플릿 (pretool-bash-telemetry, pretool-read-coerce,
+  posttool-summariser-trigger, sessionstart-cache-prime,
+  sessionend-audit).
+
+### 테스트
+
+- thrift-core (17), thrift-audit (12), thrift-instrument (8),
+  thrift-summariser (8), thrift-cache (13) — 58개 신규 lib 테스트.
+
+### 마켓플레이스
+
+11번째 플러그인 등록. cross-platform-{manifest,isolation} 테스트 확장;
+"marketplace.json lists all eleven plugins" assertion.
+
+### 결과
+
+390/390 tests pass (이전 330, +60). 작업 폴더 깨끗함. 디자인 spec의 7개
+sub-task 모두 완료 (sandbox 한도 내).
+
+### 여전히 보류 중
+
+- hook firing 순서 + Notification payload 라이브 CC 검증.
+- v2 programmatic compact (CC API 출시 후 advisory v1 대체).
+- `--use-haiku` summariser 경로 Anthropic SDK 통합 (현재 heuristic
+  fallback만).
+- 플랫폼별 Theme B 포트 (Codex/Copilot/Gemini/Cursor) — 분해 spec 연기.
+
+## 크로스플랫폼 install + dispatch + adapter 구현 — 2026-05-18
+
+### 추가됨
+
+- `plugins/harness-floor-{cursor,copilot,codex,gemini}/bin/init.mjs`
+  — 각 플랫폼별 install 렌더러. 플러그인의 installable 템플릿을 walk,
+  타겟 프로젝트에 overwrite 보호와 함께 작성, 플랫폼별 설정 스니펫을
+  출력 (Cursor: `.cursor/mcp.json`, Copilot:
+  `~/.copilot/mcp-config.json`, Codex: `[[hooks.agent]]` 매처가 포함된
+  `~/.codex/config.toml`, Gemini: `~/.gemini/settings.json` mcpServers).
+  Flags: `--ctx`, `--force`, `--only=visual-qa|agent-all`.
+- `plugins/harness-floor-gemini/bin/spawn-wave.mjs` —
+  `/agent-all-gemini`용 Phase 3 wave 디스패처. wave당 N개의 병렬
+  `gemini chat` 서브프로세스 spawn; tmp-file polling으로 await; 집계.
+- `plugins/harness-floor-gemini/bin/spawn-page-subagent.mjs` —
+  `/visual-qa-gemini`용 Phase 3 페이지 디스패처. 동일 패턴; 청크 디스패치
+  를 위한 `--max-parallel` 지원. 두 spawn lib 모두 `--dry-run` 및
+  `--gemini-bin` 치환 지원.
+- `plugins/harness-floor-{cursor,copilot,codex,gemini}/skills/agent-all-<p>/lib/ask-user-adapter.mjs`
+  — 디자인 spec의 구조화된 Q&A 어댑터 구현. 4 플랫폼 모두에 걸쳐 동일
+  계약 `askUserStructured({stage, prompt, choices, multi,
+  freeFormFallback, invoker})`를 export.
+
+### Spec
+
+- `docs/superpowers/specs/2026-05-18-harness-thrift-design.md` — Theme B
+  `harness-thrift` 플러그인 전체 설계 (6 sub-projects, ~3주).
+- `docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md`
+  bin/init.mjs + spawn-wave/page + ask-user-adapter 검증 단계로 갱신;
+  acceptance criteria 갱신.
+
+### 테스트
+
+- `tests/lib/harness-floor-init.test.mjs` (16 테스트)
+- `tests/lib/gemini-spawn.test.mjs` (8 테스트)
+- `tests/lib/ask-user-adapter.test.mjs` (26 테스트)
+- `scripts/sync-lib.mjs`을 `harness-floor-*/bin/lib/`의 render.mjs로 확장
+
+### 결과
+
+330/330 tests pass (이전 280, +50). 작업 폴더 깨끗함.
+
+### 여전히 보류 중
+
+- 모든 bin/init.mjs 출력의 라이브 CLI 검증.
+- 실제 `gemini` binary로 서브프로세스 디스패처 실행 (sandbox는 없음).
+- 각 플랫폼의 `ask_user` 응답 형태 확인.
+- 디자인 spec에 따른 `harness-thrift` 구현 (~3주).
+
+## 크로스플랫폼 full-pipeline 포팅 (스캐폴드) — 2026-05-18
+
+### 추가됨 — agent-all 플랫폼별 포트 (4개 sub-project)
+
+agent-all 포팅 분해 spec에 따라, 4 플랫폼에 걸쳐 플랫폼별 디스패치
+프리미티브를 사용하는 7-phase /agent-all 파이프라인의 scaffold-only
+포트를 출시.
+
+### 추가됨 — visual-qa 플랫폼별 포트 (4 플러그인 졸업)
+
+4개의 크로스플랫폼 `visual-qa-<platform>` 플러그인을 scaffold-only에서
+full 6-phase 파이프라인으로 졸업.
+
+### 결과
+
+280/280 tests pass (이전 203, +77). 4 새 commits.
 
 ## visual-qa 포팅 스캐폴드 — 2026-05-18
 

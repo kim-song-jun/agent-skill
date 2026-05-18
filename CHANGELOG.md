@@ -7,8 +7,82 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 ## [Unreleased]
 - `harness-thrift` v2 summariser using Claude Code programmatic compact
   API (once surfaced) — currently v1 advisory.
-- Per-platform `harness-thrift-{codex,copilot,gemini,cursor}` ports —
-  decomposition spec deferred.
+- Implementations of the 9 per-platform impl specs (agent-all + visual-qa
+  × 4 platforms + harness-thrift decomposition) — designs landed below.
+- `harness-explore` and `harness-debug` implementations — designs landed.
+- Live CC verification of hook precedence integration spec.
+
+## sub-project specs + host invokers + thrift installer — 2026-05-18
+
+### Specs (12 new — all design-only)
+
+- `2026-05-18-agent-all-{codex,copilot,cursor,gemini}-impl-spec.md` (4 files)
+  — per-platform implementation plans for the agent-all-scaffold ports.
+  Each enumerates the lib modules + hook scripts + tests to write,
+  effort breakdown summing to the per-platform estimate (Cursor 3d,
+  Copilot 1w, Codex 1w, Gemini 1.5w), open questions, acceptance criteria.
+- `2026-05-18-visual-qa-{codex,copilot,cursor,gemini}-impl-spec.md` (4 files)
+  — same shape for the visual-qa 6-phase orchestrator ports.
+- `2026-05-18-harness-thrift-per-platform-decomposition.md` — 4-port
+  decomposition for Theme B (Cursor ~5d, Copilot ~1.5w, Codex ~1.5w,
+  Gemini ~2w). Key decisions: independent rate-table copies (not
+  inheritance), Cursor port collapses to a single `.mdc` rule, ordering
+  Cursor → Copilot → Codex → Gemini.
+- `2026-05-18-harness-explore-design.md` — new plugin design.
+  Codebase-mapping skill, 5 phases, parallel-dispatch reader pattern,
+  cached map keyed by `git rev-parse HEAD`, `/explore where` + `/explore deps`
+  slash commands. ~3 weeks total.
+- `2026-05-18-harness-debug-design.md` — new plugin design.
+  Reproduce → isolate → hypothesize → verify workflow with `.debug-state.json`
+  checkpointing, structured error parsing (10 formats), bisection lib,
+  WRAPS `superpowers:systematic-debugging` rather than replacing.
+  ~3 weeks total.
+- `2026-05-18-hook-precedence-integration.md` — protocol spec for
+  harness-floor + harness-thrift + context-mode hook coexistence.
+  Event-by-event firing order matrix, sentinel-based registration
+  contract, settings-precedence policy, migration plan for existing
+  hook-registering plugins.
+
+### Implementations
+
+- `plugins/harness-floor-{cursor,copilot,codex,gemini}/skills/agent-all-<p>/lib/host-invoker.mjs`
+  — 4 production host invoker wrappers for the ask-user-adapter contract.
+  Cursor: chat I/O (stdout + readline) wrapper.
+  Copilot/Codex: `ask_user`-tool wrapper; Codex also stubs the
+  `exec_command`/FZF TTY path.
+  Gemini: free-text `ask_user` wrapper with response-shape normalization.
+- `plugins/harness-thrift/bin/install.mjs` — automated install renderer
+  for the /thrift skill. Walks template hooks, copies lib into
+  `<target>/.claude/hooks/lib/`, rewrites import paths post-render,
+  applies `patchSettings`. Flags: `--ctx`, `--force`, `--dry-run`,
+  `--no-instrument`. Bundles `bin/lib/render.mjs` vendored from
+  harness-builder via `scripts/sync-lib.mjs`.
+- `plugins/harness-thrift/skills/thrift/lib/anthropic-summariser.mjs`
+  — `anthropicSummariseFn({apiKey, model, sdkPath, sdkLoader})` factory
+  for the `--use-haiku` summariser path. Dynamic SDK import with clean
+  "Install @anthropic-ai/sdk" error; `sdkLoader` injection makes it
+  testable without the actual SDK.
+
+### Tests
+
+- `tests/lib/ask-user-host-invoker.test.mjs` — 20 tests across 4
+  platforms.
+- `tests/lib/thrift-install.test.mjs` — 8 tests.
+- `tests/lib/thrift-anthropic-summariser.test.mjs` — 9 tests.
+- `scripts/sync-lib.mjs` extended: `plugins/harness-thrift/bin/lib`
+  added to VENDORED_RENDER_ONLY (13 vendored files total).
+
+### Result
+
+427/427 tests pass (was 390, +37). Working tree clean. 12 new specs +
+6 new implementation files + tests.
+
+### Still deferred
+
+- Implementation of the 9 per-platform impl specs.
+- Implementation of `harness-explore` (~3w) and `harness-debug` (~3w).
+- Live CC verification per hook precedence integration spec.
+- v2 thrift summariser using programmatic compact API.
 
 ## harness-thrift v0.1 — 2026-05-18
 

@@ -36,6 +36,7 @@ const VENDORED_RENDER_ONLY = [
   "plugins/harness-floor-copilot/bin/lib",
   "plugins/harness-floor-codex/bin/lib",
   "plugins/harness-floor-gemini/bin/lib",
+  "plugins/harness-thrift/bin/lib",
 ].map((p) => resolve(repoRoot, p));
 
 const FILES = ["render.mjs", "detect-stack.mjs"];
