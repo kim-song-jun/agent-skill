@@ -7,6 +7,22 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 ## [Unreleased]
 - Theme B (`harness-thrift`) — context-mode aggressive integration, prompt cache, summariser hooks — design pending.
 
+## Cross-platform plugins — 2026-05-18
+
+### Added
+- Four new sibling plugins so users on each tool get a harness-builder equivalent inside their host:
+  - `harness-builder-codex` — emits `AGENTS.md` + `.codex/skills/<role>/SKILL.md` for Codex CLI
+  - `harness-builder-copilot` — emits `.github/copilot-instructions.md` + `AGENTS.md` + path-specific instruction files for GitHub Copilot CLI
+  - `harness-builder-gemini` — emits `GEMINI.md` + `.gemini/skills/<role>/SKILL.md` for Gemini CLI (a.k.a. "antigravity")
+  - `harness-builder-cursor` — emits `.cursor/rules/agent-init.mdc` + `.cursor/agents/<role>.md` for Cursor
+- Marketplace entries for all four new plugins.
+- Tests: manifest validity, render-substring snapshots, per-plugin isolation.
+
+### Out of scope (this iteration)
+- Visual-qa / agent-all parity per platform
+- Hook & MCP wiring beyond stubs
+- Full brainstorm integration inside each platform
+
 ## harness-builder 0.3.0 — 2026-05-18
 
 ### Added

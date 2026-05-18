@@ -532,6 +532,19 @@ Claude Code keeps the session alive. Agent iterates until goal is satisfied or c
 
 (Requires `codex@openai-codex` plugin installed alongside `harness-floor`.)
 
+## Cross-platform plugins
+
+The harness-builder pattern is also available for:
+
+| Tool | Plugin | Entry |
+|------|--------|-------|
+| Codex CLI | `harness-builder-codex` | `/codex-init` |
+| GitHub Copilot CLI | `harness-builder-copilot` | `/copilot-init` |
+| Gemini CLI ("antigravity") | `harness-builder-gemini` | `/gemini-init` |
+| Cursor | `harness-builder-cursor` | manual install (`bin/install.sh`) |
+
+See `docs/superpowers/specs/2026-05-18-cross-platform-plugins-design.md` for design notes.
+
 ## Codex / non-Claude-Code platforms
 
 The lib modules (`plugins/*/skills/*/lib/*.mjs`) and templates (`*.hbs`, `*.json`) are pure Node.js / pure data — portable. The phase prompts are Claude Code skill conventions and need adaptation for other platforms.

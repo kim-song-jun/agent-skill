@@ -7,6 +7,22 @@
 ## [미출시]
 - Theme B (`harness-thrift`) — context-mode 공격적 통합, 프롬프트 캐시, 요약 훅 — 설계 보류 중.
 
+## 크로스플랫폼 플러그인 — 2026-05-18
+
+### 추가됨
+- 각 도구 사용자가 해당 호스트 내에서 harness-builder에 상응하는 기능을 사용할 수 있도록 네 개의 형제 플러그인 추가:
+  - `harness-builder-codex` — Codex CLI용 `AGENTS.md` + `.codex/skills/<role>/SKILL.md` 생성
+  - `harness-builder-copilot` — GitHub Copilot CLI용 `.github/copilot-instructions.md` + `AGENTS.md` + 경로별 instruction 파일 생성
+  - `harness-builder-gemini` — Gemini CLI (일명 "antigravity")용 `GEMINI.md` + `.gemini/skills/<role>/SKILL.md` 생성
+  - `harness-builder-cursor` — Cursor용 `.cursor/rules/agent-init.mdc` + `.cursor/agents/<role>.md` 생성
+- 네 개의 새 플러그인에 대한 마켓플레이스 항목 추가.
+- 테스트: 매니페스트 유효성 검사, 렌더 부분문자열 스냅샷, 플러그인 격리 검사.
+
+### 이 버전 범위 밖
+- 플랫폼별 visual-qa / agent-all 동등 기능
+- 스텁을 넘어선 Hook & MCP 배선
+- 각 플랫폼 내 전체 브레인스토밍 통합
+
 ## harness-builder 0.3.0 — 2026-05-18
 
 ### 추가됨
