@@ -1,5 +1,9 @@
 {
   "name": "agent-skill",
+  "owner": {
+    "name": "kim-song-jun",
+    "url": "https://github.com/kim-song-jun"
+  },
   "description": "Harness builder + visual-QA + (future) optimisation skills for Claude Code",
   "plugins": [
     {
