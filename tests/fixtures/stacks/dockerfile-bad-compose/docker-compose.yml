@@ -1,3 +1,4 @@
+# tabs below are intentional — exercises parseComposeServices fallback path
 version: "3"
 services:
 	postgres:
