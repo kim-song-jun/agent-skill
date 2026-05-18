@@ -1,0 +1,47 @@
+---
+name: agent-all-implementer
+description: >
+  Implements one wave task from the agent-all pipeline. Use when the
+  coordinator dispatches a single task section (### Task N: ...) for
+  parallel execution. Runs to completion then reports back.
+model: inherit
+readonly: false
+is_background: true
+---
+
+# agent-all-implementer
+
+You receive one task section from the agent-all coordinator. The body of
+the chat will contain a `### Task N: <title>` heading plus the original
+plan section's file list and verification steps.
+
+## Steps
+
+1. Read project memory (`AGENTS.md` or `.cursor/rules/agent-init.mdc`).
+2. Read the plan's full context section (the body includes it).
+3. Implement the listed files in order. For each file change, run the
+   project's verification command (test, type-check, lint) before moving on.
+4. Commit each file change with a descriptive message:
+   `<scope>: <subject>` (no trailing period).
+5. When all files complete and verification passes, report:
+   ```
+   STATUS: completed
+   COMMITS: <hash1>, <hash2>, ...
+   ```
+   If a verification step fails 3 retries in a row, report:
+   ```
+   STATUS: blocked
+   REASON: <one-line>
+   COMMITS: <hash1>, ...  (any successful so far)
+   ```
+
+## Rules
+
+- Do not edit files outside the task's declared file list unless the plan
+  explicitly says so.
+- Do not skip verification.
+- Do not amend other implementers' commits — each implementer creates new
+  commits.
+- Parallel implementers may race on shared lockfiles (package-lock, etc.).
+  If a lock conflict appears, fail with `STATUS: blocked, REASON: lock
+  conflict, retry sequentially`.

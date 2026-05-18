@@ -1,0 +1,42 @@
+---
+description: agent-all pipeline rules — coordinator agent reads these before each phase
+alwaysApply: true
+---
+
+# /agent-all pipeline (Cursor port)
+
+This workspace has the agent-all-cursor kit installed. When the user
+invokes `@agent-all-coordinator`, follow the 7 phases documented in
+`plugins/harness-floor-cursor/skills/agent-all-cursor/phases/`:
+
+| Phase | File | Purpose |
+|-------|------|---------|
+| 0 | `0-preflight.md` | git + .cursor/agents/ + config + input checks |
+| 1 | `1-intent.md` | brainstorming OR load task file |
+| 2 | `2-plan.md` | draft plan into `docs/superpowers/plans/` |
+| 3 | `3-dispatch.md` | fan out to `@agent-all-implementer` (parallel) |
+| 4 | `4-gate.md` | fan out to `@agent-all-reviewer` |
+| 5 | `5-pr.md` | branch push + `gh pr create` |
+| 6 | `6-loop.md` | breakCondition shell loop |
+
+## Cursor-specific rules
+
+1. **Use `is_background: true` subagents for parallelism.** `agent-all-implementer`
+   and `agent-all-reviewer` both have it. Cursor's planner runs them concurrently.
+2. **State file `.agent-all-state.json`** — coordinator writes via Cursor's
+   edit surface. Schema matches the Claude Code orchestrator.
+3. **Loop continue is manual.** Cursor cannot auto-re-invoke a chat; the
+   coordinator emits an "Iter N+1 ready, send continue" message and waits.
+4. **Cost tracking is best-effort.** Cursor's chat surface doesn't expose
+   per-turn cost — the coordinator records only what the user pastes back.
+
+## Config
+
+`.agent-all.json` at workspace root. Schema same as Claude Code. Defaults
+ship in `templates/agent-all.config.json.hbs`.
+
+## Source-of-truth
+
+`plugins/harness-floor/skills/agent-all/SKILL.md` is the canonical pipeline
+design. Cursor's port adapts the dispatch primitives but preserves the
+phase contract.

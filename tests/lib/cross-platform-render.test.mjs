@@ -16,6 +16,11 @@ const CTX = {
     { name: "dev",      when: "implementation" },
     { name: "reviewer", when: "final review" },
   ],
+  // agent-all-cursor template context
+  maxIter: 10,
+  maxCostUSD: 5,
+  waveSize: "medium",
+  breakCondition: "npm test --silent",
 };
 
 const CASES = [
@@ -65,6 +70,26 @@ const CASES = [
   {
     tpl: "plugins/harness-floor-cursor/skills/visual-qa-cursor/templates/mcp-snippet.json.hbs",
     contains: ["\"playwright\"", "@playwright/mcp@latest"],
+  },
+  {
+    tpl: "plugins/harness-floor-cursor/skills/agent-all-cursor/templates/agent-all.config.json.hbs",
+    contains: ["\"maxIter\": 10", "\"maxCostUSD\": 5", "\"waveSize\": \"medium\"", "npm test --silent"],
+  },
+  {
+    tpl: "plugins/harness-floor-cursor/skills/agent-all-cursor/templates/rules/agent-all.mdc.hbs",
+    contains: ["alwaysApply: true", "agent-all-coordinator", "is_background"],
+  },
+  {
+    tpl: "plugins/harness-floor-cursor/skills/agent-all-cursor/templates/agents/agent-all-coordinator.md.hbs",
+    contains: ["name: agent-all-coordinator", "is_background: false", "Dispatch protocol"],
+  },
+  {
+    tpl: "plugins/harness-floor-cursor/skills/agent-all-cursor/templates/agents/agent-all-implementer.md.hbs",
+    contains: ["name: agent-all-implementer", "is_background: true", "STATUS: completed"],
+  },
+  {
+    tpl: "plugins/harness-floor-cursor/skills/agent-all-cursor/templates/agents/agent-all-reviewer.md.hbs",
+    contains: ["name: agent-all-reviewer", "is_background: true", "mode=spec", "mode=quality"],
   },
 ];
 
