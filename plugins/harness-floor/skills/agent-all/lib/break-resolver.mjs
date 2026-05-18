@@ -52,6 +52,7 @@ export function normalizeBreakCondition(input) {
     const out = { type: "visual-qa" };
     if (typeof input.spec === "string") out.spec = input.spec;
     if (typeof input.slug === "string") out.slug = input.slug;
+    if (input.mode === "comprehensive" || input.mode === "declared") out.mode = input.mode;
     return out;
   }
   if (input.type === "composite") {
@@ -75,7 +76,8 @@ export function serializeBreakCondition(spec) {
   if (norm.type === "test-auto") return "auto-detected test command";
   if (norm.type === "visual-qa") {
     const tail = norm.spec ? ` (spec: ${norm.spec})` : "";
-    return `visual-qa skill${tail}`;
+    const modeTail = norm.mode === "comprehensive" ? " [comprehensive]" : "";
+    return `visual-qa skill${modeTail}${tail}`;
   }
   if (norm.type === "composite") {
     return `composite [${norm.steps.map(serializeBreakCondition).join(" && ")}]`;
@@ -129,6 +131,38 @@ export function isDefaultOrMissing(spec) {
   }
   return false;
 }
+
+// `--qa` shortcut: equivalent to a composite spec running tests first, then
+// the visual-qa skill in comprehensive mode. Lives here (next to the
+// preset catalogue) so platform docs and tests have a single source.
+export const QA_SHORTCUT_SPEC = {
+  type: "composite",
+  steps: [
+    { type: "test-auto" },
+    { type: "visual-qa", mode: "comprehensive" },
+  ],
+};
+
+// Auto-scaffold template written to `.visual-qa.json` when `--qa` is used
+// and no config exists yet. Sane defaults matching the comprehensive
+// brainstorming decisions (see
+// docs/superpowers/specs/2026-05-19-visual-qa-comprehensive-design.md).
+export const QA_AUTOSCAFFOLD_CONFIG = {
+  mode: "comprehensive",
+  baseUrl: "http://localhost:3000",
+  comprehensive: {
+    scope: { include: ["/"], exclude: [], maxPages: 50, depth: 3 },
+    interactions: { click: true, depth: 1 },
+    cache: { gitDiffScope: true, domHashCache: true },
+    verdict: { mode: "vs-baseline", failOn: ["critical", "major"], firstRun: "auto-pass" },
+  },
+  analysis: {
+    model: "claude-sonnet-4-6",
+    categories: ["accessibility", "alignment", "color-contrast", "copy-quality", "responsive-fit"],
+    severityThreshold: "minor",
+  },
+  output: { dir: "docs/visual-qa", keepLastN: 10 },
+};
 
 // Catalogue used by the Phase 0 interactive prompt.
 export const PRESET_CATALOGUE = [

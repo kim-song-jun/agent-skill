@@ -36,22 +36,32 @@ import {
   isDefaultOrMissing,
   serializeBreakCondition,
   PRESET_CATALOGUE,
+  QA_SHORTCUT_SPEC,
+  QA_AUTOSCAFFOLD_CONFIG,
 } from "./lib/break-resolver.mjs";
 ```
 
 Decision tree:
 
-1. **CLI override:** if user passed `--break-condition=<json-or-string>`,
+1. **`--qa` shortcut (highest priority):** if user passed `--qa`, use
+   `QA_SHORTCUT_SPEC` (a composite `test-auto → visual-qa comprehensive`
+   spec). Skip the interactive prompt and the CLI-override branch. Do not
+   persist to `.agent-all.json`. ADDITIONALLY: if `.visual-qa.json` is
+   missing in the project root, write `QA_AUTOSCAFFOLD_CONFIG` to it
+   atomically before continuing. Echo `Break-condition: composite
+   [test-auto → visual-qa comprehensive] (--qa shortcut).`
+
+2. **CLI override:** if user passed `--break-condition=<json-or-string>`,
    parse it (try JSON first, fall back to plain shell string), normalise,
    and use that. Skip the prompt. Do not persist (per-invocation only).
 
-2. **Non-interactive paths** — skip the prompt and use `config.loop.breakCondition` as-is:
+3. **Non-interactive paths** — skip the prompt and use `config.loop.breakCondition` as-is:
    - `--yes` passed
    - stdin is not a TTY (CI environments)
    - `--reconfigure` is NOT set AND `!isDefaultOrMissing(config.loop.breakCondition)`
      (already customised, no need to ask)
 
-3. **Interactive prompt** — when none of the above apply:
+4. **Interactive prompt** — when none of the above apply:
 
    a. Ask: "Loop break-condition?" with the four presets from
       `PRESET_CATALOGUE` (Test command auto-detected / visual-qa skill /
@@ -75,7 +85,7 @@ Decision tree:
       object and atomically write `.agent-all.json` (temp + rename).
       On no: keep only in memory for this invocation.
 
-4. **Assignment:** set `config.loop.breakCondition = resolved` for the
+5. **Assignment:** set `config.loop.breakCondition = resolved` for the
    rest of the run. State file is not used for the spec itself — Phase 6
    re-reads from `config` each iteration.
 

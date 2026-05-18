@@ -27,7 +27,13 @@ awaits via Copilot's `subagentStop` hook (or polls `list_agents`).
 Same as Claude Code: `--loop`, `--max-iter=<N>`, `--max-cost=<USD>`,
 `--wave-size=small|medium|large`, `--no-pr`, `--no-brainstorm`,
 `--resume`, `--force`, `--yes`,
-`--break-condition=<spec>`, `--reconfigure`.
+`--break-condition=<spec>`, `--reconfigure`, `--qa`.
+
+`--qa` is the one-flag shortcut for end-to-end verification: equivalent
+to `--break-condition='{"type":"composite","steps":[{"type":"test-auto"},
+{"type":"visual-qa","mode":"comprehensive"}]}'`. Tests run as a cheap gate;
+visual-qa (comprehensive mode) runs as the final E2E check. Auto-scaffolds
+`.visual-qa.json` with sane defaults if missing.
 
 When `--loop` is set, Phase 0 prompts the user interactively (via Copilot's
 `ask_user`) for the break-condition preset (test-auto / visual-qa /

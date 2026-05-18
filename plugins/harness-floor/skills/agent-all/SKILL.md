@@ -28,6 +28,12 @@ Runs a complete multi-agent pipeline from a free-form prompt or an existing task
   plain shell string (treated as `{type:"shell", cmd:<string>}`).
 - `--reconfigure` — force the interactive break-condition prompt even when
   `.agent-all.json` already has a non-default value.
+- `--qa` — shortcut for `--break-condition='{"type":"composite","steps":[
+  {"type":"test-auto"},{"type":"visual-qa","mode":"comprehensive"}]}'`. Tests
+  run first as a cheap gate; visual-qa (comprehensive mode) runs as the
+  final end-to-end check. Auto-scaffolds `.visual-qa.json` with sane
+  defaults if missing. Takes priority over `--break-condition`, the
+  interactive prompt, and any saved config value.
 - `--wave-size=small|medium|large` — override config default.
 - `--no-pr` — skip Phase 5 (PR creation).
 - `--no-brainstorm` — skip Phase 1's brainstorming for free-form prompts.

@@ -42,18 +42,26 @@ The coordinator uses the vendored `lib/break-resolver.mjs`
 
 Decision tree:
 
-1. **CLI override:** if `--break-condition=<json-or-string>` was passed,
+1. **`--qa` shortcut (highest priority):** if `--qa` was passed, use
+   `QA_SHORTCUT_SPEC` (composite `test-auto → visual-qa comprehensive`).
+   Skip the interactive prompt and the CLI-override branch. Do not
+   persist. ADDITIONALLY: if `.visual-qa.json` is missing, write
+   `QA_AUTOSCAFFOLD_CONFIG` via `write_file` (atomic .tmp + rename)
+   before continuing. Echo `Break-condition: composite [test-auto →
+   visual-qa comprehensive] (--qa shortcut).`
+
+2. **CLI override:** if `--break-condition=<json-or-string>` was passed,
    try `JSON.parse` first; fall back to treating it as a plain shell
    string. Normalise and use that. Skip the prompt. Do not persist.
 
-2. **Non-interactive paths** — skip the prompt and reuse
+3. **Non-interactive paths** — skip the prompt and reuse
    `config.loop.breakCondition`:
    - `--yes` passed
    - `ask_user` not exposed (e.g., background `gemini chat` subprocess,
      `--output-json` runs, non-TTY)
    - `--reconfigure` is NOT set AND `!isDefaultOrMissing(config.loop.breakCondition)`
 
-3. **Interactive prompt** — use the `ask_user` Gemini primitive:
+4. **Interactive prompt** — use the `ask_user` Gemini primitive:
 
    a. First call: ask "Loop break-condition?" with the four
       `PRESET_CATALOGUE` choices (test-auto / visual-qa / Custom shell
@@ -70,7 +78,7 @@ Decision tree:
       `.agent-all.json` atomically (write to `.tmp`, then
       `run_shell_command` rename). On no: keep in memory only.
 
-4. **Assignment:** `config.loop.breakCondition = resolved` for the rest
+5. **Assignment:** `config.loop.breakCondition = resolved` for the rest
    of the run.
 
 ### Fallback when stack detection finds no test command
