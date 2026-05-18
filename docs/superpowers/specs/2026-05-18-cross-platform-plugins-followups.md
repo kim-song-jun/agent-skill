@@ -35,8 +35,9 @@ What each platform plugin still needs after the 2026-05-18 MVP.
 
 ## visual-qa and agent-all on each platform
 
-Separate per-platform follow-up specs needed. Playwright MCP availability varies;
-Skill-tool subagent dispatch is Claude-Code-specific. Defer to a future iteration.
+- ✅ DONE (2026-05-18 scaffold iteration) — visual-qa MVP scaffold for Codex/Copilot/Gemini (config emit + MCP snippet). Cursor remains docs-only as designed.
+- Pending — full 6-phase visual-qa orchestrator port per platform (separate spec per platform).
+- Pending — agent-all port per platform. See `docs/superpowers/specs/2026-05-18-agent-all-porting-decomposition.md` for per-platform decomposition.
 
 ## Antigravity
 

@@ -7,6 +7,21 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 ## [Unreleased]
 - Theme B (`harness-thrift`) — context-mode aggressive integration, prompt cache, summariser hooks — design pending.
 
+## visual-qa porting scaffold — 2026-05-18
+
+### Added
+- Three new sibling plugins for cross-platform visual-qa scaffolding:
+  - `harness-floor-codex`, `harness-floor-copilot`, `harness-floor-gemini`
+- Each emits `.visual-qa.json` config + a Playwright MCP entry (printed to stdout) for the host platform's MCP config location.
+- Marketplace entries; manifest/render/isolation tests extended to cover the new plugins.
+- `scripts/sync-lib.mjs` — single command to sync vendored `lib/` copies between harness-builder/agent-init and each cross-platform plugin. `--check` mode for CI drift detection.
+
+### Still deferred
+- Full 6-phase orchestrator port per platform (visual-qa) — separate per-platform spec needed.
+- agent-all port per platform — subagent dispatch differs sharply per host; per-platform research + spec needed. See `docs/superpowers/specs/2026-05-18-agent-all-porting-decomposition.md`.
+- Brainstorm integration via host-native ask_user equivalents.
+- Runtime validation against actual CLIs.
+
 ## Cross-platform follow-up — 2026-05-18
 
 ### Added

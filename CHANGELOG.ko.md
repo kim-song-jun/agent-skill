@@ -7,6 +7,21 @@
 ## [미출시]
 - Theme B (`harness-thrift`) — context-mode 공격적 통합, 프롬프트 캐시, 요약 훅 — 설계 보류 중.
 
+## visual-qa 포팅 스캐폴드 — 2026-05-18
+
+### 추가됨
+- 크로스플랫폼 visual-qa 스캐폴딩을 위한 세 개의 새 사이블링 플러그인:
+  - `harness-floor-codex`, `harness-floor-copilot`, `harness-floor-gemini`
+- 각 플러그인은 `.visual-qa.json` 설정 파일 + 호스트 플랫폼의 MCP 설정 위치에 맞는 Playwright MCP 항목을 stdout으로 출력.
+- 마켓플레이스 항목 추가; manifest/render/isolation 테스트를 새 플러그인 커버리지로 확장.
+- `scripts/sync-lib.mjs` — harness-builder/agent-init와 각 크로스플랫폼 플러그인 간의 vendored `lib/` 복사본을 동기화하는 단일 명령. CI 드리프트 감지를 위한 `--check` 모드 포함.
+
+### 여전히 보류 중
+- 플랫폼별 전체 6단계 오케스트레이터 포팅 (visual-qa) — 플랫폼별 별도 spec 필요.
+- 플랫폼별 agent-all 포팅 — 서브에이전트 디스패치 방식이 호스트마다 크게 다름; 플랫폼별 리서치 + spec 필요. `docs/superpowers/specs/2026-05-18-agent-all-porting-decomposition.md` 참조.
+- 호스트 네이티브 ask_user 등가물을 통한 Brainstorm 통합.
+- 실제 CLI 대상 런타임 검증.
+
 ## 크로스플랫폼 후속 작업 — 2026-05-18
 
 ### 추가됨
