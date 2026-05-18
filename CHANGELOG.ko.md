@@ -13,6 +13,32 @@
 - Anthropic SDK / OpenAI SDK / Vertex SDK 실제 API 연결 (현재 mock
   toolCaller 사용).
 
+## README + 플러그인 업데이트 문서화 — 2026-05-18
+
+### 갱신
+
+- `README.md` 와 `README.ko.md` 완전 재작성하여 현재 17-플러그인 /
+  5-테마 상태 반영 (이전엔 2-플러그인 / 3-테마 버전에 thrift는
+  "RESERVED"로 멈춰 있었음).
+- 모든 호스트를 다루는 전용 **"플러그인 업데이트 방법"** 섹션 추가:
+  - Claude Code: `/plugin update <name>@agent-skill`,
+    `/plugin update --marketplace agent-skill`, `/plugin update --all`,
+    `/plugin marketplace update agent-skill`
+  - Codex CLI: `codex plugins update [<name>]`
+  - GitHub Copilot CLI: `gh copilot plugins update [<name>]`
+  - Gemini CLI: `gemini extensions update [<name>]`
+  - Cursor: `bin/install.mjs --force` 재실행 (렌더러 스타일;
+    `thrift-` / `floor-` 센티널로 idempotent)
+  - 클린 인스톨 경로: uninstall + marketplace 제거 + 재추가
+  - 플러그인별 uninstall: `node plugins/<p>/bin/install.mjs --uninstall`
+- 어느 테마가 어느 호스트에 어떤 수준으로 출시됐는지 보여주는 전용
+  **"크로스 플랫폼 지원"** 매트릭스 추가 (✅ / 스캐폴드 / 포트 연기).
+- A/B/C/D/E 포지셔닝 테이블이 있는 전용 **"5개 테마"** 섹션 추가.
+- 명령어 레퍼런스 갱신 `/thrift`, `/explore`, `/debug` 포함.
+- 온보딩 + flaky 테스트 디버깅 예제 추가.
+- "버전 관리" 섹션을 iteration 타임라인 반영하도록 갱신
+  (41 → 7 → 5 → 4 → 1 → 2 commits, 5개 sub-iteration).
+
 ## 6개 신규 플러그인 + 플랫폼별 구현 — 2026-05-18 (commit 0aa3cea)
 
 10개 병렬 agents가 6개 신규 마켓플레이스 플러그인 + 4개 기존 플랫폼
