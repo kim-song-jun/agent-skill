@@ -7,6 +7,19 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 ## [Unreleased]
 - Theme B (`harness-thrift`) — context-mode aggressive integration, prompt cache, summariser hooks — design pending.
 
+## harness-builder 0.3.0 — 2026-05-18
+
+### Added
+- `detectProject(dir)` in `lib/detect-stack.mjs` returns `{ stack, runtime, services }`. Detects Docker runtime via `Dockerfile` or any `docker-compose.yml` / `compose.yaml` variant, and extracts top-level `services:` keys from compose YAML (regex parser, sorted).
+- New fixtures: `docker-only`, `node-ts-docker`, `python-compose-only`, `python-requirements-only`, `dockerfile-bad-compose`.
+- `CLAUDE.md` template now renders `(on docker: postgres, redis)` when runtime/services are present.
+
+### Changed
+- Phase 1 of `/agent-init` calls `detectProject` and spreads the result into the discovery context. Adds a pre-joined `services_str` for the template.
+
+### Preserved
+- `detectStack(dir)` remains as a thin back-compat wrapper returning the stack string. No callers were impacted.
+
 ## harness-builder v0.2.0 / harness-floor v0.2.0 — 2026-05-18
 ### Breaking
 - **Renamed `/harness-init` → `/agent-init`**. Old name removed. Plugin/state names follow: `.harness-state.json` → `.agent-init-state.json` (backward-compat: old filename still gitignored).
