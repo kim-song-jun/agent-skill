@@ -73,3 +73,14 @@ test("parseComposeServices: tab-indented services falls back to []", () => {
   const text = "services:\n\tpostgres:\n\t\timage: postgres\n";
   assert.deepEqual(parseComposeServices(text), []);
 });
+
+test("parseComposeServices: hyphenated service names are captured", () => {
+  const text = [
+    "services:",
+    "  my-service:",
+    "    image: x",
+    "  nginx-proxy:",
+    "    image: y",
+  ].join("\n");
+  assert.deepEqual(parseComposeServices(text), ["my-service", "nginx-proxy"]);
+});
