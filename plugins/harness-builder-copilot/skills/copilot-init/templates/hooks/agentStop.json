@@ -1,0 +1,5 @@
+{
+  "hooks": [
+    { "command": "echo 'agent stopped'" }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "hooks": [
+    { "matcher": "apply_patch", "command": "echo 'post apply_patch'" }
+  ]
+}

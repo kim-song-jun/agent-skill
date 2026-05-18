@@ -59,3 +59,38 @@ Refuse to overwrite existing files unless `--force`.
 Print: detected stack, runtime (if any), the files written. Note that
 `.github/hooks/` and `~/.copilot/mcp-config.json` wiring is out of scope
 for this MVP.
+
+## Phase 4 — Optional: emit hook + MCP stubs
+
+Ask the user whether to emit `.github/hooks/` stubs and an MCP config
+snippet. If yes:
+
+1. Copy these static stubs into the project (verbatim — no rendering):
+
+   - `templates/hooks/preToolUse.json` → `.github/hooks/preToolUse.json`
+   - `templates/hooks/postToolUse.json` → `.github/hooks/postToolUse.json`
+   - `templates/hooks/agentStop.json` → `.github/hooks/agentStop.json`
+
+   Refuse to overwrite unless `--force`.
+
+2. Prompt for MCP servers (`{ name, command, args }` or `{ name, url }`,
+   empty list OK).
+
+3. Build the JSON body:
+
+   ```javascript
+   const entries = mcp_servers.map((s) => {
+     const fields = s.command
+       ? `      "command": ${JSON.stringify(s.command)},\n      "args": ${JSON.stringify(s.args ?? [])}`
+       : `      "url": ${JSON.stringify(s.url)}`;
+     return `    ${JSON.stringify(s.name)}: {\n${fields}\n    }`;
+   });
+   const mcp_servers_json_body = entries.join(",\n");
+   ```
+
+4. Render `templates/mcp-config.json.hbs` and PRINT it to stdout (do NOT
+   write to `~/.copilot/mcp-config.json` automatically). Prefix output with:
+
+   ```
+   # Copy the following into ~/.copilot/mcp-config.json:
+   ```

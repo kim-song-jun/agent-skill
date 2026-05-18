@@ -1,0 +1,5 @@
+{
+  "hooks": [
+    { "matcher": "read_bash", "command": "echo 'pre read_bash'" }
+  ]
+}
