@@ -1,0 +1,65 @@
+#!/usr/bin/env node
+// thrift-posttool-summariser-trigger — after each tool call, accumulate
+// output size and fire the summariser (advisory v1) if thresholds hit.
+//
+// Input: PostToolUse hook payload (JSON via stdin) with tool_output.
+
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+
+const ROOT = process.env.CLAUDE_PROJECT_DIR || ".";
+const STATE_PATH = resolve(ROOT, ".thrift-state.json");
+const CONFIG_PATH = resolve(ROOT, ".thrift.json");
+
+async function main() {
+  let payload = {};
+  try {
+    const stdin = readFileSync(0, "utf-8");
+    if (stdin.trim()) payload = JSON.parse(stdin);
+  } catch {
+    process.exit(0);
+  }
+
+  const output = payload?.tool_response?.output || payload?.tool_output || "";
+  const outputBytes = typeof output === "string" ? output.length : JSON.stringify(output).length;
+
+  const { readState, writeState, recordTurn, metricsSinceLastSummary } = await import(
+    resolve(import.meta.dirname || ".", "../../lib/metrics-collector.mjs")
+  );
+  const { loadConfig } = await import(
+    resolve(import.meta.dirname || ".", "../../lib/config-loader.mjs")
+  );
+  const { shouldFireSummariser, estimateTokensFromBytes } = await import(
+    resolve(import.meta.dirname || ".", "../../lib/threshold-evaluator.mjs")
+  );
+
+  const configRes = loadConfig(CONFIG_PATH);
+  if (!configRes.ok) process.exit(0);
+  const config = configRes.config;
+
+  const state = readState(STATE_PATH);
+  // Record approximate tokens per tool call (no real model call here).
+  const estTokens = estimateTokensFromBytes(outputBytes);
+  recordTurn(state, { tokensOut: estTokens, model: "claude-sonnet-4-6" }); // assumed primary
+
+  const m = metricsSinceLastSummary(state);
+  const verdict = shouldFireSummariser({
+    turnsSinceLastSummary: m.turnsSinceLastSummary,
+    tokensSinceLastSummary: m.tokensSinceLastSummary,
+    config,
+  });
+
+  writeState(STATE_PATH, state);
+
+  if (verdict.fire) {
+    // Emit a notification suggestion (v1 advisory).
+    const notify = resolve(ROOT, ".thrift/notifications/summarise.md");
+    mkdirSync(dirname(notify), { recursive: true });
+    writeFileSync(notify, `Summariser threshold hit (reason: ${verdict.reason}, turns=${m.turnsSinceLastSummary}, tokens≈${m.tokensSinceLastSummary}).\n\nRun \`/thrift summarise\` then \`/compact\` and paste the resulting summary path.\n`);
+    console.error(`<system-reminder>thrift summariser ready: run /thrift summarise (reason=${verdict.reason})</system-reminder>`);
+  }
+
+  process.exit(0);
+}
+
+main().catch(() => process.exit(0));

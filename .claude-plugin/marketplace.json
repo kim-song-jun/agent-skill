@@ -55,6 +55,11 @@
       "name": "harness-floor-cursor",
       "source": "./plugins/harness-floor-cursor",
       "description": "visual-qa scaffold for Cursor"
+    },
+    {
+      "name": "harness-thrift",
+      "source": "./plugins/harness-thrift",
+      "description": "Theme B — cost-conscious long-session optimisation: context-mode integration, prompt cache priming, summariser hooks, end-of-session audit"
     }
   ]
 }

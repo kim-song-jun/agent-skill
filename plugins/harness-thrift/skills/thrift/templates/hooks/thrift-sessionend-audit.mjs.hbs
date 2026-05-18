@@ -1,0 +1,56 @@
+#!/usr/bin/env node
+// thrift-sessionend-audit — fires Phase 5 at session end. Writes audit
+// report to the configured outputPath.
+
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+
+const ROOT = process.env.CLAUDE_PROJECT_DIR || ".";
+const CONFIG_PATH = resolve(ROOT, ".thrift.json");
+const STATE_PATH = resolve(ROOT, ".thrift-state.json");
+
+async function main() {
+  const { loadConfig } = await import(
+    resolve(import.meta.dirname || ".", "../../lib/config-loader.mjs")
+  );
+  const { readState, writeState, recordPhase } = await import(
+    resolve(import.meta.dirname || ".", "../../lib/metrics-collector.mjs")
+  );
+  const { buildAuditContext } = await import(
+    resolve(import.meta.dirname || ".", "../../lib/audit-renderer.mjs")
+  );
+  const { render } = await import(
+    resolve(import.meta.dirname || ".", "../../lib/render.mjs")
+  );
+
+  const cr = loadConfig(CONFIG_PATH);
+  if (!cr.ok) process.exit(0);
+  const config = cr.config;
+
+  const state = readState(STATE_PATH);
+  recordPhase(state, 5);
+
+  const ctx = buildAuditContext({ state, config, now: new Date() });
+
+  const tplPath = resolve(import.meta.dirname || ".", "../audit-report.md.hbs");
+  let tpl;
+  try {
+    tpl = readFileSync(tplPath, "utf-8");
+  } catch {
+    process.exit(0);
+  }
+
+  const out = render(tpl, ctx);
+
+  // Resolve <date> placeholder in outputPath
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const outputPath = resolve(ROOT, config.audit.outputPath.replace("<date>", dateStr));
+  mkdirSync(dirname(outputPath), { recursive: true });
+  writeFileSync(outputPath, out);
+  writeState(STATE_PATH, state);
+
+  console.error(`<system-reminder>thrift audit written: ${outputPath}</system-reminder>`);
+  process.exit(0);
+}
+
+main().catch(() => process.exit(0));

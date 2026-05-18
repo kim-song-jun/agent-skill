@@ -1,0 +1,25 @@
+{
+  "version": "0.1.0",
+  "summariser": {
+    "everyNTurns": {{everyNTurns}},
+    "everyMTokensOutput": {{everyMTokensOutput}},
+    "preserveLastTurns": 6,
+    "preserveSpecPaths": true,
+    "model": "{{summariserModel}}"
+  },
+  "cache": {
+    "primingStrategy": "{{cachePrimingStrategy}}",
+    "warmInterval": 240,
+    "shareCohortAcross": ["session"],
+    "enabled": false
+  },
+  "contextMode": {
+    "coerceBashWhenOutputExceeds": 20,
+    "coerceReadWhenOutputExceeds": 200,
+    "blockedTools": []
+  },
+  "audit": {
+    "estimateBaseline": "naive-claude-code",
+    "outputPath": "docs/thrift/audit-{{date}}.md"
+  }
+}

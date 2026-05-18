@@ -5,9 +5,104 @@
 All notable changes to this project. Date-stamped tags exist for each release candidate.
 
 ## [Unreleased]
-- Theme B (`harness-thrift`) implementation — design landed in
-  `docs/superpowers/specs/2026-05-18-harness-thrift-design.md`. ~3 weeks
-  estimated effort split across 6 sub-projects.
+- `harness-thrift` v2 summariser using Claude Code programmatic compact
+  API (once surfaced) — currently v1 advisory.
+- Per-platform `harness-thrift-{codex,copilot,gemini,cursor}` ports —
+  decomposition spec deferred.
+
+## harness-thrift v0.1 — 2026-05-18
+
+Theme B implementation landed. New plugin `harness-thrift` (11th in
+marketplace) ships cost-conscious long-session optimisation per the
+design spec.
+
+### Added — research-notes (sandbox-bound spikes)
+
+- `docs/superpowers/research-notes/2026-05-18-cc-compact-api-spike.md`
+  — decision: v1 ships advisory summariser (file + Notification);
+  programmatic compact deferred to v2 pending CC plugin API.
+- `docs/superpowers/research-notes/2026-05-18-hook-precedence-spike.md`
+  — decision: thrift PreToolUse(Bash) is telemetry-only (context-mode-
+  router stays authoritative); `.claude/settings.local.json` patched
+  append-only with `thrift-` sentinel for safe revert.
+
+### Added — plugin
+
+- `plugins/harness-thrift/` (v0.1.0). Skill `/thrift` with 6 phases:
+  - Phase 0 — preflight (context-mode detect, existing hooks scan)
+  - Phase 1 — config (seed/load `.thrift.json`)
+  - Phase 2 — instrument (append-only `.claude/settings.local.json` patch)
+  - Phase 3 — summariser (v1 advisory: file + Notification nudge)
+  - Phase 4 — cache-prime (disabled by default; ROI gate)
+  - Phase 5 — audit (end-of-session report)
+
+### Added — lib modules
+
+- `lib/config-loader.mjs` — schema-validated `.thrift.json` parser with
+  field-level error reporting; built-in DEFAULTS fallback.
+- `lib/threshold-evaluator.mjs` — `shouldFireSummariser({turns, tokens})`;
+  `estimateTokensFromBytes()` heuristic (3 bytes/token mixed default).
+- `lib/cost-estimator.mjs` — rate table for opus-4.7/sonnet-4.6/haiku-4.5;
+  `estimate()` + `estimateSession()` with per-model breakdown +
+  baseline-vs-actual savings ratio.
+- `lib/metrics-collector.mjs` — `.thrift-state.json` reader/writer with
+  atomic rename; `recordTurn/Summariser/Coercion/CachePrime/Phase`.
+  Corrupt state file → fresh + `.bak.<ts>` backup.
+- `lib/audit-renderer.mjs` — builds context for the report template;
+  cache hit rate, savings %, per-model breakdown.
+- `lib/settings-patcher.mjs` — append-only `.claude/settings.local.json`
+  patcher with `thrift-` sentinel revert; refuses to touch unparseable
+  files; idempotent (skips already-registered).
+- `lib/summariser.mjs` — v1 advisory summariser; preserves last N turns
+  verbatim + extracts `docs/superpowers/specs|plans|research-notes/*`
+  paths as pinned refs. `heuristicSummariseFn()` fallback for
+  dependency-free operation.
+- `lib/cache-prime.mjs` — `computeCohortKey()` (session / branch /
+  combined); `schedulePrime()` interval scheduler with error-resilience
+  + cancellation; `evaluateCachePrimeROI()` gate (skip when session <15
+  min or no expected pauses).
+
+### Added — templates
+
+- `templates/thrift.config.json.hbs` — `.thrift.json` seed
+- `templates/audit-report.md.hbs` — Markdown audit report
+- `templates/hooks/thrift-pretool-bash-telemetry.mjs.hbs`
+- `templates/hooks/thrift-pretool-read-coerce.mjs.hbs`
+- `templates/hooks/thrift-posttool-summariser-trigger.mjs.hbs`
+- `templates/hooks/thrift-sessionstart-cache-prime.mjs.hbs`
+- `templates/hooks/thrift-sessionend-audit.mjs.hbs`
+
+### Tests
+
+- `tests/lib/thrift-core.test.mjs` (17 tests) — config-loader,
+  threshold-evaluator, cost-estimator
+- `tests/lib/thrift-audit.test.mjs` (12 tests) — metrics-collector +
+  audit-renderer + end-to-end report render
+- `tests/lib/thrift-instrument.test.mjs` (8 tests) — settings-patcher
+  append-only / unpatch sentinel / dry-run / unparseable refuse
+- `tests/lib/thrift-summariser.test.mjs` (8 tests) — summarise contract,
+  spec-path preservation, heuristicSummariseFn first-sentence extraction
+- `tests/lib/thrift-cache.test.mjs` (13 tests) — cohort key, ROI gate,
+  schedulePrime timing + cancellation + error resilience
+
+### Marketplace
+
+11th plugin registered. cross-platform-{manifest,isolation} tests
+expanded; "marketplace.json lists all eleven plugins" assertion.
+
+### Result
+
+390/390 tests pass (was 330, +60). Working tree clean. All 7 sub-tasks
+from the design spec complete (within sandbox limits).
+
+### Still deferred
+
+- Live CC verification of hook firing order + Notification payload.
+- v2 programmatic compact (replace advisory v1) once CC API surfaces.
+- Anthropic SDK integration for `--use-haiku` summariser path (currently
+  heuristic fallback).
+- Per-platform Theme B ports (Codex/Copilot/Gemini/Cursor) —
+  decomposition spec deferred.
 
 ## cross-platform install + dispatch + adapter implementation — 2026-05-18
 

@@ -1,0 +1,54 @@
+#!/usr/bin/env node
+// thrift-pretool-read-coerce — suggests ctx_execute_file for large Read
+// calls. Unlike Bash, the existing context-mode-router (per agent-init)
+// doesn't currently catch Read, so this hook is authoritative for that
+// tool.
+//
+// Input: PreToolUse hook payload (JSON via stdin) with tool_input.file_path.
+
+import { readFileSync, statSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
+
+const STATE_PATH = resolve(process.env.CLAUDE_PROJECT_DIR || ".", ".thrift-state.json");
+const COERCE_THRESHOLD_BYTES = 200 * 80; // ~200 lines × 80 chars/line
+
+async function main() {
+  let payload = {};
+  try {
+    const stdin = readFileSync(0, "utf-8");
+    if (stdin.trim()) payload = JSON.parse(stdin);
+  } catch {
+    process.exit(0);
+  }
+
+  const filePath = payload?.tool_input?.file_path;
+  if (!filePath || !existsSync(filePath)) process.exit(0);
+
+  let bytes = 0;
+  try { bytes = statSync(filePath).size; } catch { process.exit(0); }
+
+  if (bytes < COERCE_THRESHOLD_BYTES) process.exit(0);
+
+  // File is large — emit a suggestion via stderr (CC surfaces as system reminder).
+  console.error(`<system-reminder>thrift: ${filePath} is ${bytes} bytes. If you're reading to analyze (not edit), prefer ctx_execute_file to keep raw contents out of context.</system-reminder>`);
+
+  // Record telemetry.
+  try {
+    const { readState, writeState, recordCoercion } = await import(
+      resolve(import.meta.dirname || ".", "../../lib/metrics-collector.mjs")
+    );
+    const state = readState(STATE_PATH);
+    recordCoercion(state, {
+      tool: "Read",
+      suggestion: `ctx_execute_file(path: ${JSON.stringify(filePath)})`,
+      accepted: false,
+    });
+    writeState(STATE_PATH, state);
+  } catch {
+    // Don't fail the hook on telemetry error.
+  }
+
+  process.exit(0);
+}
+
+main().catch(() => process.exit(0));

@@ -1,0 +1,40 @@
+#!/usr/bin/env node
+// thrift-sessionstart-cache-prime — schedules cache priming at config-defined
+// intervals. Phase 4 detail.
+//
+// MVP: emits a hint that cache priming is enabled; the actual priming
+// is per-turn via the model's natural cache hit (Anthropic auto-caches
+// system+tools). This hook records the SessionStart event for the audit.
+
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const ROOT = process.env.CLAUDE_PROJECT_DIR || ".";
+const CONFIG_PATH = resolve(ROOT, ".thrift.json");
+const STATE_PATH = resolve(ROOT, ".thrift-state.json");
+
+async function main() {
+  const { loadConfig } = await import(
+    resolve(import.meta.dirname || ".", "../../lib/config-loader.mjs")
+  );
+  const { readState, writeState, recordPhase, recordCachePrime } = await import(
+    resolve(import.meta.dirname || ".", "../../lib/metrics-collector.mjs")
+  );
+
+  const cr = loadConfig(CONFIG_PATH);
+  if (!cr.ok) process.exit(0);
+  const config = cr.config;
+
+  const state = readState(STATE_PATH);
+  recordPhase(state, 4); // SessionStart cache-prime phase
+  if (config.cache.enabled) {
+    // Record one initial prime to seed the metric.
+    recordCachePrime(state, { cohort: config.cache.shareCohortAcross.join(","), costUSD: 0 });
+    console.error(`<system-reminder>thrift cache-prime enabled (${config.cache.primingStrategy}, warmInterval=${config.cache.warmInterval}s)</system-reminder>`);
+  }
+  writeState(STATE_PATH, state);
+
+  process.exit(0);
+}
+
+main().catch(() => process.exit(0));
