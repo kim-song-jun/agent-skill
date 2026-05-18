@@ -13,6 +13,47 @@
 - Anthropic SDK / OpenAI SDK / Vertex SDK 실제 API 연결 (현재 mock
   toolCaller 사용).
 
+## Loop / visual-qa 보강 + README 명확화 패스 — 2026-05-19
+
+Comprehensive 모드 rollout 문서화 중 발견한 진짜 갭들 마감. 각각이
+fresh 프로젝트에서 `/agent-all --loop --qa`가 조용히 오동작할 만한
+지점이었음.
+
+### 수정 — Phase 6 visual-qa 호출이 hand-waved였음
+
+Phase 6 문서가 `dispatchVisualQASubagent()` placeholder (실존하지
+않음)를 참조하고 있었음. 5 플랫폼 (Claude Code native + cursor /
+copilot / codex / gemini) 모두 구체적인 `Task`-tool 호출 패턴으로
+교체 — 각 플랫폼의 네이티브 디스패치 프리미티브 (`Task` / cursor
+background agent / `task` tool / `agent` hook / `gemini chat`
+subprocess)로 명시. 매 iter `--slug=loop-iter-<N> --force` 조합으로
+iter들이 서로 안 덮어쓰고 Phase 2의 `priorRunPath` 발견은 이전
+iter을 baseline으로 찾도록.
+
+### 수정 — `--qa` autoscaffold가 dev 서버 미체크로 config 작성
+
+"안 도는것 같다"의 가장 흔한 실패 모드: 사용자가 `--loop --qa`
+실행 → visual-qa Phase 0가 `baseUrl` health-check 실패 → 이유 불명.
+이제 `/agent-all` Phase 0가 config 작성 *전에* `curl --max-time 3`로
+autoscaffold의 `baseUrl` probe, 안 닿으면 계속할지 prompt
+(`--yes` 모드는 "dev 서버 unreachable" 메시지로 명확히 abort).
+
+### 변경 — `--qa` autoscaffold first-run 정책: `auto-pass` → `report`
+
+미묘한 위험: `auto-pass`는 iter 1이 캡처한 것을 항상 새 baseline으로
+씀. iter 1이 깨진 UI 있으면 그게 reference가 됨 — iter 2가 이슈 못
+잡음 (baseline과 같으니까). 새 기본 `report`는 iter 1에 여전히 loop
+통과 (사용자가 0에서 시작 가능) 하지만 모든 이슈를 report에 enumerate
+해서 다음 iter가 fix할 컨텍스트 가짐.
+
+### 추가 — README troubleshooting + `--qa` 단계별 walkthrough
+
+5가지 흔한 실패 모드 (dev server down, Playwright MCP missing, flaky
+tests 무한 loop, iter 2 비용 폭주, baseline lock-in, autoscaffold vs
+existing config) 모두 "증상 / 원인 / 해결" 테이블에. loop+qa 섹션
+재구성: 사전 요구사항 → 단계별 → 플래그 레퍼런스 → troubleshooting.
+한국어 README sync. 테스트 뱃지 1019 → 1246.
+
 ## Comprehensive visual-qa + `/agent-all --qa` E2E 게이트 — 2026-05-19
 
 ### 추가 — `/agent-all "..." --loop --qa` 한-플래그 E2E 검증

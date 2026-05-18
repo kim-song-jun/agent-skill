@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-stable--cli--verification--pending-blue) ![tests](https://img.shields.io/badge/tests-1019%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-stable--cli--verification--pending-blue) ![tests](https://img.shields.io/badge/tests-1246%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..."` per feature; the agent brainstorms → plans → writes → tests → opens the PR — and keeps iterating until the tests pass — without you babysitting every turn.
 
@@ -285,39 +285,65 @@ You can run `/agent-all --loop` alone for short loops (1–3 iterations). For ov
 - `/thrift` handles **across-iteration main-thread compression** (auto-summarize at threshold)
 - `/goal` handles **session liveness** (don't quit between iterations)
 
-### `/agent-all --loop` config knobs
+### Loop completion — what counts as "done"
 
-| Knob | Owned by | Default | Effect |
-|---|---|---|---|
-| `--loop` | flag | off | Enable post-phase-5 breakCondition re-entry. On first use, Phase 0 prompts you to pick the break-condition preset interactively. |
-| `--max-iter=N` | flag | 1 | Hard cap on iterations (server-clamped to 50) |
-| `--max-cost=USD` | flag | 500 | Hard cap on accumulated API cost; checked after each wave |
-| `--break-condition=<spec>` | flag | — | Non-interactive override. Accepts a JSON object (e.g. `'{"type":"visual-qa"}'`) or a plain shell string (treated as `{"type":"shell","cmd":<string>}`). |
-| `--reconfigure` | flag | — | Force the interactive break-condition prompt even when `.agent-all.json` already has a non-default value. |
-| `--qa` | flag | — | One-flag E2E shortcut. Expands to a composite spec `test-auto → visual-qa(comprehensive)`. Auto-scaffolds `.visual-qa.json` with sane defaults if missing. Tests run as a cheap gate; visual-qa (comprehensive mode, see below) crawls + DOM-walks + shallow-clicks everything and gates the loop on a baseline-relative verdict. |
-| `breakCondition` | `.agent-all.json` | `npm test` (or auto-detected) | The persisted spec. String form = shell command; object form supports four preset types: `shell`, `test-auto`, `visual-qa`, `composite`. |
-| `stableIters` | `.agent-all.json` | 1 | Consecutive passing breakConditions required before loop exits clean |
+The loop re-enters Phase 1 after each PR until a **break-condition** passes. Pick one of:
 
-#### Break-condition presets
+| You want | What to do | What runs each iter |
+|---|---|---|
+| Just tests | `--loop` (then pick "Test command" on first prompt) | `npm test` / `pytest` / `cargo test` — stack-detected |
+| Full E2E (tests + visual UI check) | `--loop --qa` ← **the shortcut** | tests → visual-qa comprehensive |
+| Custom command | `--break-condition='make ci'` | your one-liner |
+| Anything explicit | `--break-condition='{"type":"composite","steps":[...]}'` | JSON spec |
 
-When `--loop` is set, Phase 0 asks you to pick one:
+On the **first** `/agent-all --loop` in a project, Phase 0 prompts interactively (test / visual-qa / custom / composite) and offers to save the choice to `.agent-all.json`. Subsequent runs reuse the saved value. `--reconfigure` forces a re-prompt; `--yes` / non-TTY skip it.
 
-- **Test command (auto-detected)** — looks at `package.json` / `pyproject.toml` / `Cargo.toml` / `go.mod` / etc. and runs the standard test invocation for that stack.
-- **visual-qa skill** — dispatches the `visual-qa` orchestrator as a subagent each iter. Passes when no UI regressions are detected. Optional `spec` path supported.
-- **Custom shell command** — free-form one-liner. Same as the original `breakCondition` behavior.
-- **Composite (sequential AND)** — run multiple of the above in order; all must exit 0 to count as "done". Short-circuits on first failure so a cheap lint/type check can gate a slow visual-qa.
+### `--qa` end-to-end: prerequisites and step-by-step
 
-After you pick, Phase 0 also asks if it should save the choice to `.agent-all.json` so it's not prompted again. `--yes` and non-TTY invocations skip the prompt and fall back to whatever's already in `.agent-all.json` (or the built-in default).
+`/agent-all "build user dashboard" --loop --qa --max-iter=10`
 
-#### One-flag E2E: `--qa`
+**Prerequisites** (the most common cause of "it didn't work"):
 
-`/agent-all "build user dashboard" --loop --qa` is the shortcut form. It:
+- A **dev server** running at `http://localhost:3000` (or whatever you put in `.visual-qa.json`'s `baseUrl`). Phase 0 probes it with `curl --max-time 3`; if unreachable, you get a clear prompt before anything else runs.
+- **Playwright MCP** installed (the `mcp__plugin_playwright_playwright__*` tools must be available). `/visual-qa --skip-health` for a sanity check.
 
-1. Sets the break-condition to a composite spec — tests first (cheap gate), then visual-qa in **comprehensive mode** (final E2E check)
-2. Auto-scaffolds `.visual-qa.json` with sane defaults (`baseUrl=http://localhost:3000`, scope `/`, maxPages 50, depth 3, click 1-level, vs-baseline verdict, auto-pass first run) if the file doesn't exist
-3. Skips the interactive prompt entirely — non-persistent override
+**What `--qa` actually does**:
 
-Comprehensive visual-qa, in one sentence: **crawl from baseUrl → walk each page's DOM for every button/link/form/data-testid → screenshot every state (default, hover, focus) + shallow-click each clickable → compare the issue set vs the baseline accepted run → exit 0 if no new critical/major regressions**. Layered caching (git-diff scope + DOM-hash cache) keeps the cost reasonable across loop iterations.
+1. **Phase 0**: probes `baseUrl`. If missing, asks before continuing. If `.visual-qa.json` doesn't exist, scaffolds it with sane defaults (mode=comprehensive, scope `/`, maxPages 50, depth 3, click 1-level, vs-baseline verdict, **firstRun=report** so iter 1 surfaces issues instead of silently locking them in as baseline).
+2. **Phase 1-5**: agent-all's normal pipeline — brainstorm → plan → wave-dispatched implement → wave-reviewed → PR.
+3. **Phase 6 (loop)**: runs `test-auto` (stack-detected test command) first. If tests fail → next iter. If tests pass → dispatches a fresh Task-tool subagent to invoke the `visual-qa` skill with `--slug=loop-iter-<N> --force --yes` (per-iter slug keeps iters from clobbering each other; Phase 2 of visual-qa still finds the previous iter as baseline).
+4. visual-qa runs its own 6-phase pipeline: crawl from `baseUrl`, DOM-walk each page for interactive elements, shallow-click each button/link, screenshot every state, LLM-analyse each shot, compute verdict vs baseline. Exit 0 if no new critical/major regressions; exit 1 otherwise.
+5. Phase 6 sees the verdict. Pass → loop breaks (you're done). Fail → next iter starts with the previous failure visible in the plan.
+
+**Cost controls** (so loop iterations don't drown you):
+
+- **git-diff scope**: only pages whose source code changed since the last iter get re-crawled (framework auto-detect for Next.js / Remix; conservative "rebuild everything" fallback)
+- **DOM-hash cache**: components whose DOM hasn't changed reuse the prior LLM verdict instead of re-analysing
+- **`--max-iter`** + **`--max-cost=USD`** hard caps as always
+
+### `/agent-all --loop` flag reference
+
+| Flag | Default | Effect |
+|---|---|---|
+| `--loop` | off | Enable Phase 6 re-entry. First use prompts for break-condition. |
+| `--max-iter=N` | 1 | Hard cap on iterations (server-clamped to 50) |
+| `--max-cost=USD` | 500 | Cap on accumulated API cost; checked after each wave |
+| `--qa` | — | Shortcut: composite `test-auto → visual-qa(comprehensive)` + autoscaffold. See above. |
+| `--break-condition=<spec>` | — | Non-interactive override. JSON object or shell string. |
+| `--reconfigure` | — | Force re-prompt even when `.agent-all.json` has a non-default value. |
+| `.agent-all.json: breakCondition` | `npm test` (auto-detected) | Persisted spec. String = shell; object = `shell` / `test-auto` / `visual-qa` / `composite`. |
+| `.agent-all.json: stableIters` | 1 | Consecutive passes required before loop breaks clean. |
+
+### Troubleshooting — common loop / `--qa` failures
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Loop exits immediately with `exit=1` from visual-qa | dev server not running on `baseUrl` | `npm run dev` (or equivalent) in another terminal, then re-run with `--resume` |
+| visual-qa aborts with "playwright MCP not available" | Playwright MCP not installed | `claude mcp add plugin-playwright` (or your platform's equivalent) |
+| Loop runs but **never** breaks | `stableIters > 1` and one of N consecutive runs is failing intermittently | check `.agent-all-state.json` `consecutivePass`; lower `stableIters` to 1 if your test suite is flaky |
+| visual-qa hits `--max-cost` on iter 2 | DOM-hash cache cold + git-diff scoper had nothing to filter on | iter 2+ are usually cheaper; if not, set `comprehensive.cache.gitDiffScope: true` (default) and confirm autoscaffold framework detection |
+| iter 1 "passes" but UI is clearly broken | first-run policy is `report` (default) — loop passes but issues are reported. Read `docs/visual-qa/loop-iter-1/report.md` | Fix the issues, then iter 2 will hold the bar against the iter-1 baseline |
+| `--qa` writes a config but I want different settings | `--qa` autoscaffold runs only when `.visual-qa.json` is missing | Edit `.visual-qa.json` (change scope, breakpoints, baseUrl, etc.) — subsequent runs use the file as-is |
 
 ### Recipe — unattended overnight feature ship
 

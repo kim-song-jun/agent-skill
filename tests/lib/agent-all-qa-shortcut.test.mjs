@@ -98,7 +98,10 @@ test("QA_AUTOSCAFFOLD_CONFIG: comprehensive-mode visual-qa template with sane de
   assert.equal(QA_AUTOSCAFFOLD_CONFIG.comprehensive.scope.depth, 3);
   assert.equal(QA_AUTOSCAFFOLD_CONFIG.comprehensive.interactions.click, true);
   assert.equal(QA_AUTOSCAFFOLD_CONFIG.comprehensive.interactions.depth, 1);
-  assert.equal(QA_AUTOSCAFFOLD_CONFIG.comprehensive.verdict.firstRun, "auto-pass");
+  // first-run policy: "report" — pass the loop without writing a
+  // potentially-broken baseline silently. See break-resolver.mjs
+  // comment for rationale.
+  assert.equal(QA_AUTOSCAFFOLD_CONFIG.comprehensive.verdict.firstRun, "report");
   assert.deepEqual(QA_AUTOSCAFFOLD_CONFIG.comprehensive.verdict.failOn, ["critical", "major"]);
 });
 

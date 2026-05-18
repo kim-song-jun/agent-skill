@@ -24,11 +24,19 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
      sh -c "$CMD"; echo "exit=$?"
      ```
 
-   - **`visual-qa`**: dispatch a background agent
-     `@visual-qa-coordinator` (or `@visual-qa-cursor`) via the same
-     mechanism Phase 3 uses for implementers, then await its `STATUS:`
-     line. Treat `STATUS: passed` (or exit code 0) as runner exit 0,
-     anything else as 1. Never run via `sh -c`.
+   - **`visual-qa`**: dispatch a background agent for the
+     `visual-qa-cursor` skill, with a fresh per-iter slug so each
+     iteration's output doesn't clobber the previous one's baseline:
+
+     ```
+     @visual-qa-cursor --slug=loop-iter-${state.iter} --force --yes
+     ```
+
+     Await its `STATUS:` line. `STATUS: passed` → runner exit 0;
+     anything else → exit 1. Never run via `sh -c`. The `--force +
+     fresh slug` combo lets visual-qa write a clean slug dir without
+     touching prior iters' reports — Phase 2's `priorRunPath` still
+     finds the previous iter as baseline.
 
    - **composite containing visual-qa**: run each step in declared order
      and **short-circuit on the first non-zero exit**. Use the shell

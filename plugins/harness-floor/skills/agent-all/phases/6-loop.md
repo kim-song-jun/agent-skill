@@ -37,22 +37,49 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}` to `phases`, exit norm
      };
      ```
 
-   - **`visual-qa`**: dispatch the `visual-qa` skill via the Task tool
-     (one subagent). The subagent runs the 6-phase visual-qa pipeline
-     against the working tree. Treat its exit code as the runner exit
-     code — visual-qa exits 0 when no regressions found, non-zero when
-     diffs exceed the configured threshold.
+   - **`visual-qa`**: dispatch a Task-tool subagent whose only job is to
+     invoke the `harness-floor:visual-qa` skill against the working
+     tree. The subagent runs the 6-phase visual-qa pipeline; its
+     `STATUS:` (or final exit code) is the runner's exit code.
+
+     Concrete invocation pattern (replace `<slug>` with `loop-iter-<N>`
+     so each iteration writes to a fresh slug dir):
+
      ```javascript
-     const runner = () => {
-       const result = dispatchVisualQASubagent({ spec: spec.spec });
-       return { exitCode: result.exitCode };
+     const runner = async () => {
+       const slug = `loop-iter-${state.iter}`;
+       const result = await Task({
+         subagent_type: "general-purpose",
+         description: `visual-qa for loop iter ${state.iter}`,
+         prompt: [
+           "Invoke the harness-floor:visual-qa skill with these args:",
+           `  --slug=${slug}`,
+           `  --force         # blow away any prior state for this slug`,
+           `  --yes           # skip Phase 1 confirmation prompt`,
+           spec.spec ? `  --spec=${spec.spec}` : "",
+           "",
+           "After the skill finishes, report:",
+           "  STATUS: passed   (if exit 0)",
+           "  STATUS: failed   (if exit non-zero) and copy the last 10",
+           "                   lines of console output as REASON.",
+           "Do not perform any other work.",
+         ].filter(Boolean).join("\n"),
+       });
+       return { exitCode: result.status === "passed" ? 0 : 1 };
      };
      ```
 
+     Why a fresh slug per iter: visual-qa's `<slug-dir>` is its
+     per-run output home. Reusing one slug across iters would either
+     abort (no `--force/--resume`) or overwrite the baseline that the
+     next iter's verdict depends on. `loop-iter-<N>` gives each iter
+     its own dir, and Phase 2's `priorRunPath` discovery still finds
+     the previous iter's report as the baseline.
+
    - **composite containing visual-qa**: run each step in declared order
      and short-circuit on the first non-zero exit. Use `buildShellCommand`
-     for shell/test-auto/inner-composite steps; use the visual-qa
-     subagent dispatcher for visual-qa steps.
+     for shell/test-auto/inner-composite steps; use the Task-tool
+     dispatcher pattern above for visual-qa steps.
 
 3. Call `evaluateLoop`:
    ```javascript

@@ -159,7 +159,12 @@ export const QA_AUTOSCAFFOLD_CONFIG = {
     scope: { include: ["/"], exclude: [], maxPages: 50, depth: 3 },
     interactions: { click: true, depth: 1 },
     cache: { gitDiffScope: true, domHashCache: true },
-    verdict: { mode: "vs-baseline", failOn: ["critical", "major"], firstRun: "auto-pass" },
+    // firstRun: "report" — first iter still passes the loop (no baseline
+    // to compare against) but the report enumerates every issue so the
+    // user / next iter sees what visual-qa found. The alternative
+    // "auto-pass" silently writes whatever iter 1 produced as the
+    // baseline, which can lock in a broken UI as the reference.
+    verdict: { mode: "vs-baseline", failOn: ["critical", "major"], firstRun: "report" },
   },
   analysis: {
     model: "claude-sonnet-4-6",

@@ -24,9 +24,27 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
 
    - **`visual-qa`**: dispatch via the same strategy Phase 3 uses for
      implementers — `agent` hook (preferred) with role `visual-qa`, or
-     sequential `.codex/skills/visual-qa-codex/SKILL.md` fallback. Treat
-     `STATUS: passed` (or exit 0) as runner exit 0; anything else as 1.
-     Never run via `shell_command`.
+     sequential `.codex/skills/visual-qa-codex/SKILL.md` fallback —
+     invoking the skill with a fresh per-iter slug:
+
+     ```
+     # agent-hook path
+     agent({
+       role: "visual-qa-runner",
+       prompt: `Invoke visual-qa-codex skill:
+                  --slug=loop-iter-${state.iter} --force --yes${spec.spec ? " --spec=" + spec.spec : ""}
+                Report STATUS: passed | STATUS: failed.`
+     })
+
+     # sequential path
+     invokeSkill(".codex/skills/visual-qa-codex/SKILL.md",
+       ["--slug=loop-iter-${state.iter}", "--force", "--yes"])
+     ```
+
+     Treat `STATUS: passed` (or exit 0) as runner exit 0; anything
+     else as 1. Never run via `shell_command`. The `--force + fresh
+     slug` combo keeps prior iters' reports intact so Phase 2's
+     `priorRunPath` finds the previous iter as baseline.
 
    - **composite containing visual-qa**: run each step in declared order
      and **short-circuit on the first non-zero exit**. Use `shell_command`

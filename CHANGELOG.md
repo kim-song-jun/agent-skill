@@ -13,6 +13,51 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Anthropic SDK / OpenAI SDK / Vertex SDK actual API hookups (currently
   mock toolCallers used in tests).
 
+## Loop / visual-qa hardening + README clarity pass — 2026-05-19
+
+Closing real gaps uncovered while documenting the comprehensive-mode
+rollout. Each is a thing that would have made `/agent-all --loop --qa`
+silently misbehave on a fresh project.
+
+### Fixed — Phase 6 visual-qa invocation was hand-waved
+
+Phase 6 docs referenced a `dispatchVisualQASubagent()` placeholder
+that didn't exist. Replaced with a concrete `Task`-tool invocation
+pattern on all 5 platforms (Claude Code native + cursor / copilot /
+codex / gemini), each spelled out in the platform's native dispatch
+primitive (`Task` / cursor background agent / `task` tool /
+`agent` hook / `gemini chat` subprocess). Each iteration now uses
+a fresh `--slug=loop-iter-<N> --force` combo so iters don't clobber
+each other's slug dirs while Phase 2's `priorRunPath` discovery
+still finds the previous iter as the baseline.
+
+### Fixed — `--qa` autoscaffold writes config without checking dev server
+
+Most common "it didn't work" failure mode: user runs `--loop --qa`,
+visual-qa Phase 0 health-checks `baseUrl`, fails with no obvious
+explanation. Now Phase 0 of `/agent-all` probes the autoscaffold's
+`baseUrl` with `curl --max-time 3` *before* writing the config or
+proceeding, and prompts the user to confirm if unreachable
+(`--yes` mode aborts with a clear "dev server unreachable" message).
+
+### Changed — `--qa` autoscaffold first-run policy: `auto-pass` → `report`
+
+Subtle hazard: `auto-pass` means iter 1 always writes whatever it
+captured as the new baseline. If iter 1 has broken UI, that broken
+UI becomes the reference — iter 2 wouldn't catch the issues because
+they match the baseline. New default `report` still passes the loop
+on iter 1 (so users can start from zero) but enumerates every issue
+in the report so the next iter has the context to fix them.
+
+### Added — README troubleshooting + step-by-step `--qa` walkthrough
+
+Five common failure modes (dev server down, missing Playwright MCP,
+infinite loop on flaky tests, cost runaway on iter 2, baseline
+lock-in, autoscaffold vs existing config) now have a "what / why /
+fix" table. The loop+qa section was restructured into:
+prerequisites → step-by-step → flag reference → troubleshooting.
+Korean README synced. Tests badge updated 1019 → 1246.
+
 ## Comprehensive visual-qa + `/agent-all --qa` E2E gate — 2026-05-19
 
 ### Added — `/agent-all "..." --loop --qa` one-flag E2E verification

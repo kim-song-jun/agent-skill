@@ -46,10 +46,27 @@ Decision tree:
 1. **`--qa` shortcut (highest priority):** if user passed `--qa`, use
    `QA_SHORTCUT_SPEC` (a composite `test-auto → visual-qa comprehensive`
    spec). Skip the interactive prompt and the CLI-override branch. Do not
-   persist to `.agent-all.json`. ADDITIONALLY: if `.visual-qa.json` is
-   missing in the project root, write `QA_AUTOSCAFFOLD_CONFIG` to it
-   atomically before continuing. Echo `Break-condition: composite
-   [test-auto → visual-qa comprehensive] (--qa shortcut).`
+   persist to `.agent-all.json`. ADDITIONALLY:
+
+   a. **Dev-server reachability check.** Probe the autoscaffold's
+      `baseUrl` (default `http://localhost:3000`) before doing anything:
+      ```bash
+      curl --max-time 3 -s -o /dev/null -w '%{http_code}' http://localhost:3000
+      ```
+      - 2xx/3xx → continue.
+      - Anything else → print a clear warning and ask
+        `Dev server at <baseUrl> not responding. Continue anyway? [y/N]`
+        (in `--yes` mode, abort with `Dev server at <baseUrl>
+        unreachable; --qa requires a running dev server (or override
+        baseUrl in .visual-qa.json).`). This catches the most common
+        "first try doesn't work" — silently broken loops because
+        visual-qa can't reach the server.
+
+   b. **Autoscaffold.** If `.visual-qa.json` is missing in the project
+      root, write `QA_AUTOSCAFFOLD_CONFIG` to it atomically.
+
+   c. Echo `Break-condition: composite [test-auto → visual-qa
+      comprehensive] (--qa shortcut).`
 
 2. **CLI override:** if user passed `--break-condition=<json-or-string>`,
    parse it (try JSON first, fall back to plain shell string), normalise,

@@ -23,17 +23,24 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
      Capture exit code.
 
    - **`visual-qa`**: dispatch a subprocess that invokes the
-     `visual-qa-gemini` skill — same subprocess pattern Phase 3 uses for
-     implementers:
+     `visual-qa-gemini` skill with a fresh per-iter slug, so each
+     iteration writes to its own slug dir without clobbering the
+     previous one's baseline:
+
      ```
      run_shell_command(
-       "gemini chat --skill visual-qa-gemini -p 'check against spec' --output-json",
+       `gemini chat --skill visual-qa-gemini \
+         -p 'run with --slug=loop-iter-${state.iter} --force --yes${spec.spec ? " --spec=" + spec.spec : ""}; report STATUS: passed|failed' \
+         --output-json`,
        { background: false }
      )
      ```
+
      Parse the subprocess's exit code (or `STATUS:` field in the JSON);
      treat passed as runner exit 0, anything else as 1. Never run via
-     `run_shell_command` as a plain shell command.
+     `run_shell_command` as a plain shell command. The `--force +
+     fresh slug` combo keeps prior iters' reports intact so Phase 2's
+     `priorRunPath` finds the previous iter as baseline.
 
    - **composite containing visual-qa**: run each step in declared order
      and **short-circuit on the first non-zero exit**. Use

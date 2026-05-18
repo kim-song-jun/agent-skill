@@ -45,10 +45,22 @@ Decision tree:
 1. **`--qa` shortcut (highest priority):** if `--qa` was passed, use
    `QA_SHORTCUT_SPEC` (composite `test-auto → visual-qa comprehensive`).
    Skip the interactive prompt and the CLI-override branch. Do not
-   persist. ADDITIONALLY: if `.visual-qa.json` is missing, write
-   `QA_AUTOSCAFFOLD_CONFIG` via `write_file` (atomic .tmp + rename)
-   before continuing. Echo `Break-condition: composite [test-auto →
-   visual-qa comprehensive] (--qa shortcut).`
+   persist. ADDITIONALLY:
+
+   a. **Dev-server reachability check.** Probe the autoscaffold's
+      `baseUrl` (default `http://localhost:3000`) via
+      `run_shell_command`:
+      `curl --max-time 3 -s -o /dev/null -w '%{http_code}' <baseUrl>`.
+      Non-2xx/3xx response → `ask_user` to confirm before continuing
+      (in `--yes` mode, abort). Catches silent failures where
+      visual-qa can't reach the dev server.
+
+   b. **Autoscaffold.** If `.visual-qa.json` is missing, write
+      `QA_AUTOSCAFFOLD_CONFIG` via `write_file` (atomic .tmp +
+      rename) before continuing.
+
+   c. Echo `Break-condition: composite [test-auto → visual-qa
+      comprehensive] (--qa shortcut).`
 
 2. **CLI override:** if `--break-condition=<json-or-string>` was passed,
    try `JSON.parse` first; fall back to treating it as a plain shell

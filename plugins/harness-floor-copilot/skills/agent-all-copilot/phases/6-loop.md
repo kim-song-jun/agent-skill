@@ -22,10 +22,22 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
      ```
      Capture exit code.
 
-   - **`visual-qa`**: dispatch a `task` with role `visual-qa`. The
-     subagent runs the `visual-qa-copilot` 6-phase pipeline. Treat its
-     reported exit code (or `STATUS: passed`) as runner exit 0; anything
-     else as 1. Never run via `read_bash`.
+   - **`visual-qa`**: dispatch a `task` whose prompt invokes the
+     `visual-qa-copilot` skill with a fresh per-iter slug:
+
+     ```
+     task({
+       role: "visual-qa-runner",
+       prompt: `Invoke the visual-qa-copilot skill with:
+                  --slug=loop-iter-${state.iter} --force --yes${spec.spec ? " --spec=" + spec.spec : ""}
+                Report STATUS: passed (exit 0) or STATUS: failed (non-zero).`
+     })
+     ```
+
+     Treat its reported exit code (or `STATUS: passed`) as runner
+     exit 0; anything else as 1. Never run via `read_bash`. The
+     `--force + fresh slug` combo keeps prior iters' reports intact
+     so Phase 2's `priorRunPath` finds the previous iter as baseline.
 
    - **composite containing visual-qa**: run each step in declared order
      and **short-circuit on the first non-zero exit**. Use `read_bash`
