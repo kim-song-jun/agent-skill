@@ -29,7 +29,37 @@ For each page-group, dispatch via the `Agent` tool with:
   6. The output dir for this page (`<slug-dir>/<page>/` or `<slug-dir>/flows/<flowName>/`).
   7. Strict instructions on the capture loop (see Per-subagent steps below).
 
-## Comprehensive-mode addendum
+## Comprehensive-mode addendum — DOM-hash cache lookup
+
+When `state.mode === "comprehensive"` AND `state.domHashCache` is loaded,
+the subagent checks the cache **before** running the LLM analysis for
+each component:
+
+```javascript
+import { hashComponent, lookup, recordHit } from "./lib/dom-hash.mjs";
+
+const hash = hashComponent({
+  dom: await getComponentDomString(selector),
+  computedStyles: await getComponentStyles(selector),
+});
+
+const hit = lookup(state.domHashCache, hash);
+if (hit) {
+  // Reuse prior LLM verdict — skip the image read + model call.
+  emitAnalysis(hit.priorAnalysis);
+  state.cacheHits = (state.cacheHits ?? 0) + 1;
+} else {
+  const analysis = await runLLMAnalysis(); // existing path
+  recordHit(state.domHashCache, hash, analysis);
+  emitAnalysis(analysis);
+  state.cacheMisses = (state.cacheMisses ?? 0) + 1;
+}
+```
+
+Phase 4 writes the updated cache back to
+`.visual-qa-cache/dom-hashes.json` so future runs benefit.
+
+## Comprehensive-mode addendum — shallow click
 
 When `state.mode === "comprehensive"` AND the page subagent's
 `config.comprehensive.interactions.click === true`, the subagent also

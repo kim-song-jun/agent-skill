@@ -24,11 +24,27 @@
    - If exists and neither flag: abort `Slug dir already exists; use --resume or --force.`
    - If not exists: mkdir.
 
-6. Update state:
+6. **Comprehensive-mode addendum.** When `state.mode === "comprehensive"`
+   AND `config.comprehensive.cache?.domHashCache !== false`:
+   ```javascript
+   import { readCache, evictStale } from "./lib/dom-hash.mjs";
+   const cachePath = ".visual-qa-cache/dom-hashes.json";
+   const raw = readCache(cachePath);
+   const cache = evictStale(raw, 30);
+   state.domHashCache = cache;
+   state.domHashCachePath = cachePath;
+   ```
+   The cache is read once here and held in state for Phase 3 lookup.
+   30-day TTL guards against unbounded growth on long-lived projects.
+
+7. Update state:
    - Set top-level `slug`.
    - Push `{phase: 2, completedAt}` to `phases`.
    - Stash `priorRun` path (not contents) in `.visual-qa-state.json` under `priorRunPath` for Phase 4.
+   - In comprehensive mode: include `domHashCache` summary
+     (`{entries: <count>, evicted: <N>}`).
 
 ## Output to user
 
-Print: `Slug: <slug>. Prior run: <path or 'none'>.`
+Print: `Slug: <slug>. Prior run: <path or 'none'>.` plus, in comprehensive
+mode, `DOM-hash cache: <entries> entries.`

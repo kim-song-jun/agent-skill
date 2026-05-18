@@ -40,6 +40,28 @@
        },
      });
 
+     // Optional cost-saver: git-diff scoping. When enabled (default in
+     // comprehensive mode), the page list is filtered to only routes
+     // affected by the iteration's git diff. `scope: "none"` short-
+     // circuits the whole Phase 1; `scope: "all"` is the no-filter path;
+     // `scope: "some"` filters `pages` to the listed paths.
+     if (config.comprehensive.cache?.gitDiffScope !== false) {
+       const { scopeDiff } = await import("./lib/git-diff-scoper.mjs");
+       const changedFiles = await listChangedFilesSinceLastRun(); // helper
+       const verdict = scopeDiff({ changedFiles, cwd: "." });
+       if (verdict.scope === "none") {
+         // No visual-impacting changes — emit an empty matrix and let
+         // Phase 5 verdict default to "no-op pass".
+         pages.length = 0;
+       } else if (verdict.scope === "some") {
+         const allowed = new Set(verdict.paths);
+         for (let i = pages.length - 1; i >= 0; i--) {
+           if (!allowed.has(pages[i].path)) pages.splice(i, 1);
+         }
+       }
+       state.diffScope = verdict.scope;
+     }
+
      const matrix = [];
      for (const page of pages) {
        const snapshot = await capturePageSnapshot(page.path); // see contract below
