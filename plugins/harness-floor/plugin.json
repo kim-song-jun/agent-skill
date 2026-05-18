@@ -1,6 +1,5 @@
 {
   "name": "harness-floor",
   "version": "0.2.0",
-  "description": "Visual QA + agent-all pipeline (cost-unrestricted patterns)",
-  "skills": ["skills/visual-qa", "skills/agent-all"]
+  "description": "Visual QA + agent-all pipeline (cost-unrestricted patterns)"
 }
