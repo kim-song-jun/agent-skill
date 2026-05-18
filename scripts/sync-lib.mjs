@@ -29,31 +29,56 @@ const VENDORED_LIBS = [
   "plugins/harness-builder-cursor/skills/cursor-init/lib",
 ].map((p) => resolve(repoRoot, p));
 
+// harness-floor-* plugins keep render.mjs at bin/lib/ (only used by
+// bin/init.mjs install renderer; detect-stack not needed there).
+const VENDORED_RENDER_ONLY = [
+  "plugins/harness-floor-cursor/bin/lib",
+  "plugins/harness-floor-copilot/bin/lib",
+  "plugins/harness-floor-codex/bin/lib",
+  "plugins/harness-floor-gemini/bin/lib",
+].map((p) => resolve(repoRoot, p));
+
 const FILES = ["render.mjs", "detect-stack.mjs"];
+const RENDER_ONLY_FILES = ["render.mjs"];
 
 function readOrNull(path) {
   return existsSync(path) ? readFileSync(path, "utf-8") : null;
 }
 
-function checkMode() {
+function collectDrift() {
   const drift = [];
-  for (const file of FILES) {
-    const sourcePath = resolve(SOURCE_LIB, file);
-    const sourceContent = readOrNull(sourcePath);
-    if (sourceContent == null) {
-      console.error(`Source lib missing: ${sourcePath}`);
-      process.exit(2);
-    }
-    for (const dest of VENDORED_LIBS) {
-      const destPath = resolve(dest, file);
-      const destContent = readOrNull(destPath);
-      if (destContent == null) {
-        drift.push({ file, dest: destPath, reason: "missing" });
-      } else if (destContent !== sourceContent) {
-        drift.push({ file, dest: destPath, reason: "diverged" });
+  const all = [
+    { files: FILES, dests: VENDORED_LIBS },
+    { files: RENDER_ONLY_FILES, dests: VENDORED_RENDER_ONLY },
+  ];
+  for (const { files, dests } of all) {
+    for (const file of files) {
+      const sourcePath = resolve(SOURCE_LIB, file);
+      const sourceContent = readOrNull(sourcePath);
+      if (sourceContent == null) {
+        console.error(`Source lib missing: ${sourcePath}`);
+        process.exit(2);
+      }
+      for (const dest of dests) {
+        const destPath = resolve(dest, file);
+        const destContent = readOrNull(destPath);
+        if (destContent == null) {
+          drift.push({ file, dest: destPath, reason: "missing", sourceContent });
+        } else if (destContent !== sourceContent) {
+          drift.push({ file, dest: destPath, reason: "diverged", sourceContent });
+        }
       }
     }
   }
+  return drift;
+}
+
+function totalChecked() {
+  return FILES.length * VENDORED_LIBS.length + RENDER_ONLY_FILES.length * VENDORED_RENDER_ONLY.length;
+}
+
+function checkMode() {
+  const drift = collectDrift();
   if (drift.length > 0) {
     console.error("Vendor drift detected:");
     for (const d of drift) {
@@ -62,33 +87,20 @@ function checkMode() {
     console.error("\nRun: node scripts/sync-lib.mjs");
     process.exit(1);
   }
-  console.log(`OK — ${FILES.length * VENDORED_LIBS.length} vendored files match source.`);
+  console.log(`OK — ${totalChecked()} vendored files match source.`);
 }
 
 function syncMode() {
-  let copied = 0;
-  for (const file of FILES) {
-    const sourcePath = resolve(SOURCE_LIB, file);
-    const sourceContent = readOrNull(sourcePath);
-    if (sourceContent == null) {
-      console.error(`Source lib missing: ${sourcePath}`);
-      process.exit(2);
-    }
-    for (const dest of VENDORED_LIBS) {
-      const destPath = resolve(dest, file);
-      const destContent = readOrNull(destPath);
-      if (destContent !== sourceContent) {
-        writeFileSync(destPath, sourceContent);
-        console.log(`synced ${destPath}`);
-        copied++;
-      }
-    }
+  const drift = collectDrift();
+  if (drift.length === 0) {
+    console.log(`OK — already in sync (${totalChecked()} files checked).`);
+    return;
   }
-  if (copied === 0) {
-    console.log(`OK — already in sync (${FILES.length * VENDORED_LIBS.length} files checked).`);
-  } else {
-    console.log(`Synced ${copied} file(s).`);
+  for (const d of drift) {
+    writeFileSync(d.dest, d.sourceContent);
+    console.log(`synced ${d.dest}`);
   }
+  console.log(`Synced ${drift.length} file(s).`);
 }
 
 const args = process.argv.slice(2);
