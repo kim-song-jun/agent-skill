@@ -5,7 +5,60 @@
 All notable changes to this project. Date-stamped tags exist for each release candidate.
 
 ## [Unreleased]
-- Theme B (`harness-thrift`) — context-mode aggressive integration, prompt cache, summariser hooks — design pending.
+- Theme B (`harness-thrift`) implementation — design landed in
+  `docs/superpowers/specs/2026-05-18-harness-thrift-design.md`. ~3 weeks
+  estimated effort split across 6 sub-projects.
+
+## cross-platform install + dispatch + adapter implementation — 2026-05-18
+
+### Added
+
+- `plugins/harness-floor-{cursor,copilot,codex,gemini}/bin/init.mjs`
+  — install renderers for each platform. Walks plugin's installable
+  templates, writes them to a target project with overwrite protection,
+  prints platform-specific config snippets (Cursor: `.cursor/mcp.json`,
+  Copilot: `~/.copilot/mcp-config.json`, Codex: `~/.codex/config.toml`
+  with `[[hooks.agent]]` matchers, Gemini: `~/.gemini/settings.json`
+  mcpServers).
+  Flags: `--ctx`, `--force`, `--only=visual-qa|agent-all`.
+- `plugins/harness-floor-gemini/bin/spawn-wave.mjs` — Phase 3 wave
+  dispatcher for `/agent-all-gemini`. Spawns N parallel `gemini chat`
+  subprocesses per wave; awaits via tmp-file polling; aggregates.
+- `plugins/harness-floor-gemini/bin/spawn-page-subagent.mjs` — Phase 3
+  page dispatcher for `/visual-qa-gemini`. Same pattern; honors
+  `--max-parallel` for chunked dispatch.
+  Both spawn libs support `--dry-run` and `--gemini-bin` substitution.
+- `plugins/harness-floor-{cursor,copilot,codex,gemini}/skills/agent-all-<p>/lib/ask-user-adapter.mjs`
+  — implementations of the structured Q&A adapter from the design spec.
+  Each exports `askUserStructured({stage, prompt, choices, multi,
+  freeFormFallback, invoker})` with the same contract across all 4
+  platforms.
+
+### Specs
+
+- `docs/superpowers/specs/2026-05-18-harness-thrift-design.md` — full
+  design for Theme B `harness-thrift` plugin (6 sub-projects, ~3 weeks).
+- `docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md`
+  refreshed with bin/init.mjs + spawn-wave/page + ask-user-adapter
+  verification steps; updated acceptance criteria.
+
+### Tests
+
+- `tests/lib/harness-floor-init.test.mjs` (16 tests)
+- `tests/lib/gemini-spawn.test.mjs` (8 tests)
+- `tests/lib/ask-user-adapter.test.mjs` (26 tests)
+- `scripts/sync-lib.mjs` extended for `harness-floor-*/bin/lib/` render.mjs
+
+### Result
+
+330/330 tests pass (was 280, +50). Working tree clean.
+
+### Still deferred
+
+- Live CLI verification of all bin/init.mjs outputs.
+- Subprocess dispatcher run with real `gemini` binary (sandbox lacks it).
+- Each platform's `ask_user` response-shape confirmation.
+- `harness-thrift` implementation per its design spec (~3 weeks).
 
 ## cross-platform full-pipeline porting (scaffold) — 2026-05-18
 
