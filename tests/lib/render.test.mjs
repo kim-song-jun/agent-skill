@@ -90,6 +90,7 @@ const FIXTURES = [
   { tag: "go-small", ctx: { purpose: "Worker", stack: "go", deploy_targets: "", agents: [{name:"planner",when:""},{name:"dev",when:""},{name:"reviewer",when:""}], constraints: "", floorTheme: false } },
   { tag: "mono-medium", ctx: { purpose: "Monorepo", stack: "javascript", deploy_targets: "cloudflare", agents: [{name:"planner",when:""},{name:"dev",when:""},{name:"designer",when:""},{name:"qa-general",when:""},{name:"tester",when:""},{name:"reviewer",when:""}], constraints: "", floorTheme: false } },
   { tag: "floor-theme", ctx: { purpose: "Floor test app", stack: "typescript", deploy_targets: "vercel", agents: [{name:"planner",when:"plan"},{name:"dev",when:"code"},{name:"reviewer",when:"review"}], constraints: "", floorTheme: true } },
+  { tag: "ts-docker", ctx: { purpose: "Docker-based service", stack: "typescript", deploy_targets: "fly.io", runtime: "docker", services: ["postgres", "redis"], services_str: "postgres, redis", agents: [{name:"planner",when:"plan"},{name:"backend-dev",when:"server"},{name:"reviewer",when:"review"}], constraints: "", floorTheme: false } },
 ];
 
 function listTemplates(dir, base = "") {
