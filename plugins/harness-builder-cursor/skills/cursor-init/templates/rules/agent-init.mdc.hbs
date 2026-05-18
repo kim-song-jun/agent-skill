@@ -1,0 +1,23 @@
+---
+description: "Project conventions auto-applied for this repository"
+alwaysApply: true
+---
+
+# {{purpose}}
+
+## Stack
+
+{{stack}}{{#if runtime}} (on {{runtime}}{{#if services_str}}: {{services_str}}{{/if}}){{/if}}{{#if deploy_targets}} — deploys to {{deploy_targets}}{{/if}}
+
+## Operating Principles
+
+1. **Plan first** for multi-file changes.
+2. **Use Cursor's edit + shell tools** as you normally would.
+3. **Subagents** are scaffolded in `.cursor/agents/`. Cursor reads them
+   alongside `.claude/agents/` and `.codex/agents/` if present.
+
+{{#if constraints}}
+## Special Constraints
+
+{{constraints}}
+{{/if}}
