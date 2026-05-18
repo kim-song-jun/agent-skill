@@ -7,10 +7,66 @@
 ## [미출시]
 - `harness-thrift` v2 summariser — Claude Code programmatic compact API
   출시 시 도입 (현재 v1 advisory).
-- 9개의 per-platform impl spec 구현 (agent-all + visual-qa × 4 플랫폼 +
-  harness-thrift 분해) — 설계는 아래에 완료.
-- `harness-explore` 및 `harness-debug` 구현 — 설계 완료.
-- hook precedence integration spec의 라이브 CC 검증.
+- 라이브 CC + 플랫폼별 CLI 검증
+  (`2026-05-18-cli-runtime-verification-checklist.md` +
+  `2026-05-18-hook-precedence-integration.md`).
+- Anthropic SDK / OpenAI SDK / Vertex SDK 실제 API 연결 (현재 mock
+  toolCaller 사용).
+
+## 6개 신규 플러그인 + 플랫폼별 구현 — 2026-05-18 (commit 0aa3cea)
+
+10개 병렬 agents가 6개 신규 마켓플레이스 플러그인 + 4개 기존 플랫폼
+플러그인의 agent-all + visual-qa 구현을 완료. 마켓플레이스는 이제 17개
+플러그인 (이전 11개).
+
+### 신규 플러그인 (6)
+
+- `harness-thrift-cursor` (v0.1.0) — Cursor용 Theme B 포트. 단일
+  `.cursor/rules/thrift.mdc` 규칙 + advisory-only audit; 프로그래매틱
+  hooks 없음. 5 phase (cache prime 없음). 24 테스트.
+- `harness-thrift-copilot` (v0.1.0) — Copilot CLI용 Theme B 포트.
+  `.github/hooks/*.json` 패처, `store_memory` 브릿지 (파일 fallback),
+  OpenAI 레이트 테이블. 6 phase. 32 테스트.
+- `harness-thrift-codex` (v0.1.0) — Codex CLI용 Theme B 포트.
+  TOML-aware `~/.codex/config.toml` 패처 (센티널 코멘트 bracketing),
+  0.5× cache 배율 OpenAI 레이트 테이블. 6 phase. 24 테스트.
+- `harness-thrift-gemini` (v0.1.0) — Gemini CLI용 Theme B 포트 (가장
+  무거운 포트). `~/.gemini/settings.json` user-scope 패처, 별도의
+  cacheRead/cacheWrite/storage-hour 항을 가진 Vertex AI 레이트 테이블,
+  min-token gate, free-tier 단락 ROI 평가. 5 phase. 30 테스트.
+- `harness-explore` (v0.1.0) — Theme D (신규). 5-phase 파이프라인
+  코드베이스 탐색: preflight → fan-out → aggregate → deps → render.
+  병렬 디스패치 tree walker, 의존성 그래프 추출 (TS/Python/Rust/Go
+  regex), `git rev-parse HEAD` 캐시, `/explore where` + `/explore deps`
+  쿼리. 46 테스트.
+- `harness-debug` (v0.1.0) — Theme E (신규). 6-phase 디버깅 워크플로:
+  preflight → reproduce → isolate → hypothesize → verify → summarise.
+  `superpowers:systematic-debugging` WRAP. 10-포맷 에러 파서, ddmin +
+  git-bisect lib, 가설 트래커, repro suggester. 66 테스트.
+
+### 플랫폼별 구현 (기존 4개 플러그인 확장)
+
+- agent-all-cursor + visual-qa-cursor (55 신규 테스트).
+- agent-all-copilot + visual-qa-copilot (126 신규 테스트).
+- agent-all-codex + visual-qa-codex (99 신규 테스트).
+- agent-all-gemini + visual-qa-gemini (39 신규 테스트).
+
+### 인프라
+
+- `marketplace.json`: 17 플러그인 (6개 추가).
+- `tests/lib/cross-platform-{manifest,isolation}.test.mjs`: 확장.
+- `scripts/sync-lib.mjs`: `VENDORED_RENDER_ONLY`가 이제 11개 플러그인
+  `bin/lib/` 디렉토리 커버 (19 vendored `render.mjs` 파일 추적).
+
+### 결과
+
+981/981 tests pass (이전 427, +554). 작업 폴더 깨끗함.
+
+### 여전히 보류 중
+
+- 라이브 CC + 플랫폼별 CLI 검증 (sandbox 불가).
+- Anthropic/OpenAI/Vertex SDK 실제 API 연결.
+- CLI가 토큰 노출 안 할 때 토큰 카운팅 정확도 개선.
 
 ## sub-project spec + host invoker + thrift 설치 — 2026-05-18
 

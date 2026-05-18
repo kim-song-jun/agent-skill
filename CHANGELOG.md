@@ -7,10 +7,74 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 ## [Unreleased]
 - `harness-thrift` v2 summariser using Claude Code programmatic compact
   API (once surfaced) — currently v1 advisory.
-- Implementations of the 9 per-platform impl specs (agent-all + visual-qa
-  × 4 platforms + harness-thrift decomposition) — designs landed below.
-- `harness-explore` and `harness-debug` implementations — designs landed.
-- Live CC verification of hook precedence integration spec.
+- Live CC + per-platform CLI verification per
+  `2026-05-18-cli-runtime-verification-checklist.md` and
+  `2026-05-18-hook-precedence-integration.md`.
+- Anthropic SDK / OpenAI SDK / Vertex SDK actual API hookups (currently
+  mock toolCallers used in tests).
+
+## 6 new plugins + per-platform implementations — 2026-05-18 (commit 0aa3cea)
+
+10 parallel agents shipped 6 new marketplace plugins + filled in the
+agent-all + visual-qa implementations across all 4 existing platform
+plugins. Marketplace now lists 17 plugins (was 11).
+
+### New plugins (6)
+
+- `harness-thrift-cursor` (v0.1.0) — Theme B port for Cursor. Single
+  `.cursor/rules/thrift.mdc` rule + advisory-only audit; no programmatic
+  hooks. 5 phases (no Phase 4 cache prime). 24 tests.
+- `harness-thrift-copilot` (v0.1.0) — Theme B port for Copilot CLI.
+  `.github/hooks/*.json` patcher, `store_memory` bridge with file
+  fallback, OpenAI rate table. 6 phases. 32 tests.
+- `harness-thrift-codex` (v0.1.0) — Theme B port for Codex CLI.
+  TOML-aware `~/.codex/config.toml` patcher with sentinel comment
+  bracketing, OpenAI rate table with 0.5× cache multiplier. 6 phases.
+  24 tests.
+- `harness-thrift-gemini` (v0.1.0) — Theme B port for Gemini CLI
+  (heaviest port). `~/.gemini/settings.json` user-scope patcher, Vertex
+  AI rate table with separate cacheRead/cacheWrite/storage-hour terms,
+  min-token gate, free-tier short-circuit ROI evaluator. 5 phases.
+  30 tests.
+- `harness-explore` (v0.1.0) — Theme D (new). Codebase exploration
+  with 5-phase pipeline: preflight → fan-out → aggregate → deps →
+  render. Parallel-dispatch tree walker, dependency graph extraction
+  (TS/Python/Rust/Go regex), cache keyed by `git rev-parse HEAD`,
+  `/explore where` + `/explore deps` queries. 46 tests.
+- `harness-debug` (v0.1.0) — Theme E (new). 6-phase debugging workflow:
+  preflight → reproduce → isolate → hypothesize → verify → summarise.
+  WRAPS `superpowers:systematic-debugging`. 10-format error parser,
+  ddmin + git-bisect lib, hypothesis tracker, repro suggester. 66 tests.
+
+### Per-platform implementations (existing 4 plugins extended)
+
+- agent-all-cursor + visual-qa-cursor (55 new tests) — vendored lib +
+  plan-parser, state-rw, page-result-collector, report-renderer.
+- agent-all-copilot + visual-qa-copilot (126 new tests) — dispatch-task,
+  await-wave, memory-bridge, cost-tracker + visual-qa siblings.
+  bin/install-hooks.mjs registers subagentStop.
+- agent-all-codex + visual-qa-codex (99 new tests) — dispatch-strategy,
+  codex-agent-dispatch/wait, sequential-dispatch.
+  bin/install-hook.mjs merges TOML into ~/.codex/config.toml.
+- agent-all-gemini + visual-qa-gemini (39 new tests) — subprocess-fleet,
+  result-collector, tmp-gc, cost-accumulator (3-path).
+
+### Infrastructure
+
+- `marketplace.json`: 17 plugins (added 6).
+- `tests/lib/cross-platform-{manifest,isolation}.test.mjs`: extended.
+- `scripts/sync-lib.mjs`: `VENDORED_RENDER_ONLY` now covers 11 plugin
+  `bin/lib/` dirs (19 vendored `render.mjs` files tracked).
+
+### Result
+
+981/981 tests pass (was 427, +554). Working tree clean.
+
+### Still deferred
+
+- Live CC + per-platform CLI verification (sandbox unavailable).
+- Anthropic/OpenAI/Vertex SDK actual API hookups.
+- Token counting accuracy improvements where CLIs don't expose tokens.
 
 ## sub-project specs + host invokers + thrift installer — 2026-05-18
 
