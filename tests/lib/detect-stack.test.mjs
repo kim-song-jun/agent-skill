@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import {
   detectStack,
+  detectProject,
   parseComposeServices,
 } from "../../plugins/harness-builder/skills/agent-init/lib/detect-stack.mjs";
 
@@ -83,4 +84,39 @@ test("parseComposeServices: hyphenated service names are captured", () => {
     "    image: y",
   ].join("\n");
   assert.deepEqual(parseComposeServices(text), ["my-service", "nginx-proxy"]);
+});
+
+test("detectProject: node-ts has no docker → runtime null", () => {
+  assert.deepEqual(detectProject(fx("node-ts")),
+    { stack: "typescript", runtime: null, services: [] });
+});
+
+test("detectProject: docker-only → stack unknown, runtime docker", () => {
+  assert.deepEqual(detectProject(fx("docker-only")),
+    { stack: "unknown", runtime: "docker", services: [] });
+});
+
+test("detectProject: node-ts-docker → services parsed and sorted", () => {
+  assert.deepEqual(detectProject(fx("node-ts-docker")),
+    { stack: "typescript", runtime: "docker", services: ["postgres", "redis"] });
+});
+
+test("detectProject: python-compose-only → compose.yaml is also detected", () => {
+  assert.deepEqual(detectProject(fx("python-compose-only")),
+    { stack: "python", runtime: "docker", services: ["db"] });
+});
+
+test("detectProject: python-requirements-only → minimal python project", () => {
+  assert.deepEqual(detectProject(fx("python-requirements-only")),
+    { stack: "python", runtime: null, services: [] });
+});
+
+test("detectProject: non-existent dir → all defaults", () => {
+  assert.deepEqual(detectProject(fx("__nonexistent__")),
+    { stack: "unknown", runtime: null, services: [] });
+});
+
+test("detectProject: Dockerfile + malformed compose → services []", () => {
+  assert.deepEqual(detectProject(fx("dockerfile-bad-compose")),
+    { stack: "unknown", runtime: "docker", services: [] });
 });

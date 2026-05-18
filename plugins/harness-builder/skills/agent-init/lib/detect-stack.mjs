@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const RULES = [
@@ -9,12 +9,26 @@ const RULES = [
   { stack: "go",         check: (d) => existsSync(join(d, "go.mod")) },
 ];
 
-export function detectStack(projectDir) {
-  if (!existsSync(projectDir)) return "unknown";
+const COMPOSE_CANDIDATES = [
+  "docker-compose.yml",
+  "docker-compose.yaml",
+  "compose.yml",
+  "compose.yaml",
+];
+
+function detectStackInner(projectDir) {
   for (const r of RULES) {
     if (r.check(projectDir)) return r.stack;
   }
   return "unknown";
+}
+
+function findComposeFile(projectDir) {
+  for (const name of COMPOSE_CANDIDATES) {
+    const p = join(projectDir, name);
+    if (existsSync(p)) return p;
+  }
+  return null;
 }
 
 export function parseComposeServices(text) {
@@ -35,7 +49,29 @@ export function parseComposeServices(text) {
     const m = /^ {2}([A-Za-z0-9_.-]+)\s*:\s*$/.exec(raw);
     if (m) out.push(m[1]);
     // Lines deeper than 2 spaces (service body) are ignored.
-    // Anything else (tabs, 4-space, etc.) is silently skipped.
   }
   return out.sort();
+}
+
+export function detectProject(projectDir) {
+  if (!existsSync(projectDir)) {
+    return { stack: "unknown", runtime: null, services: [] };
+  }
+  const stack = detectStackInner(projectDir);
+  const composePath = findComposeFile(projectDir);
+  const hasDockerfile = existsSync(join(projectDir, "Dockerfile"));
+  const runtime = (hasDockerfile || composePath) ? "docker" : null;
+  let services = [];
+  if (composePath) {
+    try {
+      services = parseComposeServices(readFileSync(composePath, "utf-8"));
+    } catch {
+      services = [];
+    }
+  }
+  return { stack, runtime, services };
+}
+
+export function detectStack(projectDir) {
+  return detectProject(projectDir).stack;
 }
