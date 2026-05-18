@@ -2,23 +2,20 @@
 
 # agent-skill
 
-Claude Code 플러그인 마켓플레이스. **`/agent-init`** 및 비용 제약 없음을 기본으로 하는 에이전트 하네스 생태계.
-
-한 명령어(`/agent-init`)로 완전한 에이전트 하네스를 부트스트랩합니다: CLAUDE.md, 역할 기반 서브에이전트 파일, 훅, 플러그인 와이링, 그리고 (기본값으로) 완전한 Floor 테마 번들을 포함하여 시각 QA 및 멀티웨이브 파이프라인 실행이 가능합니다.
+17개 플러그인을 가진 Claude Code 마켓플레이스. 5개 테마 커버: **builder** (`/agent-init` 스캐폴딩), **floor** (cost-unrestricted `/visual-qa` + `/agent-all`), **thrift** (`/thrift` long-session 비용 최적화), **explore** (`/explore` 코드베이스 매핑), **debug** (`/debug` 체계적 디버깅). 각 런타임 테마는 크로스 도구 포팅을 위한 플랫폼별 포트(Cursor, GitHub Copilot CLI, Codex CLI, Gemini CLI)를 함께 제공합니다.
 
 ## 목차
 
 - [빠른 시작](#빠른-시작)
-- [동작 원리](#동작-원리)
-- [스택별 예시](#스택별-예시)
+- [플러그인 업데이트 방법](#플러그인-업데이트-방법)
+- [5개 테마](#5개-테마)
+- [전체 17개 플러그인](#전체-17개-플러그인)
 - [명령어 레퍼런스](#명령어-레퍼런스)
-- [테마](#테마)
-- [구성 패턴](#구성-패턴)
-- [Codex / Claude Code 외 플랫폼](#codex--claude-code-외-플랫폼)
+- [스택별 예제](#스택별-예제)
 - [아키텍처](#아키텍처)
-- [로드맵](#로드맵)
-- [자주 묻는 질문](#자주-묻는-질문)
+- [크로스 플랫폼 지원](#크로스-플랫폼-지원)
 - [버전 관리](#버전-관리)
+- [FAQ](#faq)
 
 ## 빠른 시작
 
@@ -26,669 +23,361 @@ Claude Code 플러그인 마켓플레이스. **`/agent-init`** 및 비용 제약
 /plugin marketplace add https://github.com/kim-song-jun/agent-skill
 /plugin install harness-builder@agent-skill
 /plugin install harness-floor@agent-skill
+/plugin install harness-thrift@agent-skill       # 신규 — long-session 비용 최적화
+/plugin install harness-explore@agent-skill      # 신규 — 코드베이스 매핑
+/plugin install harness-debug@agent-skill        # 신규 — 체계적 디버깅
 ```
 
-모든 git 저장소에서:
+git 저장소에서:
 
 ```
-/agent-init                        # 완전한 Floor 하네스 (기본값)
-/agent-init --theme=lite           # 최소: CLAUDE.md + 에이전트 + 훅만
-/agent-init --theme=thrift         # 예약됨: 토큰 비용 최적화 (Theme B 계획 중)
-/agent-init --size=large --force   # 9개 에이전트 로스터로 재구축
+/agent-init                        # 전체 Floor 하니스 (기본값)
+/agent-init --theme=lite           # 최소: CLAUDE.md + agents + hooks만
+/agent-init --theme=floor          # 명시적 Floor (기본값)
+/agent-init --theme=thrift         # 출시됨 — Theme B cost-conscious
+/agent-init --size=large --force   # 9-agent 로스터로 재구성
 ```
 
-다음 중 하나를 실행합니다:
+이후 실행 가능:
 
 ```
-/agent-all "사용자 가입 폼 추가"                    # 전체 파이프라인 → PR
-/agent-all "불안정한 테스트 수정" --loop --max-iter=5    # 성공할 때까지 반복
-/visual-qa                                          # 스크린샷 매트릭스 + LLM 분석
+/agent-all "사용자 가입 폼 추가"                # 전체 파이프라인 → PR (Theme C)
+/agent-all "flaky 테스트 수정" --loop --max-iter=5  # 통과까지 반복
+/visual-qa                                      # 스크린샷 매트릭스 + LLM 분석
+/thrift                                         # 신규 — 비용 최적화 훅 설정
+/explore                                        # 신규 — 코드베이스 맵 빌드
+/explore where Foo                              # 캐시된 맵에 쿼리
+/debug "auth flow npm test 실패"                # 신규 — 체계적 디버깅
 ```
 
-## 동작 원리
+## 플러그인 업데이트 방법
 
-### `/agent-init` 생명주기
+플러그인은 정기적으로 업데이트됩니다. 호스트에 따라 3가지 업데이트 경로:
 
-`/agent-init`은 7개 단계를 순차적으로 실행합니다. 각 단계는 아티팩트를 생성하고 `.claude/.agent-init-state.json` 상태 파일을 업데이트합니다.
+### Claude Code (주 호스트)
 
-#### Phase 0 — Preflight (사전 점검)
-- **확인:** git 저장소 존재, 플러그인 버전, Node.js
-- **생성:** 초기 `.claude/.agent-init-state.json`, `phases: [{phase: 0, ...}]`
-- **종료 가능:** 확인 실패 시 (예: git 저장소 아님)
+```
+# 단일 플러그인을 마켓플레이스의 최신 버전으로 업데이트
+/plugin update harness-floor@agent-skill
 
-#### Phase 1 — Discover (발견, 브레인스토밍)
-- **실행:** `superpowers:brainstorming` — 프로젝트 의도 파악
-- **실행:** `lib/detect-stack.mjs` — `package.json`, `pyproject.toml`, `Cargo.toml` 스캔
-- **생성:** 발견 컨텍스트: `{ purpose, stack, size, qa_personas, deploy_targets, constraints }`
-- **상태 업데이트:** `discovery: {...}`
+# 이 마켓플레이스의 모든 플러그인 한 번에 업데이트
+/plugin update --marketplace agent-skill
 
-#### Phase 2 — CLAUDE.md (렌더링)
-- **렌더링:** 발견 컨텍스트 기반 `templates/CLAUDE.md.hbs`
-- **생성:** 프로젝트 루트 `CLAUDE.md` (프로젝트 목적, 에이전트 로스터, 운영 원칙)
-- **사용:** `lib/render.mjs` (Handlebars 템플릿)
-- **상태 업데이트:** `phases: [..., {phase: 2, timestamp, claude_md: "..."}]`
+# 설치된 모든 플러그인 업데이트 (모든 마켓플레이스 통틀어)
+/plugin update --all
 
-#### Phase 3 — Agents (병렬 분산)
-- **실행:** `superpowers:dispatching-parallel-agents`
-- **각 역할별** (planner, dev, designer, qa-*, tester, reviewer 등):
-  - `templates/agents/{role}.md.hbs` 렌더링
-  - `.claude/agents/{role}.md` 생성
-  - 각 에이전트는 정규 템플릿 구조를 통해 운영 원칙이 포함됨
-- **생성:** `.claude/agents/*.md` (6–9개 파일, `--size`에 따라)
-- **상태 업데이트:** `agents: [{role, path, hash}, ...]`
+# 먼저 마켓플레이스 목록 새로고침 (새 플러그인이 있다고 의심되는 경우)
+/plugin marketplace update agent-skill
+/plugin install harness-explore@agent-skill   # 새로 등록된 플러그인 설치
+```
 
-#### Phase 4 — Hooks & Config (훅 및 설정)
-- **복사:** `templates/hooks/*.mjs` → `.claude/hooks/`
-  - `cache-heal.mjs` — SessionStart에서 context-mode 심볼릭 링크 복구
-  - `context-mode-router.mjs` — 큰 Bash 출력 가능성 시 라우팅 팁 발행
-  - `session-summary.mjs` — Stop에서 의사결정 로그 추가
-- **스모크 테스트:** 각 훅 한 번 실행 (드라이 런) 문법 검증
-- **렌더링:** 발견된 값으로 `settings.local.json.hbs` 렌더링
-- **병합:** `lib/manifest-merge.mjs`를 통해 `.claude/settings.local.json`에 병합 (기존 키 덮어쓰기 안 함)
-- **상태 업데이트:** `hooks: [{name, path, tested: true}, ...]`
+업데이트 후, 전역 `SessionStart` 훅(`context-mode-cache-heal.mjs`)이 다음 Claude Code 세션 시작 시 stale 플러그인 심볼릭링크를 자동으로 healing합니다. 플러그인 동작이 옛 버전에서 멈춘 것 같으면 Claude Code를 재시작하거나 `/plugin reload` 실행.
 
-#### Phase 4b/4c — Floor 테마 (if `--theme=floor`)
-- **렌더링 및 생성:**
-  - `.visual-qa.json` — harness-floor의 visual-qa 설정 템플릿으로부터
-    - 기본 baseUrl: `http://localhost:3000` (또는 `package.json` 스크립트에서 감지)
-    - 기본 뷰포트: 모바일 (375px), 태블릿 (768px), 데스크톱 (1200px)
-    - 컴포넌트 스켈레톤: `header`, `primary-cta` 등
-  - `.agent-all.json` — harness-floor의 agent-all 설정 템플릿으로부터
-    - 기본 breakCondition: `npm test` (또는 `pytest`, `cargo test` 스택에 따라)
-    - 기본 루프: 비활성화 (런타임에 `--loop` 전달)
-    - 웨이브 크기: 기본값 `medium`
+### 플랫폼별 CLI 호스트 (Codex / Copilot / Gemini / Cursor)
 
-#### Phase 5 — Wire & commit (와이어 및 커밋)
-- **실행:** `lib/plugin-scan.mjs`
-  - 필요한 플러그인 누락 확인
-  - 사용자용 설치 명령어 표시
-- **업데이트:** `.gitignore` (`.agent-init-state.json`, `.visual-qa/` 캐시 추가)
-- **생성:** 단일 부트스트랩 커밋: `"initial: /agent-init --theme={theme} --size={size}"`
-- **출력:** 생성된 파일 요약 + 플러그인 설치 힌트
-- **최종 상태:** `phases: [..., {phase: 5, commit: "abc123...", installed: [...]}]`
+각 플랫폼은 자체 업데이트 메커니즘을 가집니다. 이 플러그인들은 `harness-floor-<platform>`, `harness-thrift-<platform>`, `harness-builder-<platform>` 아래에 있습니다:
 
-**Ctrl-C 후 재개:** `--resume`을 전달하여 마지막 성공한 단계부터 계속합니다.
-
-### `/agent-all` 생명주기
-
-`/agent-all`은 7개 단계를 실행하며, phase 3만 병렬 분산 지점입니다.
-
-| 단계 | 이름 | 소요시간 | 위임 대상 | 생성 결과 |
-|------|------|---------|----------|---------|
-| 0 | Preflight | <1초 | 로컬 점검 | `.agent-all-state.json` |
-| 1 | Intent | 1–2분 | `superpowers:brainstorming` (자유형) 또는 작업 파일 로드 | 구조화된 작업 + 수락 |
-| 2 | Plan | 2–5분 | `superpowers:writing-plans` | 상세 스펙 (수락 + 작업 목록) |
-| 3 | Dispatch | 5–60분 | `lib/wave-builder.mjs` + `superpowers:subagent-driven-development` | PR 브랜치 + 웨이브별 커밋 |
-| 4 | Gate | 2–10분 | 웨이브 수준 QA 리뷰 서브에이전트 | 품질 보고서; 실패 시 재시도 |
-| 5 | PR | <1분 | `gh pr create` + 템플릿 렌더링 | GitHub PR 생성 |
-| 6 | Loop eval | <1초 | `lib/loop-evaluator.mjs` | breakCondition 확인; 반복 또는 종료 |
-
-**웨이브 빌더 로직:** `lib/wave-builder.mjs`는 계획의 작업 목록을 읽고:
-1. 파일 겹침으로 작업 그룹화 (파일 공유 작업 → 한 웨이브로 직렬화)
-2. 독립 작업을 별도 웨이브에 할당 (병렬 실행 가능)
-3. 병렬 웨이브를 `.agent-all.json`의 `maxParallel`로 제한
-
-각 웨이브는 `subagent-driven-development` 배치이며, 서브에이전트는 동일 브랜치에 커밋합니다.
-
-### `/visual-qa` 생명주기
-
-6개 단계. Phase 3는 페이지별로 분산.
-
-| 단계 | 이름 | 생성 결과 |
-|------|------|---------|
-| 0 | Preflight | `.visual-qa-state.json` |
-| 1 | Config load | `.visual-qa.json`에서 baseUrl, 페이지, 뷰포트 로드 |
-| 2 | Health check | baseUrl 활성 여부 확인 |
-| 3 | Capture (페이지별 분산) | 스크린샷 × 뷰포트; 페이지별 LLM 분석 |
-| 4 | Diff | 픽셀 수준 + 이전 실행 대비 시각적 차이 |
-| 5 | Report | `docs/visual-qa/{slug}/report.md` + 요약 |
-
-### 훅 트리거 흐름
-
-세 가지 훅이 `/agent-init`으로 설치되고 Claude Code 자체에서 트리거됩니다:
-
-**SessionStart** → `hooks/cache-heal.mjs`
-- context-mode 플러그인 심볼릭 링크 자동 복구 (Claude Code가 자동 업데이트한 경우)
-- 프로젝트 수준 하네스 존재 시 CLAUDE.md 힌트 발행
-
-**PreToolUse** (matcher: Bash) → `hooks/context-mode-router.mjs`
-- Bash 명령어가 큰 출력 가능성 감지 (예: `git log`, 테스트 러너)
-- 라우팅 팁 발행: "대신 context-mode 도구 사용"
-
-**Stop** → `hooks/session-summary.mjs`
-- 로컬 마크다운 파일에 세션 의사결정 로그 추가
-- 여러 세션 간 의사결정 이력 추적에 유용
-
-**전역 훅 (프로젝트 외부):** `plugins/harness-builder/hooks/context-mode-cache-heal.mjs`
-- 모든 Claude Code SessionStart에서 실행 (모든 프로젝트)
-- Claude Code가 플러그인을 자동 업데이트할 때 심볼릭 링크 자동 복구
-
-### 플러그인 로딩
-
-1. `/plugin marketplace add <git-url>`로 Claude Code에 마켓플레이스 등록
-2. `/plugin install <name>@agent-skill`로 플러그인을 `~/.claude/plugins/cache/<plugin>@<marketplace>/<version>/`에 클론
-3. `~/.claude/plugins/installed_plugins.json`에서 `installPath` 및 버전 추적
-4. SessionStart의 전역 cache-heal 훅이 Claude Code 플러그인 자동 업데이트 시 깨진 심볼릭 링크 자동 감지 및 복구
-
-## 스택별 예시
-
-### React + Next.js
-
-**설정:**
 ```bash
-npx create-next-app@latest my-app --typescript --eslint
-cd my-app
-git init && git add -A && git commit -m "initial: next.js"
+# Codex CLI
+codex plugins update                       # 전체
+codex plugins update harness-floor-codex   # 하나
+
+# GitHub Copilot CLI
+gh copilot plugins update                  # 전체
+gh copilot plugins update harness-floor-copilot
+
+# Gemini CLI (a.k.a. antigravity)
+gemini extensions update                   # 전체
+gemini extensions update harness-floor-gemini
+
+# Cursor — 플러그인 로더 없음; 번들 install 렌더러 재실행
+node plugins/harness-builder-cursor/bin/init.mjs /path/to/project --force
+node plugins/harness-floor-cursor/bin/init.mjs /path/to/project --force
+node plugins/harness-thrift-cursor/bin/install.mjs /path/to/project --force
 ```
 
-**`/agent-init` 실행:**
+렌더러 스타일 플러그인(`harness-explore`, `harness-debug`, 플랫폼별 `bin/install.mjs` 스크립트)의 경우, 업데이트는 최신 플러그인 코드를 pull한 후 `--force`로 install 명령을 재실행하는 것을 의미합니다. 렌더러는 idempotent: 재실행해도 hooks를 중복 등록하지 않음 (기존 항목을 `thrift-` / `floor-` 명령 경로 센티널로 감지 — `docs/superpowers/specs/2026-05-18-hook-precedence-integration.md` 참조).
+
+### 클린 인스톨이 필요할 때
+
+플러그인 업데이트가 실패하거나 깨끗한 상태를 원할 때:
+
 ```
-/agent-init
+/plugin uninstall harness-floor@agent-skill
+/plugin marketplace remove agent-skill
+/plugin marketplace add https://github.com/kim-song-jun/agent-skill
+/plugin install harness-floor@agent-skill
 ```
 
-동작 방식:
-- `detect-stack`이 `typescript` 감지 (tsconfig.json + package.json)
-- 브레인스토밍에서 프로젝트 크기 질문 → 실제 앱으로 `medium` 선택
-- 6개 에이전트 생성: planner, dev, designer, qa-general, tester, reviewer
-- `.visual-qa.json` 시드:
-  - `baseUrl: http://localhost:3000`
-  - 뷰포트: 모바일 (375), 태블릿 (768), 데스크톱 (1200)
-  - 컴포넌트: `header`, `primary-cta` (스켈레톤)
-- `.agent-all.json` breakCondition: `npm test`
+플러그인이 작성한 프로젝트별 아티팩트(config 파일, 훅 스크립트)는 외과적으로 되돌리기도 가능:
 
-**`/agent-all`로 반복:**
 ```bash
-npm run dev   # 다른 터미널에서
-```
-```
-/agent-all "Google OAuth 로그인 추가 및 프로필 이미지 업로드"
-```
-
-결과: 인증 흐름, 보호된 라우트, 프로필 UI를 포함한 완전한 PR.
-
-**시각 QA 실행:**
-```
-/visual-qa --slug="oauth-feature"
+# 다른 플러그인의 hooks는 건드리지 않고 thrift의 instrument 레이어만 제거
+node plugins/harness-thrift/bin/install.mjs /path/to/project --uninstall
+# 각 thrift 포트에 대해 동일 — `thrift-` 센티널로 lib/settings-patcher unpatch 실행
 ```
 
-출력: `docs/visual-qa/oauth-feature/report.md` (모든 페이지 × 뷰포트 스크린샷 + LLM 분석).
+## 5개 테마
 
-### Python FastAPI
+| 테마 | 플러그인 패밀리 | 자세 | 적합한 경우 |
+|---|---|---|---|
+| **A** | `harness-builder` (+ 4 플랫폼 siblings) | 설치 스캐폴딩 (one-shot, 저비용) | 신규 프로젝트 시작; 기존 프로젝트에 Claude Code 도입 |
+| **C** | `harness-floor` (+ 4 플랫폼 siblings) | Cost-unrestricted 멀티에이전트 파이프라인 | 큰 기능, visual QA, 병렬 wave 실행 |
+| **B** | `harness-thrift` (+ 4 플랫폼 siblings) | Cost-conscious long-session 런타임 | 컨텍스트 축적이 비용을 주도하는 ≥1시간 세션 |
+| **D** | `harness-explore` | 코드베이스 매핑 (읽기 전용) | 새 코드베이스 온보딩; "X는 어디 있나" 쿼리 |
+| **E** | `harness-debug` | 체계적 디버깅 워크플로 | 다중 시간 디버깅 마라톤; 잡기 힘든 버그 bisecting |
 
-**설정:**
-```bash
-mkdir api && cd api
-python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
-cat > pyproject.toml <<'EOF'
-[build-system]
-requires = ["setuptools", "wheel"]
+테마는 조합 가능. 일반적인 "기능 출시" 세션은 A (일회성 `/agent-init`) → C (`/agent-all "..."`)를 사용하며, B는 비용 절감을 위해 백그라운드에서 보이지 않게 동작하고, E + D는 버그 헌팅 및 방향 잡기에 온디맨드로 활용됩니다.
 
-[project]
-name = "api"
-version = "0.1.0"
-dependencies = ["fastapi", "uvicorn[standard]"]
-EOF
-touch requirements.txt main.py
-git init && git add -A && git commit -m "initial: fastapi"
+## 전체 17개 플러그인
+
 ```
+harness-builder                ← A 코어 (Claude Code)
+harness-builder-cursor         ← Cursor용 A 포트
+harness-builder-copilot        ← Copilot CLI용 A 포트
+harness-builder-codex          ← Codex CLI용 A 포트
+harness-builder-gemini         ← Gemini CLI용 A 포트
 
-**`/agent-init` 실행:**
+harness-floor                  ← C 코어: /visual-qa + /agent-all
+harness-floor-cursor           ← Cursor용 C 포트
+harness-floor-copilot          ← Copilot CLI용 C 포트
+harness-floor-codex            ← Codex CLI용 C 포트
+harness-floor-gemini           ← Gemini CLI용 C 포트
+
+harness-thrift                 ← B 코어: /thrift
+harness-thrift-cursor          ← Cursor용 B 포트 (advisory-only)
+harness-thrift-copilot         ← Copilot CLI용 B 포트 (store_memory 브릿지)
+harness-thrift-codex           ← Codex CLI용 B 포트 (TOML config 패처)
+harness-thrift-gemini          ← Gemini CLI용 B 포트 (Vertex AI 레이트)
+
+harness-explore                ← D (단일 플랫폼 — Claude Code; 포트 연기)
+harness-debug                  ← E (단일 플랫폼 — Claude Code; 포트 연기)
 ```
-/agent-init --size=small
-```
-
-동작 방식:
-- `detect-stack`이 `python` 감지 (pyproject.toml)
-- 3개 에이전트: planner, dev, reviewer
-- `.agent-all.json`이 `breakCondition: npm test`로 생성 — **`pytest`로 변경해야 함:**
-  ```json
-  {
-    "loop": {
-      "breakCondition": "pytest",
-      "stableIters": 2
-    }
-  }
-  ```
-
-**루프로 반복:**
-```
-/agent-all "JWT 인증 미들웨어 및 토큰 갱신 추가" --loop --max-iter=5
-```
-
-에이전트가:
-1. 인증 미들웨어 + 테스트 계획
-2. 구현 분산
-3. `pytest` 실행 검증
-4. 테스트 실패 시 재시도 (최대 5회)
-5. 테스트가 연속 2회 통과 시 PR 생성
-
-### Rust CLI
-
-**설정:**
-```bash
-cargo new mycli && cd mycli
-git init && git add -A && git commit -m "initial: rust"
-```
-
-**lite 테마로 `/agent-init` 실행 (visual-qa 없음):**
-```
-/agent-init --theme=lite
-```
-
-동작 방식:
-- `detect-stack`이 `rust` 감지 (Cargo.toml)
-- 3개 에이전트: planner, dev, reviewer
-- `.visual-qa.json` 없음 (lite 테마)
-- `.agent-all.json`이 `breakCondition: cargo test`로 생성
-
-**반복:**
-```
-/agent-all "git 같은 워크플로우용 서브커맨드 추가" --loop --max-cost=25
-```
-
-### 모노레포 (npm workspaces)
-
-**설정:**
-```bash
-mkdir mono && cd mono && git init
-
-cat > package.json <<'EOF'
-{
-  "name": "mono",
-  "private": true,
-  "workspaces": [
-    "packages/app",
-    "packages/api",
-    "packages/shared"
-  ]
-}
-EOF
-
-mkdir -p packages/{app,api,shared}/src
-git add -A && git commit -m "initial: workspaces"
-```
-
-**`/agent-init` 실행:**
-```
-/agent-init --size=large
-```
-
-동작 방식:
-- `detect-stack`이 `javascript` 감지 (package.json의 workspaces; 단일 tsconfig 없음)
-- 9개 에이전트: planner, frontend-dev, backend-dev, designer, qa-frontend, qa-backend, qa-integration, tester, reviewer
-- `.agent-all.json`이 `breakCondition: npm test`로 생성 (모든 워크스페이스 테스트 실행)
-
-**모노레포 전체 기능:**
-```
-/agent-all "공유 인증 패키지 생성, app 및 api에 통합" --wave-size=large
-```
-
-에이전트가:
-1. 계획: 공유 패키지 생성, app 업데이트, api 업데이트, 통합 테스트
-2. 2개 웨이브로 분산 (공유 먼저, 그 후 app+api 병렬)
-3. `npm test`를 실행하여 모든 워크스페이스 검증
-4. 모든 변경사항이 포함된 단일 PR 생성
 
 ## 명령어 레퍼런스
 
-### `/agent-init` (harness-builder 플러그인)
+### `/agent-init` — Theme A
 
-**문법:**
+`CLAUDE.md`, `.claude/agents/`, 훅, 플러그인 와이어링, 그리고 (기본값) 전체 Floor 테마 번들을 부트스트랩.
+
 ```
-/agent-init [--theme=floor|lite|thrift] [--size=small|medium|large] [--qa=<persona>[,<persona>]] [--merge] [--force] [--dry-run] [--resume]
-```
-
-**플래그:**
-
-| 플래그 | 기본값 | 효과 | 예시 |
-|--------|-------|------|------|
-| `--theme` | `floor` | 번들: floor (비용 무제한 + visual-qa), lite (기본), thrift (예약) | `--theme=lite` |
-| `--size` | auto (discovery에서) | 에이전트 수: small (3), medium (6), large (9) | `--size=large` |
-| `--qa` | auto-detect | QA 페르소나 오버라이드 (쉼표 구분) | `--qa=api,ui,security` |
-| `--merge` | false | 기존 CLAUDE.md에 하네스 추가 (중단 대신) | `--merge` |
-| `--force` | false | 기존 CLAUDE.md + 에이전트 덮어쓰기 | `--force` |
-| `--dry-run` | false | 어떤 일이 일어날지 보기; 파일 작성 안 함 | `--dry-run` |
-| `--resume` | false | 마지막 성공한 단계부터 재개 (`.agent-init-state.json` 필요) | `--resume` |
-
-**예시:**
-
-1. **새 프로젝트, 완전한 하네스:**
-   ```
-   mkdir my-app && cd my-app && git init && git add -A && git commit -m "init"
-   /agent-init
-   ```
-   생성: CLAUDE.md, 6개 에이전트, 3개 훅, .visual-qa.json, .agent-all.json
-
-2. **기존 CLAUDE.md 유지, 하네스 섹션 추가:**
-   ```
-   /agent-init --merge
-   ```
-   기존 CLAUDE.md 콘텐츠 유지; "Agent Harness" 섹션 추가
-
-3. **9개 에이전트로 재구축 (대형 모노레포):**
-   ```
-   /agent-init --size=large --force
-   ```
-   모든 에이전트 + CLAUDE.md를 대형 로스터로 교체
-
-4. **phase 3 중 Ctrl-C 후 재개:**
-   ```
-   /agent-init --resume
-   ```
-   phase 0부터 다시 시작하지 않고 phase 4 (훅)부터 계속
-
-### `/agent-all` (harness-floor 플러그인)
-
-**문법:**
-```
-/agent-all <prompt-or-path> [--loop] [--max-iter=<N>] [--max-cost=<USD>] [--wave-size=small|medium|large] [--no-pr] [--no-brainstorm] [--resume] [--force] [--yes]
+/agent-init [--theme=floor|lite|thrift] [--size=small|medium|large] [--qa=<persona>[,<persona>]]
+            [--merge] [--force] [--dry-run] [--resume]
 ```
 
-**플래그:**
+플래그 요약: `--theme` 번들 선택 (floor 기본), `--size` 에이전트 수 (3/6/9), `--qa` QA persona 오버라이드, `--merge` 기존 CLAUDE.md에 추가, `--force` 덮어쓰기, `--dry-run` 미리보기, `--resume` 마지막 완료 phase부터 이어가기.
 
-| 플래그 | 기본값 | 효과 | 예시 |
-|--------|-------|------|------|
-| `<prompt-or-path>` | 필수 | 자유형 작업 프롬프트 또는 `.md` 작업 파일 경로 | `"OAuth 추가"` 또는 `docs/tasks/12.md` |
-| `--loop` | false | breakCondition이 성공할 때까지 반복 루프 활성화 | `--loop` |
-| `--max-iter` | 1 (off) | 테스트 실패 시에도 N 반복 후 중단 | `--max-iter=10` |
-| `--max-cost` | $500 | 전체 실행의 하드 비용 상한선 (USD) | `--max-cost=50` |
-| `--wave-size` | config에서 | `maxParallel` 웨이브 오버라이드 | `--wave-size=large` |
-| `--no-pr` | false | 계획 실행하되 PR 생성 안 함 (로컬만) | `--no-pr` |
-| `--no-brainstorm` | false | phase 1 의도 수집 건너뛰기; 기존 작업에서 시작 | `--no-brainstorm` |
-| `--resume` | false | 마지막 실패한 단계부터 재개 | `--resume` |
-| `--force` | false | 브랜치/PR 존재 시 덮어쓰기 | `--force` |
-| `--yes` | false | 모든 확인 자동 수락 | `--yes` |
+### `/agent-all` — Theme C
 
-**예시:**
+`.claude/agents/` 로스터에 대해 intent → plan → wave-dispatch → gate → PR 실행. 옵션 `--loop` 으로 break-condition 성공까지 반복.
 
-1. **자유형 프롬프트 → 한 번에 PR:**
-   ```
-   /agent-all "모듈화된 댓글 시스템 + 중재 큐 빌드"
-   ```
-   단계: brainstorm → plan → dispatch → gate → PR
+```
+/agent-all <prompt-or-path> [--loop] [--max-iter=<N>] [--max-cost=<USD>]
+           [--wave-size=small|medium|large] [--no-pr] [--no-brainstorm]
+           [--resume] [--force] [--yes]
+```
 
-2. **기존 작업 파일 로드 + 테스트 통과할 때까지 반복:**
-   ```
-   /agent-all docs/tasks/fix-race-condition.md --loop --max-iter=15
-   ```
-   phase 1 (brainstorm) 건너뜀; 작업 파일을 phase 2 계획에 사용.
-   `breakCondition` (npm test) 실패 시 최대 15회 재시도.
+### `/visual-qa` — Theme C
 
-3. **대형 기능, 비용 상한선, 병렬 3웨이브:**
-   ```
-   /agent-all "PostgreSQL → MongoDB 스키마 마이그레이션, 쿼리 업데이트" \
-     --wave-size=large \
-     --max-cost=100 \
-     --loop --max-iter=8
-   ```
+스크린샷 매트릭스 (pages × components × states × breakpoints + flows) 캡처, 이미지별 LLM 분석, 이전 실행과 diff, markdown+JSON 보고서 작성. `.visual-qa.json` config와 Playwright MCP 필요.
 
-4. **로컬 실행 (PR 없음), 커밋 전 미리보기:**
-   ```
-   /agent-all "기능 플래그 시스템 추가" --no-pr
-   ```
-   PR을 생성하지 않고 브랜치에 커밋합니다.
-
-### `/visual-qa` (harness-floor 플러그인)
-
-**문법:**
 ```
 /visual-qa [--resume] [--force] [--yes] [--budget=<USD>] [--skip-health] [--slug=<custom>]
 ```
 
-**플래그:**
+### `/thrift` — Theme B (신규)
 
-| 플래그 | 기본값 | 효과 | 예시 |
-|--------|-------|------|------|
-| `--resume` | false | 마지막 실패한 단계부터 재개 | `--resume` |
-| `--force` | false | 오늘의 실행 디렉토리 덮어쓰기 | `--force` |
-| `--yes` | false | 모든 확인 자동 수락 | `--yes` |
-| `--budget` | $50 | 비전 모델 분석의 비용 상한선 (USD) | `--budget=100` |
-| `--skip-health` | false | baseUrl 헬스 체크 건너뛰기 | `--skip-health` |
-| `--slug` | auto (timestamp) | `docs/visual-qa/` 아래 커스텀 디렉토리 이름 | `--slug="oauth-launch"` |
+Cost-conscious long-session 최적화 설정: context-mode 통합, 프롬프트 캐시 priming (opt-in), 임계값에서 summariser 훅, 세션 종료 시 audit.
 
-**예시:**
-
-1. **첫 실행 (기준 스크린샷 + 분석):**
-   ```
-   npm run dev   # :3000에서 서버 실행 확인
-   ```
-   ```
-   /visual-qa
-   ```
-   출력: `docs/visual-qa/2026-05-18-abc1234/report.md` (스크린샷 + LLM 분석)
-
-2. **비용 제한 분석 (더 적은 페이지/뷰포트):**
-   ```
-   /visual-qa --budget=20
-   ```
-
-3. **오늘의 실행 강제 덮어쓰기 (재캡처):**
-   ```
-   /visual-qa --force
-   ```
-
-4. **조직화용 커스텀 slug:**
-   ```
-   /visual-qa --slug="launch-checklist"
-   ```
-   출력: `docs/visual-qa/launch-checklist/report.md`
-
-## 테마 (기본값: `--theme=floor`)
-
-| 테마 | 번들에 포함 | 기본값? | 사용 시점 |
-|------|-----------|--------|---------|
-| `floor` | CLAUDE.md + 에이전트 + 3개 훅 + `.visual-qa.json` + `.agent-all.json` + Floor 섹션 | ✅ 기본값 | 대부분 프로젝트 — 비용 무제한, 모든 것 제공. 완전한 visual-QA + 멀티웨이브 루프. |
-| `lite` | CLAUDE.md + 에이전트 + 3개 훅만 | opt-in | 제약이 있는 환경 / 빠른 프로토타입. `.visual-qa.json` 또는 멀티 실행 비용 추적 없음. |
-| `thrift` | (예약됨) Theme B — context-mode 적극 활용, 프롬프트 캐시, 요약 훅 | 계획 중 | 비용 민감한 장시간 실행 프로젝트. 다음 릴리스. |
-
-## 구성 패턴
-
-### 패턴 1: 프롬프트에서 PR까지 한 번에
-
-```bash
-mkdir feature && cd feature && git init
-/agent-init
-/agent-all "Node에서 Markdown-to-PDF 변환기 CLI 빌드"
+```
+/thrift                          # 일회성 설정; idempotent
+/thrift summarise                # 수동 summariser 트리거
+/thrift audit                    # ad-hoc audit 보고서
+/thrift --force                  # .thrift.json 재시드
 ```
 
-결과: CLI + 테스트 + 문서가 포함된 단일 PR.
+`.thrift.json` config로 turn/token 임계값, summariser 모델, 캐시 priming 전략, audit 출력 경로 제어.
 
-### 패턴 2: 모든 테스트 통과할 때까지 반복 (자가 치유 루프)
+### `/explore` — Theme D (신규)
 
-```bash
-cd existing-repo
-/agent-all docs/tasks/12-fix-flaky-test.md --loop --max-iter=15
+병렬 디스패치 reader 서브에이전트를 통해 구조화된 코드베이스 맵 빌드 (~<2분 / 100K LOC), `git rev-parse HEAD` 키로 캐시, 캐시 대상 빠른 쿼리 명령 노출.
+
+```
+/explore                         # 맵 빌드/리프레시; docs/explore/<sha>-map.md 작성
+/explore where <symbol>          # 심볼 찾기; 먼저 캐시된 맵 확인 (O(1) lookup)
+/explore deps <file>             # 파일의 imports + reverse-imports 표시
 ```
 
-에이전트가 각 반복 후 테스트 실행. 모든 테스트가 연속 2회 통과 시 또는 최대 반복 도달 시 중단.
+### `/debug` — Theme E (신규)
 
-### 패턴 3: 시각적 회귀 게이트
+체계적 디버깅 워크플로: reproduce → isolate → hypothesize → verify. 상태는 `.debug-state.json`에 영속 (실패 desc, 시도된 hypotheses, checkpoints, 현재 candidate). 10개의 일반적 에러 포맷을 구조화된 citation으로 파싱. `superpowers:systematic-debugging` 스킬을 WRAP.
 
-```bash
-# `/agent-all` PR 병합 후:
-/visual-qa
-# docs/visual-qa/2026-05-18-abc1234/report.md에서 중요 문제 확인
-# 발견 시 후속 작업 생성:
-/agent-all "시각적 회귀 수정: 모바일 레이아웃 깨짐" --no-brainstorm
+```
+/debug "<failure description>"   # 처음부터 전체 워크플로
+/debug --resume                  # 마지막 체크포인트부터 이어가기
+/debug --bisect <good> <bad>     # git bisect 래퍼
 ```
 
-### 패턴 4: 무인 실행용 조율된 `/goal`
+## 스택별 예제
+
+### React + Next.js (full Floor + Thrift)
 
 ```bash
-/goal "모든 CI 통과하는 분석 대시보드 배포"
-/agent-all "분석 대시보드 빌드 (차트, 필터, 내보내기)" \
-  --loop --max-iter=15 --max-cost=80
+npx create-next-app@latest my-app --typescript --eslint
+cd my-app && git init && git add -A && git commit -m "initial: next.js"
 ```
 
-Claude Code가 세션을 유지합니다. 에이전트가 목표 달성 또는 비용 상한선 도달 시까지 반복.
+```
+/agent-init                                    # Floor 스캐폴드
+/thrift                                        # 비용 최적화 설정
+/agent-all "프로필 업로드 포함 Google OAuth 추가"
+/visual-qa --slug="oauth-feature"
+```
 
-### 패턴 5: 막혔을 때 Codex 구조
+### Python FastAPI (lite + manual breakCondition)
 
 ```bash
-/agent-all "복잡한 리팩터 작업" --wave-size=large
-# wave 3이 막히면 (타임아웃), phase 4 게이트가 호출:
-# /codex:rescue — 두 번째 의견 구현용
+mkdir api && cd api && git init && touch pyproject.toml main.py
+git add -A && git commit -m "initial: fastapi"
 ```
 
-(`codex@openai-codex` 플러그인이 `harness-floor`와 함께 설치되어 있어야 함)
+```
+/agent-init --size=small
+# .agent-all.json 편집: "breakCondition": "npm test" → "pytest"
+/agent-all "JWT auth 미들웨어 추가" --loop --max-iter=5
+```
 
-## 크로스플랫폼 플러그인
+### Rust CLI (lite)
 
-harness-builder 패턴은 다음 도구에서도 사용할 수 있습니다:
+```bash
+cargo new mycli && cd mycli && git init && git add -A && git commit -m "initial: rust"
+```
 
-| 도구 | 플러그인 | 진입점 |
-|------|--------|-------|
-| Codex CLI | `harness-builder-codex` | `/codex-init` |
-| GitHub Copilot CLI | `harness-builder-copilot` | `/copilot-init` |
-| Gemini CLI ("antigravity") | `harness-builder-gemini` | `/gemini-init` |
-| Cursor | `harness-builder-cursor` | 수동 설치 (`bin/install.sh`) |
+```
+/agent-init --theme=lite
+# .agent-all.json 자동 감지 "breakCondition": "cargo test"
+/agent-all "git 스타일 워크플로용 서브커맨드 추가" --loop --max-cost=25
+```
 
-설계 노트는 `docs/superpowers/specs/2026-05-18-cross-platform-plugins-design.md`를 참고하세요.
+### 낯선 코드베이스 온보딩
 
-## Codex / Claude Code 외 플랫폼
+```bash
+git clone https://github.com/some/large-repo
+cd large-repo
+```
 
-lib 모듈 (`plugins/*/skills/*/lib/*.mjs`)과 템플릿 (`*.hbs`, `*.json`)은 순수 Node.js / 순수 데이터 — 휴대 가능합니다. 단계 프롬프트는 Claude Code 스킬 규칙이며 다른 플랫폼에 맞게 조정이 필요합니다.
+```
+/agent-init --theme=lite       # 최소 스캐폴드
+/explore                       # 코드베이스 맵 빌드 (캐시됨)
+/explore where AuthService     # O(1) 캐시 lookup
+/explore deps src/auth/jwt.ts  # forward + reverse imports
+```
 
-### 순수 Codex CLI 사용
+### Flaky 테스트 디버깅
 
-`codex@openai-codex` 플러그인을 `harness-floor`와 함께 사용하면, `agent-all`의 phase 3 분산이 웨이브가 막혔을 때 `codex:rescue` 스킬로 Codex에 위임할 수 있습니다 — 어려운 작업에 대한 두 번째 의견으로 유용합니다.
-
-순수 Codex CLI 사용 (Claude Code 없음):
-- `agent-skill` lib 코드 설치: 저장소 클론 또는 `lib/` 파일 벤더링
-- 스킬 오케스트레이션을 Codex 프롬프트로 재구현 (phase 스펙이 좋은 원본 자료)
-- 훅 시스템은 Claude Code 고유; Codex에 해당 훅이 있으면 구현
-- 템플릿 조정 (Handlebars → Codex 프롬프트 템플릿)
-
-### Cursor, Zed, 기타 에디터
-
-템플릿과 lib는 재사용 가능; 오케스트레이션 레이어 (스킬 분산, 단계 실행)는 Claude Code 고유입니다. 다음을 수행할 수 있습니다:
-- 단계 프롬프트 내보내기 (참고: `docs/superpowers/*/`) 및 수동 실행
-- `lib/wave-builder.mjs` 로직을 빌드 시스템에 맞게 조정
-- 렌더링된 템플릿 (CLAUDE.md, 에이전트 파일)을 시작점으로 사용
+```
+/debug "tests/integration/checkout.test.ts가 flaky — ~30% 실행에서 실패"
+# Phase 1: reproduce → 실패 실행 캡처
+# Phase 2: isolate → ddmin으로 테스트 입력 최소화
+# Phase 3: hypothesize → 3개 후보 원인
+# Phase 4: verify → 각 가설 테스트
+# Phase 5: summarise → .debug/debug-log-<date>.md
+```
 
 ## 아키텍처
 
 ```
 agent-skill/
-├── plugins/
-│   ├── harness-builder/
-│   │   ├── plugin.json
-│   │   ├── skills/
-│   │   │   └── agent-init/
-│   │   │       ├── skill.md
-│   │   │       ├── lib/
-│   │   │       │   ├── detect-stack.mjs      # 스택 감지 (JS, Python, Rust 등)
-│   │   │       │   ├── render.mjs            # Handlebars 템플릿 렌더러
-│   │   │       │   ├── manifest-merge.mjs    # JSON 매니페스트 병합 (비파괴)
-│   │   │       │   └── plugin-scan.mjs       # 필수 플러그인 감지 + 와이어링
-│   │   │       └── templates/
-│   │   │           ├── CLAUDE.md.hbs         # 마스터 하네스 템플릿
-│   │   │           ├── agents/
-│   │   │           │   ├── planner.md.hbs
-│   │   │           │   ├── dev.md.hbs
-│   │   │           │   ├── designer.md.hbs
-│   │   │           │   ├── qa-*.md.hbs       # 동적 QA 페르소나
-│   │   │           │   ├── tester.md.hbs
-│   │   │           │   └── reviewer.md.hbs
-│   │   │           ├── hooks/
-│   │   │           │   ├── cache-heal.mjs
-│   │   │           │   ├── context-mode-router.mjs
-│   │   │           │   └── session-summary.mjs
-│   │   │           └── settings.local.json.hbs
-│   │   └── hooks/
-│   │       └── context-mode-cache-heal.mjs   # 전역 훅 (모든 프로젝트 대상)
-│   │
-│   └── harness-floor/
-│       ├── plugin.json
-│       └── skills/
-│           ├── agent-all/
-│           │   ├── skill.md
-│           │   ├── lib/
-│           │   │   ├── config-loader.mjs     # .agent-all.json 로드
-│           │   │   ├── wave-builder.mjs      # 작업 그룹화 → 웨이브 직렬화
-│           │   │   └── loop-evaluator.mjs    # breakCondition 확인, 루프 제어
-│           │   └── templates/
-│           │       ├── pr-body.md.hbs        # PR 설명 템플릿
-│           │       └── .agent-all.json.hbs   # 기본 설정
-│           │
-│           └── visual-qa/
-│               ├── skill.md
-│               ├── lib/
-│               │   ├── config-loader.mjs     # .visual-qa.json 로드
-│               │   ├── matrix-builder.mjs    # 페이지 × 뷰포트 매트릭스
-│               │   ├── cost-estimator.mjs    # Vision API 비용 사전 계산
-│               │   └── diff-runs.mjs         # 이전 실행 대비 픽셀 차이
-│               └── templates/
-│                   ├── report.md.hbs         # 마크다운 보고서
-│                   └── .visual-qa.json.hbs   # 기본 설정
-│
-├── tests/
-│   ├── agent-all/
-│   │   ├── lib/                              # lib 모듈 유닛 테스트
-│   │   ├── templates/                        # 렌더링 출력 스냅샷 테스트
-│   │   └── scenarios/                        # 통합 테스트 (웨이브 분산 등)
-│   └── ...
-│
-├── docs/
-│   └── superpowers/
-│       ├── specs/                            # Phase 0–7 기술 스펙
-│       └── plans/                            # 예시 작업 파일 템플릿
-│
-├── CHANGELOG.md
-└── README.md (이 파일)
+├── .claude-plugin/
+│   └── marketplace.json                      # 17개 플러그인 모두 등록
+├── plugins/                                  # 플러그인 본체
+│   ├── harness-builder/                      # Theme A 코어 + 4 플랫폼 siblings
+│   ├── harness-floor/                        # Theme C 코어 + 4 플랫폼 siblings
+│   ├── harness-thrift/                       # Theme B 코어 + 4 플랫폼 siblings
+│   ├── harness-explore/                      # Theme D
+│   └── harness-debug/                        # Theme E
+├── scripts/
+│   └── sync-lib.mjs                          # 플러그인 간 vendored render.mjs 동기화
+├── tests/                                    # 981+ tests (node --test)
+├── docs/superpowers/
+│   ├── specs/                                # 플러그인/기능별 design 문서
+│   ├── plans/                                # 구현 계획
+│   └── research-notes/                       # sandbox 한정 spike 결과
+├── CHANGELOG.md / CHANGELOG.ko.md
+└── README.md / README.ko.md
 ```
 
-**세 가지 테마; 두 개 구현 + 하나 예약:**
-- **A (harness-builder)** — `/agent-init`을 통한 프로젝트별 하네스 빌더. 단일 책임: CLAUDE.md + 에이전트 + 훅 스캐폴딩.
-- **B (harness-thrift)** — 토큰 비용 최적화 — **계획 중**, `--theme=thrift`로 예약됨. context-mode 캐싱, 프롬프트 캐시, 요약 훅 통합 예정.
-- **C (harness-floor)** — 비용 무제한 패턴: `/visual-qa` + `/agent-all`. 전체 멀티웨이브 분산, 시각 QA, 루프 반복.
+**플러그인별 표준 레이아웃** (17개 모두):
 
-**lib와 템플릿을 분리하는 이유:** 휴대성을 활성화합니다. lib 모듈 (wave-builder, loop-evaluator, detect-stack)은 Claude Code 의존성이 없는 순수 Node.js입니다 — 다른 도구 (Codex, Cursor, 빌드 시스템)에 벤더링 가능합니다. 템플릿은 Handlebars이며, 모든 템플릿 엔진에 맞게 조정 가능합니다. 오직 스킬 오케스트레이션 (분산, 단계 흐름)만 Claude Code 고유입니다.
+```
+plugins/<name>/
+├── .claude-plugin/plugin.json
+├── README.md
+├── skills/<skill>/
+│   ├── SKILL.md
+│   ├── phases/                               # phase 문서 (오케스트레이터가 순서대로 읽음)
+│   ├── lib/                                  # 순수 Node 헬퍼 (독립적으로 테스트 가능)
+│   ├── templates/                            # *.hbs Handlebars 템플릿
+│   └── references/                           # 설계 노트, 포팅 노트
+└── bin/                                      # 설치/런타임 헬퍼
+    ├── install.mjs                           # 자동 설치 렌더러
+    └── lib/render.mjs                        # vendored Handlebars-lite 렌더러
+```
 
-## 로드맵
+**왜 플러그인마다 `render.mjs` 중복하나:** `cross-platform-isolation.test.mjs` 테스트가 cross-plugin imports를 금지 — 각 플러그인은 self-contained여야 함. `scripts/sync-lib.mjs --check`가 모든 vendored 사본이 `plugins/harness-builder/skills/agent-init/lib/render.mjs`의 canonical 소스와 byte-identical하게 유지되도록 보장.
 
-- **Theme B (harness-thrift):** context-mode 적극 통합, 프롬프트 캐시 최적화, 요약 훅, 토큰 예산 추적
-- **픽셀 차이 visual-qa 모드:** LLM 분석 없이 나란히 회귀 감지 (비용 감소)
-- **원격 분석 옵트인:** 가장 자주 건너뛴 단계, 에이전트 활용도
-- visual-qa 보고서용 `gh` PR 코멘트 통합
-- 분산 웨이브 분산 (다중 머신 / 다중 지역)
-- 비용 추적 대시보드 (하네스 + 단계별 시간별/일별 지출 분석)
+## 크로스 플랫폼 지원
 
-## 자주 묻는 질문
+| 기능 | Claude Code | Cursor | Copilot CLI | Codex CLI | Gemini CLI |
+|---|---|---|---|---|---|
+| Theme A (`/agent-init`) | ✅ | ✅ (`bin/init.mjs`) | ✅ | ✅ | ✅ |
+| Theme C `/visual-qa` | ✅ | ✅ (스캐폴드) | ✅ (스캐폴드) | ✅ (스캐폴드) | ✅ (스캐폴드 + 서브프로세스 dispatch) |
+| Theme C `/agent-all` | ✅ | ✅ (prompt 템플릿) | ✅ (`task` tool) | ✅ (`agent` hook OR sequential) | ✅ (서브프로세스 fan-out) |
+| Theme B `/thrift` | ✅ | ✅ (advisory-only, no hooks) | ✅ | ✅ (TOML config 패처) | ✅ (Vertex 레이트 테이블) |
+| Theme D `/explore` | ✅ | — (포트 연기) | — | — | — |
+| Theme E `/debug` | ✅ | — (포트 연기) | — | — | — |
 
-**Q: `/agent-init`이 내 CLAUDE.md를 덮어쓸까?**
-A: 아니오. 기본값은 CLAUDE.md가 존재하면 중단합니다. `--merge`로 하네스 섹션을 추가하거나 `--force`로 덮어쓰기.
+"스캐폴드" 항목은 config + hook 템플릿이 오늘 출시됐고 오케스트레이터 런타임이 spec 형식(`docs/superpowers/specs/2026-05-18-*-impl-spec.md`)으로 문서화되었음을 의미; 프로덕션 lib 모듈은 Claude Code에 출시되었고 impl spec에 따라 각 플랫폼에 점진적으로 출시.
 
-**Q: `/agent-all --loop`이 안전한가?**
-A: `maxIter` (하드 상한선 50), `maxCostUSD` (기본값 $500), 및 `breakCondition`으로 제한됩니다. 비용 상한선이 낮고 명확한 테스트 명령어를 설정하면 영원히 실행될 수 없습니다.
-
-**Q: Floor 테마를 원하지 않으면?**
-A: `/agent-init --theme=lite`로 건너뜁니다. 기본 CLAUDE.md + 에이전트 + 3개 훅만 받습니다.
-
-**Q: 에이전트 로스터를 커스터마이징할 수 있나?**
-A: `/agent-init` 후 `.claude/agents/*.md`를 편집합니다. 순수 마크다운입니다.
-
-**Q: Codex/Cursor/기타 도구에서 작동하나?**
-A: lib 코드와 템플릿은 휴대 가능; 스킬 오케스트레이션은 Claude Code 고유. 위 "Codex / Claude Code 외 플랫폼" 참고.
-
-**Q: `.agent-all.json`을 편집하지 않고 한 번의 `/agent-all` 실행에서 wave-size를 변경할 수 있나?**
-A: 네, `--wave-size=large` (또는 small/medium) 전달 — CLI 플래그가 설정 기본값 오버라이드.
-
-**Q: 비 Node 프로젝트의 breakCondition은?**
-A: `/agent-init` 후 `.agent-all.json`을 편집합니다. 일반적 값: `pytest`, `cargo test`, `go test ./...`, `mix test`, `maven test`.
-
-**Q: `/agent-all --loop`이 각 반복마다 계획을 재생성하나?**
-A: 네 (v0.2.0). Phase 2가 반복마다 `superpowers:writing-plans`를 다시 실행합니다. 향후 `--no-replan` 플래그로 계획을 고정할 수 있습니다.
-
-**Q: 분산을 시작하기 전에 계획을 볼 수 있나?**
-A: 네. `/agent-all`은 phase 2 (계획) 후 일시 중지하고 phase 3 (분산) 시작 전에 수락을 요청합니다. 계획을 검토하고 변경을 요청하거나 중단할 수 있습니다.
-
-**Q: `/visual-qa`의 비용은?**
-A: 페이지 수와 뷰포트에 따라 다릅니다. 기본값은 ~5페이지 × 3뷰포트 = 15개 스크린샷 + LLM 분석 (~$0.50–$2.00). `--budget=<USD>`로 제한하거나 `--skip-health`로 속도 향상.
+라이브 CLI 런타임 검증은 `docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md`에 추적.
 
 ## 버전 관리
 
-- `harness-builder`: v0.2.0 (현재) — `/harness-init`을 `/agent-init`으로 이름 변경, 단계 상태 파일 도입
-- `harness-floor`: v0.2.0 (현재) — `agent-all` 스킬 추가 (visual-qa 옆), wave-builder 로직, loop-evaluator
+모든 플러그인은 **v0.1.0** (크로스 플랫폼 포트) 또는 **v0.2.0** (Claude Code 오리지널)으로 출시. 전체 릴리스 히스토리는 [CHANGELOG.md](CHANGELOG.md) 참조.
 
-전체 이력은 [CHANGELOG.md](CHANGELOG.md) 참고.
+2026-05-18의 주요 iteration:
+- 41 commits — 초기 Themes A + C + 크로스 플랫폼 스캐폴드
+- 7 commits — visual-qa 6-phase + agent-all 4 sub-projects + design specs
+- 5 commits — install 렌더러 + spawn dispatcher + ask-user 어댑터 + thrift design
+- 4 commits — harness-thrift v0.1
+- 1 commit (`11d8b10`) — 7개 병렬 agents가 만든 12 specs + 6 host invoker / install / SDK 구현
+- 2 commits (`0aa3cea` + `5d6fbe5`) — 10개 병렬 agents가 만든 6개 신규 플러그인 (4 thrift 포트 + explore + debug) + 플랫폼별 agent-all/visual-qa 구현 (554 신규 테스트; 981/981 pass)
+
+## FAQ
+
+**Q: `/agent-init`이 내 CLAUDE.md를 덮어쓰나요?**
+아니요. 기본값은 CLAUDE.md 존재 시 abort. `--merge`로 harness 섹션 추가, `--force`로 덮어쓰기.
+
+**Q: `/agent-all --loop`이 안전한가요?**
+`--max-iter` (하드캡 50), `--max-cost` (기본값 $500), `breakCondition`으로 bound. 빠듯한 비용 cap과 명확한 테스트 명령을 설정하면 무한 실행 불가.
+
+**Q: `/thrift`가 내 컨텍스트 동작을 즉시 바꾸나요?**
+네. `/thrift` 이후, 설치된 hooks가 이 프로젝트의 모든 이후 Claude Code 턴에서 발사. PreToolUse 강제 제안이 inline으로 나타남; PostToolUse는 토큰 카운트; summariser가 임계값에서 발사 (advisory v1 — 요약 파일을 작성하고 `/compact` 실행을 요청). Phase 5 audit가 세션 종료 시 발사.
+
+**Q: 프롬프트 캐시 priming이 가치가 있나요?**
+짧은 세션에는 종종 아니요. `cache.enabled = false` 기본값. ≥15분 세션이고 턴 사이 >5분 일시정지하는 경우에만 활성화 (`evaluateCachePrimeROI`의 ROI gate가 그렇지 않으면 경고).
+
+**Q: `/explore`가 private 파일을 볼 수 있나요?**
+기본값으로 `.gitignore` 준수. 필요하면 `.explore.json`의 ignore globs에 `node_modules`, build 디렉토리 등 추가.
+
+**Q: `/debug`가 실제로 내 코드를 실행하나요?**
+Phase 1에서 제공한 `repro` 명령을 통해서만 (그리고 확인하는 경우에만). 재현은 프로젝트의 기존 테스트 러너로 `shell_command`를 통해 호출; 다른 코드 실행 없음.
+
+**Q: 플러그인 업데이트는 어떻게 하나요?**
+위 [플러그인 업데이트 방법](#플러그인-업데이트-방법) 참조. 요약: Claude Code에서 `/plugin update --marketplace agent-skill`.
+
+**Q: CLI 호스트가 목록에 없으면?**
+lib 모듈(`plugins/*/skills/*/lib/*.mjs`)은 호스트 의존성 없는 순수 Node.js — 도구에 vendor 가능. `phases/*.md`의 phase 문서는 언어 무관. 호스트마다 다른 부분은 skill-orchestration 레이어; 포팅 템플릿은 `docs/superpowers/specs/2026-05-18-*-impl-spec.md` 파일 참조.
+
+**Q: 버그 신고는 어디?**
+https://github.com/kim-song-jun/agent-skill/issues 에 이슈 등록. 플러그인별 버그: 제목에 플러그인 이름 prefix (`[harness-thrift] …`).

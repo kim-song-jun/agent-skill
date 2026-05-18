@@ -13,6 +13,33 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Anthropic SDK / OpenAI SDK / Vertex SDK actual API hookups (currently
   mock toolCallers used in tests).
 
+## README + plugin-update documentation — 2026-05-18
+
+### Updated
+
+- `README.md` and `README.ko.md` fully rewritten to reflect the current
+  17-plugin / 5-theme state (was stuck at the 2-plugin / 3-theme version
+  with thrift listed as "RESERVED").
+- Added a dedicated **"Updating plugins"** section covering all hosts:
+  - Claude Code: `/plugin update <name>@agent-skill`,
+    `/plugin update --marketplace agent-skill`, `/plugin update --all`,
+    `/plugin marketplace update agent-skill`
+  - Codex CLI: `codex plugins update [<name>]`
+  - GitHub Copilot CLI: `gh copilot plugins update [<name>]`
+  - Gemini CLI: `gemini extensions update [<name>]`
+  - Cursor: re-run `bin/install.mjs --force` (renderer-style; idempotent
+    via `thrift-` / `floor-` sentinel)
+  - Clean-install path: uninstall + remove marketplace + re-add
+  - Per-plugin uninstall: `node plugins/<p>/bin/install.mjs --uninstall`
+- Added a dedicated **"Cross-platform support"** matrix showing which
+  themes ship on which hosts at what fidelity (✅ / scaffold / port deferred).
+- Added a dedicated **"The 5 themes"** section with the A/B/C/D/E
+  positioning table.
+- Updated command reference to include `/thrift`, `/explore`, `/debug`.
+- Added onboarding + flaky-test debugging examples.
+- Updated "Versioning" section to reflect the iteration timeline
+  (41 → 7 → 5 → 4 → 1 → 2 commits across five sub-iterations).
+
 ## 6 new plugins + per-platform implementations — 2026-05-18 (commit 0aa3cea)
 
 10 parallel agents shipped 6 new marketplace plugins + filled in the
