@@ -1,0 +1,7 @@
+# Append to ~/.codex/config.toml or merge into project-level .codex/config.toml.
+# Registers the `agent` hook matcher for visual-qa Phase 3 parallel dispatch.
+
+[[hooks.agent]]
+matcher = "visual-qa/page/.*"
+command = "codex-agent-dispatch"
+timeout_seconds = 1800

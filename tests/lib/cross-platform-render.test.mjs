@@ -119,6 +119,35 @@ const CASES = [
     tpl: "plugins/harness-floor-gemini/skills/agent-all-gemini/templates/pr-body.md.hbs",
     contains: ["agent-all-gemini", "Gemini CLI", "## Summary", "## Iteration"],
   },
+  // visual-qa full-port templates
+  {
+    tpl: "plugins/harness-floor-cursor/skills/visual-qa-cursor/templates/agents/visual-qa-page.md.hbs",
+    contains: ["name: visual-qa-page", "is_background: true", "browser_navigate", "browser_take_screenshot"],
+  },
+  {
+    tpl: "plugins/harness-floor-cursor/skills/visual-qa-cursor/templates/analysis-prompt.md.hbs",
+    contains: ["visual-QA assistant", "severity"],
+  },
+  {
+    tpl: "plugins/harness-floor-cursor/skills/visual-qa-cursor/templates/report.md.hbs",
+    contains: ["Visual QA Report", "Per-page status", "Issues"],
+  },
+  {
+    tpl: "plugins/harness-floor-copilot/skills/visual-qa-copilot/templates/page-prompt.md.hbs",
+    contains: ["visual-QA page subagent", "browser_navigate", "browser_take_screenshot"],
+  },
+  {
+    tpl: "plugins/harness-floor-codex/skills/visual-qa-codex/templates/page-prompt.md.hbs",
+    contains: ["visual-QA page subagent", "browser_navigate", "apply_patch"],
+  },
+  {
+    tpl: "plugins/harness-floor-codex/skills/visual-qa-codex/templates/codex-hooks-snippet.toml.hbs",
+    contains: ["[[hooks.agent]]", "visual-qa/page/", "codex-agent-dispatch"],
+  },
+  {
+    tpl: "plugins/harness-floor-gemini/skills/visual-qa-gemini/templates/page-prompt.md.hbs",
+    contains: ["visual-QA page subagent", "browser_navigate", "OUTPUT_FILE", "write_file"],
+  },
 ];
 
 for (const c of CASES) {

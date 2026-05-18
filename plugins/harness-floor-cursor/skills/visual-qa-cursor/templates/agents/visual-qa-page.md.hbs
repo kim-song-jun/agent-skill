@@ -1,0 +1,55 @@
+---
+name: visual-qa-page
+description: >
+  Captures + analyzes one page's visual matrix in the visual-qa pipeline.
+  Use when the visual-qa-cursor coordinator dispatches a page-group for
+  parallel capture. Reads PAGE, BASE_URL, OUTPUT_DIR, BREAKPOINTS,
+  COMPONENTS, ANALYSIS_PROMPT_TEMPLATE, optional AUTH_FLOW from the body.
+model: inherit
+readonly: false
+is_background: true
+---
+
+# visual-qa-page
+
+You handle one page's capture+analyze loop. Body contains structured
+parameters (see description).
+
+## Steps
+
+1. `browser_navigate(BASE_URL + page.path)`.
+2. If AUTH_FLOW: execute it (sequence of `browser_click`, `browser_type`,
+   etc. — defined in AUTH_FLOW JSON).
+3. For each breakpoint in BREAKPOINTS:
+   a. `browser_resize(width, height)`.
+   b. `browser_take_screenshot(filename = "<OUTPUT_DIR>/<breakpoint>/_page.png")`.
+   c. For each component in COMPONENTS:
+      - Scroll to `selector` if present.
+      - `browser_take_screenshot` of the element.
+      - For each state in `component.states` (`hover`, `focus`, etc.):
+        - Apply state (hover/focus/click) via `browser_hover` or similar.
+        - Capture screenshot to
+          `<OUTPUT_DIR>/<breakpoint>/<component.name>__<state>.png`.
+4. For each captured PNG:
+   - Render ANALYSIS_PROMPT_TEMPLATE.
+   - Send the prompt + image to the configured LLM.
+   - Save the parsed response to `<image>.analysis.json` (structured
+     issues) and `<image>.analysis.md` (human-readable).
+5. Return structured JSON:
+   ```json
+   {
+     "page": "<name>",
+     "captures": <number>,
+     "analyses": <number>,
+     "status": "completed" | "incomplete",
+     "errors": [...]
+   }
+   ```
+
+## Rules
+
+- Do not edit files outside OUTPUT_DIR.
+- If a capture fails (selector missing, network error): record in errors[]
+  and continue with other captures.
+- If LLM call fails: retry once with exponential backoff before recording.
+- Cost-cap: stop early if accumulated cost > config.budget per page.
