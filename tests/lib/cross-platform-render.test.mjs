@@ -99,6 +99,18 @@ const CASES = [
     tpl: "plugins/harness-floor-copilot/skills/agent-all-copilot/templates/pr-body.md.hbs",
     contains: ["agent-all-copilot", "GitHub Copilot CLI", "## Summary", "## Iteration"],
   },
+  {
+    tpl: "plugins/harness-floor-codex/skills/agent-all-codex/templates/agent-all.config.json.hbs",
+    contains: ["\"maxIter\": 10", "\"maxCostUSD\": 5", "\"dispatch\": \"auto\"", "npm test --silent"],
+  },
+  {
+    tpl: "plugins/harness-floor-codex/skills/agent-all-codex/templates/pr-body.md.hbs",
+    contains: ["agent-all-codex", "Codex CLI", "## Summary", "## Iteration"],
+  },
+  {
+    tpl: "plugins/harness-floor-codex/skills/agent-all-codex/templates/codex-hooks-snippet.toml.hbs",
+    contains: ["[[hooks.agent]]", "agent-all/wave/", "codex-agent-dispatch"],
+  },
 ];
 
 for (const c of CASES) {
