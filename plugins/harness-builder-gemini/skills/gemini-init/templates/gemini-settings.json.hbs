@@ -1,0 +1,13 @@
+{
+  "hooks": {
+    "BeforeTool": [
+      { "matcher": "write_file", "command": "{{hook_command_beforetool}}" }
+    ],
+    "SessionStart": [
+      { "command": "{{hook_command_sessionstart}}" }
+    ]
+  },
+  "mcpServers": {
+{{mcp_servers_json_body}}
+  }
+}

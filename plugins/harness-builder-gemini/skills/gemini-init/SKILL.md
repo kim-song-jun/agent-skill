@@ -57,3 +57,35 @@ Refuse to overwrite existing files unless `--force`.
 
 Print: detected stack, runtime (if any), roles scaffolded. Note that
 `.gemini/settings.json` MCP wiring is out of scope for this MVP.
+
+## Phase 4 — Optional: emit .gemini/settings.json stub
+
+Ask the user (via `ask_user`) whether to emit `.gemini/settings.json`
+with hook + MCP stubs. If yes:
+
+1. Default hook commands:
+
+   ```javascript
+   ctx.hook_command_beforetool = "echo 'before write_file'";
+   ctx.hook_command_sessionstart = "echo 'session start'";
+   ```
+
+2. Prompt for MCP servers (`{ name, command, args }` or `{ name, url }`,
+   empty list OK). Build `mcp_servers_json_body` the same way as the
+   Copilot plugin's Phase 4 step 3:
+
+   ```javascript
+   const entries = mcp_servers.map((s) => {
+     const fields = s.command
+       ? `      "command": ${JSON.stringify(s.command)},\n      "args": ${JSON.stringify(s.args ?? [])}`
+       : `      "url": ${JSON.stringify(s.url)}`;
+     return `    ${JSON.stringify(s.name)}: {\n${fields}\n    }`;
+   });
+   ctx.mcp_servers_json_body = entries.join(",\n");
+   ```
+
+3. Render `templates/gemini-settings.json.hbs` and write to
+   `.gemini/settings.json` in the project root via `write_file`. Refuse
+   to overwrite unless `--force`.
+
+The hook commands are no-ops by default; users edit them.
