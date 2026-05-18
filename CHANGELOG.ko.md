@@ -13,6 +13,31 @@
 - Anthropic SDK / OpenAI SDK / Vertex SDK 실제 API 연결 (현재 mock
   toolCaller 사용).
 
+## README — 사용자 친화적 재작성 — 2026-05-18
+
+### 변경
+
+양쪽 README를 더 친근한 톤으로 재작성:
+- **상단 가치 제안**을 평이한 언어로: "하나의 마켓플레이스, 다섯 개의
+  슬래시 명령, 모든 AI 코딩 도구." Jargon 없음.
+- **60초 설치** + 단일 명령 업데이트 경로 상단 배치.
+- **명령별 섹션** (`/agent-init` / `/agent-all` / `/visual-qa` /
+  `/thrift` / `/explore` / `/debug`) 각각 명령이 하는 일을 2-3 문장 +
+  가장 유용한 플래그로 표시. Phase 테이블 없음, 사용자 경로에 내부 lib
+  참조 없음.
+- **자주 쓰는 워크플로** 섹션에 구체적 복붙 레시피 (신규 프로젝트,
+  온보딩, flaky 테스트, 런칭전, 긴 디버깅).
+- **"더 깊이 들어가기"** 섹션은 맨 아래 — 기술 상세를 원하는 사용자만
+  위한 아키텍처 / spec / changelog 링크. 그렇지 않은 90% 사용자의
+  시야에서 비켜놓음.
+
+사용자 경로에서 제거 (필요한 사용자를 위해 docs/에 유지):
+- 모든 명령의 phase별 walkthrough
+- 아키텍처 트리 + 플러그인별 레이아웃
+- Composition 패턴 / Codex rescue / 크로스 플랫폼 deep dive
+
+길이: README.md ~290 라인 (이전 ~530), README.ko.md 미러링.
+
 ## README + 플러그인 업데이트 문서화 — 2026-05-18
 
 ### 갱신
