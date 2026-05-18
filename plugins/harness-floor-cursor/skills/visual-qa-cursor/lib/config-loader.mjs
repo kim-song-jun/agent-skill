@@ -1,13 +1,19 @@
-// Vendored from plugins/harness-floor/skills/visual-qa/lib/config-loader.mjs.
-// Keep BYTE-FOR-BYTE identical to the source-of-truth.
 import { readFileSync, existsSync } from "node:fs";
 
-const REQUIRED_TOP = ["baseUrl", "breakpoints", "pages"];
+const MODES = ["declared", "comprehensive"];
 
 function validate(cfg) {
   const errors = [];
-  for (const k of REQUIRED_TOP) {
-    if (cfg[k] === undefined) errors.push({ path: k, message: `${k} is required` });
+  const mode = cfg.mode ?? "declared";
+  if (!MODES.includes(mode)) {
+    errors.push({ path: "mode", message: `must be one of ${MODES.join("|")}` });
+  }
+  // baseUrl + breakpoints are required for either mode. `pages` is only
+  // required when mode=declared — comprehensive auto-discovers pages.
+  if (cfg.baseUrl === undefined) errors.push({ path: "baseUrl", message: "baseUrl is required" });
+  if (cfg.breakpoints === undefined) errors.push({ path: "breakpoints", message: "breakpoints is required" });
+  if (mode === "declared" && cfg.pages === undefined) {
+    errors.push({ path: "pages", message: "pages is required when mode=declared" });
   }
   if (Array.isArray(cfg.breakpoints)) {
     cfg.breakpoints.forEach((bp, i) => {
@@ -21,6 +27,12 @@ function validate(cfg) {
       if (typeof p.name !== "string") errors.push({ path: `pages[${i}].name`, message: "must be string" });
       if (typeof p.path !== "string") errors.push({ path: `pages[${i}].path`, message: "must be string" });
     });
+  }
+  if (mode === "comprehensive") {
+    const c = cfg.comprehensive ?? {};
+    if (!c.scope || !Array.isArray(c.scope.include) || c.scope.include.length === 0) {
+      errors.push({ path: "comprehensive.scope.include", message: "must be a non-empty array when mode=comprehensive" });
+    }
   }
   return errors;
 }

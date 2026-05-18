@@ -15,14 +15,52 @@
    if (!result.ok) { /* print result.errors as 'field: message', abort */ }
    const config = result.config;
    ```
+   Determine mode: `const mode = config.mode ?? "declared";` (default `declared` for back-compat).
 
-2. Build matrix:
-   ```javascript
-   import { buildMatrix } from "./lib/matrix-builder.mjs";
-   const matrix = buildMatrix(config);
-   ```
+2. **Build matrix — branches on mode:**
 
-3. Estimate cost:
+   - **`mode === "declared"`** (existing behaviour, no change):
+     ```javascript
+     import { buildMatrix } from "./lib/matrix-builder.mjs";
+     const matrix = buildMatrix(config);
+     ```
+
+   - **`mode === "comprehensive"`**: discover pages via the crawler, then
+     walk each one's DOM to derive components.
+     ```javascript
+     import { crawl } from "./lib/crawler.mjs";
+     import { walkDom } from "./lib/dom-walker.mjs";
+
+     const pages = await crawl({
+       scope: config.comprehensive.scope,
+       fetchPageLinks: async (path) => {
+         // Drive Playwright MCP: navigate, capture <a href> values, return
+         // { title, links: [...] }. See "Per-page fetchPageLinks contract"
+         // below for the exact contract.
+       },
+     });
+
+     const matrix = [];
+     for (const page of pages) {
+       const snapshot = await capturePageSnapshot(page.path); // see contract below
+       const components = walkDom(snapshot);
+       for (const bp of config.breakpoints) {
+         matrix.push({ kind: "page", page: page.path, breakpoint: bp.name });
+         for (const comp of components) {
+           matrix.push({
+             kind: "component",
+             page: page.path,
+             breakpoint: bp.name,
+             selector: comp.selector,
+             componentKind: comp.kind,
+             states: ["default", ...comp.states],
+           });
+         }
+       }
+     }
+     ```
+
+3. Estimate cost (same path for both modes):
    ```javascript
    import { estimateCost } from "./lib/cost-estimator.mjs";
    const estCostUSD = estimateCost(matrix, config.analysis?.model ?? "claude-sonnet-4-6");
@@ -32,6 +70,7 @@
 
 5. Print:
    ```
+   Mode: <declared|comprehensive>.
    Matrix: <matrix.length> captures across <distinct pages> pages, <flows> flows.
    Estimated LLM cost: ~$<estCostUSD>
    ```
@@ -41,8 +80,44 @@
 7. Update state:
    - Push `{phase: 1, completedAt}` to `phases`.
    - Set top-level `matrix: {totalCaptures: matrix.length, byPage: {<page>: <count>}}`.
+   - Set top-level `mode`.
    - Set top-level `estCostUSD`.
+
+## Per-page `fetchPageLinks` contract
+
+Called once per discovered page. Implementation drives Playwright MCP:
+
+```javascript
+async function fetchPageLinks(path) {
+  await mcp__plugin_playwright_playwright__browser_navigate({ url: `${baseUrl}${path}` });
+  const snapshot = await mcp__plugin_playwright_playwright__browser_snapshot();
+  // Extract <a href> values from the snapshot. Filter to same-origin
+  // before returning. Title comes from <title> element or the snapshot
+  // root.
+  return { title: snapshot.title, links: extractAnchorHrefs(snapshot) };
+}
+```
+
+The crawler is pure; the runtime fetcher is the only side-effecting
+layer. Unit tests stub `fetchPageLinks` to verify scope/depth/dedup
+behaviour deterministically.
+
+## Per-page snapshot contract (for the DOM walker)
+
+```javascript
+async function capturePageSnapshot(path) {
+  await mcp__plugin_playwright_playwright__browser_navigate({ url: `${baseUrl}${path}` });
+  const raw = await mcp__plugin_playwright_playwright__browser_snapshot();
+  // Map the snapshot into the dom-walker's expected shape:
+  // { elements: [{ tag, attributes, path, text, visible }, ...] }
+  return adaptSnapshotForDomWalker(raw);
+}
+```
+
+The dom-walker derives selectors preferring `data-testid` > `data-qa-id`
+> `id` > stable CSS path. Class-based selectors are never used (unstable
+under Tailwind / CSS-in-JS).
 
 ## Output to user
 
-Print: `Config OK. Matrix: <N> captures.`
+Print: `Config OK. Mode: <mode>. Matrix: <N> captures.`

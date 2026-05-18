@@ -150,6 +150,11 @@ export const QA_SHORTCUT_SPEC = {
 export const QA_AUTOSCAFFOLD_CONFIG = {
   mode: "comprehensive",
   baseUrl: "http://localhost:3000",
+  breakpoints: [
+    { name: "mobile",  width: 375,  height: 812 },
+    { name: "tablet",  width: 768,  height: 1024 },
+    { name: "desktop", width: 1440, height: 900 },
+  ],
   comprehensive: {
     scope: { include: ["/"], exclude: [], maxPages: 50, depth: 3 },
     interactions: { click: true, depth: 1 },
