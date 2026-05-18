@@ -13,24 +13,24 @@ What each platform plugin still needs after the 2026-05-18 MVP.
 
 ## Codex CLI
 
-- `.codex/config.toml` snippet emission for hooks + MCP servers
+- ✅ DONE (2026-05-18 follow-up iteration) — `.codex/config.toml` snippet emission for hooks + MCP servers
 - Codex slash-command registration if Codex exposes a `commands` field (verify)
 - Subagent dispatch via Codex's `agent` hook type (research the exact contract)
 
 ## GitHub Copilot CLI
 
-- `~/.copilot/mcp-config.json` emission
-- `.github/hooks/` complete hook stubs (PreToolUse / PostToolUse / AgentStop)
+- ✅ DONE (2026-05-18 follow-up iteration) — `~/.copilot/mcp-config.json` emission
+- ✅ DONE (2026-05-18 follow-up iteration) — `.github/hooks/` complete hook stubs (PreToolUse / PostToolUse / AgentStop)
 - Validate the dedup behavior between `copilot-instructions.md` and `AGENTS.md` in real CLI
 
 ## Gemini CLI
 
-- `.gemini/settings.json` emission with `mcpServers` + `hooks`
+- ✅ DONE (2026-05-18 follow-up iteration) — `.gemini/settings.json` emission with `mcpServers` + `hooks`
 - Verify `gemini-extension.json` install path and behavior with `gemini extensions install`
 
 ## Cursor
 
-- Replace `bin/install.sh` with a Node-based renderer that takes a JSON ctx and writes rendered files
+- ✅ DONE (2026-05-18 follow-up iteration) — Replace `bin/install.sh` with a Node-based renderer that takes a JSON ctx and writes rendered files
 - Investigate Cursor's `/commands` wizard format if it becomes public
 
 ## visual-qa and agent-all on each platform

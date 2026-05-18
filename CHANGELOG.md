@@ -7,6 +7,25 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 ## [Unreleased]
 - Theme B (`harness-thrift`) — context-mode aggressive integration, prompt cache, summariser hooks — design pending.
 
+## Cross-platform follow-up — 2026-05-18
+
+### Added
+- Optional Phase 4 emit in `codex-init`, `copilot-init`, `gemini-init`:
+  - Codex: `.codex/config.toml` with `[hooks]` + `[mcp_servers.*]` stubs
+  - Copilot: `.github/hooks/{preToolUse,postToolUse,agentStop}.json` static stubs + `mcp-config.json` snippet printed to stdout
+  - Gemini: `.gemini/settings.json` with `hooks` (BeforeTool/SessionStart) + `mcpServers` stubs
+- `plugins/harness-builder-cursor/bin/init.mjs` — Node renderer that reads ctx JSON, runs `detectProject`, and writes all rendered `.cursor/rules/` and `.cursor/agents/` files. Refuses to overwrite without `--force`.
+- `bin/install.sh` is now a deprecation shim that points to `init.mjs`.
+
+### Tests
+- Extended cross-platform render coverage for the three new platform-config templates.
+- New `cursor-renderer.test.mjs` exercises the full end-to-end renderer against a temp directory.
+
+### Still deferred
+- visual-qa / agent-all per-platform porting (separate specs)
+- Brainstorm integration via host-native `ask_user` equivalents
+- Runtime validation against actual CLIs
+
 ## Cross-platform plugins — 2026-05-18
 
 ### Added

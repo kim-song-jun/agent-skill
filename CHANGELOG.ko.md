@@ -7,6 +7,25 @@
 ## [미출시]
 - Theme B (`harness-thrift`) — context-mode 공격적 통합, 프롬프트 캐시, 요약 훅 — 설계 보류 중.
 
+## 크로스플랫폼 후속 작업 — 2026-05-18
+
+### 추가됨
+- `codex-init`, `copilot-init`, `gemini-init`에 선택적 Phase 4 emit 추가:
+  - Codex: `[hooks]` + `[mcp_servers.*]` 스텁을 포함한 `.codex/config.toml`
+  - Copilot: `.github/hooks/{preToolUse,postToolUse,agentStop}.json` 정적 스텁 + stdout으로 출력되는 `mcp-config.json` 스니펫
+  - Gemini: `hooks` (BeforeTool/SessionStart) + `mcpServers` 스텁을 포함한 `.gemini/settings.json`
+- `plugins/harness-builder-cursor/bin/init.mjs` — ctx JSON을 읽어 `detectProject`를 실행하고, 렌더링된 `.cursor/rules/` 및 `.cursor/agents/` 파일을 작성하는 Node 렌더러. `--force` 없이는 덮어쓰기 거부.
+- `bin/install.sh`는 이제 `init.mjs`를 가리키는 deprecation shim으로 변경됨.
+
+### 테스트
+- 세 개의 새 플랫폼 설정 템플릿에 대한 크로스플랫폼 렌더 커버리지 확장.
+- `cursor-renderer.test.mjs` 신규 추가 — 임시 디렉토리를 대상으로 init.mjs 전체 end-to-end 렌더러 검증.
+
+### 여전히 보류 중
+- visual-qa / agent-all 플랫폼별 포팅 (별도 spec)
+- 호스트 네이티브 `ask_user` 등가물을 통한 brainstorm 통합
+- 실제 CLI 대상 런타임 검증
+
 ## 크로스플랫폼 플러그인 — 2026-05-18
 
 ### 추가됨
