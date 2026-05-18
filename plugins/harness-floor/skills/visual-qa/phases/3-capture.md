@@ -29,6 +29,35 @@ For each page-group, dispatch via the `Agent` tool with:
   6. The output dir for this page (`<slug-dir>/<page>/` or `<slug-dir>/flows/<flowName>/`).
   7. Strict instructions on the capture loop (see Per-subagent steps below).
 
+## Comprehensive-mode addendum
+
+When `state.mode === "comprehensive"` AND the page subagent's
+`config.comprehensive.interactions.click === true`, the subagent also
+invokes the shallow-click expander after capturing all declared states:
+
+```javascript
+import { shallowClick } from "./lib/shallow-clicker.mjs";
+
+const result = await shallowClick({
+  pagePath: page.path,
+  clickables: components.filter((c) => ["button", "link", "tab", "menuitem", "switch", "labelled"].includes(c.kind)),
+  hooks: {
+    click:      ({selector}) => mcp__plugin_playwright_playwright__browser_click({selector}),
+    waitStable: ({timeoutMs}) => mcp__plugin_playwright_playwright__browser_wait_for({timeoutMs}),
+    screenshot: ({selector, suffix}) => mcp__plugin_playwright_playwright__browser_take_screenshot({path: `${outputDir}/${suffix}.png`}),
+    revert:     ({pagePath}) => mcp__plugin_playwright_playwright__browser_navigate({url: `${baseUrl}${pagePath}`}),
+  },
+});
+```
+
+Each `result.captures[i].path` is analysed by the same LLM prompt as
+declared-mode captures. Errors don't abort — they're surfaced in the
+per-page error list returned to the orchestrator.
+
+Input-kind elements (`input`, `textarea`, `select`) are skipped by
+default — clicking them rarely changes UI state and form-fill flows
+belong in `declared` mode with explicit flows.
+
 ## Per-subagent steps (these go into the dispatched prompt)
 
 The page-subagent receives those inputs and:
