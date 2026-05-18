@@ -11,9 +11,15 @@
    Report: <slug-dir>/report.md
    ```
 4. Determine exit code:
-   - 0 if no critical issues AND no incomplete pages
-   - 1 if any critical issue
-   - 2 if any incomplete page (even when no critical issues)
+   - **Comprehensive mode** (when `state.mode === "comprehensive"`):
+     read `<slug-dir>/verdict.json`. Exit 0 if `verdict.pass`, exit 1
+     otherwise. Incomplete pages contribute to fail via Phase 4
+     surfacing them as `major` issues; no separate exit code 2 in this
+     mode. Print `Verdict: <pass|fail>: <verdict.reason>.`
+   - **Declared mode** (back-compat):
+     - 0 if no critical issues AND no incomplete pages
+     - 1 if any critical issue
+     - 2 if any incomplete page (even when no critical issues)
 5. Push `{phase: 5, completedAt}` to `phases` in state.
 6. `process.exit(code)`.
 

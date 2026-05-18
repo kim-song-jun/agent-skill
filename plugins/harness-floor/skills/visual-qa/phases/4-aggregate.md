@@ -37,10 +37,39 @@
    }
    ```
 
-9. Render `templates/report.md.hbs` with the computed context. Write to `<slug-dir>/report.md`.
+9. **Comprehensive-mode verdict.** When `state.mode === "comprehensive"`:
+   ```javascript
+   import { computeVerdict, firstRunVerdict } from "./lib/verdict.mjs";
+   const policy = config.comprehensive.verdict;
 
-10. Push `{phase: 4, completedAt}` to `phases` in state.
+   let verdict;
+   if (!state.priorRunPath) {
+     verdict = firstRunVerdict({ thisRun: { issues: currentIssues }, firstRun: policy.firstRun });
+   } else {
+     const baseline = JSON.parse(readFileSync(`${state.priorRunPath}/report.json`, "utf-8"));
+     verdict = computeVerdict({
+       thisRun:  { issues: currentIssues },
+       baseline: { issues: baseline.issues ?? [] },
+       failOn:   policy.failOn ?? ["critical", "major"],
+     });
+   }
+   writeFileSync(`<slug-dir>/verdict.json`, JSON.stringify(verdict, null, 2));
+   state.verdict = verdict;
+   ```
+
+10. **DOM-hash cache writeback.** Also in comprehensive mode, if
+    `state.domHashCache` exists, write it back to
+    `.visual-qa-cache/dom-hashes.json`:
+    ```javascript
+    import { writeCache } from "./lib/dom-hash.mjs";
+    writeCache(state.domHashCachePath, state.domHashCache);
+    ```
+
+11. Render `templates/report.md.hbs` with the computed context. Write to `<slug-dir>/report.md`.
+
+12. Push `{phase: 4, completedAt}` to `phases` in state.
 
 ## Output to user
 
-Print: `Report written: <slug-dir>/report.md`.
+Print: `Report written: <slug-dir>/report.md`. In comprehensive mode, also:
+`Verdict: <pass|fail> — <verdict.reason>.`
