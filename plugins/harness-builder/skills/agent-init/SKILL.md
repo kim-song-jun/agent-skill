@@ -15,6 +15,7 @@ Sets up a full per-project agent harness following the three operating principle
 - `--resume` — skip phases already marked complete in `.claude/.agent-init-state.json`.
 - `--size=small|medium|large` — override auto-inferred agent team size.
 - `--qa=<persona>[,<persona>]` — override auto-inferred QA personas.
+- `--lang=ko|en` — (v0.5.1+) force the brainstorming dialogue language. Default: read `$AGENT_INIT_LANG` / `$LANG` / `$LC_ALL` / `$LC_MESSAGES` and resolve to `ko` for Korean locales, else `en`. The scaffolded `CLAUDE.md` records the choice as `language:` so downstream commands (`/agent-all` decision-surfacing, etc.) inherit it.
 - `--theme=floor` — (DEFAULT) bundle harness-floor configs (.visual-qa.json + .agent-all.json + CLAUDE.md Floor section). Implicit `--visual-qa`.
 - `--theme=lite` — minimal scaffold; skip the floor bundle (no .visual-qa.json, no .agent-all.json, no Floor section in CLAUDE.md).
 - `--theme=thrift` — (RESERVED, Theme B planned) cost-optimization mode. Currently a no-op stub; design pending. Use `--theme=floor` (default) or `--theme=lite` for now.

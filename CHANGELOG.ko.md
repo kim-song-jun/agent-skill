@@ -4,6 +4,31 @@
 
 모든 주요 변경 사항. 각 릴리스 후보에 대한 날짜 스탬프 태그가 존재합니다.
 
+## Visual-QA runtime wiring + agent-init i18n — 2026-05-22  (`harness-floor` v0.5.1)
+
+### 수정 — visual-qa v0.4.0의 wiring 실제로 작동
+
+v0.4.0이 세 lib (`element-identity`, `targets-filter`, `report-html`) + phase-doc 업데이트는 했지만 기존 `shallow-clicker.mjs` / `config-loader.mjs` / `report.md.hbs`는 그것들을 USE 하도록 수정하지 않았음. `/visual-qa` 명령은 `.visual-qa.json`의 v0.4 키를 무시하고 legacy 단일 스크린샷 흐름 그대로 돌아갔음. 이 patch가 그 gap을 닫음.
+
+- `shallow-clicker.mjs`가 `options.capturePairs` (element당 before/after 2장) + `options.targets` (`resolveTarget` + `parseAction` 경유) 지원. `descriptorFor` 훅 있으면 capture에 `elementId`, `confidence` (`explicit | semantic | path`), `action` 포함.
+- visual-qa `config-loader.mjs`에 `applyV04Defaults()` — `comprehensive.{targets,pairs,matching}` + `report.{html,mdSideBySide}` 디폴트 자동 머지. callers가 null check 불필요. `.visual-qa.json`에 falsy 값 주면 opt-out.
+- `templates/report.md.hbs`에 조건부 pair table — `screenshots.before` 있으면 2-column `Before / After` (있으면 `Baseline / Current`도). pairs 없으면 기존 단일 이미지 레이아웃 fallback.
+- Vendored copies (`shallow-clicker.mjs` × 4 platforms; `config-loader.mjs` × 2) sync 완료. `report.md.hbs × with-issues` 스냅샷 재생성.
+
+### 추가 — `/agent-init` 대화 언어 자동 감지
+
+`/agent-init`이 영문 전용이었음 — `superpowers:brainstorming`이 영문이라서, 한국어 dev 머신이어도 사용자가 처음 한국어 안 치면 영문 대화로 시작됨.
+
+- 새 `--lang=ko|en` 플래그.
+- 새 `$AGENT_INIT_LANG` env 변수.
+- 자동 감지: `$LANG` / `$LC_ALL` / `$LC_MESSAGES` 한국어 로케일 → `ko`, 아니면 `en`.
+- Phase 1이 `interactionLang === "ko"`일 때 brainstorming dispatch에 한국어 directive prepend, 그리고 downstream agent template들에 `{{interactionLang}}` 로 stash.
+- 기계 contract 토큰 (`STATUS:`, `VERIFICATION_AUDIT:`, 파일 경로, JSON 키)은 대화 언어와 무관하게 영문 고정.
+
+### 테스트
+
+전체 **1334 → 1340 통과** (+6: shallow-clicker pair mode, targets filter integration, identity hook). `report.md.hbs` 스냅샷 재생성. Cross-platform vendored-lib byte-equality 테스트 통과.
+
 ## QA 팀 vs Verification 팀 — 2026-05-22  (`harness-floor` v0.5.0)
 
 기존에 harness가 "reviewer"로 묶어놨던 두 가지 review 관점을 명시적으로 분리.
