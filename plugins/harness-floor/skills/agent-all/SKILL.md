@@ -57,7 +57,7 @@ Runs a complete multi-agent pipeline from a free-form prompt or an existing task
 ## Rules
 
 1. **You orchestrate; phases are source of truth.** Read each phase file before running it.
-2. **State lives in `.agent-all-state.json`.** Shape: `{phases:[{phase,completedAt}], task, plan, waves[], iter, costUSD, prUrl}`. `--resume` resumes after `max(phases[*].phase)`.
+2. **State lives in `.agent-all-state.json`.** Shape: `{phases:[{phase,completedAt}], task, plan, waves[], iter, costUSD, prUrl, decisions:{<task-id>:{<decision-id>:{chosen_index,auto_resolved,timestamp,reasoning?}}}}`. `--resume` resumes after `max(phases[*].phase)`.
 3. **Delegate, don't reimplement.** Phase 1 calls `superpowers:brainstorming`; Phase 2 calls `superpowers:writing-plans`; Phase 3 calls `superpowers:subagent-driven-development`. Your code is a thin coordinator.
 4. **Loop is opt-in.** Without `--loop`, Phase 6 is a no-op.
 5. **Hard caps:** `--max-iter` clamped to 50 server-side; `--max-cost` enforced after each wave.

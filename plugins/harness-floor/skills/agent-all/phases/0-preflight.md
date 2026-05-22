@@ -24,7 +24,7 @@
 
 7. **Resolve loop break-condition (if `--loop` is set).** See `### Break-condition resolution` below. Mutates `config.loop.breakCondition` in memory; may rewrite `.agent-all.json` if user opts in.
 
-8. Push `{phase: 0, completedAt: "<iso>"}` to state. Use atomic write (temp + rename). Create `.agent-all-state.json` with `{"phases": []}` if missing.
+8. Push `{phase: 0, completedAt: "<iso>"}` to state. Use atomic write (temp + rename). Create `.agent-all-state.json` with `{"phases": [], "decisions": {}}` if missing. The `decisions` map is populated by Phase 3b (decision-surfacing) and keyed by task-id.
 
 ## Break-condition resolution
 
