@@ -14,15 +14,29 @@
 
 ## Progress (handoff — 2026-05-21)
 
-Tasks 1 and 2 were completed on `feat/decision-surfacing-policy-hooks` during the original planning session. Resume from **Task 3**.
+Phases A, B, C, D **complete**. 12 of 29 tasks landed on `feat/decision-surfacing-policy-hooks`. Full repo suite **1279/1279 passing** (added 33 new tests). Resume from **Task 13**.
 
 | Task | Status | Commit |
 |---|---|---|
 | 1 — Schema validator | ✅ done (5/5 tests) | `4fcdee5` |
-| 2 — AskUserQuestion renderer | ✅ done (3/3 tests) | `0ab1e83` + `790718e` (header-truncation fix — plan bug discovered: AskUserQuestion enforces 12-char header limit; impl now uses `slice(0, 12)` and the test asserts truncated value `"Token storag"`) |
-| 3 onward | pending | — |
+| 2 — AskUserQuestion renderer | ✅ done (3/3 tests) | `0ab1e83` + `790718e` (plan bug: AskUserQuestion enforces 12-char header limit; impl uses `slice(0, 12)`, test asserts truncated value `"Token storag"`) |
+| 3 — Non-TTY resolver | ✅ done (2/2 tests) | `62d1c48` |
+| 4 — Addendum prompt text | ✅ done | `9b3c622` |
+| 5 — Verification validator | ✅ done (4/4 tests) | `31b308f` |
+| 6 — Reviewer-audit validator | ✅ done (5/5 tests) | `b27e760` |
+| 7 — floor-policy hook (Pre+Post router) | ✅ done (5/5 tests) | `4213dc9` |
+| 8 — Hook install/uninstall wiring | ✅ done (3/3 tests) | `605a5a6` |
+| 9 — Decision-router (wave coord) | ✅ done (3/3 tests) | `067b21b` |
+| 10 — Phase 3 3a/3b/3c doc rewrite | ✅ done | `36e414e` |
+| 11 — config-loader policy opt-out (`.agent-all.json` `policy` key) | ✅ done (3/3 tests) | `fbf9b0a`. **Plan deviation:** reused existing `loadConfig(path)` API instead of introducing `loadAgentAllConfig(dir)` — added `policy` to `DEFAULTS` so deepMerge handles overrides naturally. |
+| 12 — `decisions: {}` in initial state shape (`.agent-all-state.json`) | ✅ done | `d280ab6` |
+| Regression fix — vendored config + restored 3-dispatch.md safety-net substrings (`STATUS: blocked, REASON: verification failed`, etc.) | ✅ done | `8d2639b` |
+| 13 onward | pending | — |
 
-The header-truncation fix applies retroactively to any future task that surfaces AskUserQuestion-bound data — see commit `790718e` rationale.
+**Notes for resume:**
+- Task 13 (`sync-lib.mjs`) needs care: the current sync covers `render.mjs` only. Extending it to vendor `lib/decisions/` and `lib/policy/` may surface new test failures (vendored-byte-identical rule) — re-run `node --test` after each port's emit update.
+- A minor asymmetry exists between the two validators: `verification-validator.mjs` matches case-insensitively (`/STATUS:\s*DONE\b/i`, `/verification_passed/i`), but `reviewer-audit-validator.mjs` is case-sensitive (`/VERIFICATION_AUDIT:\s*(passed|failed|skipped)\b/`). Subagent flagged in Task 6 report. Not a blocker; tighten the reviewer prompt to always emit lowercase, or widen the regex if a downstream task unifies the contract.
+- Phase E Tasks 14-18 (per-platform port emit) read each port's `bin/install.mjs` first to find the emit pattern. Don't blind-copy the plan's snippets — match the existing emitter shape.
 
 ---
 
