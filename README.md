@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-stable--cli--verification--pending-blue) ![tests](https://img.shields.io/badge/tests-1246%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-stable--cli--verification--pending-blue) ![tests](https://img.shields.io/badge/tests-1279%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..." --loop --qa` per feature; the agent brainstorms → plans → writes → tests → **visually QAs every page** → opens the PR — and keeps iterating until tests AND the UI both pass — without you babysitting every turn.
 
@@ -270,12 +270,26 @@ Themes compose freely. A typical session uses Builder once, then Floor for the a
 | 0 Preflight | main | git checks (~tiny) |
 | 1 Intent (brainstorm) | main | Q&A with you (moderate accumulation) |
 | 2 Plan | main | the plan file (moderate) |
-| **3 Dispatch** | **fresh subagents** | only `{status, commits, costUSD}` summaries — implementer's trial-and-error stays isolated |
-| **4 Gate** | **fresh subagents** | only spec/quality verdicts — reviewer's reading stays isolated |
+| **3 Dispatch (3a/3b/3c)** | **fresh subagents (3a/3c parallel) + main (3b sequential ask)** | scoping payloads (~few-hundred tokens per task) + user-selected answers — implementer's code-writing stays isolated |
+| **4 Gate** | **fresh subagents** | only spec/quality verdicts + reviewer-audit token — reviewer's reading stays isolated |
 | 5 PR | main | `gh pr create` output (small) |
 | 6 Loop | main | breakCondition exit code (one number) |
 
 Heavy lifting (reading code, writing patches, running tests, fixing failures) happens **inside subagents** dispatched via `superpowers:subagent-driven-development`. Each subagent is a fresh conversation; their turn-by-turn output never enters your main session. Main sees only the verdict — so a loop iteration adds maybe 2–5K tokens, not 50K.
+
+### Decision-surfacing — when subagents pause for input
+
+Phase 3 now runs as **3a (scoping) → 3b (ask) → 3c (implement)**. Each implementer subagent first does a read-only scoping pass and returns architectural / spec-ambiguity decisions as a structured JSON payload. Main thread shows them as a 1/2/3 panel with the subagent's recommendation flagged (via `AskUserQuestion`). The subagent is then re-dispatched with the answers baked in.
+
+In **non-TTY mode** (overnight loops, `--yes`, iteration ≥ 2), recommended options are auto-picked and logged to `.agent-all-state.json` + `docs/agent-all/iter-<N>/decisions.md`. Overnight workflow preserved.
+
+Enforced via a single pair of `floor-policy` hooks (PreToolUse + PostToolUse on `Task`) that also opportunistically validates `verification_passed` and `VERIFICATION_AUDIT:` tokens. Opt out per project in `.agent-all.json`:
+
+```json
+{ "policy": { "decisionSurfacing": false, "verification": true, "reviewerAudit": true } }
+```
+
+See `docs/superpowers/specs/2026-05-21-decision-surfacing-and-policy-hooks-design.md`.
 
 ### The composable trio
 
@@ -643,7 +657,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 - **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for design docs per plugin.
 - **All 17 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
-- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1246+ tests, all green.
+- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1279+ tests, all green.
 - **Per-platform porting** — see specs ending in `-impl-spec.md` or `-decomposition.md` under `docs/superpowers/specs/`.
 - **Cross-platform support matrix** — see [docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md](docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md).
 - **Hook precedence (if you're mixing plugins that all register hooks)** — see [docs/superpowers/specs/2026-05-18-hook-precedence-integration.md](docs/superpowers/specs/2026-05-18-hook-precedence-integration.md).
@@ -654,7 +668,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 | Layer | Status | Note |
 |---|---|---|
-| Unit/integration tests | ✅ **1246/1246 passing** | Mock toolCallers + isolated lib tests |
+| Unit/integration tests | ✅ **1279/1279 passing** | Mock toolCallers + isolated lib tests; +33 for decision-surfacing |
 | Install renderers (5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
 | Marketplace registration | ✅ 17 plugins listed | sync between local + origin |
 | Claude Code skills | ✅ ship today | core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug` |
@@ -663,6 +677,20 @@ If you want the technical details, design specs, or are porting to a new platfor
 | Anthropic/OpenAI/Vertex SDK hookup | ⏳ deferred | Currently mock toolCallers; production hookup needs peer deps |
 
 Versioning: Claude Code core plugins at `v0.2.0`, per-platform ports at `v0.1.0`.
+
+---
+
+## Known limitations
+
+- **Cursor / Gemini / VS Code Copilot decision-surfacing enforcement is soft.** Those platforms don't expose tool-call hooks, so the protocol is prompt-injected via rules / `GEMINI.md` / `copilot-instructions.md`. A non-compliant subagent cannot be blocked at the harness layer. Claude Code / Copilot CLI / Codex CLI (after manual `[[hooks.agent]]` merge) get hard hook enforcement.
+
+- **Non-TTY auto-pick can be wrong.** Overnight runs auto-resolve every decision to the subagent's `recommended_index`. Mistakes only surface the next morning. Every auto-pick is logged with reasoning to `docs/agent-all/iter-<N>/decisions.md` so the next iteration's plan can flag past picks for re-review.
+
+- **`description`-based dispatch routing for policy hook.** The `floor-policy` hook identifies implementer/reviewer subagents by `Task` tool `description` (`"Implement Task ..."` / `"Review Task ..."`). User-dispatched subagents that happen to use those words also trigger the protocol. Per-project opt-out via `.agent-all.json` `policy: { decisionSurfacing: false }`.
+
+- **`/explore` rarely fires the protocol.** It's read-only and seldom faces architectural decisions. Hook is installed for consistency; in practice a no-op for explore.
+
+- **Per-task scoping pass adds ~15-20% subagent cost.** Each implementer is dispatched twice (scoping + impl). `--max-cost` still governs.
 
 ## Roadmap
 
@@ -679,7 +707,7 @@ MIT License. PRs welcome — open an issue first for design discussion on anythi
 
 Before submitting:
 ```bash
-node --test                              # 1246/1246 must pass
+node --test                              # 1279/1279 must pass
 node scripts/sync-lib.mjs --check        # vendored render.mjs copies in sync
 ```
 

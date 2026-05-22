@@ -4,6 +4,36 @@
 
 모든 주요 변경 사항. 각 릴리스 후보에 대한 날짜 스탬프 태그가 존재합니다.
 
+## Decision-surfacing + policy-hook 강제 — 2026-05-21
+
+### 추가
+
+- **Decision-surfacing 프로토콜.** `/agent-all` Phase 3가 **3a scoping → 3b ask → 3c implement**로 분리. Implementer subagent가 read-only scoping pass를 거쳐 아키텍처/스펙 모호점 결정들을 JSON payload `{options[2-4], recommended_index, reasoning}`로 반환, main이 `AskUserQuestion`으로 1/2/3 패널 표시 (추천 표시 포함), 답변 baked-in으로 재-dispatch. Non-TTY 모드는 recommended 자동 선택 + `.agent-all-state.json` + `docs/agent-all/iter-<N>/decisions.md` 로그.
+- **단일 `floor-policy` hook** (PreToolUse + PostToolUse on `Task`) — dispatch 시 scoping addendum + verification directive 자동 inject, 반환 시 `verification_passed` / `VERIFICATION_AUDIT: passed|failed|skipped` 토큰 검증. 단일 파일에 internal router — Task 호출 아니면 오버헤드 거의 없음.
+- **`.agent-all.json` `policy` opt-out** — `decisionSurfacing`, `verification`, `reviewerAudit` 플래그 모두 기본 `true`. 기존 deep-merge가 자연스럽게 override 처리하도록 `DEFAULTS`에 추가.
+- **플랫폼별 parity** — Cursor (`.cursor/rules/decision-protocol.mdc`, soft), Copilot CLI (`.github/agent-all/decision-protocol.md`, `.github/hooks/`로 hard), Codex (`[[hooks.agent]]` snippet을 stdout으로 — 수동 merge, hard), Gemini (`.gemini/agent-all-decision-protocol.md`, soft), VS Code Copilot (`.github/copilot-instructions.md` 읽음, soft).
+- **Spec + plan:** `docs/superpowers/specs/2026-05-21-decision-surfacing-and-policy-hooks-design.md`, `docs/superpowers/plans/2026-05-21-decision-surfacing-and-policy-hooks.md`.
+
+### 변경
+
+- Phase 3 dispatch 문서가 3a/3b/3c sub-phase로 재구성 (`plugins/harness-floor/skills/agent-all/phases/3-dispatch.md`).
+- README "Main-thread isolation" 표가 새 phase-3 토큰 모양 반영 (3a/3c subagents + 3b sequential ask).
+- `.agent-all-state.json` 초기 shape에 `decisions: {}` key 추가 (Phase 3b에서 populating).
+- README에 "알려진 한계" 섹션 추가 (English + Korean) — Cursor/Gemini/VS Code soft enforcement, non-TTY auto-pick 주의, description 기반 routing, per-task scoping 비용(~+15-20%) 등.
+
+### 수정
+
+- AskUserQuestion `header` 12-char 제한: `lib/decisions/renderer.mjs`가 `slice(0, 12)`로 truncate. Plan-side 버그를 implementer subagent가 Task 2에서 발견.
+
+### 테스트
+
+전체 suite **1246 → 1279 통과** (+33 새 tests across `decisions/`, `policy/`, scenarios, config-loader policy, regression coverage).
+
+### Plan 일탈
+
+- Task 11은 `loadAgentAllConfig(dir)` 새로 만드는 대신 기존 `loadConfig(path)` API 재사용. 효과 동일, API 중복 없음.
+- Task 13 (`sync-lib.mjs`가 `decisions/` + `policy/` libs vendoring) 보류. Soft prompt-only 포트는 vendored runtime libs 불필요; hard-enforce 포트는 canonical hook script 직접 참조.
+
 ## [미출시]
 - `harness-thrift` v2 summariser — Claude Code programmatic compact API
   출시 시 도입 (현재 v1 advisory).

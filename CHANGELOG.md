@@ -4,6 +4,36 @@
 
 All notable changes to this project. Date-stamped tags exist for each release candidate.
 
+## Decision-surfacing + policy-hook enforcement — 2026-05-21
+
+### Added
+
+- **Decision-surfacing protocol.** `/agent-all` Phase 3 splits into **3a scoping → 3b ask → 3c implement**. Implementer subagents do a read-only scoping pass, return architectural / spec-ambiguity decisions as a JSON payload `{options[2-4], recommended_index, reasoning}`, main asks user via `AskUserQuestion` (1/2/3 panel with recommendation flagged), then re-dispatches with answers baked in. Non-TTY mode auto-picks recommended and logs to `.agent-all-state.json` + `docs/agent-all/iter-<N>/decisions.md`.
+- **Single `floor-policy` hook** (PreToolUse + PostToolUse on `Task`) auto-injects the scoping addendum + verification directive on dispatch and validates `verification_passed` / `VERIFICATION_AUDIT: passed|failed|skipped` tokens on return. Single file with internal router — overhead negligible when not a Task call.
+- **`.agent-all.json` `policy` opt-out** — flags `decisionSurfacing`, `verification`, `reviewerAudit`, all defaulting `true`. Added to `DEFAULTS` so the existing deep-merge handles overrides naturally.
+- **Per-platform parity** — Cursor (`.cursor/rules/decision-protocol.mdc`, soft), Copilot CLI (`.github/agent-all/decision-protocol.md`, hard via `.github/hooks/`), Codex (`[[hooks.agent]]` snippet to stdout for manual merge, hard), Gemini (`.gemini/agent-all-decision-protocol.md`, soft), VS Code Copilot (reads `.github/copilot-instructions.md`, soft).
+- **Spec + plan:** `docs/superpowers/specs/2026-05-21-decision-surfacing-and-policy-hooks-design.md`, `docs/superpowers/plans/2026-05-21-decision-surfacing-and-policy-hooks.md`.
+
+### Changed
+
+- Phase 3 dispatch documentation restructured into 3a/3b/3c sub-phases (`plugins/harness-floor/skills/agent-all/phases/3-dispatch.md`).
+- README "Main-thread isolation" table reflects new phase-3 token shape (3a/3c subagents + 3b sequential ask).
+- `.agent-all-state.json` initial shape gains `decisions: {}` key (populated by Phase 3b).
+- Added "Known limitations" section to README (English + Korean) covering soft enforcement on Cursor/Gemini/VS Code, non-TTY auto-pick caveat, `description`-based routing, and per-task scoping cost (~+15-20%).
+
+### Fixed
+
+- AskUserQuestion `header` 12-char limit: `lib/decisions/renderer.mjs` now truncates via `slice(0, 12)`. Plan-side bug surfaced by implementer subagent in Task 2.
+
+### Tests
+
+Suite **1246 → 1279 passing** (+33 new tests across `decisions/`, `policy/`, scenarios, config-loader policy, plus regression coverage).
+
+### Plan deviations
+
+- Task 11 reused existing `loadConfig(path)` API instead of introducing `loadAgentAllConfig(dir)`. Same effect, no API duplication.
+- Task 13 (`sync-lib.mjs` vendoring of `decisions/` + `policy/` libs) deferred. Soft prompt-only ports don't require vendored runtime libs; hard-enforce ports reference the canonical hook script directly. Future work if cross-platform runtime parity becomes required.
+
 ## [Unreleased]
 - `harness-thrift` v2 summariser using Claude Code programmatic compact
   API (once surfaced) — currently v1 advisory.

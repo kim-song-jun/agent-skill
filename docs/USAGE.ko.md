@@ -186,3 +186,57 @@ playwright 플러그인을 설치합니다:
 ```
 
 그 다음 설치를 다시 시도합니다.
+
+---
+
+## Decision-surfacing — 패널 형태
+
+`/agent-all`이 Phase 3에서 implementer subagent를 dispatch할 때, 첫 동작은 **scoping pass** — read-only로 코드를 읽고 혼자 결정했을 결정 후보들을 JSON payload로 반환. main thread는 각 결정을 subagent의 추천 표시된 1/2/3 패널로 보여줍니다.
+
+세션 출력 예 (대화 모드):
+
+```
+=== Task 3: Add OAuth callback handler ===
+
+[Token storage] 기존 코드는 session에 cookie 쓰지만, JWT 토큰은 이 codebase에서
+src/lib/auth.ts:42 기준으로 보통 localStorage에 저장됨.
+
+추천 사유: 이 앱의 sessions은 이미 cookie-based; storage 전략 섞으면 복잡도 증가. Cookie가 기존 패턴과 일치.
+
+  1. (Recommended) Cookie (httpOnly, secure) — 기존 session 패턴과 일치
+  2. localStorage — 기존 JWT 패턴과 일치, XSS 위험 인지
+  3. 서버 측 session store (Redis) — 가장 안전, Redis 의존성 추가
+
+선택: _
+```
+
+**Non-TTY 모드** (야간, `--yes`, loop iter ≥ 2)는 recommended를 자동 선택하고 `docs/agent-all/iter-<N>/decisions.md`에 append:
+
+```markdown
+# Auto-resolved decisions — iter 7 — 2026-05-21T03:14Z
+
+## Task 3 — Add OAuth callback handler
+
+### Token storage
+- Chosen: **Cookie (httpOnly, secure)** (recommended)
+- Reasoning: 기존 session 패턴 …
+```
+
+**과거 auto-pick 검토:** `grep -A2 "Chosen:" docs/agent-all/iter-*/decisions.md`로 모든 iteration의 자동 선택을 한 번에. Regression 발견 시 다음 iteration plan에 force re-ask 메모.
+
+**프로젝트별 opt-out:** `.agent-all.json` →
+```json
+{ "policy": { "decisionSurfacing": false, "verification": true, "reviewerAudit": true } }
+```
+Protocol 전체 스킵. Verification + reviewer-audit hook은 별도로 계속.
+
+**플랫폼별 강제 강도:**
+| 플랫폼 | 메커니즘 | 강도 |
+|---|---|---|
+| Claude Code | `floor-policy` hook (PreToolUse + PostToolUse on Task) | 🟢 Hard |
+| Copilot CLI | `.github/hooks/decision-protocol.json` | 🟢 Hard |
+| Codex CLI | `~/.codex/config.toml`의 `[[hooks.agent]]` (수동 merge) | 🟢 Hard |
+| Cursor | `.cursor/rules/decision-protocol.mdc` (always-loaded rule) | 🟡 Soft |
+| Gemini CLI | `.gemini/agent-all-decision-protocol.md` (GEMINI.md에서 참조) | 🟡 Soft |
+| VS Code Copilot | `.github/agent-all/decision-protocol.md` (copilot-instructions.md에서) | 🟡 Soft |
+

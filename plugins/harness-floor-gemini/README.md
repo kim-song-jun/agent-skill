@@ -1,5 +1,7 @@
 # harness-floor-gemini
 
+> **Decision-surfacing enforcement: 🟡 Soft.** Gemini CLI does not have a tool-call hook system today. The decision-protocol is prompt-only via `.gemini/agent-all-decision-protocol.md` (referenced from `GEMINI.md`). A non-compliant subagent cannot be blocked at the harness layer — compliance is best-effort. Hard enforcement (PostToolUse rejection) is only available on Claude Code, Copilot CLI, and Codex CLI.
+
 Scaffold-level visual-qa support for Gemini CLI. Emits:
 
 - `.visual-qa.json` at project root

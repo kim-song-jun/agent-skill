@@ -1,5 +1,7 @@
 # harness-floor-copilot
 
+> **Decision-surfacing enforcement: 🟢 Hard.** Copilot CLI exposes a `.github/hooks/` framework. The decision-protocol hook installed by this plugin registers `pre-tool-use` and `post-tool-use` matchers on the `task` tool — non-compliant subagents are rejected at PostToolUse.
+
 Scaffold-level visual-qa support for GitHub Copilot CLI. Emits:
 
 - `.visual-qa.json` at project root
