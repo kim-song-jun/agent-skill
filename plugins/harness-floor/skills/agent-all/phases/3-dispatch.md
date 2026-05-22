@@ -1,10 +1,11 @@
-# Phase 3 — Dispatch
+# Phase 3 — Dispatch (3a Scoping → 3b Ask → 3c Implement)
 
 ## Inputs (from state)
 
 - `plan.path`
 - `config.defaults.waveSize` (or `--wave-size` override)
 - `config.waves[<waveSize>]`
+- `config.policy.decisionSurfacing` (default true)
 
 ## Steps
 
@@ -23,29 +24,55 @@
 
 2. Build waves: `const waves = buildWaves(tasks, config.waves[waveSize])` from `lib/wave-builder.mjs`.
 
-3. For each wave:
-   a. Print: `Wave <i+1>/<N> — <waves[i].length> tasks in parallel`.
-   b. Invoke `Skill` with `superpowers:subagent-driven-development` passing a synthesized mini-plan containing just this wave's tasks (rendered as `### Task N: <title>` headings with the same file/code blocks from the original plan section).
-   c. subagent-driven-development handles its own implementer + spec-reviewer + quality-reviewer cycle per task in the wave.
-   d. Capture wave result: `{index: i, tasks: [{id, status, commits}], status: "completed"|"incomplete"}`.
+3. For each wave, run sub-phases **3a → 3b → 3c**:
 
-4. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
+### 3a — Scoping (parallel)
+
+a. Dispatch one Task subagent per task in the wave with description `Implement Task N: <title>` and a prompt containing the mini-plan ONLY (no addendum text — the `floor-policy` PreToolUse hook injects the scoping addendum + verification directive automatically).
+b. Collect each return as a JSON payload between ` ```decision-payload ` fences. Parse with `lib/decisions/schema.mjs` `validateDecisionPayload`. If `result.ok === false`, treat as `NO_DECISIONS` and log a warning.
+
+### 3b — Ask (sequential UI per task)
+
+a. If `config.policy.decisionSurfacing === false`, skip 3b entirely and use empty answer map for all tasks.
+b. Call `lib/decision-router.mjs` `routeWaveDecisions({ payloads, statePath, isTTY, askUser })`.
+   - `isTTY = process.stdout.isTTY && !flags.yes && iteration === 1`. Loop iteration > 1 forces non-TTY.
+   - `askUser` invokes `AskUserQuestion` with the renderer's args. The returned index is mapped back through the router.
+c. Persist `state.decisions` to `.agent-all-state.json` after every individual answer (resumable).
+
+### 3c — Implementation (parallel re-dispatch)
+
+a. For each task, build a fresh prompt: the original mini-plan PLUS a section `## User Decisions for This Task` listing `decision.title → chosen option label + description`.
+b. Re-dispatch implementer subagent. PostToolUse hook validates `STATUS: DONE` came with `verification_passed` line.
+c. Phase 4 (Gate) reviewer subagents likewise get the `Review Task N: <title>` description; PreToolUse hook injects the `VERIFICATION_AUDIT` directive; PostToolUse hook validates the token's presence.
+
+4. Capture wave result: `{index: i, tasks: [{id, status, commits, decisions: state.decisions[id]}], status: "completed"|"incomplete"}`.
+
+5. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
 
 ## On error
 
-- If a wave's subagent-driven-development reports BLOCKED for >1 task: mark wave `incomplete`. Phase 4 will decide whether to retry or abort.
+- If a 3a scoping subagent returns invalid JSON or a payload that fails schema validation: treat as `NO_DECISIONS` for that task and log a warning to `state.warnings`.
+- If a 3c implementer reports BLOCKED for >1 task in a wave: mark wave `incomplete`. Phase 4 will decide whether to retry or abort.
 - If `tasks.length === 0`: abort with `plan has no '### Task N' headings`.
 
-## Per-subagent verification (safety net for unattended runs)
+## Per-subagent verification (safety net)
 
-Every dispatched subagent's prompt MUST include the following directive (append to the synthesized mini-plan):
+Now enforced by the `floor-policy` hook (Pre+Post on `Task`). The hook auto-injects:
 
-> Before reporting `STATUS: completed`, invoke `superpowers:verification-before-completion` to run the project's test command (from `.agent-all.json` `breakCondition`, falling back to the stack-detected default). Do not mark a task complete if verification fails — report `STATUS: blocked, REASON: verification failed` instead, with the failing output captured.
->
-> For tasks adding new behavior (feature work, not hotfixes), invoke `superpowers:test-driven-development` to write tests before implementation. This is recommended, not strictly enforced — judgment calls allowed for trivial changes (typos, docs, config tweaks).
+- For implementer dispatches (`description: "Implement Task ..."`): scoping-pass addendum + verification directive.
+- For reviewer dispatches (`description: "Review Task ..."`): `VERIFICATION_AUDIT` directive.
 
-This is the safety net that makes `--loop` runs safe to leave unattended. Verification is mandatory; TDD is recommended for feature-shaped tasks.
+PostToolUse validates each. A failing implementer (claims DONE without verification log) or failing reviewer (omits `VERIFICATION_AUDIT:` line) is rejected — the controller must re-dispatch with the hook's error message visible.
+
+For projects that opt out via `.agent-all.json` `policy: { decisionSurfacing: false, verification: false, reviewerAudit: false }`, the corresponding hook routes become no-ops; phase 3 falls back to a single implementer dispatch with the mini-plan only.
 
 ## Output to user
 
-Print one line per wave: `Wave <i>: <completed>/<total> tasks succeeded`.
+Print per wave:
+```
+Wave <i> — scoping <N>/<N>, ask <K>/<N>, implement <M>/<N>
+```
+Print decision summary in non-TTY mode:
+```
+[wave i] auto-resolved 5 decisions across 3 tasks → docs/agent-all/iter-<n>/decisions.md
+```
