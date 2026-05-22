@@ -37,6 +37,9 @@ fi
 echo "→ verifying vendored libs match canonical sources …"
 node "$REPO_ROOT/scripts/sync-lib.mjs" --check
 
+echo "→ refreshing claude marketplace cache for agent-skill …"
+claude plugin marketplace update agent-skill 2>&1 | tail -1 || true
+
 # `claude plugin install` is idempotent — if a plugin is already at any
 # version, it won't fetch the latest commit. To actually pull updates we
 # must uninstall first, then install. Skip uninstall for plugins that
