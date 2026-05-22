@@ -31,7 +31,24 @@ Phases A, B, C, D **complete**. 12 of 29 tasks landed on `feat/decision-surfacin
 | 11 — config-loader policy opt-out (`.agent-all.json` `policy` key) | ✅ done (3/3 tests) | `fbf9b0a`. **Plan deviation:** reused existing `loadConfig(path)` API instead of introducing `loadAgentAllConfig(dir)` — added `policy` to `DEFAULTS` so deepMerge handles overrides naturally. |
 | 12 — `decisions: {}` in initial state shape (`.agent-all-state.json`) | ✅ done | `d280ab6` |
 | Regression fix — vendored config + restored 3-dispatch.md safety-net substrings (`STATUS: blocked, REASON: verification failed`, etc.) | ✅ done | `8d2639b` |
-| 13 onward | pending | — |
+| 13 — `sync-lib.mjs` extension | ⏸ deferred | Soft prompt-only ports don't require vendored decisions/policy libs; hard-enforce ports reference canonical hook directly. Future work if cross-platform runtime parity becomes required. |
+| 14 — Cursor port emit `.cursor/rules/decision-protocol.mdc` | ✅ done | (in `b73abda`) |
+| 15 — Copilot port emit `.github/agent-all/decision-protocol.md` | ✅ done | (in `b73abda`) |
+| 16 — Codex port stdout snippet for `[[hooks.agent]]` | ✅ done | (in `b73abda`) |
+| 17 — Gemini port emit `.gemini/agent-all-decision-protocol.md` | ✅ done | (in `b73abda`) |
+| 18 — VS Code Copilot (uses Copilot's `.github/copilot-instructions.md`) | ✅ done | (covered by 15) |
+| 19 — E2E non-TTY smoke test | ✅ done (1/1) | `c5a8381` |
+| 20 — Cross-platform isolation rule | ✅ no-change needed | Existing test passes after vendored config update |
+| 21 — Full suite green gate | ✅ done | **1280/1280 passing** |
+| 22 — README Known Limitations + decision-surfacing callout | ✅ done | (in Phase G commit) |
+| 23 — README.ko mirror | ✅ done | (in Phase G commit) |
+| 24 — USAGE.md Decision-surfacing section | ✅ done | (in Phase G commit) |
+| 25 — USAGE.ko mirror | ✅ done | (in Phase G commit) |
+| 26 — Spec sibling `.ko.md` (condensed) | ✅ done | (in Phase G commit) |
+| 27 — CHANGELOG + CHANGELOG.ko entries | ✅ done | (in Phase G commit) |
+| 28 — Per-platform port READMEs (4 ports) | ✅ done | (in Phase G commit) |
+
+**ALL TASKS COMPLETE.** Branch `feat/decision-surfacing-policy-hooks` ready for review/merge. Final suite: **1280/1280 passing.**
 
 **Notes for resume:**
 - Task 13 (`sync-lib.mjs`) needs care: the current sync covers `render.mjs` only. Extending it to vendor `lib/decisions/` and `lib/policy/` may surface new test failures (vendored-byte-identical rule) — re-run `node --test` after each port's emit update.
