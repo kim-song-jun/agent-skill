@@ -64,7 +64,13 @@ Now enforced by the `floor-policy` hook (Pre+Post on `Task`). The hook auto-inje
 
 PostToolUse validates each. A failing implementer (claims DONE without verification log) or failing reviewer (omits `VERIFICATION_AUDIT:` line) is rejected — the controller must re-dispatch with the hook's error message visible.
 
+Implementer subagents are expected to invoke `superpowers:verification-before-completion` (running the project's test command from `.agent-all.json` `breakCondition`, falling back to the stack-detected default) before reporting `STATUS: DONE`. The PostToolUse hook's verification check is the safety net for cases where they don't.
+
+If verification fails the implementer must report `STATUS: blocked, REASON: verification failed` with the failing output captured — not `DONE`. This is the "two-layer safety net" guarantee: implementer asserts + reviewer audits.
+
 For projects that opt out via `.agent-all.json` `policy: { decisionSurfacing: false, verification: false, reviewerAudit: false }`, the corresponding hook routes become no-ops; phase 3 falls back to a single implementer dispatch with the mini-plan only.
+
+For tasks adding new behavior (feature work, not hotfixes), invoke `superpowers:test-driven-development` to write tests before implementation. This is recommended, not strictly enforced — judgment calls allowed for trivial changes (typos, docs, config tweaks).
 
 ## Output to user
 
