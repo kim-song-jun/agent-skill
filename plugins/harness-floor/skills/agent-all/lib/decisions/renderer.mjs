@@ -11,7 +11,7 @@ export function renderToAskUserQuestion(decision, { taskTitle }) {
   return {
     questions: [{
       question: `[${taskTitle}] ${decision.title}\n\nContext: ${decision.context}\n\nReasoning for recommendation: ${decision.reasoning}`,
-      header: decision.title,
+      header: decision.title.slice(0, 12),
       multiSelect: false,
       options,
     }],

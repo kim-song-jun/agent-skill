@@ -19,7 +19,8 @@ test("renders single decision to AskUserQuestion arg shape", () => {
   const q = args.questions[0];
   assert.match(q.question, /Token storage/);
   assert.match(q.question, /Add OAuth/);
-  assert.equal(q.header, "Token storage");
+  // AskUserQuestion enforces a 12-char header limit; "Token storage" (13) → "Token storag" (12)
+  assert.equal(q.header, "Token storag");
   assert.equal(q.multiSelect, false);
   assert.equal(q.options.length, 2);
   // Recommended option must be first per AskUserQuestion convention
