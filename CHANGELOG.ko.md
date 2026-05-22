@@ -4,6 +4,39 @@
 
 모든 주요 변경 사항. 각 릴리스 후보에 대한 날짜 스탬프 태그가 존재합니다.
 
+## QA 팀 vs Verification 팀 — 2026-05-22  (`harness-floor` v0.5.0)
+
+기존에 harness가 "reviewer"로 묶어놨던 두 가지 review 관점을 명시적으로 분리.
+
+### 추가
+
+- **QA 팀 페르소나 (`qa.md`)**가 이제 명시적으로 **사용자 측면** 감사. `{{persona}}`를 사용자로 다룸. 결과: acceptance 시나리오 + defect 리포트. Audit 토큰: `QA_AUDIT: passed | failed | skipped`.
+- **Verification 팀** (`tester.md` + `reviewer.md`)이 이제 명시적으로 **기술 스택 / spec 준수** 감사. Audit 토큰: `VERIFICATION_AUDIT` (기존).
+- **`floor-policy` hook이 QA dispatch 처리.** Description prefix `QA Review Task <N>: <title>`이면 사용자 측면 directive (en/ko 둘 다 동봉) + PostToolUse에서 `QA_AUDIT` 토큰 검증. 기존 `Review Task` prefix는 그대로 Verification directive로 라우팅 — backward compatible.
+- **`.agent-all.json` `policy.qaAudit`** 플래그 (기본 `true`) — 사용자 페르소나 없는 프로젝트 (lib, UI 없는 CLI 등)는 opt-out 가능. `false`면 Phase 4 Gate가 QA dispatch 스킵.
+- **Phase 4 two-team gate.** 웨이브는 `VERIFICATION_AUDIT ∈ {passed, skipped}` AND `QA_AUDIT ∈ {passed, skipped}`일 때만 pass. 기술 성공 ≠ 사용자 측면 성공: 기술 감사 통과 + QA 감사 실패 → 웨이브 fail, QA defect 리포트가 다음 iteration plan의 입력이 됨.
+
+### 새 lib
+
+- `lib/policy/qa-audit-validator.mjs` — `reviewer-audit-validator`와 parallel. 같은 `{ ok, reason }` 모양.
+
+### 페르소나 템플릿 업데이트
+
+- `agents/qa.md.hbs` — 헤더가 "QA team (user-side)"로 재작성 + audit token 섹션.
+- `agents/tester.md.hbs` — 헤더가 "Verification team (tech-stack side)"로 재작성 + audit token 섹션.
+- `agents/reviewer.md.hbs` — 헤더가 "Verification team (spec / quality side)"로 재작성 + audit token 섹션.
+
+### 테스트
+
+전체 **1322 → 1334 통과** (+12 새: QA validator 6, hook QA 경로 6). 3개 업데이트된 페르소나 템플릿 × 7개 스택 프로파일 = 21개 render-snapshot 재생성.
+
+### 한계
+
+- `qa.md`는 per-persona — `/agent-init`에서 페르소나 미선언 시 `{{persona}}` 미해결 상태; QA dispatch가 "generic end-user perspective" prose로 fallback.
+- 토큰은 영문 고정. 한국어 directive는 그 영문 토큰을 그대로 emit 하라고 지시하는 형태.
+- QA-only 실패 시 mid-wave 즉시 abort 없음 — Phase 4가 두 reviewer 모두 완료한 뒤 판단. 기존 3회 retry로 보정 루프 커버.
+- Conflict resolution은 binary. severity 가중 없음; QA 실패 → wave 실패. 미래에 `qaAuditSeverity: warn | fail` 추가 가능.
+
 ## Visual-QA pairs + element-scope + multi-tier matching — 2026-05-22  (`harness-floor` v0.4.0)
 
 `visual-qa`의 3가지 additive 기능. 모든 새 키는 backward-compatible — 기존 `.visual-qa.json` 그대로 동작.
