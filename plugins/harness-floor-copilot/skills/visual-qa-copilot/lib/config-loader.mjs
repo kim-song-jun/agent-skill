@@ -75,5 +75,35 @@ export function loadConfig(path, env) {
   const schemaErrors = validate(resolved);
   const errors = [...schemaErrors, ...envErrors];
   if (errors.length) return { ok: false, errors };
-  return { ok: true, config: resolved };
+  return { ok: true, config: applyV04Defaults(resolved) };
+}
+
+// v0.4+ — fill in default targets / pairs / matching / report blocks so
+// downstream lib callers can rely on these keys existing without null checks.
+// All keys are opt-out — set to falsy in the project's .visual-qa.json to disable.
+function applyV04Defaults(cfg) {
+  if (cfg.mode !== "comprehensive") return cfg;
+  const c = cfg.comprehensive ?? (cfg.comprehensive = {});
+  c.targets = {
+    includeSelectors: [],
+    excludeSelectors: [],
+    actionsPerElement: { default: ["click"] },
+    ...(c.targets ?? {}),
+  };
+  c.pairs = {
+    captureBeforeAfter: true,
+    diffBaseline: true,
+    ...(c.pairs ?? {}),
+  };
+  c.matching = {
+    tiers: ["explicit", "semantic", "path"],
+    semanticFields: ["role", "accessibleName", "nearestHeading", "textSnippet"],
+    ...(c.matching ?? {}),
+  };
+  cfg.report = {
+    html: true,
+    mdSideBySide: true,
+    ...(cfg.report ?? {}),
+  };
+  return cfg;
 }

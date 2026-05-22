@@ -27,8 +27,17 @@ The following pages did not complete capture and are excluded from issue counts 
 **Category:** {{category}}
 **Description:** {{description}}
 **Suggestion:** {{suggestion}}
-
+{{#if confidence}}**Match confidence:** `{{confidence}}` {{#ifEquals confidence "path"}}— consider adding `data-vqa-id` for stability{{/ifEquals}}
+{{/if}}
+{{#if screenshots.before}}
+| Before | After |
+|--------|-------|
+| ![before]({{screenshots.before}}) | ![after]({{screenshots.after}}) |
+{{#if screenshots.baseline}}| ![baseline]({{screenshots.baseline}}) | ![current]({{screenshots.after}}) |
+{{/if}}
+{{else}}
 ![{{component}} {{state}}]({{imagePath}})
+{{/if}}
 
 {{/each}}
 

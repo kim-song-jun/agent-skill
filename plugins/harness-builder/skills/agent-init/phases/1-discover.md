@@ -17,7 +17,27 @@
 
 ## Phase 1 proper
 
-1. Invoke `Skill` with `superpowers:brainstorming` and these prompts:
+0. **Resolve interaction language (v0.5.1+).** Detect the language the brainstorming dialogue should run in:
+   ```javascript
+   // Priority: --lang flag > $AGENT_INIT_LANG > $LANG/$LC_ALL > 'en'
+   function detectLang() {
+     if (process.argv.includes("--lang=ko")) return "ko";
+     if (process.argv.includes("--lang=en")) return "en";
+     if (process.env.AGENT_INIT_LANG === "ko" || process.env.AGENT_INIT_LANG === "en") return process.env.AGENT_INIT_LANG;
+     const loc = (process.env.LANG || process.env.LC_ALL || process.env.LC_MESSAGES || "").toLowerCase();
+     if (loc.startsWith("ko")) return "ko";
+     return "en";
+   }
+   const interactionLang = detectLang();
+   ```
+   When `interactionLang === "ko"`, prepend this directive to the brainstorming dispatch prompt:
+   > **Conduct this brainstorming dialogue in Korean (한국어).** All questions to the user, all summaries, and the final design recap should be in Korean. Tokens that are part of machine contracts (file paths, JSON keys, command names, `STATUS:`, `VERIFICATION_AUDIT:`, etc.) MUST stay English regardless.
+
+   When `interactionLang === "en"`, no prefix needed (the default).
+
+   Stash `ctx.interactionLang` for use in later phases — agent templates inherit it via `{{interactionLang}}` so dispatched subagents speak the same language.
+
+1. Invoke `Skill` with `superpowers:brainstorming` and these prompts (with the language directive from step 0 prepended when applicable):
    - Project purpose (1-2 sentences for CLAUDE.md preamble)
    - Size: small / medium / large (override: `--size`)
    - QA personas (override: `--qa`)
