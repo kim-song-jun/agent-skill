@@ -29,6 +29,44 @@ For each page-group, dispatch via the `Agent` tool with:
   6. The output dir for this page (`<slug-dir>/<page>/` or `<slug-dir>/flows/<flowName>/`).
   7. Strict instructions on the capture loop (see Per-subagent steps below).
 
+## Comprehensive-mode addendum — element identity + capture pairs (v0.4+)
+
+For each interactive element discovered by `dom-walker.mjs` on a page:
+
+1. **Filter via targets.** Pass the element through `lib/targets-filter.mjs`'s `resolveTarget()` using `config.comprehensive.targets`. If `capture: false`, skip the element. Otherwise the returned `action` (e.g. `click`, `fill:vqa-sample`, `blur`) drives step 4.
+
+2. **Compute identity.** Build a descriptor `{vqaId, role, tagName, type, accessibleName, nearestHeading, textContent, selector, domPath}` from the Playwright handle, then call `lib/element-identity.mjs`'s `computeElementIdentity(desc)` → `{ id, confidence, source }`. Store the ID as the element's stable handle for this run.
+
+3. **Capture `before.png`.** Take a viewport screenshot of the current page state before any action runs. Path: `<slug-dir>/captures/<page>/<elementId>/before.png`. Skip this step if `config.comprehensive.pairs.captureBeforeAfter === false`.
+
+4. **Dispatch action.** Parse the resolved action via `targets-filter.parseAction()` → `{kind, arg}`. Run via Playwright:
+   - `kind === "click"` → `handle.click()`
+   - `kind === "fill"` → `handle.fill(arg ?? "vqa-sample")`, then `handle.blur()` if next action is blur
+   - `kind === "hover"` → `handle.hover()`
+   - `kind === "select"` → `handle.selectOption(arg)`
+   - `kind === "blur"` → `handle.blur()`
+
+5. **Capture `after.png`.** After action + brief settle wait. Path: `<slug-dir>/captures/<page>/<elementId>/after.png`.
+
+6. **Optional baseline pairing.** When `config.comprehensive.pairs.diffBaseline !== false` and `state.priorRunPath` is set:
+   - Look up `baselineCaptures.get(elementId)` (built by phase 4 of the prior run).
+   - If found: symlink the prior's `after.png` to `<slug-dir>/captures/<page>/<elementId>/baseline.png` (or copy on platforms without symlinks).
+   - If not found AND current `confidence === "path"`: also try semantic-fingerprint lookup against the prior run's semantic-tier captures. Match success → record `degraded: true` warning.
+   - Record `hasBaseline: <bool>` on the capture record.
+
+7. **State write.** Append to `state.captures`:
+   ```javascript
+   state.captures.push({
+     elementId, pageSlug: page.name, pageUrl: page.path,
+     selector, action: parsedAction.kind, confidence,
+     hasBaseline,
+     screenshots: { before, after, baseline },
+     // verdict gets filled by phase 4 (verdict.mjs) per-element
+   });
+   ```
+
+This new flow is additive — `declared` mode and `comprehensive` runs without `targets` configured fall back to the existing auto-walk + LLM-verdict path (which still writes single `*.png` files per component, not pair directories).
+
 ## Comprehensive-mode addendum — DOM-hash cache lookup
 
 When `state.mode === "comprehensive"` AND `state.domHashCache` is loaded,

@@ -65,7 +65,20 @@
     writeCache(state.domHashCachePath, state.domHashCache);
     ```
 
-11. Render `templates/report.md.hbs` with the computed context. Write to `<slug-dir>/report.md`.
+11. Render `templates/report.md.hbs` with the computed context. Write to `<slug-dir>/report.md`. When `config.report?.mdSideBySide !== false` (default true) AND `state.captures` is non-empty, append a per-element 2-column `Before / After` table beneath each verdict — with a second row for `Baseline / Current` when `capture.hasBaseline === true`.
+
+11b. **Optional `report.html` (default on).** When `config.report?.html !== false`:
+    ```javascript
+    import { renderHtml } from "./lib/report-html.mjs";
+    const html = renderHtml({
+      slug: state.slug,
+      generatedAt: new Date().toISOString(),
+      baseUrl: config.baseUrl,
+      captures: state.captures,    // populated by phase 3 with elementId, confidence, hasBaseline, screenshots{before,after,baseline?}
+    });
+    writeFileSync(`<slug-dir>/report.html`, html);
+    ```
+    Self-contained: inline CSS + JS, no external assets. Lightbox modal with arrow-key navigation between `before` / `after` / `baseline`.
 
 12. Push `{phase: 4, completedAt}` to `phases` in state.
 

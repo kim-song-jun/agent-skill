@@ -4,6 +4,41 @@
 
 모든 주요 변경 사항. 각 릴리스 후보에 대한 날짜 스탬프 태그가 존재합니다.
 
+## Visual-QA pairs + element-scope + multi-tier matching — 2026-05-22  (`harness-floor` v0.4.0)
+
+`visual-qa`의 3가지 additive 기능. 모든 새 키는 backward-compatible — 기존 `.visual-qa.json` 그대로 동작.
+
+### 추가
+
+- **Before/after 이미지 페어.** 각 추적 element가 `before.png` (action 전) + `after.png` (action 후) 스크린샷을 가짐. baseline이 있으면 `baseline.png` (이전 accepted run의 `after.png` symlink). 새 레이아웃: `docs/visual-qa/<slug>/captures/<page>/<elementId>/{before,after,baseline}.png`.
+- **`comprehensive.targets` 블록** — `includeSelectors`, `excludeSelectors`, `actionsPerElement` (selector별 액션 맵). 자동 발견을 element 단위로 제약하거나 보강. Action 문자열: `click`, `fill:<value>`, `blur`, `select:<index|value>`, `hover`. 선언 순서 first-match 우선; `default`는 fallback.
+- **Multi-tier element identity.** 기존의 fragile한 `selector + DOM-path` 매칭을 3-tier fallback chain으로 대체:
+  1. `data-vqa-id="..."` 명시 attr (rock-solid, instrumented)
+  2. 의미 fingerprint — `{role, accessibleName, nearestHeading, textSnippet[:60]}` (wrapper/reorder refactor 견딤)
+  3. Path hash (legacy fallback, 기존 baseline 보존)
+
+  각 capture의 `confidence`가 report.md/html에 노출되어 tier-3로 drift하는 게 가시화.
+- **`report.html` self-contained viewer.** Inline CSS + JS, 외부 자산 0. element별 카드에 before/after 썸네일, 클릭하면 fullscreen lightbox, 화살표로 `before` / `after` / `baseline` 토글. `report.html`로 끄기 가능 (기본 `true`).
+- **`report.md` 2-column pair table.** 각 verdict 아래에 `Before / After` 표 인라인. baseline 있으면 `Baseline / Current` 행 추가. `report.mdSideBySide`로 끄기 가능 (기본 `true`).
+
+### 새 lib
+
+- `lib/element-identity.mjs` — `computeElementIdentity(descriptor)`, `matchBaseline()`, `implicitRole()`.
+- `lib/targets-filter.mjs` — `resolveTarget()`, `parseAction()`.
+- `lib/report-html.mjs` — `renderHtml(reportData)`. XSS 방어 entity-encoding 포함.
+
+### 테스트
+
+Suite **1292 → 1322 통과** (+30: element-identity 10, targets-filter 10, report-html 10).
+
+### 알려진 한계
+
+- 의미 fingerprint는 동일 라벨/heading 조합("Save" 버튼 여러 개)에서 충돌 — 중요한 element에 `data-vqa-id` 권장.
+- v1 액션은 single-step만. Multi-step 시나리오는 미래 `scenarios` 필드로 deferred.
+- `report.html`의 fullscreen API는 Safari ≥ 16 / Chrome ≥ 71 필요 — 미지원 브라우저는 non-modal full-page fallback.
+- Storage ~2× 증가 (before + after). `comprehensive.cache.gitDiffScope`가 변경 없는 page는 skip하므로 배율은 활성 페이지에만 적용.
+- Baseline symlink는 Windows / non-symlink 파일시스템에서 copy로 fallback.
+
 ## `update.sh`가 마켓플레이스 캐시 refresh — 2026-05-22  (`harness-floor` v0.3.3)
 
 ### 수정

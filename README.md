@@ -156,7 +156,14 @@ Bounded by `--max-iter` (hard cap 50), `--max-cost` (default $500), and the test
 
 ### `/visual-qa` — design review every page
 
-Captures screenshots at mobile/tablet/desktop, runs LLM analysis per image, writes a Markdown report. Needs Playwright MCP + a dev server.
+Captures screenshots at mobile/tablet/desktop, runs LLM analysis per image, writes a Markdown report AND a self-contained `report.html` lightbox viewer (v0.4+). Needs Playwright MCP + a dev server.
+
+**v0.4 additions:**
+- **Before/after pairs** per tracked element + baseline diff alongside.
+- **`comprehensive.targets`** — element-scope `includeSelectors` / `excludeSelectors` / `actionsPerElement` to constrain or augment auto-discovery.
+- **Multi-tier element identity** (`data-vqa-id` → semantic fingerprint → DOM path) so baseline matching survives wrapper / reorder refactors.
+
+See `docs/superpowers/specs/2026-05-22-visual-qa-pairs-and-element-scope-design.md`.
 
 Two modes (set via `.visual-qa.json` `mode` field):
 
@@ -686,7 +693,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 | `/thrift` v2 programmatic compact | ⏳ deferred | Waits on Claude Code's programmatic compact API |
 | Anthropic/OpenAI/Vertex SDK hookup | ⏳ deferred | Currently mock toolCallers; production hookup needs peer deps |
 
-Versioning: `harness-floor` at `v0.3.1` (decision-surfacing + i18n release), other Claude Code core plugins at `v0.2.0`, per-platform ports at `v0.1.0`.
+Versioning: `harness-floor` at `v0.4.0` (visual-qa pairs + element-scope + multi-tier matching release), other Claude Code core plugins at `v0.2.0`, per-platform ports at `v0.1.0`.
 
 ### Language
 
