@@ -4,6 +4,12 @@
 
 모든 주요 변경 사항. 각 릴리스 후보에 대한 날짜 스탬프 태그가 존재합니다.
 
+## `update.sh`가 마켓플레이스 캐시 refresh — 2026-05-22  (`harness-floor` v0.3.3)
+
+### 수정
+
+- **`update.sh`가 이제 재설치 전에 `claude plugin marketplace update agent-skill`을 호출.** 이 단계가 없으면 `uninstall + install`이 stale 마켓플레이스 캐시를 그대로 사용해 같은 commit을 재설치. 증상: "successfully installed"라고 뜨지만 `gitCommitSha`가 안 옮겨감. 검증: 이 수정 후 `update.sh` 한 번 실행으로 5개 essentials 전부 HEAD merge commit으로 수렴.
+
 ## `scripts/update.sh` 수정 — 2026-05-22  (`harness-floor` v0.3.2)
 
 ### 수정

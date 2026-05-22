@@ -4,6 +4,12 @@
 
 All notable changes to this project. Date-stamped tags exist for each release candidate.
 
+## `update.sh` refreshes marketplace cache — 2026-05-22  (`harness-floor` v0.3.3)
+
+### Fixed
+
+- **`update.sh` now calls `claude plugin marketplace update agent-skill` before reinstalling.** Without this, `uninstall + install` still hits the stale marketplace cache and re-installs the same commit. Symptom: `gitCommitSha` not advancing across releases despite "successfully installed" output. Verified: after this fix, all 5 essentials converge to HEAD's merge commit in one `update.sh` run.
+
 ## `scripts/update.sh` fix — 2026-05-22  (`harness-floor` v0.3.2)
 
 ### Fixed
