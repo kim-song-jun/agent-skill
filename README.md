@@ -90,11 +90,21 @@ You're done. Try `/agent-all "small feature"` to see it work.
 
 ## Keep plugins up to date
 
+**In Claude Code:**
 ```
 /plugin update --marketplace agent-skill
 ```
 
-That single command updates everything **already installed** from this marketplace. For other CLIs, see [Updating on other tools](#updating-on-other-tools).
+That single command updates everything **already installed** from this marketplace.
+
+**From your terminal (any platform, one-liner):**
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/kim-song-jun/agent-skill/main/scripts/update.sh)
+```
+
+Self-locates the repo (or clones into a temp dir), pulls latest, verifies vendored libs (`sync-lib.mjs --check`), and re-runs `install-all.sh`. Pass `--all` for all 17 plugins or `--cli=cursor|copilot|codex|gemini` for one platform set.
+
+For other CLIs without a marketplace, see [Updating on other tools](#updating-on-other-tools).
 
 ### Install newly added plugins
 
@@ -676,7 +686,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 | `/thrift` v2 programmatic compact | ⏳ deferred | Waits on Claude Code's programmatic compact API |
 | Anthropic/OpenAI/Vertex SDK hookup | ⏳ deferred | Currently mock toolCallers; production hookup needs peer deps |
 
-Versioning: Claude Code core plugins at `v0.2.0`, per-platform ports at `v0.1.0`.
+Versioning: `harness-floor` at `v0.3.0` (decision-surfacing release), other Claude Code core plugins at `v0.2.0`, per-platform ports at `v0.1.0`.
 
 ---
 

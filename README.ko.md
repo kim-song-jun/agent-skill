@@ -90,11 +90,21 @@ cd my-project
 
 ## 플러그인 최신 상태 유지
 
+**Claude Code 안에서:**
 ```
 /plugin update --marketplace agent-skill
 ```
 
-이 한 명령으로 마켓플레이스에서 **이미 설치된** 모든 것이 업데이트됩니다. 다른 CLI는 [다른 도구에서 업데이트](#다른-도구에서-업데이트) 참조.
+이 한 명령으로 마켓플레이스에서 **이미 설치된** 모든 것이 업데이트.
+
+**터미널에서 (모든 플랫폼, one-liner):**
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/kim-song-jun/agent-skill/main/scripts/update.sh)
+```
+
+레포 자동 위치 파악 (또는 temp dir에 clone), 최신 pull, vendored lib 검증 (`sync-lib.mjs --check`), `install-all.sh` 재실행. `--all`로 17개 모두, `--cli=cursor|copilot|codex|gemini`로 한 플랫폼.
+
+마켓플레이스 없는 다른 CLI는 [다른 도구에서 업데이트](#다른-도구에서-업데이트) 참조.
 
 ### 신규 추가된 플러그인 설치
 
@@ -676,7 +686,7 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 | `/thrift` v2 programmatic compact | ⏳ 연기 | Claude Code의 programmatic compact API 대기 |
 | Anthropic/OpenAI/Vertex SDK 연결 | ⏳ 연기 | 현재 mock toolCaller; 프로덕션 연결은 peer dep 필요 |
 
-버전: Claude Code 코어 플러그인 `v0.2.0`, 플랫폼별 포트 `v0.1.0`.
+버전: `harness-floor` `v0.3.0` (decision-surfacing 릴리스), 나머지 Claude Code 코어 플러그인 `v0.2.0`, 플랫폼별 포트 `v0.1.0`.
 
 ---
 
