@@ -37,5 +37,28 @@ fi
 echo "→ verifying vendored libs match canonical sources …"
 node "$REPO_ROOT/scripts/sync-lib.mjs" --check
 
-echo "→ re-installing plugins via install-all.sh $* …"
+# `claude plugin install` is idempotent — if a plugin is already at any
+# version, it won't fetch the latest commit. To actually pull updates we
+# must uninstall first, then install. Skip uninstall for plugins that
+# weren't already installed (treat update as install).
+MARKETPLACE="agent-skill"
+PLUGINS=(harness-builder harness-floor harness-thrift harness-explore harness-debug)
+
+# Allow caller to pass --all etc. through to install-all.sh for the
+# fresh-install case below.
+INSTALLED_JSON="$HOME/.claude/plugins/installed_plugins.json"
+echo "→ force-updating already-installed agent-skill plugins (uninstall + install)…"
+for p in "${PLUGINS[@]}"; do
+  key="${p}@${MARKETPLACE}"
+  if [ -f "$INSTALLED_JSON" ] && grep -q "\"${key}\"" "$INSTALLED_JSON" 2>/dev/null; then
+    claude plugin uninstall "$key" >/dev/null 2>&1 || true
+    if claude plugin install "$key" >/dev/null 2>&1; then
+      echo "  ✓ $p"
+    else
+      echo "  ✗ $p (install failed — check 'claude plugin install ${key}' output)"
+    fi
+  fi
+done
+
+echo "→ installing any missing plugins via install-all.sh $* …"
 exec bash "$REPO_ROOT/scripts/install-all.sh" "$@"
