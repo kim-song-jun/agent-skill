@@ -686,7 +686,7 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 | `/thrift` v2 programmatic compact | ⏳ 연기 | Claude Code의 programmatic compact API 대기 |
 | Anthropic/OpenAI/Vertex SDK 연결 | ⏳ 연기 | 현재 mock toolCaller; 프로덕션 연결은 peer dep 필요 |
 
-버전: `harness-floor` `v0.4.0` (visual-qa pairs + element-scope + multi-tier matching 릴리스), 나머지 Claude Code 코어 플러그인 `v0.2.0`, 플랫폼별 포트 `v0.1.0`.
+버전: `harness-floor` `v0.5.0` (QA 팀 vs Verification 팀 릴리스), 나머지 Claude Code 코어 플러그인 `v0.2.0`, 플랫폼별 포트 `v0.1.0`.
 
 ### 언어
 

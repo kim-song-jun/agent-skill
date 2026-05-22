@@ -693,7 +693,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 | `/thrift` v2 programmatic compact | ⏳ deferred | Waits on Claude Code's programmatic compact API |
 | Anthropic/OpenAI/Vertex SDK hookup | ⏳ deferred | Currently mock toolCallers; production hookup needs peer deps |
 
-Versioning: `harness-floor` at `v0.4.0` (visual-qa pairs + element-scope + multi-tier matching release), other Claude Code core plugins at `v0.2.0`, per-platform ports at `v0.1.0`.
+Versioning: `harness-floor` at `v0.5.0` (QA team vs Verification team release), other Claude Code core plugins at `v0.2.0`, per-platform ports at `v0.1.0`.
 
 ### Language
 

@@ -10,7 +10,7 @@ export const DEFAULTS = {
   loop: { breakCondition: "npm test", stableIters: 1 },
   gates: { specReview: true, qualityReview: true, blockOnCritical: true },
   pr: { branchPrefix: "feat/agent-all/", baseBranch: "main" },
-  policy: { decisionSurfacing: true, verification: true, reviewerAudit: true },
+  policy: { decisionSurfacing: true, verification: true, reviewerAudit: true, qaAudit: true },
   language: "auto",
 };
 

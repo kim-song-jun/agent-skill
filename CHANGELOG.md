@@ -4,6 +4,43 @@
 
 All notable changes to this project. Date-stamped tags exist for each release candidate.
 
+## QA team vs Verification team — 2026-05-22  (`harness-floor` v0.5.0)
+
+Formal split of the two review concerns the harness used to conflate as "reviewer".
+
+### Added
+
+- **QA team persona (`qa.md`)** is now explicitly the **user-side** auditor. Treats `{{persona}}` as the user; outputs acceptance scenarios + defect reports. Audit token: `QA_AUDIT: passed | failed | skipped`.
+- **Verification team** (`tester.md` + `reviewer.md`) is now explicitly the **tech-stack / spec-compliance** auditor. Audit token: `VERIFICATION_AUDIT` (existing).
+- **`floor-policy` hook handles QA dispatches.** Description prefix `QA Review Task <N>: <title>` routes to the user-side directive (en/ko both shipped) + `QA_AUDIT` token validation at PostToolUse. Existing `Review Task` prefix still routes to the Verification directive — backward compatible.
+- **`.agent-all.json` `policy.qaAudit`** flag (default `true`) — opt-out for projects without a user persona (libs, CLIs without UI). Phase 4 Gate skips QA dispatch when `false`.
+- **Phase 4 two-team gate.** Wave passes iff `VERIFICATION_AUDIT ∈ {passed, skipped}` AND `QA_AUDIT ∈ {passed, skipped}`. Tech success ≠ user-flow success: a passing technical audit alongside a failing QA audit fails the wave; the QA defect report becomes input to the next iteration's plan.
+
+### Libs (new)
+
+- `lib/policy/qa-audit-validator.mjs` — parallel to `reviewer-audit-validator`. Same `{ ok, reason }` shape.
+
+### Persona templates updated
+
+- `agents/qa.md.hbs` — header rewritten to "QA team (user-side)" + audit-token section.
+- `agents/tester.md.hbs` — header rewritten to "Verification team (tech-stack side)" + audit-token section.
+- `agents/reviewer.md.hbs` — header rewritten to "Verification team (spec / quality side)" + audit-token section.
+
+### Tests
+
+Suite **1322 → 1334 passing** (+12 new: 6 QA validator, 6 hook QA path). Render-snapshot fixtures for the 3 updated persona templates × 7 stack profiles regenerated (21 snapshots).
+
+### Spec
+
+`docs/superpowers/specs/2026-05-22-qa-vs-verification-personas-design.md`
+
+### Limitations
+
+- `qa.md` is per-persona — projects without a persona declared in `/agent-init` get `{{persona}}` unresolved; QA dispatch falls back to "generic end-user perspective" prose.
+- Tokens stay English. Korean directive variant just instructs the agent to emit the English token literally.
+- No mid-wave abort on QA-only failure — Phase 4 still completes both reviewers before deciding. Acceptable: the existing 3-retry budget covers correction loops.
+- Conflict resolution is binary. No severity-weighted blending; QA failure fails the wave outright. Future work could add `qaAuditSeverity: warn | fail` to downgrade.
+
 ## Visual-QA pairs + element-scope + multi-tier matching — 2026-05-22  (`harness-floor` v0.4.0)
 
 Three additive capabilities for `visual-qa`. All keys are backward-compatible; existing `.visual-qa.json` files continue to work unchanged.
