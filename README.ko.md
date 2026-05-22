@@ -686,7 +686,11 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 | `/thrift` v2 programmatic compact | ⏳ 연기 | Claude Code의 programmatic compact API 대기 |
 | Anthropic/OpenAI/Vertex SDK 연결 | ⏳ 연기 | 현재 mock toolCaller; 프로덕션 연결은 peer dep 필요 |
 
-버전: `harness-floor` `v0.3.0` (decision-surfacing 릴리스), 나머지 Claude Code 코어 플러그인 `v0.2.0`, 플랫폼별 포트 `v0.1.0`.
+버전: `harness-floor` `v0.3.1` (decision-surfacing + i18n 릴리스), 나머지 Claude Code 코어 플러그인 `v0.2.0`, 플랫폼별 포트 `v0.1.0`.
+
+### 언어
+
+Decision-surfacing prompt와 패널이 다국어 지원. `.agent-all.json` `language`를 `"auto"` (기본 — `$LANG` 읽음), `"en"`, 또는 `"ko"`로 설정. 기계 파싱 토큰 (`STATUS: DONE`, `verification_passed`, `VERIFICATION_AUDIT:` 등)은 영문 고정. 언어 추가하려면 `lib/decisions/renderer.mjs`의 `LABELS`에 항목 + 동봉 `addendum.<lang>.md` 추가.
 
 ---
 

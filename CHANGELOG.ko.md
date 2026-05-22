@@ -4,6 +4,24 @@
 
 모든 주요 변경 사항. 각 릴리스 후보에 대한 날짜 스탬프 태그가 존재합니다.
 
+## Decision-surfacing i18n (en / ko) — 2026-05-22  (`harness-floor` v0.3.1)
+
+### 추가
+
+- **`.agent-all.json` `language` 필드** — `"auto"` (기본), `"en"`, `"ko"`. `auto`는 `$LANG`/`$LC_ALL`/`$LC_MESSAGES`를 읽어서 한국어 로케일이면 `ko`, 아니면 `en`. `config-loader.mjs`에서 `resolveLanguage(value)`로 export.
+- **로컬라이즈된 renderer** — `renderToAskUserQuestion(decision, { taskTitle, language })`가 prefix를 언어별로 교체 (`Context:` → `맥락:`, `Reasoning for recommendation:` → `추천 사유:`, `(Recommended)` → `(추천)`). v0.3.1에 `en`/`ko` 동봉; 알 수 없는 언어는 `en`으로 fallback.
+- **한국어 scoping-pass addendum** — `lib/decisions/addendum.ko.md`이 영문판과 함께 동봉. `floor-policy-hook.mjs`가 프로젝트의 `.agent-all.json` `language`에 따라 선택 (테스트용 `AGENT_ALL_LANGUAGE` env override 가능).
+- **로컬라이즈된 verification + reviewer-audit directive** — 같은 듀얼 버전 패턴; 기계 파싱 토큰 (`STATUS: DONE`, `verification_passed`, `VERIFICATION_AUDIT: passed|failed|skipped`)은 의도적으로 영문 고정.
+
+### 테스트
+
+Suite **1280 → 1292 통과** (+12 새 tests: renderer prefix 테이블, language config 검증, `resolveLanguage` 자동 감지, 언어별 hook addendum 선택).
+
+### 비고
+
+- `language: "auto"` 기본값이 대부분의 한국어 dev 환경에서 자동으로 맞춰짐. 로케일과 상관없이 영문 원할 시 `"en"` 명시.
+- 기계 파싱 토큰은 영문 고정 — `VERIFICATION_AUDIT:` 등은 안정적 contract; 한국어 directive 텍스트가 subagent에게 "그 영문 토큰 정확히 emit 하라"고 지시.
+
 ## Decision-surfacing + policy-hook 강제 — 2026-05-21
 
 ### 추가

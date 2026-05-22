@@ -4,6 +4,24 @@
 
 All notable changes to this project. Date-stamped tags exist for each release candidate.
 
+## Decision-surfacing i18n (en / ko) — 2026-05-22  (`harness-floor` v0.3.1)
+
+### Added
+
+- **`.agent-all.json` `language` field** — `"auto"` (default), `"en"`, or `"ko"`. `auto` reads `$LANG` / `$LC_ALL` / `$LC_MESSAGES` and resolves to `ko` for Korean locales, else `en`. Exported as `resolveLanguage(value)` from `config-loader.mjs`.
+- **Localized renderer** — `renderToAskUserQuestion(decision, { taskTitle, language })` swaps prefixes (`Context:` / `Reasoning for recommendation:` / `(Recommended)`) per language. `en` and `ko` ship in v0.3.1; unknown languages fall back to `en`.
+- **Korean scoping-pass addendum** — `lib/decisions/addendum.ko.md` ships alongside the English one. `floor-policy-hook.mjs` selects per project's `.agent-all.json` `language` (or `AGENT_ALL_LANGUAGE` env override for tests).
+- **Localized verification + reviewer-audit directives** — same dual-version pattern; machine-parsed tokens (`STATUS: DONE`, `verification_passed`, `VERIFICATION_AUDIT: passed|failed|skipped`) stay English-only by design.
+
+### Tests
+
+Suite **1280 → 1292 passing** (+12 new tests for i18n: renderer prefix table, language config validation, `resolveLanguage` auto-detection, hook addendum selection per language).
+
+### Notes
+
+- The `language: "auto"` default does the right thing on most Korean dev environments without configuration. Set to `"en"` explicitly if you want English regardless of locale.
+- Machine-parsed tokens remain English-only — `VERIFICATION_AUDIT:` etc. are stable contracts; the Korean directive text just asks the subagent to emit those exact English tokens.
+
 ## Decision-surfacing + policy-hook enforcement — 2026-05-21
 
 ### Added

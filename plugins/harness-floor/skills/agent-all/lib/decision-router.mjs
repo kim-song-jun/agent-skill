@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { autoResolveAndLog } from "./decisions/non-tty-resolver.mjs";
 import { renderToAskUserQuestion } from "./decisions/renderer.mjs";
 
-export async function routeWaveDecisions({ payloads, statePath, isTTY, askUser }) {
+export async function routeWaveDecisions({ payloads, statePath, isTTY, askUser, language = "en" }) {
   const answers = {};
   for (const p of payloads) {
     const taskId = p.scope.task_id;
@@ -16,7 +16,7 @@ export async function routeWaveDecisions({ payloads, statePath, isTTY, askUser }
     }
     answers[taskId] = {};
     for (const decision of p.decisions) {
-      const args = renderToAskUserQuestion(decision, { taskTitle: p.scope.task_title });
+      const args = renderToAskUserQuestion(decision, { taskTitle: p.scope.task_title, language });
       const chosenLabel = await askUser(args);
       const originalIdx = mapBackToOriginalIndex(decision, chosenLabel);
       answers[taskId][decision.id] = originalIdx;

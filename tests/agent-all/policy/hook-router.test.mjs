@@ -5,10 +5,13 @@ import { resolve } from "node:path";
 
 const HOOK = resolve("plugins/harness-floor/bin/floor-policy-hook.mjs");
 
-function runHook(event, payload) {
+function runHook(event, payload, env = {}) {
   const result = spawnSync("node", [HOOK, event], {
     input: JSON.stringify(payload),
     encoding: "utf-8",
+    // Pin language so the test is deterministic regardless of the
+    // developer's locale. (i18n is exercised separately in renderer-i18n.test.)
+    env: { ...process.env, AGENT_ALL_LANGUAGE: "en", ...env },
   });
   return { code: result.status, stdout: result.stdout, stderr: result.stderr };
 }

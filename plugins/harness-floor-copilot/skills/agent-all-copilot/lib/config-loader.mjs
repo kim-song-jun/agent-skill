@@ -11,7 +11,17 @@ export const DEFAULTS = {
   gates: { specReview: true, qualityReview: true, blockOnCritical: true },
   pr: { branchPrefix: "feat/agent-all/", baseBranch: "main" },
   policy: { decisionSurfacing: true, verification: true, reviewerAudit: true },
+  language: "auto",
 };
+
+const LANGUAGES = ["auto", "en", "ko"];
+
+export function resolveLanguage(value) {
+  if (value !== "auto") return value;
+  const env = (process.env.LANG || process.env.LC_ALL || process.env.LC_MESSAGES || "").toLowerCase();
+  if (env.startsWith("ko")) return "ko";
+  return "en";
+}
 
 function validate(cfg) {
   const errors = [];
@@ -23,6 +33,9 @@ function validate(cfg) {
   }
   if (cfg.defaults?.waveSize !== undefined && !["small", "medium", "large"].includes(cfg.defaults.waveSize)) {
     errors.push({ path: "defaults.waveSize", message: "must be small|medium|large" });
+  }
+  if (cfg.language !== undefined && !LANGUAGES.includes(cfg.language)) {
+    errors.push({ path: "language", message: `must be one of ${LANGUAGES.join("|")}` });
   }
   if (cfg.loop?.breakCondition !== undefined) {
     const bc = cfg.loop.breakCondition;
