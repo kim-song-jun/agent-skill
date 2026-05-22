@@ -14,6 +14,12 @@ Drives the visual QA pipeline for the current project. Reads `.visual-qa.json`, 
 - **`declared`** (the original): you list pages, components, selectors, and states in the config. Cost is controlled by what you put in the file.
 - **`comprehensive`**: the orchestrator auto-discovers pages by crawling from `baseUrl` (BFS within `comprehensive.scope.include`, respecting `exclude` globs and depth/maxPages caps), walks each page's DOM for interactive elements (button / link / input / select / textarea / [role=*] / [data-testid] / [data-qa-id]), and optionally shallow-clicks each non-input element to capture the 1-step result state. Cost is controlled by `comprehensive.cache` — `gitDiffScope` skips pages unaffected by the iteration's git diff, and `domHashCache` reuses prior LLM verdicts for components whose DOM hasn't changed. Verdict is computed by comparing the issue set vs the baseline (prior accepted run); first run with no baseline defaults to auto-pass + write baseline. Exit code 0 on pass, 1 on fail. This mode is what `/agent-all --loop --qa` uses.
 
+  **v0.4+ additions** (see `docs/superpowers/specs/2026-05-22-visual-qa-pairs-and-element-scope-design.md`):
+  - `comprehensive.targets.{includeSelectors,excludeSelectors,actionsPerElement}` — constrain or augment auto-discovery at element granularity.
+  - `comprehensive.pairs.{captureBeforeAfter,diffBaseline}` — capture paired screenshots (default both `true`).
+  - `comprehensive.matching` — 3-tier element identity (`data-vqa-id` → semantic fingerprint → DOM-path hash). Surfaces `confidence` per element in the report.
+  - `report.{html,mdSideBySide}` — render a self-contained `report.html` lightbox viewer alongside `report.md`'s 2-column pair tables.
+
 ## Flags
 
 - `--resume` — skip phases already complete per `.visual-qa-state.json`.

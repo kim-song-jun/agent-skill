@@ -4,6 +4,56 @@
 
 All notable changes to this project. Date-stamped tags exist for each release candidate.
 
+## Visual-QA pairs + element-scope + multi-tier matching — 2026-05-22  (`harness-floor` v0.4.0)
+
+Three additive capabilities for `visual-qa`. All keys are backward-compatible; existing `.visual-qa.json` files continue to work unchanged.
+
+### Added
+
+- **Before/after image pairs.** Each tracked element gets `before.png` (pre-action) + `after.png` (post-action) screenshots, plus `baseline.png` (symlink to the prior accepted run's `after.png`) when a baseline exists. New file layout: `docs/visual-qa/<slug>/captures/<page>/<elementId>/{before,after,baseline}.png`.
+- **`comprehensive.targets` block** — `includeSelectors`, `excludeSelectors`, and `actionsPerElement` (per-selector action map) let you constrain or augment auto-discovery at element granularity. Action strings: `click`, `fill:<value>`, `blur`, `select:<index|value>`, `hover`. First-matching-key precedence; `default` is the catch-all.
+- **Multi-tier element identity.** Replaces fragile `selector + DOM-path` matching with a 3-tier fallback chain:
+  1. `data-vqa-id="..."` explicit attribute (rock-solid, instrumented)
+  2. Semantic fingerprint — `{role, accessibleName, nearestHeading, textSnippet[:60]}` (survives wrapper/reorder refactors)
+  3. Path hash (legacy fallback, preserves existing baselines)
+
+  Each capture's `confidence` is surfaced in `report.md` and `report.html` so drift toward tier-3 is visible.
+- **`report.html` self-contained viewer.** Inline CSS + JS, no external assets. Per-element cards with before/after thumbnails, click-to-fullscreen lightbox, arrow-key navigation between `before` / `after` / `baseline`. Configurable via `report.html` (default `true`).
+- **`report.md` 2-column pair table.** Each verdict now gets a `Before / After` table inline, plus a second `Baseline / Current` row when a baseline exists. Configurable via `report.mdSideBySide` (default `true`).
+
+### Libs (new)
+
+- `lib/element-identity.mjs` — `computeElementIdentity(descriptor)`, `matchBaseline()`, `implicitRole()`. Pure Node.
+- `lib/targets-filter.mjs` — `resolveTarget(elementCheck, targets)`, `parseAction(str)`. Pure Node.
+- `lib/report-html.mjs` — `renderHtml(reportData)`. Self-contained HTML; entity-encodes user fields against XSS.
+
+### Phase docs
+
+- `phases/3-capture.md` gains a "Element identity + capture pairs" addendum describing the 7-step per-element flow (filter → identity → before → action → after → baseline → state-write).
+- `phases/4-aggregate.md` step 11 documents the new `report.html` generation alongside `report.md`'s pair-table addition.
+
+### Tests
+
+Suite **1292 → 1322 passing** (+30 new):
+- 10 in `element-identity.test.mjs` — tier precedence, fallback, implicit roles, baseline matching with degraded flag.
+- 10 in `targets-filter.test.mjs` — exclude/include precedence, action lookup, parseAction's colon variants.
+- 10 in `report-html.test.mjs` — doctype, per-card structure, verdict counts, confidence badges, XSS escaping, empty state.
+
+### Known limitations (also in README "Known limitations")
+
+- Semantic fingerprint can collide on duplicate labels ("Save" buttons under the same heading) — add `data-vqa-id` for high-value elements.
+- Action vocabulary is single-step in v1. Multi-step scenarios deferred to a future `scenarios` field.
+- `report.html` fullscreen API needs Safari ≥ 16 / Chrome ≥ 71 — falls back to non-modal full-page on older browsers.
+- Storage growth ~2× per captured page (before + after). `comprehensive.cache.gitDiffScope` still skips unchanged pages, limiting the multiplier's reach.
+- Baseline symlink falls back to copy on Windows / non-symlink filesystems.
+
+### Out of scope (future work)
+
+- `scenarios` multi-step DSL (login flows, wizard steps)
+- Playwright `trace.zip` per capture (deferred for storage reasons)
+- Record-and-replay UI
+- LLM-assisted baseline rematch when tier-3 falls back
+
 ## `update.sh` refreshes marketplace cache — 2026-05-22  (`harness-floor` v0.3.3)
 
 ### Fixed
