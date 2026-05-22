@@ -12,6 +12,20 @@
 
 ---
 
+## Progress (handoff — 2026-05-21)
+
+Tasks 1 and 2 were completed on `feat/decision-surfacing-policy-hooks` during the original planning session. Resume from **Task 3**.
+
+| Task | Status | Commit |
+|---|---|---|
+| 1 — Schema validator | ✅ done (5/5 tests) | `4fcdee5` |
+| 2 — AskUserQuestion renderer | ✅ done (3/3 tests) | `0ab1e83` + `790718e` (header-truncation fix — plan bug discovered: AskUserQuestion enforces 12-char header limit; impl now uses `slice(0, 12)` and the test asserts truncated value `"Token storag"`) |
+| 3 onward | pending | — |
+
+The header-truncation fix applies retroactively to any future task that surfaces AskUserQuestion-bound data — see commit `790718e` rationale.
+
+---
+
 ## Phase A — Decision payload primitives
 
 ### Task 1: Schema validator
