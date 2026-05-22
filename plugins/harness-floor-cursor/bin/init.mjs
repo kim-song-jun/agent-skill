@@ -37,6 +37,7 @@ const INSTALL_MAP = {
     { src: "skills/agent-all-cursor/templates/agents/agent-all-coordinator.md.hbs", dst: ".cursor/agents/agent-all-coordinator.md" },
     { src: "skills/agent-all-cursor/templates/agents/agent-all-implementer.md.hbs", dst: ".cursor/agents/agent-all-implementer.md" },
     { src: "skills/agent-all-cursor/templates/agents/agent-all-reviewer.md.hbs", dst: ".cursor/agents/agent-all-reviewer.md" },
+    { src: "skills/agent-all-cursor/templates/rules/decision-protocol.mdc.hbs", dst: ".cursor/rules/decision-protocol.mdc" },
   ],
 };
 

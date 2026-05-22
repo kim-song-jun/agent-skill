@@ -1,0 +1,25 @@
+# Decision-Surfacing Protocol (Copilot CLI — hard-enforced via hook)
+
+`.github/hooks/decision-protocol.json` (also installed) registers a `pre-tool-use` matcher on the `task` tool. When an implementer/reviewer subagent is dispatched, the hook injects the scoping-pass addendum and validates the structured return.
+
+## Subagent payload contract (Phase 3a)
+
+Scoping pass MUST return a JSON payload between ` ```decision-payload ` fences:
+
+```json
+{
+  "status": "NEEDS_DECISIONS",
+  "scope": { "task_id": "...", "task_title": "..." },
+  "decisions": [
+    { "id": "d1", "title": "...", "context": "...",
+      "options": [{"label":"...","description":"..."}, ...],
+      "recommended_index": 0, "reasoning": "..." }
+  ]
+}
+```
+
+If no architecture / spec-ambiguity decisions: return `{"status":"NO_DECISIONS","scope":{...}}` instead.
+
+Constraints: 2-4 options per decision; `recommended_index` mandatory; no file edits during scoping pass.
+
+The Copilot CLI hook framework blocks PostToolUse if implementer reports `STATUS: DONE` without a `verification_passed` line, or reviewer report omits `VERIFICATION_AUDIT: passed|failed|skipped`.

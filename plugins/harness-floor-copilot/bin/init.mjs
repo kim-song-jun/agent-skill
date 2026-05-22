@@ -22,6 +22,7 @@ const INSTALL_MAP = {
   ],
   "agent-all": [
     { src: "skills/agent-all-copilot/templates/agent-all.config.json.hbs", dst: ".agent-all.json" },
+    { src: "skills/agent-all-copilot/templates/decision-protocol.md.hbs", dst: ".github/agent-all/decision-protocol.md" },
   ],
 };
 

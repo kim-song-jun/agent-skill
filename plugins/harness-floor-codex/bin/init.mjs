@@ -27,6 +27,7 @@ const INSTALL_MAP = {
 const MCP_SNIPPET = "skills/visual-qa-codex/templates/mcp-snippet.toml.hbs";
 const VQA_HOOK_SNIPPET = "skills/visual-qa-codex/templates/codex-hooks-snippet.toml.hbs";
 const AA_HOOK_SNIPPET = "skills/agent-all-codex/templates/codex-hooks-snippet.toml.hbs";
+const DP_HOOK_SNIPPET = "skills/agent-all-codex/templates/decision-protocol-hooks-snippet.toml.hbs";
 
 function parseArgs(argv) {
   const args = { target: null, ctxPath: null, force: false, only: null };
@@ -104,6 +105,7 @@ function main() {
   }
   if (!args.only || args.only === "agent-all") {
     console.log(render(readFileSync(resolve(pluginRoot, AA_HOOK_SNIPPET), "utf-8"), ctx));
+    console.log(render(readFileSync(resolve(pluginRoot, DP_HOOK_SNIPPET), "utf-8"), ctx));
   }
 
   console.log(`\ndone — ${installed.length} file(s) installed`);

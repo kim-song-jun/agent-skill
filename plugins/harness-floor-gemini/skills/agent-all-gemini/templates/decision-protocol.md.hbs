@@ -1,0 +1,27 @@
+# Decision-Surfacing Protocol (Gemini — soft-enforced)
+
+> **Note:** Gemini CLI does not have a tool-call hook system today. This protocol is prompt-only; a non-compliant subagent cannot be blocked at the harness layer.
+
+When Gemini dispatches or acts as an implementer subagent:
+
+1. **Scoping Pass first.** Read the task, identify architectural decisions + spec ambiguities. Do NOT edit files yet.
+
+2. **Return JSON payload** between ` ```decision-payload ` fences:
+
+   ```json
+   {
+     "status": "NEEDS_DECISIONS",
+     "scope": { "task_id": "...", "task_title": "..." },
+     "decisions": [
+       { "id": "d1", "title": "...", "context": "...",
+         "options": [{"label":"...","description":"..."}, ...],
+         "recommended_index": 0, "reasoning": "..." }
+     ]
+   }
+   ```
+
+3. Constraints: 2-4 options; `recommended_index` mandatory; if no decisions, return `{"status":"NO_DECISIONS","scope":{...}}`.
+
+4. **Phase 3c (after user picks):** controller re-dispatches with `## User Decisions` section appended. Then implement normally.
+
+Verification + reviewer-audit: implementer reports must include literal `verification_passed`; reviewer reports must include `VERIFICATION_AUDIT: passed|failed|skipped`. Compliance is best-effort on Gemini.

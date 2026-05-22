@@ -1,0 +1,12 @@
+# Append to ~/.codex/config.toml — wires decision-surfacing + verification hooks for Codex.
+# Required for hard-enforcement of the protocol on Codex CLI.
+
+[[hooks.agent]]
+event = "pre_tool_use"
+match = { tool = "Task" }
+command = "node {{targetDir}}/.codex/agent-all/lib/floor-policy-hook.mjs PreToolUse"
+
+[[hooks.agent]]
+event = "post_tool_use"
+match = { tool = "Task" }
+command = "node {{targetDir}}/.codex/agent-all/lib/floor-policy-hook.mjs PostToolUse"
