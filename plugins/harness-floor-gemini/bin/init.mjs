@@ -21,6 +21,7 @@ const INSTALL_MAP = {
   ],
   "agent-all": [
     { src: "skills/agent-all-gemini/templates/agent-all.config.json.hbs", dst: ".agent-all.json" },
+    { src: "skills/agent-all-gemini/templates/decision-protocol.md.hbs", dst: ".gemini/agent-all-decision-protocol.md" },
   ],
 };
 

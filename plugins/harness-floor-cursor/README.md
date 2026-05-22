@@ -1,5 +1,7 @@
 # harness-floor-cursor
 
+> **Decision-surfacing enforcement: 🟡 Soft.** Cursor does not have a tool-call hook system today. The decision-protocol is prompt-only via `.cursor/rules/decision-protocol.mdc` (always-loaded rule emitted by install). A non-compliant subagent cannot be blocked at the harness layer — compliance is best-effort. Hard enforcement (PostToolUse rejection) is only available on Claude Code, Copilot CLI, and Codex CLI.
+
 Scaffold-level visual-qa support for Cursor. Emits:
 
 - `.visual-qa.json` at project root (capture matrix configuration)

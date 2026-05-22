@@ -186,3 +186,58 @@ Install the playwright plugin:
 ```
 
 Then retry install.
+
+---
+
+## Decision-surfacing — what the panel looks like
+
+When `/agent-all` dispatches an implementer subagent in Phase 3, the first thing it does is a **scoping pass** — read-only inspection that returns a JSON payload of decisions it would otherwise make alone. The main thread shows you each decision as a 1/2/3 panel with the subagent's recommendation flagged.
+
+Example session output (interactive mode):
+
+```
+=== Task 3: Add OAuth callback handler ===
+
+[Token storage] Existing code uses cookies for session, but JWT tokens are typically
+stored in localStorage in this codebase per src/lib/auth.ts:42.
+
+Reasoning for recommendation: Sessions in this app are already cookie-based; mixing
+storage strategies adds complexity. Cookie aligns with existing pattern.
+
+  1. (Recommended) Cookie (httpOnly, secure) — Matches existing session pattern
+  2. localStorage — Matches existing JWT pattern, XSS risk acknowledged
+  3. Server-side session store (Redis) — Most secure, adds Redis dependency
+
+Choose: _
+```
+
+**Non-TTY mode** (overnight, `--yes`, loop iter ≥ 2) auto-picks the recommended option and appends to `docs/agent-all/iter-<N>/decisions.md`:
+
+```markdown
+# Auto-resolved decisions — iter 7 — 2026-05-21T03:14Z
+
+## Task 3 — Add OAuth callback handler
+
+### Token storage
+- Chosen: **Cookie (httpOnly, secure)** (recommended)
+- Reasoning: Sessions in this app are already cookie-based; mixing storage strategies adds complexity.
+```
+
+**Reviewing past auto-picks:** Run `grep -A2 "Chosen:" docs/agent-all/iter-*/decisions.md` to see every auto-resolved decision across iterations. If a regression appears, find the relevant decision and add it to the next iteration's plan with a note "force re-ask".
+
+**Opting out per project:** `.agent-all.json` →
+```json
+{ "policy": { "decisionSurfacing": false, "verification": true, "reviewerAudit": true } }
+```
+The protocol skips entirely. Verification + reviewer-audit hook validation continue independently.
+
+**Per-platform enforcement strength:**
+| Platform | Mechanism | Strength |
+|---|---|---|
+| Claude Code | `floor-policy` hook (PreToolUse + PostToolUse on Task) | 🟢 Hard |
+| Copilot CLI | `.github/hooks/decision-protocol.json` | 🟢 Hard |
+| Codex CLI | `[[hooks.agent]]` in `~/.codex/config.toml` (manual merge) | 🟢 Hard |
+| Cursor | `.cursor/rules/decision-protocol.mdc` (always-loaded rule) | 🟡 Soft |
+| Gemini CLI | `.gemini/agent-all-decision-protocol.md` (referenced from GEMINI.md) | 🟡 Soft |
+| VS Code Copilot | `.github/agent-all/decision-protocol.md` (from copilot-instructions.md) | 🟡 Soft |
+

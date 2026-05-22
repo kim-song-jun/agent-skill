@@ -1,0 +1,33 @@
+---
+description: Decision-surfacing protocol for Cursor agent subagents
+globs: ["**"]
+alwaysApply: false
+---
+
+# Decision-Surfacing Protocol (soft-enforced on Cursor)
+
+When you (Cursor agent) dispatch a sub-task for implementation work or are dispatched as a sub-task implementer:
+
+1. **Scoping Pass first.** Before writing/editing any file, identify:
+   - architectural decisions (library/API choice, file layout, abstraction)
+   - spec ambiguities (cases where the spec contradicts or omits behavior)
+
+2. **Surface them as a JSON payload** in your reply, between ` ```decision-payload ` fences:
+
+   ```json
+   {
+     "status": "NEEDS_DECISIONS",
+     "scope": { "task_id": "...", "task_title": "..." },
+     "decisions": [
+       { "id": "d1", "title": "...", "context": "...",
+         "options": [{"label":"...","description":"..."}, ...],
+         "recommended_index": 0, "reasoning": "..." }
+     ]
+   }
+   ```
+
+3. **Constraints:** 2-4 options; `recommended_index` required; if no real decisions, return `{"status":"NO_DECISIONS","scope":{...}}`.
+
+4. **No file edits in the scoping pass.** Wait for the coordinator to inject `## User Decisions`, then proceed.
+
+**Limitation:** Cursor does not have a tool-call hook system. This rule is prompt-only — a non-compliant subagent cannot be blocked. The verdict still surfaces in the next-step review.

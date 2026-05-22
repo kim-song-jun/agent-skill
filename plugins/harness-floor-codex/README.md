@@ -1,5 +1,7 @@
 # harness-floor-codex
 
+> **Decision-surfacing enforcement: 🟢 Hard (after manual config merge).** Codex CLI uses `~/.codex/config.toml` `[[hooks.agent]]` entries. This plugin prints a TOML snippet to stdout that the user merges manually. Once merged, non-compliant subagents are rejected at PostToolUse.
+
 Scaffold-level visual-qa support for Codex CLI. Emits:
 
 - `.visual-qa.json` at project root (capture matrix configuration)

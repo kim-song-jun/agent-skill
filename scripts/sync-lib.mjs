@@ -48,6 +48,18 @@ const VENDORED_RENDER_ONLY = [
 const FILES = ["render.mjs", "detect-stack.mjs"];
 const RENDER_ONLY_FILES = ["render.mjs"];
 
+// Phase D config-loader.mjs propagation: canonical lives in harness-floor;
+// vendored copies in agent-all-cursor and agent-all-copilot must match
+// line-for-line per `tests/lib/cursor-agent-all-config-loader.test.mjs`.
+const CONFIG_LOADER_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/config-loader.mjs",
+);
+const CONFIG_LOADER_TARGETS = [
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/config-loader.mjs",
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/config-loader.mjs",
+].map((p) => resolve(repoRoot, p));
+
 function readOrNull(path) {
   return existsSync(path) ? readFileSync(path, "utf-8") : null;
 }
@@ -77,11 +89,27 @@ function collectDrift() {
       }
     }
   }
+  // agent-all config-loader.mjs (one source → two vendored copies).
+  const cfgSrc = readOrNull(CONFIG_LOADER_SOURCE);
+  if (cfgSrc == null) {
+    console.error(`Source missing: ${CONFIG_LOADER_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of CONFIG_LOADER_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "config-loader.mjs", dest: destPath, reason: "missing", sourceContent: cfgSrc });
+    } else if (destContent !== cfgSrc) {
+      drift.push({ file: "config-loader.mjs", dest: destPath, reason: "diverged", sourceContent: cfgSrc });
+    }
+  }
   return drift;
 }
 
 function totalChecked() {
-  return FILES.length * VENDORED_LIBS.length + RENDER_ONLY_FILES.length * VENDORED_RENDER_ONLY.length;
+  return FILES.length * VENDORED_LIBS.length
+    + RENDER_ONLY_FILES.length * VENDORED_RENDER_ONLY.length
+    + CONFIG_LOADER_TARGETS.length;
 }
 
 function checkMode() {
