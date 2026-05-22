@@ -686,7 +686,11 @@ If you want the technical details, design specs, or are porting to a new platfor
 | `/thrift` v2 programmatic compact | ⏳ deferred | Waits on Claude Code's programmatic compact API |
 | Anthropic/OpenAI/Vertex SDK hookup | ⏳ deferred | Currently mock toolCallers; production hookup needs peer deps |
 
-Versioning: `harness-floor` at `v0.3.0` (decision-surfacing release), other Claude Code core plugins at `v0.2.0`, per-platform ports at `v0.1.0`.
+Versioning: `harness-floor` at `v0.3.1` (decision-surfacing + i18n release), other Claude Code core plugins at `v0.2.0`, per-platform ports at `v0.1.0`.
+
+### Language
+
+Decision-surfacing prompts and panels are localized. Set `.agent-all.json` `language` to `"auto"` (default — reads `$LANG`), `"en"`, or `"ko"`. Machine-parsed tokens (`STATUS: DONE`, `verification_passed`, `VERIFICATION_AUDIT:` etc.) stay English by design. Add more languages by adding entries to `lib/decisions/renderer.mjs` `LABELS` + a sibling `addendum.<lang>.md`.
 
 ---
 
