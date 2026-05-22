@@ -4,6 +4,17 @@
 
 모든 주요 변경 사항. 각 릴리스 후보에 대한 날짜 스탬프 태그가 존재합니다.
 
+## `scripts/update.sh` 수정 — 2026-05-22  (`harness-floor` v0.3.2)
+
+### 수정
+
+- **`scripts/update.sh`가 이제 실제로 새 commit를 가져옴.** 기존엔 script가 `install-all.sh` → `claude plugin install`로 위임했지만, `claude plugin install`은 idempotent — 어떤 버전이든 이미 있으면 skip. 그래서 release 후 `update.sh` 돌려도 "Installed: 5"만 뜨고 실제 갱신 안됨.
+- 수정: `update.sh`가 이미 설치된 agent-skill 플러그인을 uninstall 후 재설치. 신규 설치 케이스는 그대로 `install-all.sh`로.
+
+### 검증
+
+- 이 수정 후 `bash scripts/update.sh`를 `main`에서 돌리면 `installed_plugins.json`의 `gitCommitSha`가 최신 commit로 갱신됨. 로컬에서 확인 — `harness-floor` SHA가 `2a27d75` (v0.3.0 merge) → `050100f` (v0.3.1 merge)로 이동.
+
 ## Decision-surfacing i18n (en / ko) — 2026-05-22  (`harness-floor` v0.3.1)
 
 ### 추가

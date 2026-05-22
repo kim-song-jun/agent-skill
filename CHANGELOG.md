@@ -4,6 +4,17 @@
 
 All notable changes to this project. Date-stamped tags exist for each release candidate.
 
+## `scripts/update.sh` fix — 2026-05-22  (`harness-floor` v0.3.2)
+
+### Fixed
+
+- **`scripts/update.sh` now actually picks up new commits.** Previously, the script delegated to `install-all.sh` → `claude plugin install`, but `claude plugin install` is idempotent — it skips when a plugin is already at any version. So users running `update.sh` after a release saw "Installed: 5" but no actual update.
+- Fix: `update.sh` now uninstalls then re-installs each agent-skill plugin that was already present. Pristine installs still flow through `install-all.sh` for the remainder.
+
+### Verified
+
+- After this fix, running `bash scripts/update.sh` against a clone on `main` moves `installed_plugins.json` `gitCommitSha` to the latest commit. Confirmed locally — `harness-floor` SHA went `2a27d75` (v0.3.0 merge) → `050100f` (v0.3.1 merge).
+
 ## Decision-surfacing i18n (en / ko) — 2026-05-22  (`harness-floor` v0.3.1)
 
 ### Added
