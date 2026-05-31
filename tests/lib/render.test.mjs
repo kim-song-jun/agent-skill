@@ -91,6 +91,23 @@ const FIXTURES = [
   { tag: "mono-medium", ctx: { purpose: "Monorepo", stack: "javascript", deploy_targets: "cloudflare", agents: [{name:"planner",when:""},{name:"dev",when:""},{name:"designer",when:""},{name:"qa-general",when:""},{name:"tester",when:""},{name:"reviewer",when:""}], constraints: "", floorTheme: false } },
   { tag: "floor-theme", ctx: { purpose: "Floor test app", stack: "typescript", deploy_targets: "vercel", agents: [{name:"planner",when:"plan"},{name:"dev",when:"code"},{name:"reviewer",when:"review"}], constraints: "", floorTheme: true } },
   { tag: "ts-docker", ctx: { purpose: "Docker-based service", stack: "typescript", deploy_targets: "fly.io", runtime: "docker", services: ["postgres", "redis"], services_str: "postgres, redis", agents: [{name:"planner",when:"plan"},{name:"backend-dev",when:"server"},{name:"reviewer",when:"review"}], constraints: "", floorTheme: false } },
+  { tag: "operational-heavy", ctx: { purpose: "Operational app", stack: "typescript", deploy_targets: "vercel", operationalProfile: true, liteProfile: false, floorTheme: true, degradedFoundations: false, agents: [{ name: "planner", when: "task docs and ambiguity control" }, { name: "orchestrator", when: "wave ownership and HOT file detection" }, { name: "verification-reviewer", when: "evidence and diff scope audit" }], constraints: "" } },
+  { tag: "lite-profile", ctx: { purpose: "Lite app", stack: "javascript", deploy_targets: "", operationalProfile: false, liteProfile: true, floorTheme: false, degradedFoundations: true, agents: [{ name: "planner", when: "planning" }, { name: "dev", when: "implementation" }, { name: "reviewer", when: "review" }], constraints: "" } },
+];
+
+const EXPECTED_OPERATIONAL_TEMPLATES = [
+  "local-guides/CLAUDE.md.hbs",
+  "task-ledger/CLAUDE.md.hbs",
+  "task-ledger/index.md.hbs",
+  "task-ledger/_template.md.hbs",
+  "task-ledger/_handoff-template.md.hbs",
+  "agents/orchestrator.md.hbs",
+  "agents/integration-dev.md.hbs",
+  "agents/verification-reviewer.md.hbs",
+  "agents/qa-reviewer.md.hbs",
+  "agents/design-reviewer.md.hbs",
+  "agents/security-reviewer.md.hbs",
+  "agents/data-reviewer.md.hbs",
 ];
 
 function listTemplates(dir, base = "") {
@@ -100,12 +117,19 @@ function listTemplates(dir, base = "") {
   });
 }
 
+test("includes operational Claude templates in render coverage", () => {
+  const templates = new Set(listTemplates(TEMPLATES_DIR));
+  for (const tplRel of EXPECTED_OPERATIONAL_TEMPLATES) {
+    assert.ok(templates.has(tplRel), `missing template: ${tplRel}`);
+  }
+});
+
 for (const tplRel of listTemplates(TEMPLATES_DIR)) {
   if (!tplRel.endsWith(".hbs")) continue;
   const tpl = readFileSync(resolve(TEMPLATES_DIR, tplRel), "utf-8");
   for (const fx of FIXTURES) {
     test(`snapshot: ${tplRel} × ${fx.tag}`, () => {
-      const out = render(tpl, { ...fx.ctx, persona: "auth" });
+      const out = render(tpl, { title: "Rendered Task", guidePath: "src", ...fx.ctx, persona: "auth" });
       snapshot(`${tplRel.replace(/\//g, "_")}__${fx.tag}`, out);
     });
   }

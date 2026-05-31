@@ -4,15 +4,23 @@
 
 ## Stack
 
-typescript — deploys to vercel
+typescript - deploys to vercel
 
 ## Operating Principles
 
 These apply to the main agent and to every role in `.claude/agents/`:
 
-1. **Brainstorm first.** Before any deliverable (code, doc, design), invoke `superpowers:brainstorming` to align on intent.
-2. **Parallel via superpowers.** When fanning out 2+ independent subtasks, invoke `superpowers:dispatching-parallel-agents` or `subagent-driven-development`.
-3. **context-mode over Bash.** For commands whose output may exceed ~20 lines, use `mcp__plugin_context-mode_context-mode__ctx_batch_execute`.
+1. **Brainstorm first.** Before any deliverable, invoke `superpowers:brainstorming` unless the user explicitly asks for direct execution.
+2. **Plan before implementation.** Multi-step work uses `superpowers:writing-plans` and stores plans in `docs/superpowers/plans/`.
+3. **Parallel through orchestration.** Use `superpowers:dispatching-parallel-agents` or `superpowers:subagent-driven-development` when tasks do not share files.
+4. **Verify before completion.** Use `superpowers:verification-before-completion` before claiming success.
+5. **Use context-mode for bulk context.** Store or index large logs, broad searches, and bulky browser snapshots outside the main conversation.
+6. **Protect shared worktrees.** Never use `git add -A`, `git commit -a`, `git reset --hard`, `git checkout --`, or force push unless the user explicitly approves the exact command.
+7. **Commit with pathspecs.** Use `git commit -m "message" -- path/one path/two`.
+
+
+
+
 
 ## Agent Roster
 
@@ -25,27 +33,21 @@ These apply to the main agent and to every role in `.claude/agents/`:
 
 ## Hooks
 
-- `PreToolUse` (Bash) → `context-mode-router.mjs` — suggests context-mode for likely-large commands
-- `Stop` → `session-summary.mjs` — appends key decisions to `docs/decisions/`
-- `SessionStart` → `cache-heal.mjs` — self-heals plugin cache symlinks
+- `PreToolUse` (Bash) -> `context-mode-router.mjs` and operational policy checks.
+- `Stop` -> concise handoff/session summary.
+- `SessionStart` -> cache and foundation checks.
 
 ## Work Folders
 
-- `docs/superpowers/specs/` — brainstorming output (design specs)
-- `docs/superpowers/plans/` — writing-plans output (implementation plans)
-- `docs/decisions/` — session-summary logs
-- `docs/tasks/` — long-running task tracking
-
-
-
+- `docs/superpowers/specs/` - brainstorming output.
+- `docs/superpowers/plans/` - implementation plans.
+- `docs/tasks/` - task ledger.
+- `docs/decisions/` - concise decision records.
 
 ## Floor Theme
 
 Cost-unrestricted parallel pattern enabled. Commands:
 
-- `/visual-qa` — visual regression with LLM analysis (see `.visual-qa.json`)
-- `/agent-all "task description"` — multi-wave pipeline (see `.agent-all.json`)
-- `/agent-all <task-path> --loop` — iterate until the break-condition succeeds
-
-Read `plugins/harness-floor/skills/{visual-qa,agent-all}/SKILL.md` for full flag references.
-
+- `/visual-qa` - visual regression with LLM analysis.
+- `/agent-all "task description"` - task-ledger-driven multi-wave pipeline.
+- `/agent-all <task-path> --loop` - iterate until the break-condition succeeds.

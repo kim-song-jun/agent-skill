@@ -1,0 +1,53 @@
+# Lite app
+
+> Project memory for Claude Code. Maintained by `/agent-init`.
+
+## Stack
+
+javascript
+
+## Operating Principles
+
+These apply to the main agent and to every role in `.claude/agents/`:
+
+1. **Brainstorm first.** Before any deliverable, invoke `superpowers:brainstorming` unless the user explicitly asks for direct execution.
+2. **Plan before implementation.** Multi-step work uses `superpowers:writing-plans` and stores plans in `docs/superpowers/plans/`.
+3. **Parallel through orchestration.** Use `superpowers:dispatching-parallel-agents` or `superpowers:subagent-driven-development` when tasks do not share files.
+4. **Verify before completion.** Use `superpowers:verification-before-completion` before claiming success.
+5. **Use context-mode for bulk context.** Store or index large logs, broad searches, and bulky browser snapshots outside the main conversation.
+6. **Protect shared worktrees.** Never use `git add -A`, `git commit -a`, `git reset --hard`, `git checkout --`, or force push unless the user explicitly approves the exact command.
+7. **Commit with pathspecs.** Use `git commit -m "message" -- path/one path/two`.
+
+
+
+
+## Lite Harness
+
+Lite mode keeps only root memory and the minimal role roster. It does not install task ledger files, policy hooks, or global config patches.
+
+
+## Agent Roster
+
+| Role | When to use | File |
+|------|-------------|------|
+| planner | planning | `.claude/agents/planner.md` |
+| dev | implementation | `.claude/agents/dev.md` |
+| reviewer | review | `.claude/agents/reviewer.md` |
+
+
+## Hooks
+
+- `PreToolUse` (Bash) -> `context-mode-router.mjs` and operational policy checks.
+- `Stop` -> concise handoff/session summary.
+- `SessionStart` -> cache and foundation checks.
+
+## Work Folders
+
+- `docs/superpowers/specs/` - brainstorming output.
+- `docs/superpowers/plans/` - implementation plans.
+- `docs/tasks/` - task ledger.
+- `docs/decisions/` - concise decision records.
+
+## Foundation Status
+
+This harness is in degraded mode because superpowers or context-mode is missing. Install or update the recommended foundations before long-running work.

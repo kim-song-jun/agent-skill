@@ -1,0 +1,78 @@
+# Operational app
+
+> Project memory for Claude Code. Maintained by `/agent-init`.
+
+## Stack
+
+typescript - deploys to vercel
+
+## Operating Principles
+
+These apply to the main agent and to every role in `.claude/agents/`:
+
+1. **Brainstorm first.** Before any deliverable, invoke `superpowers:brainstorming` unless the user explicitly asks for direct execution.
+2. **Plan before implementation.** Multi-step work uses `superpowers:writing-plans` and stores plans in `docs/superpowers/plans/`.
+3. **Parallel through orchestration.** Use `superpowers:dispatching-parallel-agents` or `superpowers:subagent-driven-development` when tasks do not share files.
+4. **Verify before completion.** Use `superpowers:verification-before-completion` before claiming success.
+5. **Use context-mode for bulk context.** Store or index large logs, broad searches, and bulky browser snapshots outside the main conversation.
+6. **Protect shared worktrees.** Never use `git add -A`, `git commit -a`, `git reset --hard`, `git checkout --`, or force push unless the user explicitly approves the exact command.
+7. **Commit with pathspecs.** Use `git commit -m "message" -- path/one path/two`.
+
+
+## Operational Harness
+
+- Default mode is heavy. Use `/agent-init --lite` only for small repositories that do not need task ledger or hooks.
+- Every `/agent-all` run must resolve to a task document under `docs/tasks/`.
+- Keep `Decision Matrix`, `Ambiguity Log`, `Progress Snapshot`, and `Verification` current.
+- Phase handoffs belong in the task doc or `_handoff-template.md` output, not in raw chat logs.
+- Existing local instructions outside the generated sentinel section take precedence.
+
+## Task Ledger
+
+- `docs/tasks/index.md` tracks active tasks.
+- `docs/tasks/_template.md` is the required shape for new tasks.
+- `scripts/agent-task-ledger-check.mjs` gates completion and PR creation.
+- Checkboxes under `Backlog` and `Follow-up` are not completion blockers.
+
+## Reviewer Gates
+
+Use reviewer personas based on changed files:
+
+- UI/CSS/frontend components: `design-reviewer`, `qa-reviewer`
+- auth, permissions, API views, serializers, destructive actions: `security-reviewer`
+- models, migrations, seeds, fixtures, backfills: `data-reviewer`
+- tests, CI, build config: `verification-reviewer`
+- cross-stack frontend and backend changes: `integration-dev`, `verification-reviewer`
+
+
+
+
+## Agent Roster
+
+| Role | When to use | File |
+|------|-------------|------|
+| planner | task docs and ambiguity control | `.claude/agents/planner.md` |
+| orchestrator | wave ownership and HOT file detection | `.claude/agents/orchestrator.md` |
+| verification-reviewer | evidence and diff scope audit | `.claude/agents/verification-reviewer.md` |
+
+
+## Hooks
+
+- `PreToolUse` (Bash) -> `context-mode-router.mjs` and operational policy checks.
+- `Stop` -> concise handoff/session summary.
+- `SessionStart` -> cache and foundation checks.
+
+## Work Folders
+
+- `docs/superpowers/specs/` - brainstorming output.
+- `docs/superpowers/plans/` - implementation plans.
+- `docs/tasks/` - task ledger.
+- `docs/decisions/` - concise decision records.
+
+## Floor Theme
+
+Cost-unrestricted parallel pattern enabled. Commands:
+
+- `/visual-qa` - visual regression with LLM analysis.
+- `/agent-all "task description"` - task-ledger-driven multi-wave pipeline.
+- `/agent-all <task-path> --loop` - iterate until the break-condition succeeds.
