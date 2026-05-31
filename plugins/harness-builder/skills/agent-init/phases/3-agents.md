@@ -18,7 +18,12 @@ Invoke `Skill` with `superpowers:dispatching-parallel-agents` first. Adopt its d
      - Else: template = `templates/agents/<name>.md.hbs`, context = `{ ...discovery, persona: "" }`.
    - Operational profile must include the orchestrator and reviewer personas produced in Phase 2. Lite profile renders only the minimal role roster and skips operational reviewer personas.
 
-2. **Fan out** the render+write work. Each subagent gets one role:
+2. If `--dry-run` is set, print the planned agent files without writing:
+   - Agent files: every `.claude/agents/<role-name>.md` target computed above.
+   - Template source for each role and whether the file would be created or force-refreshed.
+   - Record the phase plan for the Phase 5 summary, then continue without dispatching subagents, writing files, or updating `.claude/.agent-init-state.json`.
+
+3. **Fan out** the render+write work. Each subagent gets one role:
    ```
    For each role in <agents list>:
      - Read template path
@@ -28,9 +33,9 @@ Invoke `Skill` with `superpowers:dispatching-parallel-agents` first. Adopt its d
    ```
    Dispatch via `Skill` with `superpowers:dispatching-parallel-agents`. Treat each role-render as an independent task — they share no state.
 
-3. Collect results. If any role failed, abort the phase: list the failures, leave `.agent-init-state.json` unchanged. Do NOT mark Phase 3 complete on partial success.
+4. Collect results. If any role failed, abort the phase: list the failures, leave `.agent-init-state.json` unchanged. Do NOT mark Phase 3 complete on partial success.
 
-4. On full success, set top-level `agents_written` to the list of paths and push `{ "phase": 3, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`.
+5. On full success, set top-level `agents_written` to the list of paths and push `{ "phase": 3, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`.
 
 ## Output to user
 

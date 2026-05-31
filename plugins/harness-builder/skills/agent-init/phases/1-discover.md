@@ -64,8 +64,14 @@
      services_str: detected.services.join(", "), // pre-joined for template
    };
    ```
-6. Update `.claude/.agent-init-state.json` (create with `{ "phases": [] }` if missing). Set top-level `discovery`, `plugin_scan`, and `foundation_state`, then push `{ "phase": 1, "completedAt": "<iso>" }` onto `phases`. Use atomic write: temp file + rename.
-7. Do not commit yet. Phase 5 makes a single bootstrap commit.
+6. If `--dry-run` is set, print the discovered decisions and planned state summary without writing:
+   - Discovery context that would be stored for later phases.
+   - Plugin scan results that Phase 5 will report.
+   - Foundation state and whether `--update-foundations` would have work.
+   - Local guide directories that later phases would plan.
+   - Continue with the in-memory context without writing `.claude/.agent-init-state.json`.
+7. Update `.claude/.agent-init-state.json` (create with `{ "phases": [] }` if missing). Set top-level `discovery`, `plugin_scan`, and `foundation_state`, then push `{ "phase": 1, "completedAt": "<iso>" }` onto `phases`. Use atomic write: temp file + rename.
+8. Do not commit yet. Phase 5 makes a single bootstrap commit.
 
 ## Output to user
 

@@ -29,12 +29,17 @@
 2. If `operationalProfile` is true, add the operational roles required for task-ledger work and review gates (`orchestrator`, `integration-dev`, `verification-reviewer`, `qa-reviewer`, `design-reviewer`, `security-reviewer`, `data-reviewer`) unless already present. Lite mode keeps only the size/persona roster above.
 3. Read `templates/CLAUDE.md.hbs`.
 4. Render root `CLAUDE.md` with `render(tpl, { ...discovery, agents, operationalProfile: !liteProfile, liteProfile, degradedFoundations })`.
-5. Write `CLAUDE.md` at project root.
+5. If `--dry-run` is set, print the planned root files and local guide files for this phase without writing:
+   - Root files: `CLAUDE.md`.
+   - Local guide files: every operational `local_guides[]` target that would receive `CLAUDE.md`.
+   - Note whether each target would be created, sentinel-merged, or force-refreshed.
+   - Record the phase plan for the Phase 5 summary, then continue without writing files or updating `.claude/.agent-init-state.json`.
+6. Write `CLAUDE.md` at project root.
    - If the file exists, use `mergeSentinelSection` for existing `CLAUDE.md`; never overwrite user-owned content outside sentinel markers.
    - If the file does not exist, write the rendered content.
    - `--force` may replace generated files, but still preserve user-owned content outside sentinel markers when sentinel markers are present.
-6. When operational, render `templates/local-guides/CLAUDE.md.hbs` for every `local_guides[]` entry. Use `mergeSentinelSection` when a local guide already exists.
-7. Push `{ "phase": 2, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`.
+7. When operational, render `templates/local-guides/CLAUDE.md.hbs` for every `local_guides[]` entry. Use `mergeSentinelSection` when a local guide already exists.
+8. Push `{ "phase": 2, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`.
 
 ## Output to user
 

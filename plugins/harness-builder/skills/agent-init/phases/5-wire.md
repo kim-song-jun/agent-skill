@@ -22,7 +22,17 @@
 
 3. Resolve selected platforms from `--platform=claude,codex,gemini`. In interactive use, prompt before wiring platform-specific artifacts. In non-interactive use, default to Claude-only. Global CLI config patching always requires a separate explicit approval.
 
-4. If `--dry-run` is set, print planned root files, local guide files, task ledger files, hook files, platform wiring, and foundation update plan without writing. Then exit before filesystem mutations or commits.
+4. If `--dry-run` is set, print the complete no-write plan without writing. Then exit before filesystem mutations, global config patches, foundation updates, state updates, or commits. Include:
+   - planned root files (`CLAUDE.md`, `.gitignore`, `.visual-qa.json`, `.agent-all.json` as applicable)
+   - local guide files
+   - agent files
+   - hook files
+   - settings changes for `.claude/settings.local.json`
+   - task ledger files
+   - platform wiring for Claude/Codex/Gemini selections
+   - planned global config patches that require separate approval
+   - foundation update plan
+   - commit plan with explicit pathspecs
 
 5. Update `.gitignore`. If `.claude/.agent-init-state.json` is not already listed, append it. Idempotent.
 

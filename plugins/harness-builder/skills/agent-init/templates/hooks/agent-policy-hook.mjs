@@ -2,6 +2,7 @@
 // PreToolUse hook for Bash. Blocks high-risk shell commands and enforces
 // pathspec commits from inside a generated project .claude/hooks/ directory.
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 const GIT_GLOBAL_OPTIONS_WITH_VALUES = new Set([
   "-C",
@@ -294,8 +295,32 @@ function analyzeGitInvocation(tokens, invocation) {
   return null;
 }
 
-function analyzeShellCommand(command) {
-  const tokens = shellTokens(String(command || ""));
+function matchesConfiguredCommand(text, pattern) {
+  return typeof pattern === "string" && pattern.length > 0 && text.includes(pattern);
+}
+
+function commandHasConfirmFlag(tokens, flag) {
+  const text = typeof flag === "string" ? flag : "";
+  if (!text) return false;
+  return tokens.some((token) => token === text || token.startsWith(`${text}=`));
+}
+
+function analyzeShellCommand(command, options = {}) {
+  const text = String(command || "");
+  const tokens = shellTokens(text);
+  const { destructiveCommands = [], destructiveConfirmFlags = [] } = options || {};
+
+  for (const pattern of destructiveCommands) {
+    if (matchesConfiguredCommand(text, pattern)) {
+      return { blocked: true, reason: `destructive command pattern: ${pattern}` };
+    }
+  }
+
+  for (const flag of destructiveConfirmFlags) {
+    if (commandHasConfirmFlag(tokens, flag)) {
+      return { blocked: true, reason: `destructive confirmation flag: ${flag}` };
+    }
+  }
 
   for (const segment of commandSegments(tokens)) {
     const start = commandStart(tokens, segment);
@@ -317,6 +342,44 @@ function analyzeShellCommand(command) {
   return { blocked: false, reason: null };
 }
 
+function stringArray(value) {
+  return Array.isArray(value) ? value.filter((entry) => typeof entry === "string" && entry.length > 0) : [];
+}
+
+function loadPolicyOptionsFromFile(projectDir, fileName) {
+  let parsed = {};
+  try {
+    parsed = JSON.parse(readFileSync(join(projectDir, fileName), "utf-8"));
+  } catch {
+    return { destructiveCommands: [], destructiveConfirmFlags: [] };
+  }
+
+  const policy = parsed?.policy && typeof parsed.policy === "object" ? parsed.policy : {};
+  return {
+    destructiveCommands: [
+      ...stringArray(policy.destructiveCommands),
+      ...stringArray(parsed?.destructiveCommands),
+    ],
+    destructiveConfirmFlags: [
+      ...stringArray(policy.destructiveConfirmFlags),
+      ...stringArray(parsed?.destructiveConfirmFlags),
+    ],
+  };
+}
+
+function loadPolicyOptions() {
+  const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+  const options = { destructiveCommands: [], destructiveConfirmFlags: [] };
+
+  for (const fileName of [".agent-all.json", ".agent-policy.json"]) {
+    const fileOptions = loadPolicyOptionsFromFile(projectDir, fileName);
+    options.destructiveCommands.push(...fileOptions.destructiveCommands);
+    options.destructiveConfirmFlags.push(...fileOptions.destructiveConfirmFlags);
+  }
+
+  return options;
+}
+
 let input = "";
 try {
   input = readFileSync(0, "utf-8");
@@ -328,7 +391,7 @@ try {
 } catch {}
 
 const command = (payload?.tool_input?.command ?? payload?.command ?? "").toString();
-const result = analyzeShellCommand(command);
+const result = analyzeShellCommand(command, loadPolicyOptions());
 
 if (result.blocked) {
   console.error(`agent policy blocked command: ${result.reason}`);
