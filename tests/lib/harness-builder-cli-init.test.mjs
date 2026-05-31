@@ -18,6 +18,10 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import {
+  REQUIRED_SECTIONS,
+  validateTaskDoc,
+} from "../../plugins/harness-floor/skills/agent-all/lib/task-ledger.mjs";
 
 const REPO = resolve(".");
 
@@ -135,6 +139,26 @@ test("harness-builder-codex: AGENTS.md documents operational profile", () => {
     assert.match(body, /pathspec/);
     assert.match(body, /operational harness/i);
     assert.match(body, /reviewer personas/i);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: generated task ledger matches agent-all contract", () => {
+  const target = mkTarget("codex-task-ledger-contract");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target]);
+    assert.equal(res.status, 0, res.stderr);
+
+    const index = readFileSync(resolve(target, "docs/tasks/index.md"), "utf-8");
+    const template = readFileSync(resolve(target, "docs/tasks/_template.md"), "utf-8");
+
+    assert.match(index, /^## Active$/m);
+    assert.doesNotMatch(index, /^## Active Tasks$/m);
+    assert.deepEqual(validateTaskDoc(template), { ok: true, errors: [] });
+    for (const section of REQUIRED_SECTIONS) {
+      assert.match(template, new RegExp(`^## ${section}$`, "m"));
+    }
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

@@ -48,22 +48,15 @@ const OPERATIONAL_SKILL_RE = /^skills\/(orchestrator|verification-reviewer|qa-re
 const TASK_LEDGER_TEMPLATES = [
   {
     rel: "task-ledger/index.md.hbs",
-    body: `# Task Ledger
+    body: `# Task Index
 
-This directory tracks operational Codex work for {{purpose}}.
+<!-- agent-skill:operational:start -->
+## Active
 
-## Active Tasks
+## Completed
 
-| Task | Owner | Status | Last Updated |
-|------|-------|--------|--------------|
-| _Use \`NN-slug.md\` files from \`_template.md\`._ | - | - | - |
-
-## Operating Rules
-
-- One durable task file per non-trivial workstream.
-- Keep the Decision Matrix, Ambiguity Log, Progress Snapshot, and Verification sections current.
-- Commit with explicit pathspecs, for example: \`git commit -m "message" -- path/one path/two\`.
-- Root \`AGENTS.md\` is the index; folder-level \`AGENTS.md\` files define local scope.
+## Backlog
+<!-- agent-skill:operational:end -->
 `,
   },
   {
@@ -72,33 +65,40 @@ This directory tracks operational Codex work for {{purpose}}.
 
 ## Goal
 
-State the user-visible outcome and the files or systems in scope.
+## Acceptance
 
-## Ownership
+## Scope
 
-- Primary agent:
-- Reviewer personas:
-- HOT files or shared-tree risks:
+## Out of Scope
+
+## File Ownership
+
+## Phases
 
 ## Decision Matrix
 
-| Decision | Options Considered | Chosen | Reason |
-|----------|--------------------|--------|--------|
+| Decision | Options | Choice | Rationale |
+|---|---|---|---|
 
 ## Ambiguity Log
 
-| Question | Current Assumption | Resolution |
-|----------|--------------------|------------|
-
 ## Progress Snapshot
 
-| Step | Status | Notes |
-|------|--------|-------|
+Current phase:
+Current git state:
+Completed:
+Remaining:
+Blockers:
+Latest validation:
+Next action:
 
 ## Verification
 
-| Command or Review | Result | Evidence |
-|-------------------|--------|----------|
+## Risk / Rollback
+
+## Handoff
+
+## Follow-up
 `,
   },
 ];
