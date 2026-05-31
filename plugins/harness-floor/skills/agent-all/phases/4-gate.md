@@ -15,16 +15,16 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
 
 1. Compute the wave's diff and changed-file list:
    ```bash
-   git diff <wave.startCommit>..<wave.endCommit>
-   git diff --name-only <wave.startCommit>..<wave.endCommit>
+   git diff <wave.baseCommit>..<wave.endCommit>
+   git diff --name-only <wave.baseCommit>..<wave.endCommit>
    ```
-   (Start/end commits are first and last from `wave.tasks[].commits`.)
+   `wave.baseCommit` is the pre-wave commit captured by Phase 3 before implementation. For older state without `baseCommit`, fall back to `git diff <wave.startCommit>^..<wave.endCommit>` and `git diff --name-only <wave.startCommit>^..<wave.endCommit>` when `wave.startCommit` has a parent. If `wave.startCommit` is a root commit with no parent, use the empty-tree hash (`4b825dc642cb6eb9a060e54bf8d69288fbee4904`) as the diff base.
 
 2. If `gates.specReview`:
    - Dispatch a spec-reviewer subagent. Prompt includes: the plan section for this wave, the diff, and a request to flag any spec deviations.
 
 3. If `gates.qualityReview`:
-   - Load `const { reviewers } = classifyChangedFiles(files)` from `lib/changed-file-classifier.mjs`, where `files` is the `git diff --name-only <wave.startCommit>..<wave.endCommit>` output.
+   - Load `const { reviewers } = classifyChangedFiles(files)` from `lib/changed-file-classifier.mjs`, where `files` is the `git diff --name-only <wave.baseCommit>..<wave.endCommit>` output, or the compatibility fallback output described above.
    - Dispatch one reviewer subagent per returned `reviewers` persona.
    - The classifier always returns the base `reviewer` and `verification-reviewer` personas.
    - The classifier adds `design-reviewer`, `qa-reviewer`, `security-reviewer`, `data-reviewer`, and `integration-dev` only when the changed-file set requires them.

@@ -24,7 +24,7 @@
 
 2. Build waves: `const waves = buildWaves(tasks, config.waves[waveSize])` from `lib/wave-builder.mjs`.
 
-3. For each wave, run sub-phases **3a → 3b → 3c**:
+3. For each wave, capture `baseCommit` before implementation with `git rev-parse HEAD`, then run sub-phases **3a → 3b → 3c**. Persist this pre-wave commit on the wave record so Phase 4 can include the first wave commit in gate diffs.
 
 ### 3a — Scoping (parallel)
 
@@ -45,7 +45,7 @@ a. For each task, build a fresh prompt: the original mini-plan PLUS a section `#
 b. Re-dispatch implementer subagent. PostToolUse hook validates `STATUS: DONE` came with `verification_passed` line.
 c. Phase 4 (Gate) reviewer subagents likewise get the `Review Task N: <title>` description; PreToolUse hook injects the `VERIFICATION_AUDIT` directive; PostToolUse hook validates the token's presence.
 
-4. Capture wave result: `{index: i, tasks: [{id, status, commits, decisions: state.decisions[id]}], status: "completed"|"incomplete"}`.
+4. Capture wave result: `{index: i, baseCommit, startCommit, endCommit, tasks: [{id, status, commits, decisions: state.decisions[id]}], status: "completed"|"incomplete"}`. Derive `startCommit` and `endCommit` from the first and last entries in `wave.tasks[].commits`.
 
 5. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
 
