@@ -75,6 +75,7 @@ const PLUGINS = {
 
 const CODEX_INIT_SKILL = resolve(REPO, "plugins/harness-builder-codex/skills/codex-init/SKILL.md");
 const CODEX_CONFIG_TEMPLATE = resolve(REPO, "plugins/harness-builder-codex/skills/codex-init/templates/codex-config.toml.hbs");
+const GEMINI_INIT_SKILL = resolve(REPO, "plugins/harness-builder-gemini/skills/gemini-init/SKILL.md");
 
 function runInit(binPath, args, opts = {}) {
   return spawnSync("node", [binPath, ...args], {
@@ -109,6 +110,19 @@ test("harness-builder-codex: config template is operational-only hook snippet", 
   assert.doesNotMatch(body, /session start/);
   assert.doesNotMatch(body, /liteProfile/);
   assert.doesNotMatch(body, /lite mode/i);
+});
+
+test("harness-builder-gemini: init skill documents MCP-only settings and soft guidance", () => {
+  const body = readFileSync(GEMINI_INIT_SKILL, "utf-8");
+
+  assert.doesNotMatch(body, /hook_command_beforetool/);
+  assert.doesNotMatch(body, /hook_command_sessionstart/);
+  assert.doesNotMatch(body, /BeforeTool/);
+  assert.doesNotMatch(body, /SessionStart/);
+  assert.doesNotMatch(body, /hook \+ MCP stubs/);
+  assert.match(body, /settings(?: output| stub)?[\s\S]*MCP-only/i);
+  assert.match(body, /operational enforcement[\s\S]*soft prompt-level guidance/i);
+  assert.match(body, /not hard hooks/i);
 });
 
 test("harness-builder-codex: AGENTS.md documents operational profile", () => {

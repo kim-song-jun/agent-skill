@@ -55,22 +55,20 @@ Refuse to overwrite existing files unless `--force`.
 
 ## Phase 3 — Summarize
 
-Print: detected stack, runtime (if any), roles scaffolded. Note that
-`.gemini/settings.json` MCP wiring is out of scope for this MVP.
+Print: detected stack, runtime (if any), roles scaffolded, and the rendered
+`gemini-settings.json` snippet for manual merge into `~/.gemini/settings.json`
+or `<project>/.gemini/settings.json`.
+
+The settings output is MCP-only in this release. Gemini operational enforcement
+is soft prompt-level guidance, not hard hooks; the discipline rules live in
+`GEMINI.md`.
 
 ## Phase 4 — Optional: emit .gemini/settings.json stub
 
-Ask the user (via `ask_user`) whether to emit `.gemini/settings.json`
-with hook + MCP stubs. If yes:
+Ask the user (via `ask_user`) whether to emit a `.gemini/settings.json` stub
+for the project. If yes, keep the stub MCP-only:
 
-1. Default hook commands:
-
-   ```javascript
-   ctx.hook_command_beforetool = "echo 'before write_file'";
-   ctx.hook_command_sessionstart = "echo 'session start'";
-   ```
-
-2. Prompt for MCP servers (`{ name, command, args }` or `{ name, url }`,
+1. Prompt for MCP servers (`{ name, command, args }` or `{ name, url }`,
    empty list OK). Build `mcp_servers_json_body` the same way as the
    Copilot plugin's Phase 4 step 3:
 
@@ -84,8 +82,10 @@ with hook + MCP stubs. If yes:
    ctx.mcp_servers_json_body = entries.join(",\n");
    ```
 
-3. Render `templates/gemini-settings.json.hbs` and write to
+2. Render `templates/gemini-settings.json.hbs` and write to
    `.gemini/settings.json` in the project root via `write_file`. Refuse
    to overwrite unless `--force`.
 
-The hook commands are no-ops by default; users edit them.
+Hard hook blocking is not generated for Gemini in this release. Keep generated
+settings limited to MCP server wiring and rely on `GEMINI.md` for operational
+discipline.
