@@ -63,7 +63,7 @@
     - Append `.agent-all-state.json` to `.gitignore` (idempotent — same pattern as `.agent-init-state.json` and `.visual-qa-state.json`).
     - Do not mutate Phase 2 render context here; `floorTheme` was resolved in Phase 1 before `CLAUDE.md` rendered.
 
-9. If `--update-foundations` is set, run the approved foundation update path after printing the plan. It may run `scripts/update.sh`; global CLI config patching still requires a separate explicit approval.
+9. If `--update-foundations` is set, print the foundation update plan before running `scripts/update.sh`. Global CLI config patching still requires a separate explicit approval.
 
 10. Single git commit with explicit pathspecs:
    ```bash

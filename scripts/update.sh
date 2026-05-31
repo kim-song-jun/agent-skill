@@ -8,16 +8,53 @@
 # Or, if you already cloned:
 #   bash scripts/update.sh                 # update all 5 Claude Code essentials
 #   bash scripts/update.sh --all           # all 17 plugins (CLI siblings included)
+#   bash scripts/update.sh --cli=codex     # one platform's full plugin set
 #   bash scripts/update.sh --cli=cursor    # one platform's full plugin set
+#   bash scripts/update.sh --dry-run       # print the plan; change nothing
 #
 # Idempotent — re-runnable any time. Exit 0 = success.
 
 set -euo pipefail
 
+DRY_RUN=0
+PASSTHROUGH=()
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run)
+      DRY_RUN=1
+      PASSTHROUGH+=("$arg")
+      ;;
+    --all|--cli=codex|--cli=copilot|--cli=gemini|--cli=cursor|--claude-code)
+      PASSTHROUGH+=("$arg")
+      ;;
+    *)
+      PASSTHROUGH+=("$arg")
+      ;;
+  esac
+done
+
 # Resolve repo root: prefer the directory the script lives in (when run
 # from a local clone); fall back to a temp clone (when piped from curl).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+echo "→ foundation update plan"
+if [ -d "$REPO_ROOT/.git" ]; then
+  echo "  - update local clone at $REPO_ROOT with git pull --ff-only"
+else
+  echo "  - clone agent-skill into a temporary directory"
+fi
+echo "  - verify vendored libs match canonical sources"
+echo "  - refresh agent-skill marketplace cache"
+echo "  - force-update already-installed Claude Code foundation plugins"
+echo "  - install any missing selected platform plugins through install-all.sh"
+echo "  - forward install/platform flags: ${PASSTHROUGH[*]:-(none)}"
+echo "  - no global CLI config files are patched by this script"
+
+if [ "$DRY_RUN" = "1" ]; then
+  echo "Dry run requested; no git pull, marketplace update, uninstall, or install command will run."
+  exit 0
+fi
 
 if [ ! -d "$REPO_ROOT/.git" ]; then
   # Piped-from-curl mode: clone fresh into a temp dir.
@@ -47,8 +84,6 @@ claude plugin marketplace update agent-skill 2>&1 | tail -1 || true
 MARKETPLACE="agent-skill"
 PLUGINS=(harness-builder harness-floor harness-thrift harness-explore harness-debug)
 
-# Allow caller to pass --all etc. through to install-all.sh for the
-# fresh-install case below.
 INSTALLED_JSON="$HOME/.claude/plugins/installed_plugins.json"
 echo "→ force-updating already-installed agent-skill plugins (uninstall + install)…"
 for p in "${PLUGINS[@]}"; do
@@ -63,5 +98,5 @@ for p in "${PLUGINS[@]}"; do
   fi
 done
 
-echo "→ installing any missing plugins via install-all.sh $* …"
-exec bash "$REPO_ROOT/scripts/install-all.sh" "$@"
+echo "→ installing any missing plugins via install-all.sh ${PASSTHROUGH[*]} …"
+exec bash "$REPO_ROOT/scripts/install-all.sh" "${PASSTHROUGH[@]}"
