@@ -20,6 +20,13 @@ test("preserves trailing user whitespace when appending sentinel section", () =>
   assert.equal(result.content, `user\n\n\n${SENTINEL.start}\ngenerated\n${SENTINEL.end}\n`);
 });
 
+test("ignores sentinel marker mentions that are not whole marker lines", () => {
+  const existing = `Mention ${SENTINEL.start} in prose\n`;
+  const result = mergeSentinelSection(existing, "generated");
+  assert.equal(result.action, "append");
+  assert.equal(result.content, `${existing}\n${SENTINEL.start}\ngenerated\n${SENTINEL.end}\n`);
+});
+
 test("replaces only the existing sentinel section", () => {
   const existing = `top\n\n${SENTINEL.start}\nold\n${SENTINEL.end}\n\nbottom\n`;
   const result = mergeSentinelSection(existing, "new");
@@ -34,4 +41,14 @@ test("throws when only one sentinel marker exists", () => {
 test("throws when sentinel end appears before sentinel start", () => {
   const existing = `before\n${SENTINEL.end}\nold\n${SENTINEL.start}\nafter\n`;
   assert.throws(() => mergeSentinelSection(existing, "generated"), /malformed sentinel|incomplete sentinel/);
+});
+
+test("throws when duplicate sentinel start markers exist", () => {
+  const existing = `${SENTINEL.start}\nold\n${SENTINEL.start}\nstale\n${SENTINEL.end}\n`;
+  assert.throws(() => mergeSentinelSection(existing, "generated"), /duplicate sentinel/);
+});
+
+test("throws when duplicate sentinel end markers exist", () => {
+  const existing = `${SENTINEL.start}\nold\n${SENTINEL.end}\nstale\n${SENTINEL.end}\n`;
+  assert.throws(() => mergeSentinelSection(existing, "generated"), /duplicate sentinel/);
 });
