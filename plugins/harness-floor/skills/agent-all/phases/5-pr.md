@@ -46,13 +46,22 @@ If `--no-pr` OR `config.defaults.createPR === false`: skip Phase 5. Push `{phase
 
 6. Render `templates/pr-body.md.hbs` with `ctx` using `plugins/harness-builder/skills/agent-init/lib/render.mjs`.
 
-7. Create PR:
+7. Run task ledger validation for `task.path`:
+   ```javascript
+   import { readFileSync } from "node:fs";
+   import { validateTaskDoc } from "./lib/task-ledger.mjs";
+   const result = validateTaskDoc(readFileSync(task.path, "utf8"));
+   if (!result.ok) { /* print errors and abort before PR creation */ }
+   ```
+   Abort PR creation when required sections are missing or in-scope checkboxes remain unchecked. The task doc is the durable acceptance ledger; do not open a PR while it says scoped work is incomplete.
+
+8. Create PR:
    ```bash
    gh pr create --base <config.pr.baseBranch> --title "<task.title>" --body "$(rendered)"
    ```
    Capture URL. If `gh` not installed / unauth: warn `gh missing — PR not created`, stash `prUrl: null`, continue.
 
-8. Stash `prUrl` in state. Push `{phase: 5, completedAt}` to `phases`.
+9. Stash `prUrl` in state. Push `{phase: 5, completedAt}` to `phases`.
 
 ## Output to user
 

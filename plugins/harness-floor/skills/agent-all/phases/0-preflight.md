@@ -22,9 +22,14 @@
    - If ends with `.md`: must exist as a file. If not: abort `task file not found: <path>`. Stash as `taskPath`.
    - Otherwise: must be non-empty string. Stash as `prompt`. If empty: abort `provide a prompt or task path`.
 
-7. **Resolve loop break-condition (if `--loop` is set).** See `### Break-condition resolution` below. Mutates `config.loop.breakCondition` in memory; may rewrite `.agent-all.json` if user opts in.
+7. Validate task ledger scaffolding:
+   - Require `docs/tasks/index.md` and `docs/tasks/_template.md` to exist before continuing.
+   - Exception: if the input is a free-form prompt and this invocation is creating the first task in Phase 1, allow Phase 1 to create the missing ledger scaffold and task doc after confirming `docs/tasks/` can be created.
+   - If `--task-id=<N>` is present, validate that `N` is a positive integer and stash it as `requestedId` for Phase 1.
 
-8. Push `{phase: 0, completedAt: "<iso>"}` to state. Use atomic write (temp + rename). Create `.agent-all-state.json` with `{"phases": [], "decisions": {}}` if missing. The `decisions` map is populated by Phase 3b (decision-surfacing) and keyed by task-id.
+8. **Resolve loop break-condition (if `--loop` is set).** See `### Break-condition resolution` below. Mutates `config.loop.breakCondition` in memory; may rewrite `.agent-all.json` if user opts in.
+
+9. Push `{phase: 0, completedAt: "<iso>"}` to state. Use atomic write (temp + rename). Create `.agent-all-state.json` with `{"phases": [], "decisions": {}}` if missing. The `decisions` map is populated by Phase 3b (decision-surfacing) and keyed by task-id.
 
 ## Break-condition resolution
 
