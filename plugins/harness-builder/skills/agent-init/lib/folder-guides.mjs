@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const DIRECT_NAMES = new Set(["app", "backend", "frontend", "server", "client", "src", "docs"]);
+const DIRECT_NAMES = new Set(["app", "apps", "backend", "frontend", "server", "client", "packages", "src", "docs"]);
 const WORKSPACE_CONTAINER_NAMES = new Set(["apps", "packages"]);
 const SKIP_NAMES = new Set([".git", ".claude", ".codex", "node_modules", "dist", "build", "coverage"]);
 const MARKERS = ["package.json", "pyproject.toml", "requirements.txt", "go.mod", "Cargo.toml", "Dockerfile"];
