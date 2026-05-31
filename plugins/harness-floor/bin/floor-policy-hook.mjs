@@ -48,10 +48,11 @@ function isQaReviewerDispatch(params) {
 }
 function isReviewerDispatch(params) {
   // Technical (spec/quality) reviewer. Exclude QA-prefixed ones so the
-  // hook routes them to QA-only handling.
+  // hook routes them to QA-only handling. Phase 4 may prefix review tasks
+  // with persona names such as "Verification" or "Security".
   if (typeof params?.description !== "string") return false;
-  if (/^qa review task/i.test(params.description)) return false;
-  return /^review task/i.test(params.description);
+  if (/^qa review task\b/i.test(params.description)) return false;
+  return /^(?:review task|.+\sreview task)\b/i.test(params.description);
 }
 
 async function readStdin() {
