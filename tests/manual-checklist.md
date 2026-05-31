@@ -18,7 +18,7 @@ In Claude Code, invoke `/agent-init`.
 - [ ] Phase 1 actually triggers `superpowers:brainstorming` (you see brainstorming questions).
 - [ ] Stack detection picked the right language (or "unknown").
 - [ ] Phase 3 dispatches in parallel (visible in the agent log as multiple subagents launched at once).
-- [ ] `CLAUDE.md` written; `--merge` test: re-run with `--merge` against an existing CLAUDE.md and confirm it appends rather than overwrites.
+- [ ] `CLAUDE.md` written; re-run `/agent-init` against an existing `CLAUDE.md` and confirm only the `agent-skill:operational` sentinel section is appended or replaced.
 - [ ] `.claude/agents/*.md` count matches size (small=3, medium=6+#qa, large=9+#qa).
 - [ ] Each generated agent file contains the three operating principles in its `## Rules` section.
 - [ ] `.claude/hooks/{context-mode-router,session-summary,cache-heal}.mjs` exist and are syntactically valid (`node --check`).

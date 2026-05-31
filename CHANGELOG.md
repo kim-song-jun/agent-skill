@@ -1181,7 +1181,7 @@ scaffold). Completes the 4-platform matrix. Adds 10th plugin to marketplace.
 ### Added
 - `/agent-init --theme=thrift` flag — RESERVED stub for Theme B (no behaviour yet).
 - `/agent-all` skill in `harness-floor` (Theme C-2): 7-phase pipeline wrapping superpowers brainstorming + writing-plans + subagent-driven-development, with optional `--loop` (Theme C-3 ralph-pattern absorbed as flag).
-- `/harness-init --theme=floor` integration (now default): seeds `.agent-all.json` alongside `.visual-qa.json` and adds Floor section to generated CLAUDE.md.
+- `/agent-init --theme=floor` integration (now default): seeds `.agent-all.json` alongside `.visual-qa.json` and adds Floor section to generated CLAUDE.md.
 - Korean documentation siblings (`*.ko.md`).
 - Cost-unrestricted defaults: `maxIter=10`, `maxCostUSD=500`, `waveSize=large`. Visual-QA confirm threshold raised 500→5000 captures.
 - Render lib: nested same-type blocks now supported (balance-counter parser).
