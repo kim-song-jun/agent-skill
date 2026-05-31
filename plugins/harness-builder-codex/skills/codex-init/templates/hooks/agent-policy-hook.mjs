@@ -390,6 +390,11 @@ try {
   payload = input.trim() ? JSON.parse(input) : {};
 } catch {}
 
+const toolName = payload?.tool_name ?? payload?.toolName;
+if (typeof toolName === "string" && toolName.length > 0 && toolName !== "Bash") {
+  process.exit(0);
+}
+
 const command = (
   payload?.tool_input?.command
   ?? payload?.toolInput?.command

@@ -4,10 +4,7 @@
 # agent-skill:codex-config:start
 [hooks]
 PreToolUse = [
-  { matcher = ".*", hooks = [{ type = "command", command = {{hook_command_pretool_toml}} }] }
-]
-SessionStart = [
-  { hooks = [{ type = "command", command = {{hook_command_sessionstart_toml}} }] }
+  { matcher = "^Bash$", hooks = [{ type = "command", command = {{hook_command_pretool_toml}}, command_windows = {{hook_command_pretool_windows_toml}} }] }
 ]
 {{#if mcp_servers_block}}
 

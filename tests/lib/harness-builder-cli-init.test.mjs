@@ -10,6 +10,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -101,7 +102,11 @@ test("harness-builder-codex: config template is operational-only hook snippet", 
   assert.match(body, /agent-skill:codex-config:end/);
   assert.match(body, /\[hooks\]/);
   assert.match(body, /PreToolUse/);
-  assert.match(body, /SessionStart/);
+  assert.match(body, /matcher = "\^Bash\$"/);
+  assert.doesNotMatch(body, /matcher = "\.\*"/);
+  assert.match(body, /command_windows/);
+  assert.doesNotMatch(body, /SessionStart/);
+  assert.doesNotMatch(body, /session start/);
   assert.doesNotMatch(body, /liteProfile/);
   assert.doesNotMatch(body, /lite mode/i);
 });
@@ -169,6 +174,89 @@ test("harness-builder-codex: default config snippet includes sentinel markers", 
     assert.equal(res.status, 0, res.stderr);
     assert.match(res.stdout, /agent-skill:codex-config:start/);
     assert.match(res.stdout, /agent-skill:codex-config:end/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: config stdout uses Bash-only matcher and no SessionStart noise", () => {
+  const target = mkTarget("codex-config-bash-only");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target]);
+    assert.equal(res.status, 0, res.stderr);
+    assert.match(res.stdout, /matcher = "\^Bash\$"/);
+    assert.doesNotMatch(res.stdout, /matcher = "\.\*"/);
+    assert.doesNotMatch(res.stdout, /SessionStart/);
+    assert.doesNotMatch(res.stdout, /session start/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: config stdout includes Windows override and repo-root hook commands", () => {
+  const target = mkTarget("codex-config-windows-command");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target]);
+    assert.equal(res.status, 0, res.stderr);
+    assert.match(res.stdout, /command_windows = /);
+    assert.match(res.stdout, /\$\(git rev-parse --show-toplevel\)\/\.codex\/hooks\/agent-policy-hook\.mjs/);
+    assert.match(res.stdout, /Join-Path \(git rev-parse --show-toplevel\) '\.codex\/hooks\/agent-policy-hook\.mjs'/);
+    assert.doesNotMatch(res.stdout, new RegExp(`node '${target.replaceAll("\\", "\\\\").replaceAll("/", "\\/")}\\/\\.codex\\/hooks\\/agent-policy-hook\\.mjs'`));
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: refuses late conflicts before writing any scaffold files", () => {
+  const target = mkTarget("codex-atomic-refuse");
+  try {
+    const existingHook = resolve(target, ".codex/hooks/agent-policy-hook.mjs");
+    mkdirSync(resolve(target, ".codex/hooks"), { recursive: true });
+    writeFileSync(existingHook, "// existing hook\n", { flag: "wx" });
+
+    const res = runInit(PLUGINS.codex.bin, [target]);
+    assert.equal(res.status, 2);
+    assert.match(res.stderr, /Refusing to overwrite/);
+    assert.ok(!existsSync(resolve(target, "AGENTS.md")));
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: generated hook ignores destructive non-Bash PreToolUse payloads", () => {
+  const target = mkTarget("codex-hook-non-bash");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target]);
+    assert.equal(res.status, 0, res.stderr);
+    const hookPath = resolve(target, ".codex/hooks/agent-policy-hook.mjs");
+    const hookRes = spawnSync("node", [hookPath], {
+      encoding: "utf-8",
+      input: JSON.stringify({
+        tool_name: "apply_patch",
+        tool_input: { command: "git reset --hard" },
+      }),
+    });
+    assert.equal(hookRes.status, 0, hookRes.stderr);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: generated hook blocks destructive Bash PreToolUse payloads", () => {
+  const target = mkTarget("codex-hook-bash");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target]);
+    assert.equal(res.status, 0, res.stderr);
+    const hookPath = resolve(target, ".codex/hooks/agent-policy-hook.mjs");
+    const hookRes = spawnSync("node", [hookPath], {
+      encoding: "utf-8",
+      input: JSON.stringify({
+        tool_name: "Bash",
+        tool_input: { command: "git reset --hard" },
+      }),
+    });
+    assert.equal(hookRes.status, 2);
+    assert.match(hookRes.stderr, /git reset --hard/);
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

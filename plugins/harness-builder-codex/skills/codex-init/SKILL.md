@@ -77,8 +77,9 @@ Render and write each template:
 - `templates/local-guides/AGENTS.md.hbs` → `.codex/AGENTS.md`
 
 Use `apply_patch` for every file write. Refuse to overwrite existing files
-unless the user passes `--force`. In lite mode, skip hooks, local guides,
-operational reviewer skills, task-ledger files, and Codex config snippet output.
+unless the user passes `--force`; check every planned write before creating
+directories or files. In lite mode, skip hooks, local guides, operational
+reviewer skills, task-ledger files, and Codex config snippet output.
 
 ## Phase 3 — Summarize
 
@@ -116,14 +117,16 @@ interactively:
 3. Extend the ctx with defaults:
 
    ```javascript
-   ctx.hook_command_pretool_toml = JSON.stringify(`node ${target}/.codex/hooks/agent-policy-hook.mjs`);
-   ctx.hook_command_sessionstart_toml = JSON.stringify("echo 'session start'");
+   ctx.hook_command_pretool_toml = JSON.stringify(`node "$(git rev-parse --show-toplevel)/.codex/hooks/agent-policy-hook.mjs"`);
+   ctx.hook_command_pretool_windows_toml = JSON.stringify(
+     `powershell -NoProfile -ExecutionPolicy Bypass -Command "node (Join-Path (git rev-parse --show-toplevel) '.codex/hooks/agent-policy-hook.mjs')"`
+   );
    ctx.mcp_servers_block = mcp_servers_block;
    ```
 
 4. Render `templates/codex-config.toml.hbs` to stdout. The operational
-   profile points PreToolUse at the repo-local hook and includes SessionStart
-   hook content.
+   profile points Bash-only PreToolUse at the repo-local hook. Do not include
+   SessionStart hook content.
 
 For `--lite` and `--theme=lite`, skip this phase entirely. Lite mode writes
 root AGENTS and base skills only, and skips repo hooks, task ledger files,

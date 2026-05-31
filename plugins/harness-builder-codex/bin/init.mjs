@@ -128,10 +128,6 @@ function tomlString(value) {
   return JSON.stringify(String(value));
 }
 
-function shellSingleQuote(value) {
-  return `'${String(value).replaceAll("'", "'\\''")}'`;
-}
-
 function loadCtx(ctxPath, target, options = {}) {
   let ctx;
   if (ctxPath) {
@@ -147,7 +143,6 @@ function loadCtx(ctxPath, target, options = {}) {
   }
   const detected = detectProject(target);
   const lite = Boolean(options.lite);
-  const hookPath = join(target, ".codex/hooks/agent-policy-hook.mjs");
   return {
     ...ctx,
     ...detected,
@@ -156,8 +151,8 @@ function loadCtx(ctxPath, target, options = {}) {
     liteProfile: lite,
     services_str: detected.services.join(", "),
     agents: lite ? BASE_AGENTS : [...BASE_AGENTS, ...OPERATIONAL_AGENTS],
-    hook_command_pretool_toml: tomlString(`node ${shellSingleQuote(hookPath)}`),
-    hook_command_sessionstart_toml: tomlString("echo 'session start'"),
+    hook_command_pretool_toml: tomlString(`node "$(git rev-parse --show-toplevel)/.codex/hooks/agent-policy-hook.mjs"`),
+    hook_command_pretool_windows_toml: tomlString(`powershell -NoProfile -ExecutionPolicy Bypass -Command "node (Join-Path (git rev-parse --show-toplevel) '.codex/hooks/agent-policy-hook.mjs')"`),
     mcp_servers_block:         "",
   };
 }
@@ -207,6 +202,7 @@ function main() {
   const ctx = loadCtx(args.ctxPath, target, { lite: args.lite });
   const templates = [...listTemplates(templatesDir), ...TASK_LEDGER_TEMPLATES];
   const stdoutChunks = [];
+  const plannedWrites = [];
   let skippedLiteConfig = false;
   for (const t of templates) {
     if (shouldSkipTemplate(t.rel, ctx)) continue;
@@ -222,10 +218,18 @@ function main() {
       continue;
     }
     const outPath = resolve(target, rel);
-    if (existsSync(outPath) && !args.force && !args.dryRun) {
-      console.error(`Refusing to overwrite ${outPath} (use --force)`);
+    plannedWrites.push({ outPath, rendered });
+  }
+
+  if (!args.force && !args.dryRun) {
+    const conflict = plannedWrites.find(({ outPath }) => existsSync(outPath));
+    if (conflict) {
+      console.error(`Refusing to overwrite ${conflict.outPath} (use --force)`);
       process.exit(2);
     }
+  }
+
+  for (const { outPath, rendered } of plannedWrites) {
     if (args.dryRun) {
       console.log(`dry-run: would write ${outPath}`);
       continue;
