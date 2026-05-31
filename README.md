@@ -538,7 +538,7 @@ A future `install-platform.sh --uninstall` flag is planned; for now uninstall is
 ## Common questions
 
 **Will `/agent-init` overwrite my CLAUDE.md?**
-No. It aborts if CLAUDE.md exists. Use `--merge` to append, or `--force` to overwrite.
+No. It preserves existing content and adds or replaces only the `agent-skill:operational` sentinel section. Use `--lite` for the minimal scaffold; use `--force` only when you intentionally want to rebuild generated harness artifacts.
 
 **Is `/agent-all --loop` safe to leave unattended?**
 Yes — four layers of safety make it boring to walk away from:

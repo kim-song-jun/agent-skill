@@ -1044,7 +1044,7 @@ full 6-phase 파이프라인으로 졸업.
 ## harness-builder v0.2.0 / harness-floor v0.2.0 — 2026-05-18
 ### 주요 변경 사항
 - **`/harness-init` → `/agent-init`로 이름 변경**. 이전 이름 제거됨. 플러그인/상태 이름 따름: `.harness-state.json` → `.agent-init-state.json` (하위 호환성: 이전 파일 이름은 여전히 gitignored).
-- **`/agent-init --theme=floor`가 이제 기본값입니다.** `--theme=lite`로 옵트아웃합니다.
+- **`/agent-init --theme=floor`가 이제 기본값입니다.** `/agent-init --lite`로 옵트아웃합니다 (`--theme=lite`는 호환 alias로 유지).
 
 ### 추가됨
 - `/agent-init --theme=thrift` 플래그 — Theme B를 위한 예약된 스텁 (아직 동작 없음).

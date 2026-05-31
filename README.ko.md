@@ -531,7 +531,7 @@ node plugins/harness-thrift-cursor/bin/install.mjs /path/to/project --uninstall
 ## 자주 묻는 질문
 
 **`/agent-init`이 내 CLAUDE.md를 덮어쓰나요?**
-아니요. CLAUDE.md 존재 시 abort. `--merge`로 추가, `--force`로 덮어쓰기.
+아니요. 기존 내용은 보존하고 `agent-skill:operational` sentinel 섹션만 추가하거나 교체합니다. 최소 스캐폴드는 `--lite`를 쓰고, 생성된 하니스 산출물을 의도적으로 다시 만들 때만 `--force`를 쓰세요.
 
 **`/agent-all --loop`을 무인으로 두기 안전한가요?**
 네 — 네 가지 레이어가 자리 비우기 안전하게 만듦:

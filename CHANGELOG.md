@@ -1176,7 +1176,7 @@ scaffold). Completes the 4-platform matrix. Adds 10th plugin to marketplace.
 ## harness-builder v0.2.0 / harness-floor v0.2.0 — 2026-05-18
 ### Breaking
 - **Renamed `/harness-init` → `/agent-init`**. Old name removed. Plugin/state names follow: `.harness-state.json` → `.agent-init-state.json` (backward-compat: old filename still gitignored).
-- **`/agent-init --theme=floor` is now the DEFAULT.** Opt-out with `--theme=lite`.
+- **`/agent-init --theme=floor` is now the DEFAULT.** Opt out with `/agent-init --lite` (`--theme=lite` remains a compatibility alias).
 
 ### Added
 - `/agent-init --theme=thrift` flag — RESERVED stub for Theme B (no behaviour yet).
