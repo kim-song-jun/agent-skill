@@ -2,8 +2,21 @@
 
 ## Steps
 
-1. Re-read `plugin_scan` from `.agent-init-state.json`.
-2. Compose a "missing plugins" report:
+1. If `--dry-run` is set, use the in-memory context from prior phases, including Phase 1's stashed `plugin_scan`, and print the complete no-write plan without reading or writing `.claude/.agent-init-state.json`. Then exit before filesystem mutations, global config patches, foundation updates, state updates, or commits. Include:
+   - planned root files (`CLAUDE.md`, `.gitignore`, `.visual-qa.json`, `.agent-all.json` as applicable)
+   - local guide files
+   - agent files
+   - hook files
+   - settings changes for `.claude/settings.local.json`
+   - task ledger files
+   - platform wiring for Claude/Codex/Gemini selections
+   - missing plugin report from the in-memory `plugin_scan`
+   - planned global config patches that require separate approval
+   - foundation update plan
+   - commit plan with explicit pathspecs
+
+2. Re-read `plugin_scan` from `.agent-init-state.json`.
+3. Compose a "missing plugins" report:
 
    For each plugin in `scan.missing`, print:
    ```
@@ -20,19 +33,7 @@
 
    If both arrays are empty: print "All required plugins are enabled."
 
-3. Resolve selected platforms from `--platform=claude,codex,gemini`. In interactive use, prompt before wiring platform-specific artifacts. In non-interactive use, default to Claude-only. Global CLI config patching always requires a separate explicit approval.
-
-4. If `--dry-run` is set, print the complete no-write plan without writing. Then exit before filesystem mutations, global config patches, foundation updates, state updates, or commits. Include:
-   - planned root files (`CLAUDE.md`, `.gitignore`, `.visual-qa.json`, `.agent-all.json` as applicable)
-   - local guide files
-   - agent files
-   - hook files
-   - settings changes for `.claude/settings.local.json`
-   - task ledger files
-   - platform wiring for Claude/Codex/Gemini selections
-   - planned global config patches that require separate approval
-   - foundation update plan
-   - commit plan with explicit pathspecs
+4. Resolve selected platforms from `--platform=claude,codex,gemini`. In interactive use, prompt before wiring platform-specific artifacts. In non-interactive use, default to Claude-only. Global CLI config patching always requires a separate explicit approval.
 
 5. Update `.gitignore`. If `.claude/.agent-init-state.json` is not already listed, append it. Idempotent.
 

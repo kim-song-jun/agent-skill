@@ -63,3 +63,22 @@ test("phase 5 dry-run summary covers all planned write and wiring categories", (
     assert.match(dryRunSection, new RegExp(phrase), `Phase 5 dry-run summary must include ${phrase}`);
   }
 });
+
+test("phase 5 handles dry-run before reading persisted plugin scan state", () => {
+  const phase5 = readPhase("5-wire.md");
+  const dryRunIndex = phase5.indexOf("If `--dry-run` is set");
+  assert.notEqual(dryRunIndex, -1, "Phase 5 must describe dry-run output");
+
+  const stateReadMatch = phase5.match(/Re-read `plugin_scan` from `\.agent-init-state\.json`/);
+  assert.ok(stateReadMatch, "Phase 5 must still describe the normal-mode plugin_scan state read");
+
+  const dryRunSection = phase5.slice(dryRunIndex, phase5.indexOf("\n5.", dryRunIndex));
+  const usesInMemoryPluginScan =
+    /in-memory (?:dry-run )?context/.test(dryRunSection) &&
+    /plugin_scan/.test(dryRunSection);
+
+  assert.ok(
+    dryRunIndex < stateReadMatch.index || usesInMemoryPluginScan,
+    "Phase 5 dry-run must run before .agent-init-state.json reads or explicitly use in-memory plugin_scan context",
+  );
+});
