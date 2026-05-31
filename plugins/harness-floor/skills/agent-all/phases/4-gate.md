@@ -24,8 +24,8 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
    - Dispatch a spec-reviewer subagent. Prompt includes: the plan section for this wave, the diff, and a request to flag any spec deviations.
 
 3. If `gates.qualityReview`:
-   - Load `classifyChangedFiles(files)` from `lib/changed-file-classifier.mjs`, where `files` is the `git diff --name-only <wave.startCommit>..<wave.endCommit>` output.
-   - Dispatch one reviewer subagent per returned reviewer persona.
+   - Load `const { reviewers } = classifyChangedFiles(files)` from `lib/changed-file-classifier.mjs`, where `files` is the `git diff --name-only <wave.startCommit>..<wave.endCommit>` output.
+   - Dispatch one reviewer subagent per returned `reviewers` persona.
    - The classifier always returns the base `reviewer` and `verification-reviewer` personas.
    - The classifier adds `design-reviewer`, `qa-reviewer`, `security-reviewer`, `data-reviewer`, and `integration-dev` only when the changed-file set requires them.
    - Description prefixes:

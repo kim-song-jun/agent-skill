@@ -13,6 +13,9 @@ const SERIALIZER_RE = /(^|\/)serializers?([-.].*)?\.[^.]+$/;
 const DATA_PATH_RE = /(^|\/)(backfills?|db|database|fixtures?|migrations?|models?|prisma|schema|seeds?)(\/|[-_.])/;
 const DATA_NAME_RE = /(^|\/)seed[-_.]/;
 const DATA_EXT_RE = /\.(sql|prisma)$/;
+const DB_STRUCTURE_PATH_RE =
+  /(^|\/)(migrations?|models?|prisma|schema)(\/|[-_.])|(^|\/)(db|database)\/(?:migrations?|models?|schema)(\/|[-_.])/;
+const DB_STRUCTURE_NAME_RE = /(^|\/)schema\.(?:prisma|sql)$/;
 
 function normalizedPath(file) {
   return String(file ?? "").replaceAll("\\", "/").toLowerCase();
@@ -33,13 +36,19 @@ function isSecurityFile(file) {
     SECURITY_NAME_RE.test(file) ||
     API_ROUTE_RE.test(file) ||
     API_VIEW_RE.test(file) ||
-    SERIALIZER_RE.test(file)
+    SERIALIZER_RE.test(file) ||
+    isDbStructureFile(file)
   );
 }
 
 function isDataFile(file) {
   if (isDocumentationFile(file)) return false;
   return DATA_PATH_RE.test(file) || DATA_NAME_RE.test(file) || DATA_EXT_RE.test(file);
+}
+
+function isDbStructureFile(file) {
+  if (isDocumentationFile(file)) return false;
+  return DB_STRUCTURE_PATH_RE.test(file) || DB_STRUCTURE_NAME_RE.test(file);
 }
 
 function isDocumentationFile(file) {
@@ -62,5 +71,5 @@ export function classifyChangedFiles(files = []) {
   if (normalizedFiles.some(isDataFile)) reviewers.add("data-reviewer");
   if (hasFrontend && hasBackend) reviewers.add("integration-dev");
 
-  return [...reviewers].sort();
+  return { reviewers: [...reviewers].sort() };
 }
