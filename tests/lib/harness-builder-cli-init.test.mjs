@@ -322,6 +322,26 @@ for (const [name, spec] of Object.entries(PLUGINS)) {
       // Stdout MUST carry the platform-specific config snippet header + body.
       assert.match(res.stdout, spec.stdoutHeader);
       assert.match(res.stdout, spec.stdoutContains);
+
+      if (name === "gemini") {
+        const body = readFileSync(resolve(target, "GEMINI.md"), "utf-8");
+        assert.match(body, /soft enforcement/i);
+        assert.match(body, /docs\/tasks/);
+        assert.match(body, /pathspec/);
+        assert.match(body, /git add -A/);
+        assert.match(body, /git commit -a/);
+        assert.match(body, /git commit --amend/);
+        assert.match(body, /git reset --hard/);
+        assert.match(body, /git checkout --/);
+        assert.match(body, /force push/i);
+        assert.match(body, /Decision Matrix/);
+        assert.match(body, /Ambiguity Log/);
+        assert.match(body, /Progress Snapshot/);
+        assert.match(body, /Verification/);
+        assert.match(body, /context-mode/);
+        assert.match(body, /superpowers/);
+        assert.doesNotMatch(body, /\.gemini\/hooks\/agent-policy-hook/);
+      }
     } finally {
       rmSync(target, { recursive: true, force: true });
     }
