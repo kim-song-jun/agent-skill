@@ -126,6 +126,22 @@ test("harness-builder-codex: --lite skips ledger and hooks", () => {
     const body = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
     assert.match(body, /lite mode/i);
     assert.doesNotMatch(body, /hard policy hook artifacts are active/i);
+
+    assert.doesNotMatch(res.stdout, /\[hooks\]/);
+    assert.doesNotMatch(res.stdout, /agent-policy-hook/);
+    assert.doesNotMatch(res.stdout, /SessionStart/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: default config snippet includes sentinel markers", () => {
+  const target = mkTarget("codex-config-sentinel");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target]);
+    assert.equal(res.status, 0, res.stderr);
+    assert.match(res.stdout, /agent-skill:codex-config:start/);
+    assert.match(res.stdout, /agent-skill:codex-config:end/);
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

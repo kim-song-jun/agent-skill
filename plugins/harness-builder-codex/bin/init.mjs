@@ -207,8 +207,13 @@ function main() {
   const ctx = loadCtx(args.ctxPath, target, { lite: args.lite });
   const templates = [...listTemplates(templatesDir), ...TASK_LEDGER_TEMPLATES];
   const stdoutChunks = [];
+  let skippedLiteConfig = false;
   for (const t of templates) {
     if (shouldSkipTemplate(t.rel, ctx)) continue;
+    if (ctx.liteProfile && STDOUT_TEMPLATES.has(t.rel.split("/").pop())) {
+      skippedLiteConfig = true;
+      continue;
+    }
     const tpl = t.body ?? readFileSync(t.full, "utf-8");
     const rendered = render(tpl, ctx);
     const rel = relToTarget(t.rel);
@@ -232,6 +237,9 @@ function main() {
   for (const chunk of stdoutChunks) {
     console.log(`\n# ----- ${chunk.name} (merge into ~/.codex/config.toml) -----`);
     console.log(chunk.body);
+  }
+  if (skippedLiteConfig) {
+    console.log("lite mode: skipped Codex global config patch output");
   }
   console.log(`done — detected ${ctx.stack}${ctx.runtime ? ` (on ${ctx.runtime})` : ""}`);
 }
