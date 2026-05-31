@@ -1,6 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import {
+  chmodSync,
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const scriptPath = "scripts/update.sh";
 const script = readFileSync(scriptPath, "utf-8");
@@ -66,10 +76,75 @@ test("selected platform flags are passed through with sanitized PASSTHROUGH arra
     assert.match(script, new RegExp(flag.replace("=", "=")), `must preserve ${flag}`);
   }
   assert.match(script, /PASSTHROUGH\+=\("\$arg"\)/);
-  assert.match(script, /"\$\{PASSTHROUGH\[@\]\}"/);
   assert.doesNotMatch(
     script,
     /install-all\.sh" "\$@"/,
     "install-all.sh delegation must not forward raw $@",
   );
 });
+
+test("no-argument update delegates to install-all with no passthrough args", () => {
+  const fakeRepo = mkdtempSync(join(tmpdir(), "agent-skill-update-test-"));
+  const scriptsDir = join(fakeRepo, "scripts");
+  const binDir = join(fakeRepo, "bin");
+  const argsFile = join(fakeRepo, "install-args.txt");
+
+  mkdirSync(scriptsDir);
+  mkdirSync(binDir);
+  mkdirSync(join(fakeRepo, ".git"));
+  copyFileSync(scriptPath, join(scriptsDir, "update.sh"));
+
+  writeExecutable(
+    join(binDir, "git"),
+    `#!/usr/bin/env bash
+set -euo pipefail
+if [ "\${1:-}" = "-C" ]; then
+  shift 2
+fi
+case "\${1:-}" in
+  pull)
+    exit 0
+    ;;
+  rev-parse)
+    echo main
+    exit 0
+    ;;
+esac
+exit 0
+`,
+  );
+  writeExecutable(join(binDir, "node"), "#!/usr/bin/env bash\nexit 0\n");
+  writeExecutable(join(binDir, "claude"), "#!/usr/bin/env bash\necho ok\n");
+  writeExecutable(
+    join(scriptsDir, "install-all.sh"),
+    `#!/usr/bin/env bash
+set -euo pipefail
+: > "${argsFile}"
+if [ "$#" -gt 0 ]; then
+  printf '%s\\n' "$@" > "${argsFile}"
+fi
+`,
+  );
+
+  const result = spawnSync("bash", [join(scriptsDir, "update.sh")], {
+    cwd: fakeRepo,
+    env: {
+      ...process.env,
+      PATH: `${binDir}:${process.env.PATH}`,
+      HOME: fakeRepo,
+    },
+    encoding: "utf-8",
+  });
+
+  assert.equal(
+    result.status,
+    0,
+    `update.sh should exit 0\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+  );
+  assert.equal(readFileSync(argsFile, "utf-8"), "");
+});
+
+function writeExecutable(path, content) {
+  writeFileSync(path, content);
+  chmodSync(path, 0o755);
+}

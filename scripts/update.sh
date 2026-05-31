@@ -48,7 +48,11 @@ echo "  - verify vendored libs match canonical sources"
 echo "  - refresh agent-skill marketplace cache"
 echo "  - force-update already-installed Claude Code foundation plugins"
 echo "  - install any missing selected platform plugins through install-all.sh"
-echo "  - forward install/platform flags: ${PASSTHROUGH[*]:-(none)}"
+if [ "${#PASSTHROUGH[@]}" -gt 0 ]; then
+  echo "  - forward install/platform flags: ${PASSTHROUGH[*]}"
+else
+  echo "  - forward install/platform flags: (none)"
+fi
 echo "  - no global CLI config files are patched by this script"
 
 if [ "$DRY_RUN" = "1" ]; then
@@ -98,5 +102,10 @@ for p in "${PLUGINS[@]}"; do
   fi
 done
 
-echo "→ installing any missing plugins via install-all.sh ${PASSTHROUGH[*]} …"
-exec bash "$REPO_ROOT/scripts/install-all.sh" "${PASSTHROUGH[@]}"
+if [ "${#PASSTHROUGH[@]}" -gt 0 ]; then
+  echo "→ installing any missing plugins via install-all.sh ${PASSTHROUGH[*]} …"
+  exec bash "$REPO_ROOT/scripts/install-all.sh" "${PASSTHROUGH[@]}"
+else
+  echo "→ installing any missing plugins via install-all.sh (none) …"
+  exec bash "$REPO_ROOT/scripts/install-all.sh"
+fi
