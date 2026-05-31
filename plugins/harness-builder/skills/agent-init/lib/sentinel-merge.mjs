@@ -22,12 +22,15 @@ export function mergeSentinelSection(existingText, generatedText) {
   if ((start === -1) !== (end === -1)) {
     throw new Error("incomplete sentinel section");
   }
+  if (end !== -1 && end < start) {
+    throw new Error("malformed sentinel section");
+  }
 
   const section = buildSection(generated.trimEnd());
   if (start === -1) {
     return {
       action: "append",
-      content: `${ensureTrailingNewline(existingText).trimEnd()}\n\n${section}`,
+      content: `${ensureTrailingNewline(existingText)}\n${section}`,
     };
   }
 

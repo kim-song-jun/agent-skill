@@ -14,6 +14,12 @@ test("appends sentinel section to existing user file", () => {
   assert.equal(result.content, `# User Notes\n\n${SENTINEL.start}\ngenerated body\n${SENTINEL.end}\n`);
 });
 
+test("preserves trailing user whitespace when appending sentinel section", () => {
+  const result = mergeSentinelSection("user\n\n", "generated");
+  assert.equal(result.action, "append");
+  assert.equal(result.content, `user\n\n\n${SENTINEL.start}\ngenerated\n${SENTINEL.end}\n`);
+});
+
 test("replaces only the existing sentinel section", () => {
   const existing = `top\n\n${SENTINEL.start}\nold\n${SENTINEL.end}\n\nbottom\n`;
   const result = mergeSentinelSection(existing, "new");
@@ -23,4 +29,9 @@ test("replaces only the existing sentinel section", () => {
 
 test("throws when only one sentinel marker exists", () => {
   assert.throws(() => mergeSentinelSection(`${SENTINEL.start}\nold\n`, "new"), /incomplete sentinel/);
+});
+
+test("throws when sentinel end appears before sentinel start", () => {
+  const existing = `before\n${SENTINEL.end}\nold\n${SENTINEL.start}\nafter\n`;
+  assert.throws(() => mergeSentinelSection(existing, "generated"), /malformed sentinel|incomplete sentinel/);
 });
