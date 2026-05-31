@@ -25,7 +25,7 @@ Ask the user (one at a time) for:
 4. Deploy targets (e.g., "vercel", "fly.io", "github releases")
 5. Special constraints (compliance, performance budgets, "" if none)
 
-Run the project-detection helper to fill in `stack`, `runtime`, `services`:
+Run the project-detection helper to derive `stack`, `runtime`, `services`:
 
 ```javascript
 import { detectProject } from "./lib/detect-stack.mjs";
