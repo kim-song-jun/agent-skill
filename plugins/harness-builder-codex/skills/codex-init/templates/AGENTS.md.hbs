@@ -34,7 +34,7 @@ This is the heavy operational harness profile.
 - `AGENTS.md` at the repository root is the index; folder-level `AGENTS.md` files define local scope.
 - Reviewer personas are selected by changed-file classifier and the risk profile of the diff.
 - Use the orchestrator for wave ownership, HOT file detection, shared-tree safety, and repeated failure escalation.
-- The repo-local policy hook lives at `.codex/hooks/agent-policy-hook.mjs`; the generated config snippet points Codex `pre_tool_use` for `shell_command` at that hook.
+- The repo-local policy hook lives at `.codex/hooks/agent-policy-hook.mjs`; the generated config snippet points Codex `PreToolUse` for `Bash` at that hook.
 {{/if}}
 
 {{#if liteProfile}}

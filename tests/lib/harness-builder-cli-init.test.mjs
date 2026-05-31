@@ -43,7 +43,7 @@ const PLUGINS = {
       "docs/tasks/index.md",
       "docs/tasks/_template.md",
     ],
-    stdoutContains: /\[\[hooks\.pre_tool_use\]\]/, // TOML snippet for ~/.codex/config.toml
+    stdoutContains: /\[\[hooks\.PreToolUse\]\]/, // TOML snippet for ~/.codex/config.toml
     stdoutHeader:   /codex-config\.toml/,
     purposeFile:    "AGENTS.md",
   },
@@ -105,10 +105,14 @@ test("harness-builder-codex: config template is operational-only hook snippet", 
 
   assert.match(body, /agent-skill:codex-config:start/);
   assert.match(body, /agent-skill:codex-config:end/);
-  assert.match(body, /\[\[hooks\.pre_tool_use\]\]/);
-  assert.match(body, /matcher = "shell_command"/);
-  assert.doesNotMatch(body, /PreToolUse/);
-  assert.doesNotMatch(body, /matcher = "\^Bash\$"/);
+  assert.match(body, /\[\[hooks\.PreToolUse\]\]/);
+  assert.match(body, /matcher = "\^Bash\$"/);
+  assert.match(body, /\[\[hooks\.PreToolUse\.hooks\]\]/);
+  assert.match(body, /type = "command"/);
+  assert.match(body, /timeout = 30/);
+  assert.doesNotMatch(body, /\[\[hooks\.pre_tool_use\]\]/);
+  assert.doesNotMatch(body, /matcher = "shell_command"/);
+  assert.doesNotMatch(body, /timeout_seconds/);
   assert.doesNotMatch(body, /matcher = "\.\*"/);
   assert.match(body, /command_windows/);
   assert.doesNotMatch(body, /SessionStart/);
@@ -218,15 +222,19 @@ test("harness-builder-codex: default config snippet includes sentinel markers", 
   }
 });
 
-test("harness-builder-codex: config stdout uses Codex shell_command pre_tool_use hook and no SessionStart noise", () => {
-  const target = mkTarget("codex-config-shell-command-only");
+test("harness-builder-codex: config stdout uses Codex Bash PreToolUse hook and no SessionStart noise", () => {
+  const target = mkTarget("codex-config-bash-pretool");
   try {
     const res = runInit(PLUGINS.codex.bin, [target]);
     assert.equal(res.status, 0, res.stderr);
-    assert.match(res.stdout, /\[\[hooks\.pre_tool_use\]\]/);
-    assert.match(res.stdout, /matcher = "shell_command"/);
-    assert.doesNotMatch(res.stdout, /PreToolUse/);
-    assert.doesNotMatch(res.stdout, /matcher = "\^Bash\$"/);
+    assert.match(res.stdout, /\[\[hooks\.PreToolUse\]\]/);
+    assert.match(res.stdout, /matcher = "\^Bash\$"/);
+    assert.match(res.stdout, /\[\[hooks\.PreToolUse\.hooks\]\]/);
+    assert.match(res.stdout, /type = "command"/);
+    assert.match(res.stdout, /timeout = 30/);
+    assert.doesNotMatch(res.stdout, /\[\[hooks\.pre_tool_use\]\]/);
+    assert.doesNotMatch(res.stdout, /matcher = "shell_command"/);
+    assert.doesNotMatch(res.stdout, /timeout_seconds/);
     assert.doesNotMatch(res.stdout, /matcher = "\.\*"/);
     assert.doesNotMatch(res.stdout, /SessionStart/);
     assert.doesNotMatch(res.stdout, /session start/);

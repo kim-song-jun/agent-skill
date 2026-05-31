@@ -2,11 +2,15 @@
 # Review and merge this into ~/.codex/config.toml manually.
 
 # agent-skill:codex-config:start
-[[hooks.pre_tool_use]]
-matcher = "shell_command"
+[[hooks.PreToolUse]]
+matcher = "^Bash$"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
 command = {{hook_command_pretool_toml}}
 command_windows = {{hook_command_pretool_windows_toml}}
-timeout_seconds = 10
+timeout = 30
+statusMessage = "Checking Bash command policy"
 {{#if mcp_servers_block}}
 
 {{mcp_servers_block}}
