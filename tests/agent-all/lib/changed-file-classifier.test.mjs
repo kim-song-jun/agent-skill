@@ -11,11 +11,10 @@ test("frontend UI files add design and QA reviewers plus base reviewers", () => 
   ]);
 });
 
-test("backend migrations and models add security and data reviewers", () => {
+test("backend migrations and models add data reviewer", () => {
   assert.deepEqual(classifyChangedFiles(["server/models/user.rb", "db/migrations/20260601000000_add_users.sql"]), [
     "data-reviewer",
     "reviewer",
-    "security-reviewer",
     "verification-reviewer",
   ]);
 });
@@ -27,11 +26,43 @@ test("seeds fixtures and backfills add data reviewer", () => {
       "scripts/seed-users.ts",
       "backend/users/backfills/fix-users.ts",
     ]),
-    ["data-reviewer", "reviewer", "security-reviewer", "verification-reviewer"],
+    ["data-reviewer", "reviewer", "verification-reviewer"],
   );
 });
 
-test("API views serializers and middleware add security reviewer", () => {
+test("backend API views add security reviewer", () => {
+  assert.deepEqual(classifyChangedFiles(["backend/api/views.py"]), [
+    "reviewer",
+    "security-reviewer",
+    "verification-reviewer",
+  ]);
+});
+
+test("root API views add security reviewer", () => {
+  assert.deepEqual(classifyChangedFiles(["api/views.py"]), [
+    "reviewer",
+    "security-reviewer",
+    "verification-reviewer",
+  ]);
+});
+
+test("serializers add security reviewer", () => {
+  assert.deepEqual(classifyChangedFiles(["backend/users/serializers.py"]), [
+    "reviewer",
+    "security-reviewer",
+    "verification-reviewer",
+  ]);
+});
+
+test("middleware adds security reviewer", () => {
+  assert.deepEqual(classifyChangedFiles(["backend/middleware/authz.py"]), [
+    "reviewer",
+    "security-reviewer",
+    "verification-reviewer",
+  ]);
+});
+
+test("API views with serializers and middleware add security reviewer", () => {
   assert.deepEqual(
     classifyChangedFiles(["backend/api/views.py", "backend/users/serializers.py", "backend/middleware/authz.py"]),
     ["reviewer", "security-reviewer", "verification-reviewer"],

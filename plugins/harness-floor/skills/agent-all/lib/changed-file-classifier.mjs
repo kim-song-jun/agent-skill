@@ -8,7 +8,7 @@ const SECURITY_PATH_RE =
   /(^|\/)(auth|authentication|authorization|login|middleware|oauth|permissions?|security|sessions?)(\/|[-_.])/;
 const SECURITY_NAME_RE = /(csrf|csp|destructive|jwt|oauth|password|permission|secret|session|token)/;
 const API_ROUTE_RE = /(^|\/)api\/(routes?|v\d+)\//;
-const API_VIEW_RE = /(^|\/)api\/.*(^|\/)views?\.[^.]+$/;
+const API_VIEW_RE = /(^|\/)api\/(?:.*\/)?views?\.[^.]+$/;
 const SERIALIZER_RE = /(^|\/)serializers?([-.].*)?\.[^.]+$/;
 const DATA_PATH_RE = /(^|\/)(backfills?|db|database|fixtures?|migrations?|models?|prisma|schema|seeds?)(\/|[-_.])/;
 const DATA_NAME_RE = /(^|\/)seed[-_.]/;
@@ -33,8 +33,7 @@ function isSecurityFile(file) {
     SECURITY_NAME_RE.test(file) ||
     API_ROUTE_RE.test(file) ||
     API_VIEW_RE.test(file) ||
-    SERIALIZER_RE.test(file) ||
-    isDataFile(file)
+    SERIALIZER_RE.test(file)
   );
 }
 
