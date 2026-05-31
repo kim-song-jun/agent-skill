@@ -338,6 +338,8 @@ for (const [name, spec] of Object.entries(PLUGINS)) {
         assert.match(body, /Ambiguity Log/);
         assert.match(body, /Progress Snapshot/);
         assert.match(body, /Verification/);
+        assert.match(body, /handoff/i);
+        assert.match(body, /active task[\s\S]*completed[\s\S]*remaining[\s\S]*blockers[\s\S]*next action/i);
         assert.match(body, /context-mode/);
         assert.match(body, /superpowers/);
         assert.doesNotMatch(body, /\.gemini\/hooks\/agent-policy-hook/);
