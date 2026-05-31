@@ -10,6 +10,18 @@ test("blocks destructive git commands", () => {
   assert.equal(analyzeShellCommand("git push --force-with-lease").blocked, true);
 });
 
+test("blocks git reset --hard after newline command boundary", () => {
+  assert.equal(analyzeShellCommand("echo ok\ngit reset --hard").blocked, true);
+});
+
+test("blocks git commit without pathspec after newline command boundary", () => {
+  assert.equal(analyzeShellCommand("echo ok\ngit commit -m msg").blocked, true);
+});
+
+test("blocks docker volume removal after newline command boundary", () => {
+  assert.equal(analyzeShellCommand("echo ok\ndocker volume rm data").blocked, true);
+});
+
 test("blocks destructive git commands after global options", () => {
   assert.equal(analyzeShellCommand("git -C . commit -m msg").blocked, true);
   assert.equal(analyzeShellCommand("git -C . commit -a -m msg").blocked, true);
@@ -34,6 +46,7 @@ test("ignores destructive git prose inside quoted arguments", () => {
   assert.equal(analyzeShellCommand('git commit -m "avoid git reset --hard" -- docs/a.md').blocked, false);
   assert.equal(analyzeShellCommand('git commit -m "explain -a option" -- docs/a.md').blocked, false);
   assert.equal(analyzeShellCommand('echo "git reset --hard"').blocked, false);
+  assert.equal(analyzeShellCommand('echo "ok\ngit reset --hard"').blocked, false);
 });
 
 test("blocks destructive docker volume removal", () => {

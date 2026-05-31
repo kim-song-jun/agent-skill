@@ -100,13 +100,19 @@ function shellTokens(command) {
       continue;
     }
 
-    if (/\s/.test(char)) {
-      pushToken();
+    if (char === ";") {
+      pushOperator(char);
       continue;
     }
 
-    if (char === ";") {
-      pushOperator(char);
+    if (char === "\n" || char === "\r") {
+      pushOperator("\n");
+      if (char === "\r" && command[index + 1] === "\n") index += 1;
+      continue;
+    }
+
+    if (/\s/.test(char)) {
+      pushToken();
       continue;
     }
 
@@ -131,7 +137,7 @@ function shellTokens(command) {
 }
 
 function isCommandBoundary(token) {
-  return token === "&&" || token === "||" || token === ";" || token === "|" || token === "&";
+  return token === "&&" || token === "||" || token === ";" || token === "\n" || token === "|" || token === "&";
 }
 
 function isAssignment(token) {
