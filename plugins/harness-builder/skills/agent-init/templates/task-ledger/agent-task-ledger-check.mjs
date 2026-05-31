@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { posix as pathPosix, resolve } from "node:path";
 
 const REQUIRED = ["Goal", "Acceptance", "Phases", "Decision Matrix", "Ambiguity Log", "Progress Snapshot", "Verification"];
 const EXCLUDED = new Set(["Backlog", "Follow-up"]);
 const INDEX_TASK_EXCLUDED = new Set(["_template.md", "_handoff-template.md"]);
+const TASKS_DIR = "docs/tasks";
 
 function sections(text) {
   const headings = [...text.matchAll(/^##\s+(.+)$/gm)];
@@ -34,15 +35,36 @@ function activeTaskPaths(indexText) {
   if (!active) return [];
 
   const paths = new Set();
-  const matches = active.body.matchAll(/docs\/tasks\/[^)\]\s`'"]+/g);
+  const matches = active.body.matchAll(/[^()\]\s`'"]+/g);
   for (const match of matches) {
-    const taskPath = match[0].replace(/#.*$/, "").replace(/[.,;:]+$/, "");
-    if (!taskPath.endsWith(".md")) continue;
-    const fileName = taskPath.slice(taskPath.lastIndexOf("/") + 1);
-    if (INDEX_TASK_EXCLUDED.has(fileName)) continue;
-    paths.add(taskPath);
+    const taskPath = normalizeActiveTaskPath(match[0]);
+    if (taskPath) paths.add(taskPath);
   }
   return [...paths];
+}
+
+function normalizeActiveTaskPath(rawPath) {
+  const taskPath = rawPath
+    .trim()
+    .replace(/^<+/, "")
+    .replace(/>+$/, "")
+    .replace(/#.*$/, "")
+    .replace(/[.,;:]+$/, "");
+  if (!taskPath.endsWith(".md")) return null;
+
+  let normalized;
+  if (taskPath.startsWith(`${TASKS_DIR}/`)) {
+    normalized = pathPosix.normalize(taskPath);
+  } else if (taskPath.startsWith("./") || !taskPath.includes("/")) {
+    normalized = pathPosix.normalize(pathPosix.join(TASKS_DIR, taskPath));
+  } else {
+    return null;
+  }
+  if (!normalized.startsWith(`${TASKS_DIR}/`)) return null;
+
+  const fileName = pathPosix.basename(normalized);
+  if (INDEX_TASK_EXCLUDED.has(fileName)) return null;
+  return normalized;
 }
 
 function validateActiveIndex(indexText) {

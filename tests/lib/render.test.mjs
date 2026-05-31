@@ -101,6 +101,10 @@ const FIXTURES = [
   { tag: "lite-profile", ctx: { purpose: "Lite app", stack: "javascript", deploy_targets: "", operationalProfile: false, liteProfile: true, floorTheme: false, degradedFoundations: true, agents: [{ name: "planner", when: "planning" }, { name: "dev", when: "implementation" }, { name: "reviewer", when: "review" }], constraints: "" } },
 ];
 
+const LITE_PROFILE_TEMPLATES = new Set([
+  "CLAUDE.md.hbs",
+]);
+
 const EXPECTED_OPERATIONAL_TEMPLATES = [
   "local-guides/CLAUDE.md.hbs",
   "task-ledger/CLAUDE.md.hbs",
@@ -116,7 +120,11 @@ const EXPECTED_OPERATIONAL_TEMPLATES = [
   "agents/data-reviewer.md.hbs",
 ];
 
-const OPERATIONAL_ONLY_TEMPLATES = new Set(EXPECTED_OPERATIONAL_TEMPLATES);
+const LITE_FORBIDDEN_PATTERNS = [
+  /docs\/tasks\//,
+  /scripts\/agent-task-ledger-check\.mjs/,
+  /operational policy checks/,
+];
 
 function listTemplates(dir, base = "") {
   return readdirSync(dir, { withFileTypes: true }).flatMap(e => {
@@ -126,7 +134,13 @@ function listTemplates(dir, base = "") {
 }
 
 function fixturesForTemplate(tplRel) {
-  return FIXTURES.filter(fx => !(fx.tag === "lite-profile" && OPERATIONAL_ONLY_TEMPLATES.has(tplRel)));
+  return FIXTURES.filter(fx => fx.tag !== "lite-profile" || LITE_PROFILE_TEMPLATES.has(tplRel));
+}
+
+function assertLiteOutputClean(name, out) {
+  for (const pattern of LITE_FORBIDDEN_PATTERNS) {
+    assert.doesNotMatch(out, pattern, `${name} should not include ${pattern}`);
+  }
 }
 
 test("includes operational Claude templates in render coverage", () => {
@@ -137,16 +151,30 @@ test("includes operational Claude templates in render coverage", () => {
 });
 
 test("lite profile snapshots only templates lite mode renders", () => {
-  for (const tplRel of OPERATIONAL_ONLY_TEMPLATES) {
+  const templates = listTemplates(TEMPLATES_DIR).filter(tplRel => tplRel.endsWith(".hbs"));
+  const expectedSnapshots = new Set([...LITE_PROFILE_TEMPLATES].map(tplRel => snapshotFileName(tplRel, "lite-profile")));
+  const actualSnapshots = new Set(
+    readdirSync(resolve(here, "__snapshots__"))
+      .filter(file => file.endsWith("__lite-profile.snap"))
+  );
+
+  assert.deepEqual(
+    templates.filter(tplRel => fixturesForTemplate(tplRel).some(fx => fx.tag === "lite-profile")).sort(),
+    [...LITE_PROFILE_TEMPLATES].sort(),
+  );
+  assert.deepEqual(actualSnapshots, expectedSnapshots);
+
+  for (const tplRel of templates) {
+    if (LITE_PROFILE_TEMPLATES.has(tplRel)) continue;
     assert.equal(
       fixturesForTemplate(tplRel).some(fx => fx.tag === "lite-profile"),
       false,
-      `lite-profile should not snapshot operational-only template: ${tplRel}`
+      `lite-profile should not snapshot non-lite template: ${tplRel}`
     );
     assert.equal(
       existsSync(resolve(here, "__snapshots__", snapshotFileName(tplRel, "lite-profile"))),
       false,
-      `stale lite-profile snapshot should not exist for operational-only template: ${tplRel}`
+      `stale lite-profile snapshot should not exist for non-lite template: ${tplRel}`
     );
   }
 
@@ -157,19 +185,22 @@ test("lite profile snapshots only templates lite mode renders", () => {
   );
 });
 
-test("lite Claude scaffold omits operational hooks and task ledger guidance", () => {
-  const tpl = readFileSync(resolve(TEMPLATES_DIR, "CLAUDE.md.hbs"), "utf-8");
+test("lite rendered outputs omit operational hooks and task ledger guidance", () => {
   const fx = FIXTURES.find(f => f.tag === "lite-profile");
   assert.ok(fx, "missing lite-profile fixture");
 
-  const out = render(tpl, { title: "Rendered Task", guidePath: "src", ...fx.ctx, persona: "auth" });
+  for (const tplRel of LITE_PROFILE_TEMPLATES) {
+    const tpl = readFileSync(resolve(TEMPLATES_DIR, tplRel), "utf-8");
+    const out = render(tpl, { title: "Rendered Task", guidePath: "src", ...fx.ctx, persona: "auth" });
+    assertLiteOutputClean(tplRel, out);
+  }
+
+  const claudeTpl = readFileSync(resolve(TEMPLATES_DIR, "CLAUDE.md.hbs"), "utf-8");
+  const out = render(claudeTpl, { title: "Rendered Task", guidePath: "src", ...fx.ctx, persona: "auth" });
 
   assert.doesNotMatch(out, /^## Hooks$/m);
-  assert.doesNotMatch(out, /operational policy checks/);
   assert.doesNotMatch(out, /policy hooks/);
   assert.doesNotMatch(out, /task ledger/i);
-  assert.doesNotMatch(out, /docs\/tasks\//);
-  assert.doesNotMatch(out, /scripts\/agent-task-ledger-check\.mjs/);
   assert.match(out, /docs\/superpowers\/specs\//);
   assert.match(out, /docs\/superpowers\/plans\//);
 });
@@ -232,6 +263,61 @@ test("task ledger check rejects active index entries pointing to missing task do
   }
 });
 
+test("task ledger check resolves relative active links from docs/tasks index", () => {
+  const project = mkdtempSync(resolve(tmpdir(), "agent-task-ledger-check-"));
+  try {
+    mkdirSync(resolve(project, "scripts"), { recursive: true });
+    mkdirSync(resolve(project, "docs", "tasks"), { recursive: true });
+    copyFileSync(
+      resolve(TEMPLATES_DIR, "task-ledger", "agent-task-ledger-check.mjs"),
+      resolve(project, "scripts", "agent-task-ledger-check.mjs")
+    );
+    writeFileSync(resolve(project, "docs", "tasks", "_template.md"), "# Template\n");
+    writeFileSync(resolve(project, "docs", "tasks", "index.md"), [
+      "# Task Ledger",
+      "",
+      "## Active",
+      "",
+      "- [ ] 1-plain-missing.md",
+      "- [ ] ./2-dot-missing.md",
+      "- [ ] [Relative missing](3-link-missing.md)",
+      "- [ ] [Dot relative missing](./4-dot-link-missing.md)",
+      "",
+    ].join("\n"));
+    writeFileSync(resolve(project, "docs", "tasks", "1-valid.md"), [
+      "# Valid",
+      "",
+      "## Goal",
+      "",
+      "## Acceptance",
+      "",
+      "## Phases",
+      "",
+      "## Decision Matrix",
+      "",
+      "## Ambiguity Log",
+      "",
+      "## Progress Snapshot",
+      "",
+      "## Verification",
+      "",
+    ].join("\n"));
+
+    const result = spawnSync(process.execPath, ["scripts/agent-task-ledger-check.mjs", "docs/tasks/1-valid.md"], {
+      cwd: project,
+      encoding: "utf-8",
+    });
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /missing active task.*docs\/tasks\/1-plain-missing\.md/s);
+    assert.match(result.stderr, /missing active task.*docs\/tasks\/2-dot-missing\.md/s);
+    assert.match(result.stderr, /missing active task.*docs\/tasks\/3-link-missing\.md/s);
+    assert.match(result.stderr, /missing active task.*docs\/tasks\/4-dot-link-missing\.md/s);
+  } finally {
+    rmSync(project, { recursive: true, force: true });
+  }
+});
+
 test("task ledger template progress snapshot includes current git state", () => {
   const tpl = readFileSync(resolve(TEMPLATES_DIR, "task-ledger", "_template.md.hbs"), "utf-8");
   const out = render(tpl, { title: "Rendered Task" });
@@ -246,6 +332,7 @@ for (const tplRel of listTemplates(TEMPLATES_DIR)) {
   for (const fx of fixturesForTemplate(tplRel)) {
     test(`snapshot: ${tplRel} × ${fx.tag}`, () => {
       const out = render(tpl, { title: "Rendered Task", guidePath: "src", ...fx.ctx, persona: "auth" });
+      if (fx.tag === "lite-profile") assertLiteOutputClean(tplRel, out);
       snapshot(snapshotFileName(tplRel, fx.tag).replace(/\.snap$/, ""), out);
     });
   }
