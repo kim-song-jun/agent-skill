@@ -15,38 +15,7 @@ If `--no-pr` OR `config.defaults.createPR === false`: skip Phase 5. Push `{phase
 
 ## Steps
 
-1. Compute slug from task path: `slug = basename(task.path).replace(/^\d+-/, "").replace(/\.md$/, "")`.
-
-2. Branch name: `branch = config.pr.branchPrefix + slug`.
-
-3. Create or switch to branch:
-   ```bash
-   git rev-parse --verify <branch> 2>/dev/null && git checkout <branch> || git checkout -b <branch>
-   ```
-
-4. Push branch:
-   ```bash
-   git push -u origin <branch>
-   ```
-   If push fails (network, auth): warn and skip the next step; phase still pushes `{phase: 5, status: "pushed-locally"}`.
-
-5. Compute PR body context:
-   ```javascript
-   const ctx = {
-     task, plan,
-     waves: state.waves.map(w => ({ status: w.status, tasks: w.tasks })),
-     loop: { breakCondition: config.loop.breakCondition },
-     breakConditionPassed: state.lastBreakConditionExit === 0,
-     testsPass: state.waves.every(w => w.status === "completed"),
-     reviewClean: state.waves.every(w => !w.gateVerdict?.issues?.some(i => i.severity === "critical")),
-     iter: state.iter, maxIter: config.defaults.maxIter,
-     costUSD: state.costUSD?.toFixed(2) ?? "0.00", maxCostUSD: config.defaults.maxCostUSD,
-   };
-   ```
-
-6. Render `templates/pr-body.md.hbs` with `ctx` using `plugins/harness-builder/skills/agent-init/lib/render.mjs`.
-
-7. Run full task ledger validation for `task.path`:
+1. Run full task ledger validation for `task.path`:
    ```javascript
    import { existsSync, readFileSync } from "node:fs";
    import { resolve } from "node:path";
@@ -67,7 +36,38 @@ If `--no-pr` OR `config.defaults.createPR === false`: skip Phase 5. Push `{phase
    });
    if (!result.ok) { /* print errors and abort before PR creation */ }
    ```
-   Abort PR creation on missing index/template, missing Active tasks, required task sections, or in-scope checkboxes that remain unchecked. The task ledger is the durable acceptance record; do not open a PR while it says scoped work is incomplete.
+   Abort before branch creation, push, PR body rendering, or PR creation on missing index/template, missing Active tasks, required task sections, duplicate Active entries, or in-scope checkboxes that remain unchecked. The task ledger is the durable acceptance record; do not open a PR while it says scoped work is incomplete.
+
+2. Compute slug from task path: `slug = basename(task.path).replace(/^\d+-/, "").replace(/\.md$/, "")`.
+
+3. Branch name: `branch = config.pr.branchPrefix + slug`.
+
+4. Create or switch to branch:
+   ```bash
+   git rev-parse --verify <branch> 2>/dev/null && git checkout <branch> || git checkout -b <branch>
+   ```
+
+5. Push branch:
+   ```bash
+   git push -u origin <branch>
+   ```
+   If push fails (network, auth): warn and skip the next step; phase still pushes `{phase: 5, status: "pushed-locally"}`.
+
+6. Compute PR body context:
+   ```javascript
+   const ctx = {
+     task, plan,
+     waves: state.waves.map(w => ({ status: w.status, tasks: w.tasks })),
+     loop: { breakCondition: config.loop.breakCondition },
+     breakConditionPassed: state.lastBreakConditionExit === 0,
+     testsPass: state.waves.every(w => w.status === "completed"),
+     reviewClean: state.waves.every(w => !w.gateVerdict?.issues?.some(i => i.severity === "critical")),
+     iter: state.iter, maxIter: config.defaults.maxIter,
+     costUSD: state.costUSD?.toFixed(2) ?? "0.00", maxCostUSD: config.defaults.maxCostUSD,
+   };
+   ```
+
+7. Render `templates/pr-body.md.hbs` with `ctx` using `plugins/harness-builder/skills/agent-init/lib/render.mjs`.
 
 8. Create PR:
    ```bash

@@ -1,9 +1,14 @@
+const MAX_ITEM_LENGTH = 300;
+const TRUNCATION_MARKER = "... [truncated]";
+
 function sanitizeLine(value) {
-  return String(value ?? "")
+  const line = String(value ?? "")
     .replace(/```/g, "'''")
     .replace(/\r?\n/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+  if (line.length <= MAX_ITEM_LENGTH) return line;
+  return `${line.slice(0, MAX_ITEM_LENGTH - TRUNCATION_MARKER.length).trimEnd()}${TRUNCATION_MARKER}`;
 }
 
 function list(items) {

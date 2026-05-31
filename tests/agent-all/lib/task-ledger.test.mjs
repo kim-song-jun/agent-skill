@@ -78,6 +78,26 @@ test("active task path parser normalizes active ledger entries and skips templat
   ]);
 });
 
+test("active task path parser ignores prose and inline-code non-task md mentions", () => {
+  assert.equal(typeof ledger.activeTaskPaths, "function");
+  const indexText = `# Tasks
+## Active
+Keep notes nearby; see README.md for broader context.
+Avoid treating \`scratch.md\` as an active task.
+- [One](1-task.md)
+- docs/tasks/2-task.md
+- ./3-task.md
+## Done
+- docs/tasks/9-done.md
+`;
+
+  assert.deepEqual(ledger.activeTaskPaths(indexText), [
+    "docs/tasks/1-task.md",
+    "docs/tasks/2-task.md",
+    "docs/tasks/3-task.md",
+  ]);
+});
+
 test("active task path normalizer accepts supported task path forms", () => {
   assert.equal(typeof ledger.normalizeActiveTaskPath, "function");
   assert.equal(ledger.normalizeActiveTaskPath("docs/tasks/1-x.md"), "docs/tasks/1-x.md");
@@ -86,6 +106,21 @@ test("active task path normalizer accepts supported task path forms", () => {
   assert.equal(ledger.normalizeActiveTaskPath("docs/tasks/1-x.md#notes"), "docs/tasks/1-x.md");
   assert.equal(ledger.normalizeActiveTaskPath("docs/tasks/_template.md"), null);
   assert.equal(ledger.normalizeActiveTaskPath("docs/tasks/_handoff-template.md"), null);
+});
+
+test("full task ledger validation trusts supplied task text without default missing-file error", () => {
+  assert.equal(typeof ledger.validateTaskLedger, "function");
+  const result = ledger.validateTaskLedger({
+    taskPath: "docs/tasks/2-current.md",
+    taskText: VALID,
+    indexText: `# Tasks
+## Active
+- [Current](docs/tasks/2-current.md)
+`,
+    templateExists: true,
+  });
+
+  assert.deepEqual(result, { ok: true, errors: [] });
 });
 
 test("full task ledger validation catches missing scaffold and active task docs", () => {
@@ -105,6 +140,24 @@ test("full task ledger validation catches missing scaffold and active task docs"
   assert.equal(result.ok, false);
   assert.match(result.errors.join("\n"), /missing docs\/tasks\/_template\.md/);
   assert.match(result.errors.join("\n"), /missing active task: docs\/tasks\/3-missing\.md/);
+});
+
+test("full task ledger validation reports duplicate active task entries", () => {
+  assert.equal(typeof ledger.validateTaskLedger, "function");
+  const result = ledger.validateTaskLedger({
+    taskPath: "docs/tasks/2-current.md",
+    taskText: VALID,
+    indexText: `# Tasks
+## Active
+- [Current](docs/tasks/2-current.md)
+- ./2-current.md
+`,
+    templateExists: true,
+    taskExists: () => true,
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join("\n"), /duplicate active task: docs\/tasks\/2-current\.md/);
 });
 
 test("full task ledger validation catches missing index and current task body errors", () => {
@@ -145,4 +198,17 @@ test("phase 5 validates the full ledger before PR creation", () => {
   assert.ok(validation < prCreate);
   assert.match(text, /missing index\/template/i);
   assert.match(text, /missing Active tasks/i);
+});
+
+test("phase 5 validates the full ledger before branch creation and push", () => {
+  const text = readFileSync(resolve(repoRoot, "plugins/harness-floor/skills/agent-all/phases/5-pr.md"), "utf8");
+  const validation = text.indexOf("validateTaskLedger");
+  const branchCreate = text.indexOf("git rev-parse --verify <branch>");
+  const push = text.indexOf("git push -u origin <branch>");
+
+  assert.notEqual(validation, -1);
+  assert.notEqual(branchCreate, -1);
+  assert.notEqual(push, -1);
+  assert.ok(validation < branchCreate);
+  assert.ok(validation < push);
 });

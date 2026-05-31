@@ -33,3 +33,21 @@ test("collapses multiline items and renders defaults for empty handoff fields", 
   assert.match(out, /## Current Git State\n- Unknown/);
   assert.match(out, /## Next Action\n- Resume from the next incomplete phase/);
 });
+
+test("truncates long raw-log-shaped items without dumping the full payload", () => {
+  const rawPayload = [
+    "```",
+    "FAIL tests/agent-all/lib/task-ledger.test.mjs",
+    "stderr line ".repeat(80),
+    "full payload sentinel should not survive truncation",
+    "```",
+  ].join("\n");
+  const out = renderHandoff({
+    completed: [rawPayload],
+  });
+
+  assert.equal(out.includes("```"), false);
+  assert.match(out, /\[truncated\]/);
+  assert.equal(out.includes("full payload sentinel should not survive truncation"), false);
+  assert.ok(out.length < 900);
+});
