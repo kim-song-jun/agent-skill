@@ -124,3 +124,19 @@ test("theme context is resolved before phase 2 rendering and phase 5 does not ba
     "Phase 5 must consume the already-resolved Phase 1 theme decision",
   );
 });
+
+test("phase 1 resolves legacy visual-qa before default floor theme", () => {
+  const phase1 = readPhase("1-discover.md");
+  const liteIndex = phase1.indexOf("If `lite` is true");
+  const legacyIndex = phase1.indexOf("`--visual-qa` was passed without `--theme=*`");
+  const floorIndex = phase1.indexOf("`--theme=floor` was passed OR no theme flag was passed");
+
+  assert.notEqual(liteIndex, -1, "Phase 1 must resolve the lite theme first");
+  assert.notEqual(legacyIndex, -1, "Phase 1 must preserve legacy --visual-qa without --theme=*");
+  assert.notEqual(floorIndex, -1, "Phase 1 must resolve explicit/default floor theme");
+  assert.ok(liteIndex < legacyIndex, "Phase 1 must check lite before legacy --visual-qa");
+  assert.ok(
+    legacyIndex < floorIndex,
+    "Phase 1 must check legacy --visual-qa before the default floor branch",
+  );
+});

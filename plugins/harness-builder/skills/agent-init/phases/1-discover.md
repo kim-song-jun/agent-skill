@@ -40,8 +40,8 @@
 1. **Resolve profile.** `lite = flags.lite || flags.theme === "lite"`. Default profile is operational. If `--theme=lite` was used, print a deprecation note and behave exactly as `--lite`.
 2. **Resolve theme.** This decision must be available before Phase 2 renders `CLAUDE.md`:
    - If `lite` is true: `theme = "lite"` and `floorTheme = false`.
-   - Else if `--theme=floor` was passed OR no theme flag was passed: `theme = "floor"` and `floorTheme = true`.
    - Else if `--visual-qa` was passed without `--theme=*`: `theme = "legacy-visual-qa"` and `floorTheme = false`.
+   - Else if `--theme=floor` was passed OR no theme flag was passed: `theme = "floor"` and `floorTheme = true`.
 3. Invoke `Skill` with `superpowers:brainstorming` and these prompts (with the language directive from step 0 prepended when applicable):
    - Project purpose (1-2 sentences for CLAUDE.md preamble)
    - Size: small / medium / large (override: `--size`)
