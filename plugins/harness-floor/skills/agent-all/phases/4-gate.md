@@ -13,9 +13,10 @@ If `gates.specReview === false` AND `gates.qualityReview === false`: skip Phase 
 
 For each wave with `status === "completed"` (skip already-incomplete waves):
 
-1. Compute the wave's diff:
+1. Compute the wave's diff and changed-file list:
    ```bash
    git diff <wave.startCommit>..<wave.endCommit>
+   git diff --name-only <wave.startCommit>..<wave.endCommit>
    ```
    (Start/end commits are first and last from `wave.tasks[].commits`.)
 
@@ -23,25 +24,35 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
    - Dispatch a spec-reviewer subagent. Prompt includes: the plan section for this wave, the diff, and a request to flag any spec deviations.
 
 3. If `gates.qualityReview`:
-   - Dispatch a code-quality reviewer subagent over the diff. Description prefix: `Review Task <N>: <title>`.
-
-3b. **QA user-side audit (v0.5+).** If `config.policy.qaAudit !== false` (default `true`):
-   - Dispatch a QA reviewer subagent. Description prefix MUST be `QA Review Task <N>: <title>` (the `QA ` prefix routes the `floor-policy` hook to the user-side directive + `QA_AUDIT` token validation).
-   - Prompt includes: the wave's plan section, the diff, persona context loaded from `.claude/agents/qa.md` (or `qa.md` template rendered with `{{persona}}`).
-   - QA reviewer audits **user-side flow only** — completeness of scenarios, persona-perspective edge cases, would-this-confuse-the-user concerns. NOT tech-stack verification (that's the existing reviewer / tester pair).
-   - Audit token: reviewer must emit `QA_AUDIT: passed|failed|skipped`. The PostToolUse hook rejects the dispatch if the token is missing or invalid.
+   - Load `classifyChangedFiles(files)` from `lib/changed-file-classifier.mjs`, where `files` is the `git diff --name-only <wave.startCommit>..<wave.endCommit>` output.
+   - Dispatch one reviewer subagent per returned reviewer persona.
+   - The classifier always returns the base `reviewer` and `verification-reviewer` personas.
+   - The classifier adds `design-reviewer`, `qa-reviewer`, `security-reviewer`, `data-reviewer`, and `integration-dev` only when the changed-file set requires them.
+   - Description prefixes:
+     - `reviewer`: `Review Task <N>: <title>`
+     - `verification-reviewer`: `Verification Review Task <N>: <title>`
+     - `qa-reviewer`: `QA Review Task <N>: <title>`
+     - Other personas: `<Persona> Review Task <N>: <title>`
+   - Prompt includes: the wave's plan section, the diff, the changed-file list, and persona context when available.
+   - `qa-reviewer` audits **user-side flow only** — completeness of scenarios, persona-perspective edge cases, would-this-confuse-the-user concerns. NOT tech-stack verification.
+   - QA audit token: `qa-reviewer` must emit `QA_AUDIT: passed|failed|skipped`. The `QA ` description prefix routes the `floor-policy` hook to the user-side directive + `QA_AUDIT` token validation.
+   - Verification audit token: `verification-reviewer` must emit `VERIFICATION_AUDIT: passed|failed|skipped`.
+   - Persona-specific reviewers should emit their existing reviewer verdict format and issue severities.
 
 4. Collect verdicts. Bucket issues by severity (`critical | major | minor`).
 
-4b. **Two-team gate (v0.5+).** Wave passes Phase 4 iff:
-   - `VERIFICATION_AUDIT ∈ {passed, skipped}` for every technical-reviewer dispatch, AND
-   - `QA_AUDIT ∈ {passed, skipped}` for the QA-reviewer dispatch (when `policy.qaAudit !== false`).
+4b. **Classifier-based gate.** Wave passes Phase 4 iff:
+   - `VERIFICATION_AUDIT ∈ {passed, skipped}` for the `verification-reviewer` dispatch, AND
+   - `QA_AUDIT ∈ {passed, skipped}` for the `qa-reviewer` dispatch when the classifier returned `qa-reviewer`, AND
+   - no returned reviewer persona reports blocking issues.
 
    Tech success ≠ user-flow success. A `passed` Verification audit alongside a `failed` QA audit fails the wave; the QA defect report becomes input to the next iteration's plan.
 
 5. If any critical issue AND `blockOnCritical === true`:
    - Dispatch an implementer subagent with the critical issues. Re-run reviewers afterward.
-   - Up to 3 retry cycles. If still failing: abort phase, push `{phase: 4, status: "blocked"}` to state, exit code 2.
+   - Up to 3 retry cycles.
+   - If the same issue repeats through 3 retry cycles, stop the retry loop and escalate to a planner/user decision.
+   - If still failing: abort phase, push `{phase: 4, status: "blocked"}` to state, exit code 2.
 
 6. Record wave gate verdict in `state.waves[i].gateVerdict = {issues, retries, finalStatus}`.
 
