@@ -324,6 +324,13 @@ for (const [name, spec] of Object.entries(PLUGINS)) {
       assert.match(res.stdout, spec.stdoutContains);
 
       if (name === "gemini") {
+        assert.match(res.stdout, /"mcpServers"/);
+        assert.doesNotMatch(res.stdout, /"hooks"/);
+        assert.doesNotMatch(res.stdout, /BeforeTool/);
+        assert.doesNotMatch(res.stdout, /SessionStart/);
+        assert.doesNotMatch(res.stdout, /echo 'before write_file'/);
+        assert.doesNotMatch(res.stdout, /echo 'session start'/);
+
         const body = readFileSync(resolve(target, "GEMINI.md"), "utf-8");
         assert.match(body, /soft enforcement/i);
         assert.match(body, /docs\/tasks/);
