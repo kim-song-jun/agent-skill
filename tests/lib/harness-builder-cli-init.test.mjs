@@ -72,12 +72,39 @@ const PLUGINS = {
   },
 };
 
+const CODEX_INIT_SKILL = resolve(REPO, "plugins/harness-builder-codex/skills/codex-init/SKILL.md");
+const CODEX_CONFIG_TEMPLATE = resolve(REPO, "plugins/harness-builder-codex/skills/codex-init/templates/codex-config.toml.hbs");
+
 function runInit(binPath, args, opts = {}) {
   return spawnSync("node", [binPath, ...args], {
     encoding: "utf-8",
     env: { ...process.env, ...(opts.env ?? {}) },
   });
 }
+
+test("harness-builder-codex: SKILL.md documents that lite skips config snippet output", () => {
+  const body = readFileSync(CODEX_INIT_SKILL, "utf-8");
+
+  assert.match(body, /--lite[\s\S]*skips?[\s\S]*Codex config snippet/i);
+  assert.match(body, /--lite[\s\S]*writes?[\s\S]*AGENTS[\s\S]*base skills/i);
+  assert.match(body, /--lite[\s\S]*skips?[\s\S]*repo hooks/i);
+  assert.match(body, /--lite[\s\S]*skips?[\s\S]*task ledger/i);
+  assert.match(body, /--lite[\s\S]*skips?[\s\S]*reviewer personas/i);
+  assert.doesNotMatch(body, /Always print the Codex config snippet/i);
+  assert.doesNotMatch(body, /CLI always emits `templates\/codex-config\.toml\.hbs`/i);
+});
+
+test("harness-builder-codex: config template is operational-only hook snippet", () => {
+  const body = readFileSync(CODEX_CONFIG_TEMPLATE, "utf-8");
+
+  assert.match(body, /agent-skill:codex-config:start/);
+  assert.match(body, /agent-skill:codex-config:end/);
+  assert.match(body, /\[hooks\]/);
+  assert.match(body, /PreToolUse/);
+  assert.match(body, /SessionStart/);
+  assert.doesNotMatch(body, /liteProfile/);
+  assert.doesNotMatch(body, /lite mode/i);
+});
 
 test("harness-builder-codex: AGENTS.md documents operational profile", () => {
   const target = mkTarget("codex-agents");

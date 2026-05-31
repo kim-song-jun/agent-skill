@@ -2,16 +2,18 @@
 name: codex-init
 description: >
   Scaffold AGENTS.md, .codex/skills/, an operational task ledger, a repo-local
-  Codex policy hook, and a config snippet for a new or existing project. Use
-  --lite to opt out of the heavy operational artifacts.
+  Codex policy hook, and an operational Codex config snippet for a new or
+  existing project. Use --lite to opt out of the heavy operational artifacts.
 ---
 
 # Codex Init
 
 You are scaffolding agent infrastructure for a Codex CLI project. The default
-profile is operational and heavy. `--lite` and `--theme=lite` keep only the
-root memory file and base planner/dev/reviewer skills. `--dry-run` prints
-planned writes without creating directories or files.
+profile is operational and heavy. `--lite` and `--theme=lite` write root
+AGENTS and base skills only: planner, dev, and reviewer. `--lite` skips repo
+hooks, task ledger files, operational reviewer personas, and Codex config
+snippet/global hook patch output. `--dry-run` prints planned writes without
+creating directories or files.
 
 ## Phase 1 — Gather
 
@@ -76,18 +78,20 @@ Render and write each template:
 
 Use `apply_patch` for every file write. Refuse to overwrite existing files
 unless the user passes `--force`. In lite mode, skip hooks, local guides,
-operational reviewer skills, and task-ledger files.
+operational reviewer skills, task-ledger files, and Codex config snippet output.
 
 ## Phase 3 — Summarize
 
 Print a 3-line summary: detected stack, runtime (if any), profile, and the
-roles scaffolded. Always print the Codex config snippet to stdout for manual
-merge. Do not claim that global config was patched automatically.
+roles scaffolded. In the operational/default profile, print the Codex config
+snippet to stdout for manual merge. In lite mode, do not render or print the
+Codex config snippet. Do not claim that global config was patched automatically.
 
-## Phase 4 — Optional MCP config additions
+## Phase 4 — Optional MCP config additions (operational/default only)
 
-The CLI always emits `templates/codex-config.toml.hbs` to stdout. If collecting
-MCP servers interactively:
+In the operational/default profile, the CLI emits
+`templates/codex-config.toml.hbs` to stdout. If collecting MCP servers
+interactively:
 
 1. Prompt for MCP servers (optional, empty list OK). For each, capture
    either `{ name, command, args }` (stdio) or `{ name, url }` (HTTP).
@@ -118,5 +122,10 @@ MCP servers interactively:
    ```
 
 4. Render `templates/codex-config.toml.hbs` to stdout. The operational
-   profile points PreToolUse at the repo-local hook. Lite mode documents that
-   no hard policy hook was installed.
+   profile points PreToolUse at the repo-local hook and includes SessionStart
+   hook content.
+
+For `--lite` and `--theme=lite`, skip this phase entirely. Lite mode writes
+root AGENTS and base skills only, and skips repo hooks, task ledger files,
+operational reviewer personas, and Codex config snippet/global hook patch
+output.
