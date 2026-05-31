@@ -33,19 +33,10 @@ These apply to the main agent and to every role in `.claude/agents/`:
 | tester | automated runs | `.claude/agents/tester.md` |
 | reviewer | final review | `.claude/agents/reviewer.md` |
 
-
-## Hooks
-
-- `PreToolUse` (Bash) -> `context-mode-router.mjs` and operational policy checks.
-- `Stop` -> concise handoff/session summary.
-- `SessionStart` -> cache and foundation checks.
-
 ## Work Folders
 
 - `docs/superpowers/specs/` - brainstorming output.
 - `docs/superpowers/plans/` - implementation plans.
-- `docs/tasks/` - task ledger.
-- `docs/decisions/` - concise decision records.
 
 ## Special Constraints
 

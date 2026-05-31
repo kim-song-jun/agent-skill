@@ -48,7 +48,7 @@ Use reviewer personas based on changed files:
 {{#if liteProfile}}
 ## Lite Harness
 
-Lite mode keeps only root memory and the minimal role roster. It does not install task ledger files, policy hooks, or global config patches.
+Lite mode keeps only root memory and the minimal role roster.
 {{/if}}
 
 ## Agent Roster
@@ -56,20 +56,20 @@ Lite mode keeps only root memory and the minimal role roster. It does not instal
 | Role | When to use | File |
 |------|-------------|------|
 {{#each agents}}| {{name}} | {{when}} | `.claude/agents/{{name}}.md` |
-{{/each}}
+{{/each}}{{#if operationalProfile}}
 
 ## Hooks
 
 - `PreToolUse` (Bash) -> `context-mode-router.mjs` and operational policy checks.
 - `Stop` -> concise handoff/session summary.
 - `SessionStart` -> cache and foundation checks.
-
+{{/if}}
 ## Work Folders
 
 - `docs/superpowers/specs/` - brainstorming output.
-- `docs/superpowers/plans/` - implementation plans.
+- `docs/superpowers/plans/` - implementation plans.{{#if operationalProfile}}
 - `docs/tasks/` - task ledger.
-- `docs/decisions/` - concise decision records.{{#if degradedFoundations}}
+- `docs/decisions/` - concise decision records.{{/if}}{{#if degradedFoundations}}
 
 ## Foundation Status
 

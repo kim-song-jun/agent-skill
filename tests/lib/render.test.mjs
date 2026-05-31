@@ -124,6 +124,23 @@ test("includes operational Claude templates in render coverage", () => {
   }
 });
 
+test("lite Claude scaffold omits operational hooks and task ledger guidance", () => {
+  const tpl = readFileSync(resolve(TEMPLATES_DIR, "CLAUDE.md.hbs"), "utf-8");
+  const fx = FIXTURES.find(f => f.tag === "lite-profile");
+  assert.ok(fx, "missing lite-profile fixture");
+
+  const out = render(tpl, { title: "Rendered Task", guidePath: "src", ...fx.ctx, persona: "auth" });
+
+  assert.doesNotMatch(out, /^## Hooks$/m);
+  assert.doesNotMatch(out, /operational policy checks/);
+  assert.doesNotMatch(out, /policy hooks/);
+  assert.doesNotMatch(out, /task ledger/i);
+  assert.doesNotMatch(out, /docs\/tasks\//);
+  assert.doesNotMatch(out, /scripts\/agent-task-ledger-check\.mjs/);
+  assert.match(out, /docs\/superpowers\/specs\//);
+  assert.match(out, /docs\/superpowers\/plans\//);
+});
+
 for (const tplRel of listTemplates(TEMPLATES_DIR)) {
   if (!tplRel.endsWith(".hbs")) continue;
   const tpl = readFileSync(resolve(TEMPLATES_DIR, tplRel), "utf-8");
