@@ -19,6 +19,8 @@ None.
 Current phase: gate.
 ## Verification
 - [x] node --test
+## Backlog
+- [ ] outside current task
 ## Follow-up
 - [ ] outside hard gate
 `;
@@ -33,8 +35,10 @@ test("missing required section fails", () => {
   assert.match(result.errors.join("\n"), /missing section: Verification/);
 });
 
-test("unchecked in-scope checkbox fails while Follow-up is ignored", () => {
+test("unchecked in-scope checkbox fails while Backlog and Follow-up are ignored", () => {
   const result = validateTaskDoc(VALID.replace("- [x] build", "- [ ] build"));
   assert.equal(result.ok, false);
   assert.match(result.errors.join("\n"), /unchecked item/);
+  assert.doesNotMatch(result.errors.join("\n"), /outside current task/);
+  assert.doesNotMatch(result.errors.join("\n"), /outside hard gate/);
 });

@@ -5,6 +5,7 @@ import { analyzeShellCommand } from "../../../plugins/harness-floor/skills/agent
 test("blocks destructive git commands", () => {
   assert.equal(analyzeShellCommand("git reset --hard").blocked, true);
   assert.equal(analyzeShellCommand("git checkout -- src/app.js").blocked, true);
+  assert.equal(analyzeShellCommand("git commit --amend").blocked, true);
   assert.equal(analyzeShellCommand("git push --force").blocked, true);
   assert.equal(analyzeShellCommand("git push --force-with-lease").blocked, true);
 });
@@ -18,5 +19,32 @@ test("blocks git add -A and git commit -a", () => {
 
 test("requires pathspec for git commit in operational mode", () => {
   assert.equal(analyzeShellCommand("git commit -m msg").blocked, true);
+  assert.equal(analyzeShellCommand('git commit -m "msg -- text"').blocked, true);
   assert.equal(analyzeShellCommand("git commit -m msg -- docs/a.md").blocked, false);
+});
+
+test("blocks destructive docker volume removal", () => {
+  assert.equal(analyzeShellCommand("docker volume rm data").blocked, true);
+});
+
+test("blocks project-configured destructive commands", () => {
+  assert.equal(
+    analyzeShellCommand("pnpm deploy --prod", { destructiveCommands: ["pnpm deploy"] }).blocked,
+    true,
+  );
+  assert.equal(
+    analyzeShellCommand("rm -rf build", { destructiveCommands: [/^rm\s+-rf\b/] }).blocked,
+    true,
+  );
+});
+
+test("blocks project-configured destructive confirmation flags", () => {
+  assert.deepEqual(analyzeShellCommand("deploy --yes", { destructiveConfirmFlags: ["--yes"] }), {
+    blocked: true,
+    reason: "destructive confirmation flag: --yes",
+  });
+  assert.deepEqual(analyzeShellCommand("deploy --confirm", { destructiveConfirmFlags: ["--confirm"] }), {
+    blocked: true,
+    reason: "destructive confirmation flag: --confirm",
+  });
 });
