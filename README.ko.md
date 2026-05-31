@@ -227,7 +227,7 @@ mkdir my-app && cd my-app && git init && git commit --allow-empty -m "init"
 **낯선 코드베이스 온보딩:**
 ```
 git clone <repo> && cd <repo>
-/agent-init --theme=lite
+/agent-init --lite
 /explore
 /explore where MainController
 ```
@@ -427,7 +427,7 @@ git init && git add -A && git commit -m "init"
 cargo new mycli && cd mycli && git init && git add -A && git commit -m "init"
 ```
 ```
-/agent-init --theme=lite                   # Cargo.toml 감지 → "cargo test"
+/agent-init --lite                         # Cargo.toml 감지 → "cargo test"
 /agent-all "git 스타일 서브커맨드 추가" --loop --max-cost=25
 ```
 

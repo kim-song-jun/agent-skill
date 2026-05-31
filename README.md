@@ -234,7 +234,7 @@ mkdir my-app && cd my-app && git init && git commit --allow-empty -m "init"
 **Onboard to an unfamiliar codebase:**
 ```
 git clone <repo> && cd <repo>
-/agent-init --theme=lite
+/agent-init --lite
 /explore
 /explore where MainController
 ```
@@ -434,7 +434,7 @@ git init && git add -A && git commit -m "init"
 cargo new mycli && cd mycli && git init && git add -A && git commit -m "init"
 ```
 ```
-/agent-init --theme=lite                   # detects Cargo.toml → "cargo test"
+/agent-init --lite                         # detects Cargo.toml → "cargo test"
 /agent-all "Add git-style subcommands" --loop --max-cost=25
 ```
 
