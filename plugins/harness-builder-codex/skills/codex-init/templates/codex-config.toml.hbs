@@ -2,10 +2,11 @@
 # Review and merge this into ~/.codex/config.toml manually.
 
 # agent-skill:codex-config:start
-[hooks]
-PreToolUse = [
-  { matcher = "^Bash$", hooks = [{ type = "command", command = {{hook_command_pretool_toml}}, command_windows = {{hook_command_pretool_windows_toml}} }] }
-]
+[[hooks.pre_tool_use]]
+matcher = "shell_command"
+command = {{hook_command_pretool_toml}}
+command_windows = {{hook_command_pretool_windows_toml}}
+timeout_seconds = 10
 {{#if mcp_servers_block}}
 
 {{mcp_servers_block}}

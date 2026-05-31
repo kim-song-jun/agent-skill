@@ -10,8 +10,7 @@ Run before each `harness-floor` release with /agent-all changes. Requires:
 ```bash
 mkdir /tmp/agent-all-fixture && cd /tmp/agent-all-fixture
 git init
-/agent-init --size=small
-/agent-init --theme=floor   # seeds .visual-qa.json + .agent-all.json
+/agent-init   # default floor profile seeds .visual-qa.json + .agent-all.json
 ```
 
 ## Checks
@@ -30,5 +29,5 @@ git init
 - [ ] `/agent-all "x" --loop` with passing breakCondition exits after 1 iter (exit code 0).
 - [ ] `--max-cost=0.01` aborts in middle of Phase 3.
 - [ ] Changed-file classifier dispatches security/data/design reviewers for matching files.
-- [ ] `--theme=floor` from `/agent-init` produces both `.visual-qa.json` and `.agent-all.json` and adds "Floor Theme" section to CLAUDE.md.
+- [ ] Default `/agent-init` produces both `.visual-qa.json` and `.agent-all.json` and adds the floor harness section to CLAUDE.md.
 - [ ] `.agent-all-state.json` is in `.gitignore`.

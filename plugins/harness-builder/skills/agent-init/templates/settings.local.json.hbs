@@ -4,7 +4,8 @@
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/context-mode-router.mjs\"" }
+          { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/context-mode-router.mjs\"" }{{#if operationalProfile}},
+          { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/agent-policy-hook.mjs\"" }{{/if}}
         ]
       }
     ],

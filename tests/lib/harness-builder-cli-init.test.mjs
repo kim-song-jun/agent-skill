@@ -43,7 +43,7 @@ const PLUGINS = {
       "docs/tasks/index.md",
       "docs/tasks/_template.md",
     ],
-    stdoutContains: /\[hooks\]/,            // TOML snippet for ~/.codex/config.toml
+    stdoutContains: /\[\[hooks\.pre_tool_use\]\]/, // TOML snippet for ~/.codex/config.toml
     stdoutHeader:   /codex-config\.toml/,
     purposeFile:    "AGENTS.md",
   },
@@ -105,9 +105,10 @@ test("harness-builder-codex: config template is operational-only hook snippet", 
 
   assert.match(body, /agent-skill:codex-config:start/);
   assert.match(body, /agent-skill:codex-config:end/);
-  assert.match(body, /\[hooks\]/);
-  assert.match(body, /PreToolUse/);
-  assert.match(body, /matcher = "\^Bash\$"/);
+  assert.match(body, /\[\[hooks\.pre_tool_use\]\]/);
+  assert.match(body, /matcher = "shell_command"/);
+  assert.doesNotMatch(body, /PreToolUse/);
+  assert.doesNotMatch(body, /matcher = "\^Bash\$"/);
   assert.doesNotMatch(body, /matcher = "\.\*"/);
   assert.match(body, /command_windows/);
   assert.doesNotMatch(body, /SessionStart/);
@@ -217,12 +218,15 @@ test("harness-builder-codex: default config snippet includes sentinel markers", 
   }
 });
 
-test("harness-builder-codex: config stdout uses Bash-only matcher and no SessionStart noise", () => {
-  const target = mkTarget("codex-config-bash-only");
+test("harness-builder-codex: config stdout uses Codex shell_command pre_tool_use hook and no SessionStart noise", () => {
+  const target = mkTarget("codex-config-shell-command-only");
   try {
     const res = runInit(PLUGINS.codex.bin, [target]);
     assert.equal(res.status, 0, res.stderr);
-    assert.match(res.stdout, /matcher = "\^Bash\$"/);
+    assert.match(res.stdout, /\[\[hooks\.pre_tool_use\]\]/);
+    assert.match(res.stdout, /matcher = "shell_command"/);
+    assert.doesNotMatch(res.stdout, /PreToolUse/);
+    assert.doesNotMatch(res.stdout, /matcher = "\^Bash\$"/);
     assert.doesNotMatch(res.stdout, /matcher = "\.\*"/);
     assert.doesNotMatch(res.stdout, /SessionStart/);
     assert.doesNotMatch(res.stdout, /session start/);
@@ -290,6 +294,26 @@ test("harness-builder-codex: generated hook blocks destructive Bash PreToolUse p
       encoding: "utf-8",
       input: JSON.stringify({
         tool_name: "Bash",
+        tool_input: { command: "git reset --hard" },
+      }),
+    });
+    assert.equal(hookRes.status, 2);
+    assert.match(hookRes.stderr, /git reset --hard/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: generated hook blocks destructive shell_command PreToolUse payloads", () => {
+  const target = mkTarget("codex-hook-shell-command");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target]);
+    assert.equal(res.status, 0, res.stderr);
+    const hookPath = resolve(target, ".codex/hooks/agent-policy-hook.mjs");
+    const hookRes = spawnSync("node", [hookPath], {
+      encoding: "utf-8",
+      input: JSON.stringify({
+        tool_name: "shell_command",
         tool_input: { command: "git reset --hard" },
       }),
     });

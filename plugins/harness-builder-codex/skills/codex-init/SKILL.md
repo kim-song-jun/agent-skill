@@ -125,8 +125,8 @@ interactively:
    ```
 
 4. Render `templates/codex-config.toml.hbs` to stdout. The operational
-   profile points Bash-only PreToolUse at the repo-local hook. Do not include
-   SessionStart hook content.
+   profile points Codex `pre_tool_use` for `shell_command` at the repo-local
+   hook. Do not include SessionStart hook content.
 
 For `--lite` and `--theme=lite`, skip this phase entirely. Lite mode writes
 root AGENTS and base skills only, and skips repo hooks, task ledger files,

@@ -391,7 +391,8 @@ try {
 } catch {}
 
 const toolName = payload?.tool_name ?? payload?.toolName;
-if (typeof toolName === "string" && toolName.length > 0 && toolName !== "Bash") {
+const shellToolNames = new Set(["Bash", "shell_command"]);
+if (typeof toolName === "string" && toolName.length > 0 && !shellToolNames.has(toolName)) {
   process.exit(0);
 }
 

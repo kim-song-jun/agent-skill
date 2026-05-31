@@ -42,8 +42,8 @@ const CASES = [
   },
   {
     tpl: "plugins/harness-builder-codex/skills/codex-init/templates/codex-config.toml.hbs",
-    contains: ["[hooks]", "PreToolUse", "matcher = \"^Bash$\"", "command_windows"],
-    notContains: ["SessionStart"],
+    contains: ["[[hooks.pre_tool_use]]", "matcher = \"shell_command\"", "command_windows"],
+    notContains: ["PreToolUse", "matcher = \"^Bash$\"", "SessionStart"],
     extraCtx: {
       hook_command_pretool_toml: "\"echo pre\"",
       hook_command_pretool_windows_toml: "\"echo pre\"",

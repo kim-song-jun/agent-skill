@@ -205,6 +205,36 @@ test("lite rendered outputs omit operational hooks and task ledger guidance", ()
   assert.match(out, /docs\/superpowers\/plans\//);
 });
 
+test("settings template wires operational policy hook only for operational profile", () => {
+  const tpl = readFileSync(resolve(TEMPLATES_DIR, "settings.local.json.hbs"), "utf-8");
+
+  const operational = JSON.parse(render(tpl, { operationalProfile: true }));
+  const operationalPreToolCommands = operational.hooks.PreToolUse
+    .flatMap(group => group.hooks)
+    .map(hook => hook.command);
+  assert.ok(
+    operationalPreToolCommands.some(command => command.includes(".claude/hooks/context-mode-router.mjs")),
+    "operational settings should keep the context-mode router",
+  );
+  assert.ok(
+    operationalPreToolCommands.some(command => command.includes(".claude/hooks/agent-policy-hook.mjs")),
+    "operational settings should register the policy hook on fresh installs",
+  );
+
+  const lite = JSON.parse(render(tpl, { operationalProfile: false, liteProfile: true }));
+  const litePreToolCommands = lite.hooks.PreToolUse
+    .flatMap(group => group.hooks)
+    .map(hook => hook.command);
+  assert.ok(
+    litePreToolCommands.some(command => command.includes(".claude/hooks/context-mode-router.mjs")),
+    "lite settings should keep the context-mode router",
+  );
+  assert.ok(
+    !litePreToolCommands.some(command => command.includes(".claude/hooks/agent-policy-hook.mjs")),
+    "lite settings should not register a policy hook file it does not install",
+  );
+});
+
 test("task ledger check rejects active index entries pointing to missing task docs", () => {
   const project = mkdtempSync(resolve(tmpdir(), "agent-task-ledger-check-"));
   try {
