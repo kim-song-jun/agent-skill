@@ -12,12 +12,15 @@ Sets up a full per-project agent harness following the three operating principle
 - `--force` — re-run all phases; overwrite existing artefacts.
 - `--merge` — preserve existing CLAUDE.md and append a harness section.
 - `--dry-run` — print decisions and intended writes; touch nothing.
+- `--lite` — canonical lightweight mode. Alias for `--theme=lite`; skips task ledger, policy hooks, and global config patch prompts.
+- `--update-foundations` — after printing the foundation plan, run the approved update path. Does not patch global CLI config.
+- `--platform=claude,codex,gemini` — select platform artifacts to wire. Defaults to prompting in interactive use and Claude-only in non-interactive use.
 - `--resume` — skip phases already marked complete in `.claude/.agent-init-state.json`.
 - `--size=small|medium|large` — override auto-inferred agent team size.
 - `--qa=<persona>[,<persona>]` — override auto-inferred QA personas.
 - `--lang=ko|en` — (v0.5.1+) force the brainstorming dialogue language. Default: read `$AGENT_INIT_LANG` / `$LANG` / `$LC_ALL` / `$LC_MESSAGES` and resolve to `ko` for Korean locales, else `en`. The scaffolded `CLAUDE.md` records the choice as `language:` so downstream commands (`/agent-all` decision-surfacing, etc.) inherit it.
 - `--theme=floor` — (DEFAULT) bundle harness-floor configs (.visual-qa.json + .agent-all.json + CLAUDE.md Floor section). Implicit `--visual-qa`.
-- `--theme=lite` — minimal scaffold; skip the floor bundle (no .visual-qa.json, no .agent-all.json, no Floor section in CLAUDE.md).
+- `--theme=lite` — compatibility alias for `--lite`. Print a deprecation note and behave exactly like `--lite`.
 - `--theme=thrift` — (RESERVED, Theme B planned) cost-optimization mode. Currently a no-op stub; design pending. Use `--theme=floor` (default) or `--theme=lite` for now.
 - `--visual-qa` — (legacy alias) scaffold only `.visual-qa.json` without the rest of the floor bundle. Most users want the default theme=floor instead.
 
@@ -41,6 +44,7 @@ The skill runs 5 phases strictly in order. Each phase is described in a separate
 3. **Brainstorm before scaffolding.** Phase 1 invokes `superpowers:brainstorming` — do not skip it even if you "know" what the user wants.
 4. **Parallel only in Phase 3.** Before fan-out, invoke `superpowers:dispatching-parallel-agents` to set up the dispatch correctly.
 5. **context-mode for any inspection.** When reading `installed_plugins.json`, large directories, or `git status`, use `mcp__plugin_context-mode_context-mode__ctx_batch_execute` instead of raw Bash.
+6. **Operational profile is default.** Unless `--lite` or `--theme=lite` is passed, render task ledger, local guides, policy hooks, and foundation checks.
 
 ## Lib modules
 
@@ -50,12 +54,15 @@ Deterministic mechanics live in `lib/`. Import them when a phase says so:
 - `lib/detect-stack.mjs` — `detectProject(projectDir)` → `{ stack, runtime, services }` (`detectStack(projectDir)` kept as a back-compat wrapper returning the stack string)
 - `lib/plugin-scan.mjs` — `scanPlugins({ installedPlugins, enabledPlugins, required })`
 - `lib/manifest-merge.mjs` — `mergeSettings(current, additions)`
+- `lib/sentinel-merge.mjs` — `mergeSentinelSection(existing, generated)` for root and folder guidance files
+- `lib/folder-guides.mjs` — `detectGuideDirs(projectDir)` for local guide discovery
+- `lib/foundation-check.mjs` — `scanFoundationState({ installedPluginIds })` for degraded foundation reporting
 
 Each phase file names which helpers it needs and how to call them.
 
 ## On error
 
-- Conflict (existing CLAUDE.md without `--merge`/`--force`): abort with a message naming the next user action.
+- Conflict (incomplete sentinel markers, or existing generated agents/hooks without `--merge`/`--force`): abort with a message naming the next user action.
 - Missing required plugins (`context-mode`, `superpowers`): do NOT abort; surface install commands in Phase 5 and continue in degraded mode.
 - Hook smoke-test failure: print warning, continue.
 - Anything else: log and abort cleanly. Never leave a half-written `settings.local.json`.

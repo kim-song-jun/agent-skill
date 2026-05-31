@@ -42,6 +42,11 @@ test("requires pathspec for git commit in operational mode", () => {
   assert.equal(analyzeShellCommand("git commit -m msg -- docs/a.md").blocked, false);
 });
 
+test("allows scoped add and pathspec commit", () => {
+  assert.equal(analyzeShellCommand("git add docs/tasks/1-x.md plugins/x.mjs").blocked, false);
+  assert.equal(analyzeShellCommand("git commit -m msg -- docs/tasks/1-x.md plugins/x.mjs").blocked, false);
+});
+
 test("ignores destructive git prose inside quoted arguments", () => {
   assert.equal(analyzeShellCommand('git commit -m "avoid git reset --hard" -- docs/a.md').blocked, false);
   assert.equal(analyzeShellCommand('git commit -m "explain -a option" -- docs/a.md').blocked, false);

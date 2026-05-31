@@ -7,13 +7,16 @@ Invoke `Skill` with `superpowers:dispatching-parallel-agents` first. Adopt its d
 ## Inputs
 
 - `discovery` and the `agents` array from Phase 2.
+- `operationalProfile` / `liteProfile` from Phase 1.
 
 ## Steps
 
 1. Compute the file list:
    - For each entry in `agents`:
-     - If `name` starts with `qa-`: template = `templates/agents/qa.md.hbs`, context = `{ ...discovery, persona: name.slice(3) }`.
+     - If `templates/agents/<name>.md.hbs` exists: use that exact template, context = `{ ...discovery, persona: "" }`.
+     - Else if `name` starts with `qa-`: template = `templates/agents/qa.md.hbs`, context = `{ ...discovery, persona: name.slice(3) }`.
      - Else: template = `templates/agents/<name>.md.hbs`, context = `{ ...discovery, persona: "" }`.
+   - Operational profile must include the orchestrator and reviewer personas produced in Phase 2. Lite profile renders only the minimal role roster and skips operational reviewer personas.
 
 2. **Fan out** the render+write work. Each subagent gets one role:
    ```

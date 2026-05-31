@@ -3,8 +3,7 @@
 ## Preflight (run before Phase 1 proper)
 
 1. Confirm `pwd` is a git repository (`.git/` exists). If not: print `git init` suggestion, abort.
-2. Check for existing artefacts. Abort (unless `--force` or `--merge`) if any of these exist:
-   - `CLAUDE.md` (unless `--merge` set)
+2. Check for existing artefacts. Preserve existing `CLAUDE.md` via sentinel merge in Phase 2. Abort (unless `--force` or `--merge`) if any of these generated artefacts already exist:
    - `.claude/agents/` non-empty
    - `.claude/hooks/` contains any of `context-mode-router.mjs`, `session-summary.mjs`, `cache-heal.mjs`
 3. Read `~/.claude/plugins/installed_plugins.json` and the active `settings.json` `enabledPlugins`. Call:
@@ -13,7 +12,8 @@
    const scan = scanPlugins({ installedPlugins, enabledPlugins, required: ["context-mode@context-mode", "superpowers@claude-plugins-official"] });
    ```
    Stash `scan` for Phase 5. Do NOT abort on missing plugins.
-4. Read `.claude/.agent-init-state.json` if present. If `--resume` and `max(state.phases[*].phase) >= 1`, skip Phase 1 proper.
+4. Call `scanFoundationState` using installed plugin IDs from the plugin scan. Stash the result as `degradedFoundations`/`foundation_state` for later phases. Continue when degraded; Phase 5 prints the update plan.
+5. Read `.claude/.agent-init-state.json` if present. If `--resume` and `max(state.phases[*].phase) >= 1`, skip Phase 1 proper.
 
 ## Phase 1 proper
 
@@ -37,28 +37,35 @@
 
    Stash `ctx.interactionLang` for use in later phases — agent templates inherit it via `{{interactionLang}}` so dispatched subagents speak the same language.
 
-1. Invoke `Skill` with `superpowers:brainstorming` and these prompts (with the language directive from step 0 prepended when applicable):
+1. **Resolve profile.** `lite = flags.lite || flags.theme === "lite"`. Default profile is operational. If `--theme=lite` was used, print a deprecation note and behave exactly as `--lite`.
+2. Invoke `Skill` with `superpowers:brainstorming` and these prompts (with the language directive from step 0 prepended when applicable):
    - Project purpose (1-2 sentences for CLAUDE.md preamble)
    - Size: small / medium / large (override: `--size`)
    - QA personas (override: `--qa`)
    - Deploy targets
    - Special constraints (compliance, performance budgets, etc.)
-2. Run `detectProject(cwd)` from `lib/detect-stack.mjs`. It returns `{ stack, runtime, services }`. Stash result.
-3. Build the discovery context object:
+3. Run `detectProject(cwd)` from `lib/detect-stack.mjs`. It returns `{ stack, runtime, services }`. Stash result.
+4. Call `detectGuideDirs(projectRoot)` and store the result as `local_guides` in state discovery.
+5. Build the discovery context object:
    ```javascript
    const detected = detectProject(cwd);   // { stack, runtime, services }
+   const local_guides = lite ? [] : detectGuideDirs(cwd);
    const ctx = {
      purpose: "...",                 // from brainstorming
      size: "medium",                 // from brainstorming or --size
      qa_personas: ["auth"],          // from brainstorming or --qa
      deploy_targets: "vercel",       // from brainstorming
      constraints: "",                // from brainstorming
+     liteProfile: lite,
+     operationalProfile: !lite,
+     degradedFoundations: foundationState.degraded,
+     local_guides,
      ...detected,                    // stack, runtime, services
      services_str: detected.services.join(", "), // pre-joined for template
    };
    ```
-4. Update `.claude/.agent-init-state.json` (create with `{ "phases": [] }` if missing). Set top-level `discovery` and `plugin_scan`, then push `{ "phase": 1, "completedAt": "<iso>" }` onto `phases`. Use atomic write: temp file + rename.
-5. Do not commit yet. Phase 5 makes a single bootstrap commit.
+6. Update `.claude/.agent-init-state.json` (create with `{ "phases": [] }` if missing). Set top-level `discovery`, `plugin_scan`, and `foundation_state`, then push `{ "phase": 1, "completedAt": "<iso>" }` onto `phases`. Use atomic write: temp file + rename.
+7. Do not commit yet. Phase 5 makes a single bootstrap commit.
 
 ## Output to user
 

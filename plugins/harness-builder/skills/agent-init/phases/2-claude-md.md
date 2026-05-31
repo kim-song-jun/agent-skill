@@ -4,6 +4,7 @@
 
 - `discovery` from Phase 1 (`purpose`, `stack`, `deploy_targets`, `constraints`)
 - `size`, `qa_personas` (drives the `agents` array passed to the template)
+- `operationalProfile`, `liteProfile`, `degradedFoundations`, and `local_guides` from Phase 1
 
 ## Steps
 
@@ -25,11 +26,15 @@
    | backend-dev | "implement backend code or migrations" |
    | doc-writer | "produce user-facing or API documentation" |
 
-2. Read `templates/CLAUDE.md.hbs`.
-3. Render with `render(tpl, { ...discovery, agents })`.
-4. Write `CLAUDE.md` at project root.
-   - If `--merge` and the file exists: append `\n\n---\n\n## Harness\n\n<rendered content>` instead of overwriting.
-5. Push `{ "phase": 2, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`.
+2. If `operationalProfile` is true, add the operational roles required for task-ledger work and review gates (`orchestrator`, `integration-dev`, `verification-reviewer`, `qa-reviewer`, `design-reviewer`, `security-reviewer`, `data-reviewer`) unless already present. Lite mode keeps only the size/persona roster above.
+3. Read `templates/CLAUDE.md.hbs`.
+4. Render root `CLAUDE.md` with `render(tpl, { ...discovery, agents, operationalProfile: !liteProfile, liteProfile, degradedFoundations })`.
+5. Write `CLAUDE.md` at project root.
+   - If the file exists, use `mergeSentinelSection` for existing `CLAUDE.md`; never overwrite user-owned content outside sentinel markers.
+   - If the file does not exist, write the rendered content.
+   - `--force` may replace generated files, but still preserve user-owned content outside sentinel markers when sentinel markers are present.
+6. When operational, render `templates/local-guides/CLAUDE.md.hbs` for every `local_guides[]` entry. Use `mergeSentinelSection` when a local guide already exists.
+7. Push `{ "phase": 2, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`.
 
 ## Output to user
 
