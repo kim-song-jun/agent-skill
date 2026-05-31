@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { render } from "../../plugins/harness-builder/skills/agent-init/lib/render.mjs";
@@ -16,6 +18,10 @@ function snapshot(name, actual) {
   }
   const expected = readFileSync(snapPath, "utf-8");
   assert.equal(actual, expected, `Snapshot mismatch for ${name}. Re-run with UPDATE_SNAPSHOTS=1 to update.`);
+}
+
+function snapshotFileName(tplRel, tag) {
+  return `${tplRel.replace(/\//g, "_")}__${tag}.snap`;
 }
 
 test("substitutes simple variables", () => {
@@ -110,6 +116,8 @@ const EXPECTED_OPERATIONAL_TEMPLATES = [
   "agents/data-reviewer.md.hbs",
 ];
 
+const OPERATIONAL_ONLY_TEMPLATES = new Set(EXPECTED_OPERATIONAL_TEMPLATES);
+
 function listTemplates(dir, base = "") {
   return readdirSync(dir, { withFileTypes: true }).flatMap(e => {
     const p = `${base}${e.name}`;
@@ -117,11 +125,36 @@ function listTemplates(dir, base = "") {
   });
 }
 
+function fixturesForTemplate(tplRel) {
+  return FIXTURES.filter(fx => !(fx.tag === "lite-profile" && OPERATIONAL_ONLY_TEMPLATES.has(tplRel)));
+}
+
 test("includes operational Claude templates in render coverage", () => {
   const templates = new Set(listTemplates(TEMPLATES_DIR));
   for (const tplRel of EXPECTED_OPERATIONAL_TEMPLATES) {
     assert.ok(templates.has(tplRel), `missing template: ${tplRel}`);
   }
+});
+
+test("lite profile snapshots only templates lite mode renders", () => {
+  for (const tplRel of OPERATIONAL_ONLY_TEMPLATES) {
+    assert.equal(
+      fixturesForTemplate(tplRel).some(fx => fx.tag === "lite-profile"),
+      false,
+      `lite-profile should not snapshot operational-only template: ${tplRel}`
+    );
+    assert.equal(
+      existsSync(resolve(here, "__snapshots__", snapshotFileName(tplRel, "lite-profile"))),
+      false,
+      `stale lite-profile snapshot should not exist for operational-only template: ${tplRel}`
+    );
+  }
+
+  assert.equal(
+    fixturesForTemplate("CLAUDE.md.hbs").some(fx => fx.tag === "lite-profile"),
+    true,
+    "lite-profile should still snapshot root CLAUDE.md.hbs"
+  );
 });
 
 test("lite Claude scaffold omits operational hooks and task ledger guidance", () => {
@@ -141,13 +174,79 @@ test("lite Claude scaffold omits operational hooks and task ledger guidance", ()
   assert.match(out, /docs\/superpowers\/plans\//);
 });
 
+test("task ledger check rejects active index entries pointing to missing task docs", () => {
+  const project = mkdtempSync(resolve(tmpdir(), "agent-task-ledger-check-"));
+  try {
+    mkdirSync(resolve(project, "scripts"), { recursive: true });
+    mkdirSync(resolve(project, "docs", "tasks"), { recursive: true });
+    copyFileSync(
+      resolve(TEMPLATES_DIR, "task-ledger", "agent-task-ledger-check.mjs"),
+      resolve(project, "scripts", "agent-task-ledger-check.mjs")
+    );
+    writeFileSync(resolve(project, "docs", "tasks", "_template.md"), "# Template\n");
+    writeFileSync(resolve(project, "docs", "tasks", "index.md"), [
+      "# Task Ledger",
+      "",
+      "## Active",
+      "",
+      "- [ ] [Missing task](docs/tasks/1-missing.md)",
+      "- [ ] docs/tasks/_handoff-template.md",
+      "- [ ] docs/tasks/not-markdown.txt",
+      "- [ ] docs/tasks/ignored.md.bak",
+      "",
+      "## Done",
+      "",
+      "- [x] docs/tasks/2-archived-missing.md",
+      "",
+    ].join("\n"));
+    writeFileSync(resolve(project, "docs", "tasks", "1-valid.md"), [
+      "# Valid",
+      "",
+      "## Goal",
+      "",
+      "## Acceptance",
+      "",
+      "## Phases",
+      "",
+      "## Decision Matrix",
+      "",
+      "## Ambiguity Log",
+      "",
+      "## Progress Snapshot",
+      "",
+      "## Verification",
+      "",
+    ].join("\n"));
+
+    const result = spawnSync(process.execPath, ["scripts/agent-task-ledger-check.mjs", "docs/tasks/1-valid.md"], {
+      cwd: project,
+      encoding: "utf-8",
+    });
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /missing active task.*docs\/tasks\/1-missing\.md/s);
+    assert.doesNotMatch(result.stderr, /docs\/tasks\/2-archived-missing\.md/);
+    assert.doesNotMatch(result.stderr, /docs\/tasks\/ignored\.md/);
+  } finally {
+    rmSync(project, { recursive: true, force: true });
+  }
+});
+
+test("task ledger template progress snapshot includes current git state", () => {
+  const tpl = readFileSync(resolve(TEMPLATES_DIR, "task-ledger", "_template.md.hbs"), "utf-8");
+  const out = render(tpl, { title: "Rendered Task" });
+
+  assert.match(out, /## Progress Snapshot/);
+  assert.match(out, /^Current git state:/m);
+});
+
 for (const tplRel of listTemplates(TEMPLATES_DIR)) {
   if (!tplRel.endsWith(".hbs")) continue;
   const tpl = readFileSync(resolve(TEMPLATES_DIR, tplRel), "utf-8");
-  for (const fx of FIXTURES) {
+  for (const fx of fixturesForTemplate(tplRel)) {
     test(`snapshot: ${tplRel} × ${fx.tag}`, () => {
       const out = render(tpl, { title: "Rendered Task", guidePath: "src", ...fx.ctx, persona: "auth" });
-      snapshot(`${tplRel.replace(/\//g, "_")}__${fx.tag}`, out);
+      snapshot(snapshotFileName(tplRel, fx.tag).replace(/\.snap$/, ""), out);
     });
   }
 }
