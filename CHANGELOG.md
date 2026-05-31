@@ -7,8 +7,9 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 ## Unreleased
 
 - Changed `/agent-init` default to operational/heavy scaffold with `/agent-init --lite` as the minimal path.
-- Added task ledger scaffolding, sentinel merge policy, Claude/Codex hard policy artifacts, Gemini soft rules, and changed-file reviewer classifier.
+- Added task ledger scaffolding, sentinel merge policy, Claude hard policy artifacts, Codex command-policy artifacts, Gemini soft rules, and changed-file reviewer classifier.
 - Added foundation detection/update guidance for superpowers and context-mode.
+- Updated release docs to reflect current Codex command-hook schema and prompt-level/sequential Codex floor workflows.
 
 ## QA team vs Verification team — 2026-05-22  (`harness-floor` v0.5.0)
 

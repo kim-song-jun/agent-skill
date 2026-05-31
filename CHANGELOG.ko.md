@@ -7,8 +7,9 @@
 ## 미출시
 
 - `/agent-init` 기본값을 운영형/무거운 scaffold로 변경하고, 최소 경로는 `/agent-init --lite`로 제공.
-- task ledger 스캐폴딩, sentinel 병합 정책, Claude/Codex hard policy 산출물, Gemini soft rules, 변경 파일 기반 reviewer classifier 추가.
+- task ledger 스캐폴딩, sentinel 병합 정책, Claude hard policy 산출물, Codex command-policy 산출물, Gemini soft rules, 변경 파일 기반 reviewer classifier 추가.
 - superpowers와 context-mode를 위한 foundation 감지/업데이트 가이드 추가.
+- 현재 Codex command-hook schema와 프롬프트/순차 Codex floor 워크플로에 맞게 릴리즈 문서 갱신.
 
 ## Visual-QA runtime wiring + agent-init i18n — 2026-05-22  (`harness-floor` v0.5.1)
 

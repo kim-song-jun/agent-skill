@@ -16,17 +16,17 @@ mkdir my-app && cd my-app && git init
 Produces:
 - `CLAUDE.md` with operating principles + agent index + Floor Theme section
 - `.claude/agents/*.md` — 3 to 9 role files (small/medium/large)
-- `.claude/hooks/*.mjs` — context-mode-router, session-summary, cache-heal
-- `.claude/settings.local.json` — registers the 3 hooks
+- `.claude/hooks/*.mjs` — context-mode-router, session-summary, cache-heal, and operational policy hook
+- `.claude/settings.local.json` — registers the core hooks and policy hook
 - `.visual-qa.json` + `.agent-all.json` — Floor configs
 
 ### Minimal harness (lite)
 
 ```
-/agent-init --theme=lite
+/agent-init --lite
 ```
 
-Skips `.visual-qa.json`, `.agent-all.json`, and the Floor section in CLAUDE.md.
+Skips task ledger files, policy hooks, `.visual-qa.json`, `.agent-all.json`, and the Floor section in CLAUDE.md.
 
 ### Existing project (preserve existing CLAUDE.md)
 
@@ -138,15 +138,16 @@ The session won't end until either:
 
 ## Codex / non-Claude-Code integration
 
-The `codex@openai-codex` plugin pairs well with `harness-floor`:
+For Codex CLI projects, use the Codex-specific builder and floor ports:
 
 ```
-/agent-all "Hard refactor that needs second-opinion" --wave-size=medium
-# When a wave subagent reports BLOCKED, invoke:
-/codex:rescue
+/codex-init
+run /agent-all for "Hard refactor that needs second-opinion"
 ```
 
-For pure Codex CLI usage (no Claude Code), the lib modules are portable Node.js:
+`/codex-init` writes `AGENTS.md`, `.codex/skills/*`, `.codex/hooks/agent-policy-hook.mjs`, and prints a current `~/.codex/config.toml` snippet using Codex command hooks such as `[[hooks.PreToolUse]]`. Codex floor workflows run prompt-level/sequential dispatch because current Codex command hooks do not expose the Task-style subagent dispatch surface used by Claude Code.
+
+For direct library usage, the core modules are portable Node.js:
 
 ```bash
 node -e "
@@ -236,8 +237,7 @@ The protocol skips entirely. Verification + reviewer-audit hook validation conti
 |---|---|---|
 | Claude Code | `floor-policy` hook (PreToolUse + PostToolUse on Task) | 🟢 Hard |
 | Copilot CLI | `.github/hooks/decision-protocol.json` | 🟢 Hard |
-| Codex CLI | `[[hooks.agent]]` in `~/.codex/config.toml` (manual merge) | 🟢 Hard |
+| Codex CLI | Prompt-level/sequential floor workflow; command hooks only for shell/policy events | 🟡 Prompt-level |
 | Cursor | `.cursor/rules/decision-protocol.mdc` (always-loaded rule) | 🟡 Soft |
 | Gemini CLI | `.gemini/agent-all-decision-protocol.md` (referenced from GEMINI.md) | 🟡 Soft |
 | VS Code Copilot | `.github/agent-all/decision-protocol.md` (from copilot-instructions.md) | 🟡 Soft |
-

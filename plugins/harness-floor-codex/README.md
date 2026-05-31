@@ -2,31 +2,35 @@
 
 > **Decision-surfacing enforcement: 🟡 Prompt-level for Codex floor workflows.** Current Codex command hooks do not expose a Task-like subagent dispatch surface for this pipeline. The Codex floor port uses sequential skill dispatch and embeds the decision, verification, and reviewer directives in prompt text.
 
-Scaffold-level visual-qa support for Codex CLI. Emits:
+Operational floor support for Codex CLI. The Codex port uses sequential skill
+dispatch for agent-all and visual-qa work; prompt directives carry the
+decision-surfacing, verification, and reviewer-audit contracts.
+
+Emits:
 
 - `.visual-qa.json` at project root (capture matrix configuration)
+- `.agent-all.json` at project root
 - Playwright MCP snippet printed to stdout — merge into `~/.codex/config.toml`
 
 ## Install
 
 ```
-codex plugins install <repo-url>
+./scripts/install-platform.sh --platform=codex --theme=floor --target=/path/to/project
 ```
 
 ## Usage
 
-Run `/visual-qa-codex` inside Codex CLI. The skill:
+Run `agent-all-codex` or `visual-qa-codex` inside Codex CLI. The skills:
 
-1. Renders `.visual-qa.json` (with confirmation if a file already exists).
-2. Prints the Playwright MCP entry for you to merge into your Codex config.
+1. Load the generated `AGENTS.md` and `.codex/skills/*` role guidance.
+2. Dispatch page/task work sequentially through Codex skill prompts.
+3. Keep verification evidence in generated reports and state files.
+4. Print the Playwright MCP entry for you to merge into Codex config.
 
-## MVP scope
+## Enforcement
 
-This iteration is **scaffold-only**. The full 6-phase visual-qa pipeline
-(preflight → config → discover → capture → aggregate → summary) lives in
-`plugins/harness-floor/skills/visual-qa/SKILL.md` (Claude Code). Porting
-the orchestrator to Codex requires Codex's `agent` hook type for parallel
-page-analysis dispatch and is tracked as a future per-platform spec.
-
-For now, run Playwright commands manually via `shell_command` and analyze
-captured images via `apply_patch` to write reports.
+Codex floor enforcement is prompt-level for subagent protocol because current
+Codex command hooks cover command events, not Task-style subagent lifecycle
+events. Repo-local policy scripts and generated instructions still enforce
+pathspec commits, destructive-command caution, and verification-before-completion
+discipline where the Codex runtime exposes command hooks.

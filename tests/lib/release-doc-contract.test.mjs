@@ -1,0 +1,44 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+function read(path) {
+  return readFileSync(resolve(path), "utf-8");
+}
+
+test("usage docs present --lite as canonical and retire Codex agent-hook hard-enforcement claims", () => {
+  for (const path of ["docs/USAGE.md", "docs/USAGE.ko.md"]) {
+    const body = read(path);
+    assert.match(body, /agent-init --lite/);
+    assert.doesNotMatch(body, /agent-init --theme=lite/);
+    assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
+    assert.match(body, /Codex CLI[\s\S]{0,240}(Prompt-level|프롬프트)/);
+  }
+});
+
+test("readme files describe the current Codex config surface and current test count", () => {
+  for (const path of ["README.md", "README.ko.md"]) {
+    const body = read(path);
+    assert.match(body, /1547\/1547/);
+    assert.doesNotMatch(body, /1279\/1279|1279\+|1279%20passing/);
+    assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
+    assert.match(body, /\[\[hooks\.PreToolUse\]\]|\[mcp_servers\.playwright\]/);
+    assert.match(body, /Codex CLI[\s\S]{0,320}(prompt-level|sequential|프롬프트|순차)/i);
+  }
+});
+
+test("Codex plugin READMEs match the implemented operational and sequential floor ports", () => {
+  const builder = read("plugins/harness-builder-codex/README.md");
+  assert.match(builder, /operational/i);
+  assert.match(builder, /--lite/);
+  assert.match(builder, /AGENTS\.md/);
+  assert.match(builder, /agent-policy-hook\.mjs/);
+  assert.doesNotMatch(builder, /MVP|follow-ups|best-effort instruction/i);
+
+  const floor = read("plugins/harness-floor-codex/README.md");
+  assert.match(floor, /sequential/i);
+  assert.match(floor, /agent-all-codex/);
+  assert.match(floor, /visual-qa-codex/);
+  assert.doesNotMatch(floor, /\[\[hooks\.agent\]\]|scaffold-only|future per-platform spec/i);
+});

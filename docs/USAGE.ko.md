@@ -16,17 +16,17 @@ mkdir my-app && cd my-app && git init
 생성:
 - `CLAUDE.md` (운영 원칙 + 에이전트 인덱스 + Floor 테마 섹션 포함)
 - `.claude/agents/*.md` — 3개에서 9개 역할 파일 (작음/중간/큼)
-- `.claude/hooks/*.mjs` — context-mode-router, session-summary, cache-heal
-- `.claude/settings.local.json` — 3개 훅 등록
+- `.claude/hooks/*.mjs` — context-mode-router, session-summary, cache-heal, 운영 정책 훅
+- `.claude/settings.local.json` — 핵심 훅과 정책 훅 등록
 - `.visual-qa.json` + `.agent-all.json` — Floor 구성
 
 ### 최소 하네스 (lite)
 
 ```
-/agent-init --theme=lite
+/agent-init --lite
 ```
 
-`.visual-qa.json`, `.agent-all.json`, 및 CLAUDE.md의 Floor 섹션을 건너뜁니다.
+task ledger, 정책 훅, `.visual-qa.json`, `.agent-all.json`, 및 CLAUDE.md의 Floor 섹션을 건너뜁니다.
 
 ### 기존 프로젝트 (기존 CLAUDE.md 유지)
 
@@ -138,15 +138,16 @@ npm run dev                                       # dev 서버 :3000에서
 
 ## Codex / Claude Code가 아닌 통합
 
-`codex@openai-codex` 플러그인은 `harness-floor`와 잘 작동합니다:
+Codex CLI 프로젝트에서는 Codex 전용 builder/floor 포트를 사용합니다:
 
 ```
-/agent-all "Hard refactor that needs second-opinion" --wave-size=medium
-# 웨이브 서브에이전트가 BLOCKED를 보고할 때, 호출:
-/codex:rescue
+/codex-init
+run /agent-all for "Hard refactor that needs second-opinion"
 ```
 
-순수 Codex CLI 사용 (Claude Code 없음)의 경우, lib 모듈은 이식 가능한 Node.js입니다:
+`/codex-init`은 `AGENTS.md`, `.codex/skills/*`, `.codex/hooks/agent-policy-hook.mjs`를 쓰고, `[[hooks.PreToolUse]]` 같은 현재 Codex command hook 형식의 `~/.codex/config.toml` 스니펫을 출력합니다. Codex floor 워크플로는 현재 Codex command hook이 Claude Code의 Task-style subagent dispatch 표면을 제공하지 않기 때문에 프롬프트/순차 dispatch로 동작합니다.
+
+직접 라이브러리로 사용할 때, 핵심 모듈은 이식 가능한 Node.js입니다:
 
 ```bash
 node -e "
@@ -235,8 +236,7 @@ Protocol 전체 스킵. Verification + reviewer-audit hook은 별도로 계속.
 |---|---|---|
 | Claude Code | `floor-policy` hook (PreToolUse + PostToolUse on Task) | 🟢 Hard |
 | Copilot CLI | `.github/hooks/decision-protocol.json` | 🟢 Hard |
-| Codex CLI | `~/.codex/config.toml`의 `[[hooks.agent]]` (수동 merge) | 🟢 Hard |
+| Codex CLI | 프롬프트/순차 floor 워크플로; command hook은 shell/policy 이벤트만 담당 | 🟡 프롬프트 |
 | Cursor | `.cursor/rules/decision-protocol.mdc` (always-loaded rule) | 🟡 Soft |
 | Gemini CLI | `.gemini/agent-all-decision-protocol.md` (GEMINI.md에서 참조) | 🟡 Soft |
 | VS Code Copilot | `.github/agent-all/decision-protocol.md` (copilot-instructions.md에서) | 🟡 Soft |
-

@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-stable--cli--verification--pending-blue) ![tests](https://img.shields.io/badge/tests-1279%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-stable--cli--verification--pending-blue) ![tests](https://img.shields.io/badge/tests-1547%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..." --loop --qa` per feature; the agent brainstorms → plans → writes → tests → **visually QAs every page** → opens the PR — and keeps iterating until tests AND the UI both pass — without you babysitting every turn.
 
@@ -475,7 +475,7 @@ Default installs all three themes (builder + floor + thrift). Use `--theme=floor
 | **Cursor** | `.cursor/rules/*.mdc`, `.cursor/agents/*.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | All native. `is_background: true` on parallel subagents. |
 | **Copilot CLI** | `.github/copilot-instructions.md`, `.github/hooks/*.json`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | Hooks integrate with `gh copilot`. |
 | **VS Code Copilot** | `.github/copilot-instructions.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | VS Code Copilot extension reads `.github/copilot-instructions.md` automatically. Hooks dir written but unused by the editor. |
-| **Codex CLI** | `AGENTS.md`, `.codex/skills/<role>/SKILL.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | A `[mcp_servers.playwright]` + `[[hooks.agent]]` snippet is printed to stdout — **merge manually** into `~/.codex/config.toml`. |
+| **Codex CLI** | `AGENTS.md`, `.codex/skills/<role>/SKILL.md`, `.codex/hooks/agent-policy-hook.mjs`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | A `[mcp_servers.playwright]` snippet and current command-hook snippets such as `[[hooks.PreToolUse]]` are printed to stdout. Floor workflows use prompt-level/sequential dispatch because Codex command hooks do not expose Claude Code's Task-style subagent surface. |
 | **Gemini CLI** | `GEMINI.md`, `.gemini/skills/<role>/SKILL.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | A `mcpServers` snippet is printed to stdout — **merge manually** into `~/.gemini/settings.json`. |
 
 ### Once installed, how do you actually use it?
@@ -674,7 +674,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 - **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for design docs per plugin.
 - **All 17 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
-- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1279+ tests, all green.
+- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1547+ tests, all green.
 - **Per-platform porting** — see specs ending in `-impl-spec.md` or `-decomposition.md` under `docs/superpowers/specs/`.
 - **Cross-platform support matrix** — see [docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md](docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md).
 - **Hook precedence (if you're mixing plugins that all register hooks)** — see [docs/superpowers/specs/2026-05-18-hook-precedence-integration.md](docs/superpowers/specs/2026-05-18-hook-precedence-integration.md).
@@ -685,7 +685,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 | Layer | Status | Note |
 |---|---|---|
-| Unit/integration tests | ✅ **1279/1279 passing** | Mock toolCallers + isolated lib tests; +33 for decision-surfacing |
+| Unit/integration tests | ✅ **1547/1547 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, and visual-qa regressions |
 | Install renderers (5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
 | Marketplace registration | ✅ 17 plugins listed | sync between local + origin |
 | Claude Code skills | ✅ ship today | core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug` |
@@ -703,7 +703,7 @@ Decision-surfacing prompts and panels are localized. Set `.agent-all.json` `lang
 
 ## Known limitations
 
-- **Cursor / Gemini / VS Code Copilot decision-surfacing enforcement is soft.** Those platforms don't expose tool-call hooks, so the protocol is prompt-injected via rules / `GEMINI.md` / `copilot-instructions.md`. A non-compliant subagent cannot be blocked at the harness layer. Claude Code / Copilot CLI / Codex CLI (after manual `[[hooks.agent]]` merge) get hard hook enforcement.
+- **Cursor / Gemini / VS Code Copilot decision-surfacing enforcement is soft.** Those platforms don't expose tool-call hooks, so the protocol is prompt-injected via rules / `GEMINI.md` / `copilot-instructions.md`. A non-compliant subagent cannot be blocked at the harness layer. Claude Code and Copilot CLI get Task-level hard enforcement; Codex CLI uses current command hooks for shell/policy events, while floor subagent workflows remain prompt-level/sequential.
 
 - **Non-TTY auto-pick can be wrong.** Overnight runs auto-resolve every decision to the subagent's `recommended_index`. Mistakes only surface the next morning. Every auto-pick is logged with reasoning to `docs/agent-all/iter-<N>/decisions.md` so the next iteration's plan can flag past picks for re-review.
 
@@ -728,7 +728,7 @@ MIT License. PRs welcome — open an issue first for design discussion on anythi
 
 Before submitting:
 ```bash
-node --test                              # 1279/1279 must pass
+node --test                              # 1547/1547 must pass
 node scripts/sync-lib.mjs --check        # vendored render.mjs copies in sync
 ```
 

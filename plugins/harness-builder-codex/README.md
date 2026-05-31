@@ -1,18 +1,26 @@
 # harness-builder-codex
 
-Run an `agent-init`-style scaffold inside Codex CLI. Emits:
+Run an operational `agent-init`-style scaffold inside Codex CLI. The default
+profile is heavy; pass `--lite` for the minimal scaffold.
+
+Emits:
 
 - `AGENTS.md` at project root
+- folder-level `AGENTS.md` guides for detected app/package directories
 - `.codex/skills/<role>/SKILL.md` per role
-- `AGENTS.md` as the cross-platform fallback
+- `.codex/hooks/agent-policy-hook.mjs`
+- task-ledger files under `docs/tasks/`
+- a current `~/.codex/config.toml` snippet on stdout using command-hook tables
+  such as `[[hooks.PreToolUse]]`
 
 ## Install
 
 ```bash
-codex plugins install <repo-url>
+./scripts/install-platform.sh --platform=codex --target=/path/to/project
 ```
 
-Note: confirm exact install command with your Codex CLI version — best-effort instruction.
+Use `--force` when intentionally replacing generated artifacts in an existing
+project.
 
 ## Usage
 
@@ -22,9 +30,23 @@ Run `/codex-init` inside Codex CLI. The skill scaffolds:
 - Size (small/medium/large)
 - QA personas
 - Deploy targets
+- Operational task ledger and role roster
+- Policy hook files
 
-## Out of scope (MVP)
+Lite mode:
 
-This iteration renders memory + role files only. Hooks, MCP wiring, brainstorm integration come in follow-ups.
+```
+/codex-init --lite
+```
 
-See `docs/superpowers/specs/2026-05-18-cross-platform-plugins-design.md`.
+Lite mode keeps root guidance and the minimal skill roster, and skips task
+ledger, policy hooks, and config patch prompts.
+
+## Codex Hook Surface
+
+Codex command hooks are used for shell/policy events only. The floor pipeline's
+agent-level decision and reviewer protocol is prompt-level because current
+Codex command hooks do not expose Claude Code's Task-style subagent dispatch
+surface.
+
+See `docs/superpowers/specs/2026-06-01-operational-agent-init-agent-all-design.md`.
