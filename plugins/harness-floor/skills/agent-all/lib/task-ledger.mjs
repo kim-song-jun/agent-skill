@@ -28,8 +28,8 @@ export function validateTaskDoc(text) {
   }
   for (const section of sections) {
     if (EXCLUDED_CHECKBOX_SECTIONS.has(section.title)) continue;
-    const unchecked = section.body.match(/^- \[ \]\s+.+$/gm) || [];
-    for (const item of unchecked) errors.push(`unchecked item in ${section.title}: ${item.replace(/^- \[ \]\s+/, "")}`);
+    const unchecked = section.body.match(/^\s*- \[ \]\s+.+$/gm) || [];
+    for (const item of unchecked) errors.push(`unchecked item in ${section.title}: ${item.replace(/^\s*- \[ \]\s+/, "")}`);
   }
   return { ok: errors.length === 0, errors };
 }

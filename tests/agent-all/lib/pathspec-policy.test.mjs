@@ -10,6 +10,13 @@ test("blocks destructive git commands", () => {
   assert.equal(analyzeShellCommand("git push --force-with-lease").blocked, true);
 });
 
+test("blocks destructive git commands after global options", () => {
+  assert.equal(analyzeShellCommand("git -C . commit -m msg").blocked, true);
+  assert.equal(analyzeShellCommand("git -C . commit -a -m msg").blocked, true);
+  assert.equal(analyzeShellCommand("git -C . commit --amend").blocked, true);
+  assert.equal(analyzeShellCommand("git -C . reset --hard").blocked, true);
+});
+
 test("blocks git add -A and git commit -a", () => {
   assert.equal(analyzeShellCommand("git add -A").blocked, true);
   assert.equal(analyzeShellCommand("git add --all").blocked, true);
@@ -21,6 +28,12 @@ test("requires pathspec for git commit in operational mode", () => {
   assert.equal(analyzeShellCommand("git commit -m msg").blocked, true);
   assert.equal(analyzeShellCommand('git commit -m "msg -- text"').blocked, true);
   assert.equal(analyzeShellCommand("git commit -m msg -- docs/a.md").blocked, false);
+});
+
+test("ignores destructive git prose inside quoted arguments", () => {
+  assert.equal(analyzeShellCommand('git commit -m "avoid git reset --hard" -- docs/a.md').blocked, false);
+  assert.equal(analyzeShellCommand('git commit -m "explain -a option" -- docs/a.md').blocked, false);
+  assert.equal(analyzeShellCommand('echo "git reset --hard"').blocked, false);
 });
 
 test("blocks destructive docker volume removal", () => {

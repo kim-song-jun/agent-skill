@@ -42,3 +42,9 @@ test("unchecked in-scope checkbox fails while Backlog and Follow-up are ignored"
   assert.doesNotMatch(result.errors.join("\n"), /outside current task/);
   assert.doesNotMatch(result.errors.join("\n"), /outside hard gate/);
 });
+
+test("indented unchecked in-scope checkbox fails", () => {
+  const result = validateTaskDoc(VALID.replace("- [x] build", "  - [ ] indented build"));
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join("\n"), /unchecked item in Phases: indented build/);
+});
