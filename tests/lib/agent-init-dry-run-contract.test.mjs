@@ -82,3 +82,45 @@ test("phase 5 handles dry-run before reading persisted plugin scan state", () =>
     "Phase 5 dry-run must run before .agent-init-state.json reads or explicitly use in-memory plugin_scan context",
   );
 });
+
+test("phase 5 creates docs tasks directory before writing task ledger files", () => {
+  const phase5 = readPhase("5-wire.md");
+  const docsTasksIndex = phase5.indexOf("docs/tasks/");
+  assert.notEqual(docsTasksIndex, -1, "Phase 5 must mention docs/tasks/");
+  const mkdirIndex = phase5.indexOf("`mkdir -p`", docsTasksIndex);
+  assert.notEqual(mkdirIndex, -1, "Phase 5 must explicitly create docs/tasks/ with mkdir -p");
+
+  const taskLedgerMatch = phase5.match(/write task ledger files/i);
+  assert.ok(taskLedgerMatch, "Phase 5 must still describe task ledger writes");
+  assert.ok(
+    mkdirIndex < taskLedgerMatch.index,
+    "Phase 5 must create docs/tasks/ before writing task ledger files",
+  );
+});
+
+test("theme context is resolved before phase 2 rendering and phase 5 does not backfill it", () => {
+  const phase1 = readPhase("1-discover.md");
+  const phase2 = readPhase("2-claude-md.md");
+  const phase5 = readPhase("5-wire.md");
+
+  assert.match(
+    phase1,
+    /Resolve theme[\s\S]*floorTheme[\s\S]*Build the discovery context object/,
+    "Phase 1 must resolve theme/floorTheme before building discovery context",
+  );
+  assert.match(
+    phase2,
+    /floorTheme[\s\S]*render\(tpl, \{[\s\S]*floorTheme/,
+    "Phase 2 must include floorTheme in the CLAUDE.md render context",
+  );
+  assert.doesNotMatch(
+    phase5,
+    /Set Phase 2 context flag `floorTheme: true`/,
+    "Phase 5 must not set a Phase 2 render flag after CLAUDE.md has already rendered",
+  );
+  assert.match(
+    phase5,
+    /use[s]? Phase 1[^\n]*theme/i,
+    "Phase 5 must consume the already-resolved Phase 1 theme decision",
+  );
+});

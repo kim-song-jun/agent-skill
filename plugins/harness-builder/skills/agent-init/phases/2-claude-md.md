@@ -4,7 +4,7 @@
 
 - `discovery` from Phase 1 (`purpose`, `stack`, `deploy_targets`, `constraints`)
 - `size`, `qa_personas` (drives the `agents` array passed to the template)
-- `operationalProfile`, `liteProfile`, `degradedFoundations`, and `local_guides` from Phase 1
+- `operationalProfile`, `liteProfile`, `theme`, `floorTheme`, `degradedFoundations`, and `local_guides` from Phase 1
 
 ## Steps
 
@@ -28,7 +28,7 @@
 
 2. If `operationalProfile` is true, add the operational roles required for task-ledger work and review gates (`orchestrator`, `integration-dev`, `verification-reviewer`, `qa-reviewer`, `design-reviewer`, `security-reviewer`, `data-reviewer`) unless already present. Lite mode keeps only the size/persona roster above.
 3. Read `templates/CLAUDE.md.hbs`.
-4. Render root `CLAUDE.md` with `render(tpl, { ...discovery, agents, operationalProfile: !liteProfile, liteProfile, degradedFoundations })`.
+4. Render root `CLAUDE.md` with `render(tpl, { ...discovery, agents, operationalProfile: !liteProfile, liteProfile, theme, floorTheme, degradedFoundations })`.
 5. If `--dry-run` is set, print the planned root files and local guide files for this phase without writing:
    - Root files: `CLAUDE.md`.
    - Local guide files: every operational `local_guides[]` target that would receive `CLAUDE.md`.

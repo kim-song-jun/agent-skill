@@ -37,7 +37,7 @@
 
 5. Update `.gitignore`. If `.claude/.agent-init-state.json` is not already listed, append it. Idempotent.
 
-6. Make sure `docs/superpowers/specs/`, `docs/superpowers/plans/`, and `docs/decisions/` exist. `mkdir -p` for each. Add a `.gitkeep` to each.
+6. Make sure `docs/superpowers/specs/`, `docs/superpowers/plans/`, `docs/decisions/`, and `docs/tasks/` exist. `mkdir -p` for each. Add a `.gitkeep` to each.
 
 7. If operational mode is active, write task ledger files:
    - `docs/tasks/CLAUDE.md`
@@ -48,10 +48,10 @@
 
    Lite mode skips task ledger and policy hook generation.
 
-8. **Theme resolution.** Determine theme:
-   - If `--lite` or `--theme=lite` was passed: theme = `lite`. Skip steps 8a and 8b entirely.
-   - Else if `--theme=floor` was passed OR no theme flag was passed: theme = `floor` (default). Continue to 8a and 8b.
-   - Backwards compat: if `--visual-qa` was passed without `--theme=*`: render only `.visual-qa.json` (legacy behavior); skip 8b, do not set floorTheme.
+8. **Theme wiring.** Use Phase 1's already-resolved `theme` and `floorTheme` from discovery:
+   - If `theme === "lite"`: skip steps 8a and 8b entirely.
+   - Else if `theme === "floor"` and `floorTheme === true`: continue to 8a and 8b.
+   - Backwards compat: if `theme === "legacy-visual-qa"`: render only `.visual-qa.json` (legacy behavior); skip 8b.
 
 8a. If theme is `floor` OR legacy `--visual-qa`: render `.visual-qa.json`.
     - Verify `harness-floor` plugin enabled. If not: print install command, continue (degraded).
@@ -61,7 +61,7 @@
 8b. If theme is `floor` (NOT legacy `--visual-qa` alone): render `.agent-all.json` and enable Floor CLAUDE section.
     - Render `plugins/harness-floor/skills/agent-all/templates/agent-all.config.json.hbs` with `{maxIter: 10, maxCostUSD: 500, waveSize: "large", breakCondition: "npm test"}` and write to `.agent-all.json` at project root.
     - Append `.agent-all-state.json` to `.gitignore` (idempotent — same pattern as `.agent-init-state.json` and `.visual-qa-state.json`).
-    - Set Phase 2 context flag `floorTheme: true` (used by `templates/CLAUDE.md.hbs` for the conditional Floor section).
+    - Do not mutate Phase 2 render context here; `floorTheme` was resolved in Phase 1 before `CLAUDE.md` rendered.
 
 9. If `--update-foundations` is set, run the approved foundation update path after printing the plan. It may run `scripts/update.sh`; global CLI config patching still requires a separate explicit approval.
 
