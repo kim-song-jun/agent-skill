@@ -152,15 +152,15 @@ for (const plugin of ["copilot", "codex", "gemini"]) {
   });
 }
 
-test("harness-floor-codex: prints [[hooks.agent]] snippets in install output", () => {
+test("harness-floor-codex: prints MCP snippet without legacy agent hooks", () => {
   const target = makeTmp();
   try {
     const res = runInit("codex", [target]);
     assert.equal(res.status, 0, res.stderr);
-    assert.match(res.stdout, /\[\[hooks\.agent\]\]/);
-    assert.match(res.stdout, /visual-qa\/page\//);
-    assert.match(res.stdout, /agent-all\/wave\//);
     assert.match(res.stdout, /\[mcp_servers\.playwright\]/);
+    assert.match(res.stdout, /sequential dispatch/i);
+    assert.doesNotMatch(res.stdout, /\[\[hooks\.agent\]\]/);
+    assert.doesNotMatch(res.stdout, /timeout_seconds/);
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

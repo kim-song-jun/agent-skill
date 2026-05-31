@@ -9,14 +9,18 @@
 
 1. Render each TOML hook template (`templates/hooks/thrift-*.toml.hbs`)
    into one composite snippet via `lib/settings-patcher.mjs`'s helper.
-   Each template contributes a `[[hooks.<event>]]` table bracketed
-   by sentinel comment lines:
+   Each template contributes a current Codex hook table plus nested
+   command-handler table bracketed by sentinel comment lines:
 
    ```toml
    # thrift: thrift-pretool-bash-telemetry
-   [[hooks.pre_tool_use]]
-   matcher = "shell_command"
+   [[hooks.PreToolUse]]
+   matcher = "^Bash$"
+
+   [[hooks.PreToolUse.hooks]]
+   type = "command"
    command = "node \"<HOOKS_DIR>/thrift-pretool-bash-telemetry.mjs\""
+   timeout = 10
    # end thrift: thrift-pretool-bash-telemetry
    ```
 
@@ -68,12 +72,11 @@ manually) — only removes the registration.
 
 The patcher is **deliberately minimal**:
 
-- Detects line-prefix `[hooks]` or `[[hooks.<event>]]`. Does NOT
+- Detects line-prefix hook tables such as `[[hooks.PreToolUse]]`. Does NOT
   parse inline-table or multiline-string TOML syntax. Assumes
   hook-related stanzas are at the top level (per Codex docs).
 - Append happens at the **end of file** with a leading newline.
-  If the file lacks a `[hooks]` section, the snippet's
-  `[[hooks.<event>]]` tables stand on their own (TOML is happy).
+  The snippet's event and handler tables stand on their own.
 - Remove finds matching `# thrift: <name>` / `# end thrift: <name>`
   comment lines and deletes the (inclusive) span between them.
 - If sentinels are mismatched or missing, the patcher does nothing

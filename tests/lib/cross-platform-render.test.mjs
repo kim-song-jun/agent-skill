@@ -127,7 +127,8 @@ const CASES = [
   },
   {
     tpl: "plugins/harness-floor-codex/skills/agent-all-codex/templates/codex-hooks-snippet.toml.hbs",
-    contains: ["[[hooks.agent]]", "agent-all/wave/", "codex-agent-dispatch"],
+    contains: ["current Codex hooks", "sequential dispatch"],
+    notContains: ["[[hooks.agent]]", "timeout_seconds", "codex-agent-dispatch"],
   },
   {
     tpl: "plugins/harness-floor-gemini/skills/agent-all-gemini/templates/agent-all.config.json.hbs",
@@ -160,7 +161,8 @@ const CASES = [
   },
   {
     tpl: "plugins/harness-floor-codex/skills/visual-qa-codex/templates/codex-hooks-snippet.toml.hbs",
-    contains: ["[[hooks.agent]]", "visual-qa/page/", "codex-agent-dispatch"],
+    contains: ["current Codex hooks", "sequential dispatch"],
+    notContains: ["[[hooks.agent]]", "timeout_seconds", "codex-agent-dispatch"],
   },
   {
     tpl: "plugins/harness-floor-gemini/skills/visual-qa-gemini/templates/page-prompt.md.hbs",

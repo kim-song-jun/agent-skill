@@ -1,7 +1,7 @@
 // sequential-dispatch.mjs — fallback dispatcher for agent-all-codex.
 //
-// When `[[hooks.agent]]` is not registered (or the user passes
-// `--dispatch=sequential`), we cannot fan-out via `codex agent dispatch`.
+// Current Codex hooks do not expose the older agent-dispatch surface,
+// so this module provides the stable sequential path.
 // Instead we invoke `.codex/skills/<role>/SKILL.md` one task at a time
 // via Codex's CLI surface.
 //

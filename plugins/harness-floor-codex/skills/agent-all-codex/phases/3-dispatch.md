@@ -3,7 +3,7 @@
 ## Inputs (from state)
 
 - `plan.path`
-- `state.dispatch` (`"agent-hook"` or `"sequential"`, set in Phase 0)
+- `state.dispatch` (`"sequential"` for current Codex hooks, set in Phase 0)
 - `config.defaults.waveSize` (or `--wave-size` override)
 - `config.waves[<waveSize>]`
 
@@ -21,29 +21,7 @@
 
 3. For each wave:
 
-   ### Strategy A — `dispatch === "agent-hook"`
-
-   a. Print: `Wave <i+1>/<N> — <waves[i].length> tasks in parallel (agent-hook)`.
-   b. For each task in the wave, dispatch via the `agent` hook:
-      ```
-      shell_command("codex agent dispatch \
-        --role '<task.role>' \
-        --skill '.codex/skills/<task.role>/SKILL.md' \
-        --task-id 'agent-all/wave/<i>/<task.id>' \
-        --body '<task body JSON>'")
-      ```
-      The `agent` hook registered in `~/.codex/config.toml` handles the
-      actual subagent spawn. Capture each dispatch's `agentId` from stdout.
-   c. Await all wave agents via the hook's completion event:
-      ```
-      shell_command("codex agent wait --task-prefix 'agent-all/wave/<i>/' --timeout 1800")
-      ```
-      The wait command blocks until all matching dispatches finish.
-      Returns a JSON array of `{agentId, status, commits, costUSD}`.
-
-   ### Strategy B — `dispatch === "sequential"`
-
-   a. Print: `Wave <i+1>/<N> — <waves[i].length> tasks (sequential fallback)`.
+   a. Print: `Wave <i+1>/<N> — <waves[i].length> tasks (sequential dispatch)`.
    b. For each task in the wave (one at a time):
       - Read `.codex/skills/<task.role>/SKILL.md` and invoke its phases.
       - The role-skill performs the implementation, returns commits.
@@ -61,8 +39,6 @@
 
 ## On error
 
-- `agent-hook` strategy: if dispatch fails (hook crash, etc.): retry once.
-  If still failing, fall back to sequential for this wave only (warn user).
 - `sequential` strategy: if a role-skill returns non-zero: mark task
   `blocked`. If >1 task blocked in a wave: mark wave `incomplete`.
 - `tasks.length === 0`: abort with `plan has no '### Task N' headings`.
@@ -73,7 +49,7 @@ Print one line per wave: `Wave <i>: <completed>/<total> succeeded (strategy=<a>)
 
 ## Per-subagent verification (safety net for unattended runs)
 
-Every dispatched subagent (via `codex agent dispatch` OR sequential `.codex/skills/<role>/SKILL.md` invocation) MUST receive the following directive in its prompt body:
+Every dispatched subagent (via sequential `.codex/skills/<role>/SKILL.md` invocation) MUST receive the following directive in its prompt body:
 
 > Before reporting `STATUS: completed`, invoke `superpowers:verification-before-completion` to run the project's test command (from `.agent-all.json` `breakCondition`, falling back to the stack-detected default). Do not mark a task complete if verification fails — report `STATUS: blocked, REASON: verification failed` instead, with the failing output captured.
 >

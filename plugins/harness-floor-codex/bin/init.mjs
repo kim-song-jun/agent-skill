@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // harness-floor-codex install — emits visual-qa-codex + agent-all-codex
 // config seeds into the target project. Also prints the Playwright MCP
-// snippet (TOML) and the optional [[hooks.agent]] matcher snippets for
-// the user to merge into ~/.codex/config.toml.
+// snippet (TOML) for the user to merge into ~/.codex/config.toml.
+// Codex agent-dispatch hooks are not emitted because current Codex hooks
+// do not expose that command surface; the Codex floor port uses
+// sequential dispatch.
 //
 // Usage:
 //   node plugins/harness-floor-codex/bin/init.mjs <target> [--ctx ctx.json] [--force] [--only=visual-qa|agent-all]

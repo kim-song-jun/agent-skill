@@ -1,9 +1,8 @@
 // codex-agent-dispatch.mjs — wraps Codex CLI's `agent dispatch` subcommand.
 //
-// Phase 3 of agent-all-codex (Strategy A) issues one `codex agent dispatch`
-// per wave-task; the registered `[[hooks.agent]]` matcher in the user's
-// `~/.codex/config.toml` handles the actual subagent spawn (see
-// templates/codex-hooks-snippet.toml.hbs).
+// Legacy experimental helper for a Codex agent-dispatch CLI surface.
+// Current Codex hooks do not expose that surface; production phases use
+// sequential-dispatch.mjs.
 //
 // This module produces *both*:
 //   - `buildDispatchArgs(...)` — argv array suitable for spawn-style

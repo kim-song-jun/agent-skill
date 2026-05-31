@@ -10,11 +10,12 @@
 3. Confirm `.codex/skills/` contains at minimum `planner`, `dev`, `reviewer`
    (each with `SKILL.md`). If not: abort `Run /codex-init first.`
 4. **Detect dispatch strategy:**
-   - Read `~/.codex/config.toml`. If `[hooks]` contains a matcher for
-     `agent` type: set `dispatch = "agent-hook"`.
-   - Else: set `dispatch = "sequential"`, print warning
-     `agent hook not registered; falling back to sequential. ~3-5x slower.`
-   - If `--dispatch=agent-hook|sequential` was passed, override and validate.
+   - Current Codex hooks do not expose the command surface needed for
+     this pipeline's previous parallel agent dispatch design.
+   - Set `dispatch = "sequential"`.
+   - If `--dispatch=agent-hook` was passed, abort with
+     `agent-hook dispatch is unsupported by current Codex hooks`.
+   - If `--dispatch=sequential` was passed, accept the override.
 5. Load `.agent-all.json` via implicit file read. If missing: warn + use
    built-ins from `templates/agent-all.config.json.hbs`.
 6. Read `.agent-all-state.json` if present. If `--resume` and
@@ -28,7 +29,7 @@
 
 ## Output
 
-Print: `Preflight OK. <input mode: prompt|task>. Dispatch: <agent-hook|sequential>.`
+Print: `Preflight OK. <input mode: prompt|task>. Dispatch: sequential.`
 Plus, when `--loop` set, `Break-condition: <serialized>.`
 
 ## Break-condition resolution

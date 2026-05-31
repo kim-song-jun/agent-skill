@@ -1,6 +1,6 @@
 # harness-floor-codex
 
-> **Decision-surfacing enforcement: 🟢 Hard (after manual config merge).** Codex CLI uses `~/.codex/config.toml` `[[hooks.agent]]` entries. This plugin prints a TOML snippet to stdout that the user merges manually. Once merged, non-compliant subagents are rejected at PostToolUse.
+> **Decision-surfacing enforcement: 🟡 Prompt-level for Codex floor workflows.** Current Codex command hooks do not expose a Task-like subagent dispatch surface for this pipeline. The Codex floor port uses sequential skill dispatch and embeds the decision, verification, and reviewer directives in prompt text.
 
 Scaffold-level visual-qa support for Codex CLI. Emits:
 

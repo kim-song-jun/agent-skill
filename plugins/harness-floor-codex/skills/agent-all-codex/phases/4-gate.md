@@ -36,7 +36,7 @@ Print one line per wave: `Wave <i> gate: <issuesCount> issues (<critical>c <majo
 
 ## Per-reviewer verification check (mandatory)
 
-Every dispatched reviewer subagent (via `codex agent dispatch` OR sequential `.codex/skills/reviewer/SKILL.md` invocation) MUST receive the following directive in its prompt body:
+Every dispatched reviewer subagent (via sequential `.codex/skills/reviewer/SKILL.md` invocation) MUST receive the following directive in its prompt body:
 
 > When evaluating the wave's diff, explicitly verify that each implementer ran `superpowers:verification-before-completion` and the verification passed. Look for the verification command output in commit messages, the implementer's reported output, or run the verification command yourself against the wave's tip commit.
 >

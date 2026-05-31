@@ -1,7 +1,7 @@
 // sequential-dispatch.mjs — fallback dispatcher for visual-qa-codex.
 //
-// When `[[hooks.agent]]` is not registered for `visual-qa/page/.*`, we
-// invoke `.codex/skills/visual-qa-page/SKILL.md` once per page-group via
+// Current Codex hooks do not expose the older agent-dispatch surface, so
+// we invoke `.codex/skills/visual-qa-page/SKILL.md` once per page-group via
 // Codex's CLI surface (e.g. `codex exec --skill <path> --prompt <body>`).
 //
 // TODO: requires live Codex CLI to verify (1) `codex exec` is the right

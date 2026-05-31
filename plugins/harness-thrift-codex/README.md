@@ -10,10 +10,10 @@ OpenAI-rate cost table.
 | Surface | Claude Code | Codex |
 |---|---|---|
 | Hook config file | `.claude/settings.local.json` (JSON) | `~/.codex/config.toml` (TOML, user-global) |
-| Hook event names | `PreToolUse`, `PostToolUse`, `SessionStart`, `SessionEnd` | `pre_tool_use`, `post_tool_use`, `session_start`, `session_end` (per Codex `[hooks]` schema) |
+| Hook event names | `PreToolUse`, `PostToolUse`, `SessionStart`, `SessionEnd` | `PreToolUse`, `PostToolUse`, `SessionStart`, `Stop` |
 | Write primitive | `Edit` / `Write` | `apply_patch` |
-| Shell primitive | `Bash` | `shell_command` |
-| Notification surface | `Notification` hook | stderr from a `post_tool_use` hook + writes to `~/.codex/notifications/thrift-<ts>.md` |
+| Shell primitive | `Bash` | `Bash` |
+| Notification surface | `Notification` hook | stderr from a `PostToolUse` hook + writes to `~/.codex/notifications/thrift-<ts>.md` |
 | Summariser model | `claude-haiku-4-5-20251001` | **TBD: probe current Codex roster.** Tentative `gpt-5-nano` if exposed; otherwise the cheapest currently-listed model |
 | Cache-read multiplier | 0.1× input | 0.5× input (OpenAI pricing as of 2026-05; verify quarterly) |
 | Cache prime mechanic | Anthropic SDK no-op | Codex `exec_command` session-priming (heuristic; may not be observably effective) |
@@ -34,7 +34,7 @@ Then in your project:
 ```
 /thrift-codex                 # one-time setup: seeds .thrift.json + patches ~/.codex/config.toml
 /thrift-codex summarise       # manual summariser trigger
-/thrift-codex audit           # ad-hoc audit report (otherwise auto on session_end)
+/thrift-codex audit           # ad-hoc audit report (otherwise auto on Codex Stop)
 ```
 
 ## Configuration
@@ -86,11 +86,10 @@ see `skills/thrift-codex/references/porting-notes.md`).
 2. **Cache-prime is a heuristic on Codex.** OpenAI cache hit rate
    is not surfaced in Codex's `exec_command` response metadata in v1,
    so Phase 4 `savedRatio` becomes an estimate, not a measurement.
-3. **TOML patcher is minimal.** It detects the `[hooks]` table header,
-   appends entries, and removes via sentinel comment lines. It does
+3. **TOML patcher is minimal.** It appends complete hook entries and
+   removes them via sentinel comment lines. It does
    **not** handle nested TOML structures, multiline strings, or
-   inline-table style. Assumes one `[hooks]` section per file. See
-   `lib/settings-patcher.mjs` for assumptions.
+   inline-table style. See `lib/settings-patcher.mjs` for assumptions.
 
 ## References
 

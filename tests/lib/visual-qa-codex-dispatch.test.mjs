@@ -51,13 +51,13 @@ test("vqa dispatch-strategy: defaultCodexConfigPath ends with ~/.codex/config.to
   assert.match(defaultCodexConfigPath(), /\.codex\/config\.toml$/);
 });
 
-test("vqa dispatch-strategy: hasAgentHookInToml detects visual-qa matcher", () => {
+test("vqa dispatch-strategy: hasAgentHookInToml rejects legacy visual-qa matcher", () => {
   const toml = `
 [[hooks.agent]]
 matcher = "visual-qa/page/.*"
 command = "codex-agent-dispatch"
 `;
-  assert.equal(hasAgentHookInToml(toml), true);
+  assert.equal(hasAgentHookInToml(toml), false);
 });
 
 test("vqa dispatch-strategy: hasAgentHookInToml rejects agent-all matcher", () => {
@@ -69,7 +69,7 @@ command = "codex-agent-dispatch"
   assert.equal(hasAgentHookInToml(toml), false);
 });
 
-test("vqa dispatch-strategy: hasAgentHookInToml handles multiple [[hooks.agent]] sections", () => {
+test("vqa dispatch-strategy: hasAgentHookInToml rejects multiple legacy agent sections", () => {
   const toml = `
 [[hooks.agent]]
 matcher = "agent-all/wave/.*"
@@ -77,7 +77,7 @@ matcher = "agent-all/wave/.*"
 [[hooks.agent]]
 matcher = "visual-qa/page/.*"
 `;
-  assert.equal(hasAgentHookInToml(toml), true);
+  assert.equal(hasAgentHookInToml(toml), false);
 });
 
 test("vqa dispatch-strategy: missing config falls back to sequential", () => {
@@ -92,19 +92,21 @@ test("vqa dispatch-strategy: missing config falls back to sequential", () => {
   }
 });
 
-test("vqa dispatch-strategy: explicit override honoured", () => {
-  const r = detectDispatchStrategy({ override: "agent-hook" });
-  assert.equal(r.strategy, "agent-hook");
-  assert.equal(r.override, true);
+test("vqa dispatch-strategy: agent-hook override is unsupported on current Codex", () => {
+  assert.throws(
+    () => detectDispatchStrategy({ override: "agent-hook" }),
+    /unsupported.*current Codex hooks/i,
+  );
 });
 
-test("vqa dispatch-strategy: present hook yields agent-hook", () => {
+test("vqa dispatch-strategy: legacy agent hook still falls back to sequential", () => {
   const t = makeTmp();
   try {
     const p = join(t, "config.toml");
     writeFileSync(p, `[[hooks.agent]]\nmatcher = "visual-qa/page/.*"\n`);
     const r = detectDispatchStrategy({ configPath: p });
-    assert.equal(r.strategy, "agent-hook");
+    assert.equal(r.strategy, "sequential");
+    assert.match(r.reason, /unsupported.*current Codex hooks/i);
   } finally {
     rmSync(t, { recursive: true, force: true });
   }

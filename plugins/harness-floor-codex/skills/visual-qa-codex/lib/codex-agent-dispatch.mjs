@@ -1,8 +1,8 @@
 // codex-agent-dispatch.mjs — wraps `codex agent dispatch` for visual-qa-codex.
 //
-// Phase 3 (Strategy A) issues one dispatch per page-group. The registered
-// `[[hooks.agent]]` matcher in `~/.codex/config.toml` (template:
-// `templates/codex-hooks-snippet.toml.hbs`) handles the spawn.
+// Legacy experimental helper for a Codex agent-dispatch CLI surface.
+// Current Codex hooks do not expose that surface; production phases use
+// sequential-dispatch.mjs.
 //
 // TODO: requires live Codex CLI to verify `codex agent dispatch` argv
 // schema. The shape below mirrors Phase 3:

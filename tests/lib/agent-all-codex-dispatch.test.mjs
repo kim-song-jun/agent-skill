@@ -48,13 +48,13 @@ test("dispatch-strategy: defaultCodexConfigPath ends with ~/.codex/config.toml",
   assert.match(p, /\.codex\/config\.toml$/);
 });
 
-test("dispatch-strategy: hasAgentHookInToml detects agent-all wave matcher", () => {
+test("dispatch-strategy: hasAgentHookInToml rejects legacy agent-all hook matcher", () => {
   const toml = `
 [[hooks.agent]]
 matcher = "agent-all/wave/.*"
 command = "codex-agent-dispatch"
 `;
-  assert.equal(hasAgentHookInToml(toml), true);
+  assert.equal(hasAgentHookInToml(toml), false);
 });
 
 test("dispatch-strategy: hasAgentHookInToml rejects non-agent-all hook", () => {
@@ -74,12 +74,12 @@ matcher = "agent-all/wave/.*"
   assert.equal(hasAgentHookInToml(toml), false);
 });
 
-test("dispatch-strategy: hasAgentHookInToml accepts single-quoted matcher", () => {
+test("dispatch-strategy: hasAgentHookInToml rejects single-quoted legacy matcher", () => {
   const toml = `
 [[hooks.agent]]
 matcher = 'agent-all/wave/.*'
 `;
-  assert.equal(hasAgentHookInToml(toml), true);
+  assert.equal(hasAgentHookInToml(toml), false);
 });
 
 test("dispatch-strategy: hasAgentHookInToml handles empty/null input", () => {
@@ -102,6 +102,13 @@ test("dispatch-strategy: invalid override throws", () => {
   );
 });
 
+test("dispatch-strategy: agent-hook override is unsupported on current Codex", () => {
+  assert.throws(
+    () => detectDispatchStrategy({ override: "agent-hook" }),
+    /unsupported.*current Codex hooks/i,
+  );
+});
+
 test("dispatch-strategy: missing config falls back to sequential", () => {
   const t = makeTmp();
   try {
@@ -115,7 +122,7 @@ test("dispatch-strategy: missing config falls back to sequential", () => {
   }
 });
 
-test("dispatch-strategy: present hook yields agent-hook", () => {
+test("dispatch-strategy: legacy agent hook still falls back to sequential", () => {
   const t = makeTmp();
   try {
     const p = join(t, "config.toml");
@@ -124,8 +131,9 @@ test("dispatch-strategy: present hook yields agent-hook", () => {
       `[[hooks.agent]]\nmatcher = "agent-all/wave/.*"\ncommand = "codex-agent-dispatch"\n`,
     );
     const r = detectDispatchStrategy({ configPath: p });
-    assert.equal(r.strategy, "agent-hook");
+    assert.equal(r.strategy, "sequential");
     assert.equal(r.probedPath, p);
+    assert.match(r.reason, /unsupported.*current Codex hooks/i);
   } finally {
     rmSync(t, { recursive: true, force: true });
   }

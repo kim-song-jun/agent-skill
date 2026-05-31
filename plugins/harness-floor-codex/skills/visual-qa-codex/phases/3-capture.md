@@ -1,38 +1,14 @@
-# Phase 3 — Capture + Analyze (parallel fan-out)
+# Phase 3 — Capture + Analyze
 
 ## Codex dispatch strategy
 
-Set in Phase 0 — `agent-hook` (preferred) or `sequential` (fallback).
+Set in Phase 0 — `sequential` for current Codex hooks.
 
 ## Group matrix by page
 
 Group matrix from Phase 1 by `page.name` (or `flows[i].name`).
 
-## Strategy A — `dispatch === "agent-hook"`
-
-For each page-group:
-
-```
-shell_command("codex agent dispatch \
-  --role visual-qa-page \
-  --skill .codex/skills/visual-qa-page/SKILL.md \
-  --task-id 'visual-qa/page/<page.name>' \
-  --body '<page-prompt body JSON>'")
-```
-
-The `[[hooks.agent]]` matcher in `~/.codex/config.toml` (snippet at
-`templates/codex-hooks-snippet.toml.hbs`) catches the dispatch and spawns
-the subagent. Capture each returned `agentId`.
-
-Await all:
-
-```
-shell_command("codex agent wait --task-prefix 'visual-qa/page/' --timeout 1800")
-```
-
-Returns JSON array of `{agentId, status, captures, analyses, costUSD, errors}`.
-
-## Strategy B — `dispatch === "sequential"`
+## Sequential Dispatch
 
 For each page-group, one at a time:
 - Render `templates/page-prompt.md.hbs` for this page.
@@ -56,6 +32,4 @@ For each page-group, one at a time:
 
 ## On error
 
-- agent-hook dispatch fails: retry once, then fall back to sequential for
-  this wave (warn).
 - Sequential page fails: mark `incomplete`, continue.

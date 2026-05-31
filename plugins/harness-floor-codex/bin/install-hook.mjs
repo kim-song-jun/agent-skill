@@ -1,22 +1,11 @@
 #!/usr/bin/env node
-// install-hook.mjs — merge the [[hooks.agent]] snippet(s) into
-// ~/.codex/config.toml (or a user-supplied config path) without
-// clobbering existing TOML.
+// install-hook.mjs — compatibility shim for the removed legacy Codex
+// agent-hook installer.
 //
-// Strategy (deliberately conservative — no third-party TOML parser):
-//
-//   1. If the target file does not exist, create it with a managed
-//      header + the snippet.
-//   2. If the target file exists and already contains a
-//      `[[hooks.agent]]` table-array whose `matcher` references our
-//      prefix (agent-all/wave/ or visual-qa/page/), skip that snippet —
-//      install is idempotent.
-//   3. Otherwise append the snippet beneath a managed marker comment.
-//
-// We never rewrite existing tables. Worst case the user ends up with
-// two consecutive `[[hooks.agent]]` table-array elements (TOML allows
-// this — table-arrays are designed for it). If they want a single
-// canonical form they can hand-merge after seeing the printed diff.
+// Current Codex hooks support command handlers such as PreToolUse and
+// PostToolUse. They do not provide the old agent-dispatch hook surface
+// this scaffold assumed. Keep this script as a no-op so old docs/CLI
+// invocations fail safe and leave user config untouched.
 //
 // Usage:
 //   node plugins/harness-floor-codex/bin/install-hook.mjs \
@@ -24,16 +13,9 @@
 //     [--matcher agent-all|visual-qa|both]   (default: both) \
 //     [--dry-run] [--force]
 //
-// TODO: requires live Codex CLI to verify [[hooks.agent]] schema. If
-// the live syntax is `[hooks] agent = [...]` instead of
-// `[[hooks.agent]]`, swap the snippet templates and the prefix-detection
-// regex in `hookSectionContainsMatcher` below.
-
 import {
   readFileSync,
-  writeFileSync,
   existsSync,
-  mkdirSync,
 } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { homedir } from "node:os";
@@ -42,7 +24,7 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = resolve(here, "..");
 
-const MANAGED_HEADER = "# Managed by harness-floor-codex/bin/install-hook.mjs";
+const UNSUPPORTED_REASON = "agent-hook dispatch is unsupported by current Codex hooks; sequential dispatch is used";
 
 export const SNIPPETS = {
   "agent-all": {
@@ -66,36 +48,18 @@ export function defaultConfigPath() {
 }
 
 /**
- * Scan TOML text for a `[[hooks.agent]]` table-array whose `matcher`
- * string contains the given prefix. Returns true when at least one
- * such section is present.
- *
- * Implementation: line-by-line walk (no TOML parser). We treat any
- * `[...]` header as a section break. Within a `[[hooks.agent]]`
- * section, we look for `matcher = "..."` (single or double quotes).
+ * Current Codex hook config has no supported agent-dispatch table.
+ * Legacy config snippets are intentionally ignored so preflight falls
+ * back to sequential dispatch instead of selecting a broken path.
  *
  * @param {string} tomlText
  * @param {string} prefix
  * @returns {boolean}
  */
 export function hookSectionContainsMatcher(tomlText, prefix) {
-  if (typeof tomlText !== "string" || tomlText.length === 0) return false;
-  const lines = tomlText.split(/\r?\n/);
-  let inAgentHook = false;
-  let sectionMatched = false;
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (/^\[\[?[^\]]+\]\]?$/.test(line)) {
-      if (inAgentHook && sectionMatched) return true;
-      inAgentHook = /^\[\[hooks\.agent\]\]$/.test(line);
-      sectionMatched = false;
-      continue;
-    }
-    if (!inAgentHook) continue;
-    const m = line.match(/^matcher\s*=\s*(['"])(.*)\1\s*$/);
-    if (m && m[2].includes(prefix)) sectionMatched = true;
-  }
-  return inAgentHook && sectionMatched;
+  void tomlText;
+  void prefix;
+  return false;
 }
 
 /**
@@ -109,21 +73,8 @@ export function planMerge(existingToml, snippetsToApply) {
   const applied = [];
   const skipped = [];
   let merged = existingToml;
-  for (const { name, snippet, matcherPrefix } of snippetsToApply) {
-    if (hookSectionContainsMatcher(merged, matcherPrefix)) {
-      skipped.push(name);
-      continue;
-    }
-    const block = [
-      "",
-      `${MANAGED_HEADER} (matcher=${name})`,
-      snippet.trim(),
-      "",
-    ].join("\n");
-    merged = merged.length === 0
-      ? `${MANAGED_HEADER}\n${snippet.trim()}\n`
-      : (merged.endsWith("\n") ? merged + block : merged + "\n" + block);
-    applied.push(name);
+  for (const { name } of snippetsToApply) {
+    skipped.push(name);
   }
   return { merged, applied, skipped };
 }
@@ -180,6 +131,8 @@ export function buildSnippetsForMatcher(matcher) {
       name,
       matcherPrefix: def.matcherPrefix,
       snippet: readFileSync(def.snippetPath, "utf-8"),
+      supported: false,
+      reason: UNSUPPORTED_REASON,
     };
   });
 }
@@ -201,10 +154,7 @@ export function installHook(opts) {
   const existing = existed ? readFileSync(configPath, "utf-8") : "";
   const snippets = buildSnippetsForMatcher(opts.matcher || "both");
   const { merged, applied, skipped } = planMerge(existing, snippets);
-  if (!opts.dryRun && applied.length > 0) {
-    mkdirSync(dirname(configPath), { recursive: true });
-    writeFileSync(configPath, merged);
-  }
+  void opts.dryRun;
   return { configPath, applied, skipped, merged, existed };
 }
 
@@ -220,21 +170,13 @@ function main() {
     console.log(`# dry-run: would write to ${result.configPath}`);
     console.log(`# applied:  ${result.applied.join(", ") || "(none)"}`);
     console.log(`# skipped:  ${result.skipped.join(", ") || "(none — all idempotent)"}`);
-    if (result.applied.length > 0) {
-      console.log("# --- merged TOML preview ---");
-      console.log(result.merged);
-    }
+    console.log(`# unsupported: ${UNSUPPORTED_REASON}`);
     return;
   }
   console.log(`config: ${result.configPath} (${result.existed ? "merged" : "created"})`);
   console.log(`applied: ${result.applied.join(", ") || "(none)"}`);
   console.log(`skipped: ${result.skipped.join(", ") || "(none — all idempotent)"}`);
-  if (result.applied.length === 0 && result.skipped.length > 0) {
-    console.log(
-      "All matchers already present; no changes written. "
-      + "Re-run with --force to no-op (the file is unchanged regardless).",
-    );
-  }
+  console.log(`unsupported: ${UNSUPPORTED_REASON}`);
 }
 
 // Run main only when invoked as a script, not when imported by tests.

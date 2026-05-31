@@ -9,7 +9,7 @@ test("agent-all-codex: SKILL.md exists with name frontmatter", () => {
   const md = readFileSync(resolve(SKILL_ROOT, "SKILL.md"), "utf-8");
   assert.match(md, /^---\nname: agent-all-codex/);
   assert.ok(md.includes("Codex CLI port"));
-  assert.ok(md.includes("`agent` hook"));
+  assert.ok(md.includes("current Codex hooks"));
   assert.ok(md.includes("sequential"));
 });
 
@@ -46,18 +46,17 @@ test("agent-all-codex: phase headings match contract", () => {
   }
 });
 
-test("agent-all-codex: phase 3 documents both dispatch strategies", () => {
+test("agent-all-codex: phase 3 documents sequential dispatch", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "phases/3-dispatch.md"), "utf-8");
-  assert.ok(body.includes("agent-hook"), "agent-hook strategy");
-  assert.ok(body.includes("sequential"), "sequential fallback");
-  assert.ok(body.includes("codex agent dispatch"), "dispatch command shape");
-  assert.ok(body.includes("codex agent wait"), "wait command shape");
+  assert.ok(body.includes("sequential"), "sequential dispatch");
+  assert.ok(body.includes(".codex/skills/<role>/SKILL.md"), "role skill invocation");
+  assert.ok(!body.includes("[[hooks.agent]]"), "must not document legacy agent hook");
 });
 
 test("agent-all-codex: phase 0 detects dispatch strategy", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "phases/0-preflight.md"), "utf-8");
   assert.ok(body.includes("Detect dispatch strategy"));
-  assert.ok(body.includes("[hooks]"));
+  assert.ok(body.includes("current Codex hooks"));
 });
 
 test("agent-all-codex: all template files exist", () => {
@@ -70,18 +69,20 @@ test("agent-all-codex: all template files exist", () => {
   }
 });
 
-test("agent-all-codex: hooks snippet registers agent hook", () => {
+test("agent-all-codex: hook snippet does not emit unsupported agent hook", () => {
   const body = readFileSync(
     resolve(SKILL_ROOT, "templates/codex-hooks-snippet.toml.hbs"),
     "utf-8",
   );
-  assert.ok(body.includes("[[hooks.agent]]"));
-  assert.ok(body.includes("agent-all/wave/"));
+  assert.ok(body.includes("current Codex hooks"));
+  assert.ok(body.includes("sequential dispatch"));
+  assert.ok(!body.includes("[[hooks.agent]]"));
+  assert.ok(!body.includes("timeout_seconds"));
 });
 
-test("agent-all-codex: porting-notes flags unconfirmed hook schema", () => {
+test("agent-all-codex: porting-notes flags unsupported legacy hook schema", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "references/porting-notes.md"), "utf-8");
-  assert.ok(body.includes("research spike"));
-  assert.ok(body.includes("Open questions"));
-  assert.ok(body.includes("sequential fallback"));
+  assert.ok(body.includes("current Codex hooks"));
+  assert.ok(body.includes("unsupported"));
+  assert.ok(body.includes("sequential"));
 });
