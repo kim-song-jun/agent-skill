@@ -20,6 +20,36 @@ test("backend migrations and models add security and data reviewers", () => {
   ]);
 });
 
+test("seeds fixtures and backfills add data reviewer", () => {
+  assert.deepEqual(
+    classifyChangedFiles([
+      "backend/users/fixtures/users.json",
+      "scripts/seed-users.ts",
+      "backend/users/backfills/fix-users.ts",
+    ]),
+    ["data-reviewer", "reviewer", "security-reviewer", "verification-reviewer"],
+  );
+});
+
+test("API views serializers and middleware add security reviewer", () => {
+  assert.deepEqual(
+    classifyChangedFiles(["backend/api/views.py", "backend/users/serializers.py", "backend/middleware/authz.py"]),
+    ["reviewer", "security-reviewer", "verification-reviewer"],
+  );
+});
+
+test("secret and destructive code paths add security reviewer without escalating docs-only changes", () => {
+  assert.deepEqual(classifyChangedFiles(["scripts/destructive-cleanup.ts", "backend/config/secret-keys.ts"]), [
+    "reviewer",
+    "security-reviewer",
+    "verification-reviewer",
+  ]);
+  assert.deepEqual(classifyChangedFiles(["docs/secret-rotation.md", "notes/destructive-commands.txt"]), [
+    "reviewer",
+    "verification-reviewer",
+  ]);
+});
+
 test("frontend plus backend touch adds integration developer", () => {
   assert.deepEqual(classifyChangedFiles(["app/routes/dashboard.tsx", "server/jobs/project-sync.ts"]), [
     "design-reviewer",
