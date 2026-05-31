@@ -26,7 +26,7 @@ const CTX = {
 const CASES = [
   {
     tpl: "plugins/harness-builder-codex/skills/codex-init/templates/AGENTS.md.hbs",
-    contains: ["typescript (on docker: postgres, redis) — deploys to fly.io", "Project memory for Codex CLI"],
+    contains: ["typescript (on docker: postgres, redis) - deploys to fly.io", "Project memory for Codex CLI"],
   },
   {
     tpl: "plugins/harness-builder-copilot/skills/copilot-init/templates/copilot-instructions.md.hbs",
@@ -42,13 +42,19 @@ const CASES = [
   },
   {
     tpl: "plugins/harness-builder-codex/skills/codex-init/templates/codex-config.toml.hbs",
-    contains: ["[hooks]", "PreToolUse", "SessionStart"],
-    extraCtx: { hook_command_pretool: "echo pre", hook_command_sessionstart: "echo start", mcp_servers_block: "" },
+    contains: ["[hooks]", "PreToolUse", "matcher = \"^Bash$\"", "command_windows"],
+    notContains: ["SessionStart"],
+    extraCtx: {
+      hook_command_pretool_toml: "\"echo pre\"",
+      hook_command_pretool_windows_toml: "\"echo pre\"",
+      mcp_servers_block: "",
+    },
   },
   {
     tpl: "plugins/harness-builder-gemini/skills/gemini-init/templates/gemini-settings.json.hbs",
-    contains: ["\"BeforeTool\"", "\"SessionStart\"", "\"mcpServers\""],
-    extraCtx: { hook_command_beforetool: "echo bt", hook_command_sessionstart: "echo ss", mcp_servers_json_body: "" },
+    contains: ["\"mcpServers\""],
+    notContains: ["\"BeforeTool\"", "\"SessionStart\""],
+    extraCtx: { mcp_servers_json_body: "" },
   },
   {
     tpl: "plugins/harness-builder-copilot/skills/copilot-init/templates/mcp-config.json.hbs",
@@ -156,6 +162,9 @@ for (const c of CASES) {
     const out = render(tpl, { ...CTX, ...(c.extraCtx ?? {}) });
     for (const needle of c.contains) {
       assert.ok(out.includes(needle), `Expected "${needle}" in render output of ${c.tpl}`);
+    }
+    for (const needle of c.notContains ?? []) {
+      assert.ok(!out.includes(needle), `Did not expect "${needle}" in render output of ${c.tpl}`);
     }
   });
 }
