@@ -132,13 +132,13 @@ cat ~/.claude/plugins/installed_plugins.json | python3 -m json.tool | grep -B1 a
 
 ### `/agent-init` — 프로젝트 설정
 
-프로젝트당 한 번만 실행. `CLAUDE.md`, 에이전트 로스터(`.claude/agents/*.md`), 3개의 hooks, visual-qa + agent-all용 설정 파일 생성.
+프로젝트당 한 번만 실행. 운영 모드는 task ledger 파일, 로컬 폴더 가이드, Claude/Codex 정책 훅, reviewer 페르소나를 생성합니다. 기존 `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`는 덮어쓰지 않고 `agent-skill:operational` sentinel 섹션만 추가하거나 교체합니다.
 
 ```
-/agent-init                 # 기본값: full Floor 하니스
-/agent-init --theme=lite    # 최소: CLAUDE.md + agents만
-/agent-init --size=large    # 모노레포용 9-agent 로스터
-/agent-init --merge         # 기존 CLAUDE.md에 추가 (덮어쓰지 않음)
+/agent-init                       # 기본값: 운영형/무거운 scaffold
+/agent-init --lite                # 최소 루트 메모리 + 최소 역할
+/agent-init --dry-run             # 생성/패치 계획만 출력
+/agent-init --update-foundations  # 승인된 foundation 플러그인만 업데이트
 ```
 
 ### `/agent-all` — 기능 출시

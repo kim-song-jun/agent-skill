@@ -132,13 +132,13 @@ If the count is below 5 (the recommended Claude Code set: builder + floor + thri
 
 ### `/agent-init` — set up the project
 
-Run once per project. Creates `CLAUDE.md`, the agent roster (`.claude/agents/*.md`), 3 hooks, and configs for visual-qa + agent-all.
+Run once per project. Operational mode creates task ledger files, local folder guides, Claude/Codex policy hooks, and reviewer personas. Existing `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md` are updated by an `agent-skill:operational` sentinel section instead of overwritten.
 
 ```
-/agent-init                 # default: full Floor harness
-/agent-init --theme=lite    # minimal: just CLAUDE.md + agents
-/agent-init --size=large    # 9-agent roster for monorepos
-/agent-init --merge         # append to existing CLAUDE.md (don't overwrite)
+/agent-init                       # default: operational/heavy scaffold
+/agent-init --lite                # minimal root memory + minimal roles
+/agent-init --dry-run             # print planned files and config patches
+/agent-init --update-foundations  # update approved foundation plugins only
 ```
 
 ### `/agent-all` — ship a feature

@@ -28,4 +28,8 @@ In Claude Code, invoke `/agent-init`.
 - [ ] Re-running with no flags is a no-op and prints "All phases already complete (use --force to re-run)".
 - [ ] `--force` rebuilds from scratch and overwrites artefacts.
 - [ ] `--dry-run` writes nothing to disk.
+- [ ] `/agent-init` default creates `docs/tasks/index.md`, folder guides, and policy hook artifacts.
+- [ ] `/agent-init --lite` skips task ledger and policy hooks.
+- [ ] Re-running `/agent-init` against existing `CLAUDE.md` appends or replaces only the sentinel section.
+- [ ] `--dry-run --update-foundations` prints foundation update plan without changing files.
 - [ ] Missing-plugin scenario: temporarily disable `context-mode` in settings, re-run, confirm Phase 5 prints the install command.

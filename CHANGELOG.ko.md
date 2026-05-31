@@ -4,6 +4,12 @@
 
 모든 주요 변경 사항. 각 릴리스 후보에 대한 날짜 스탬프 태그가 존재합니다.
 
+## 미출시
+
+- `/agent-init` 기본값을 운영형/무거운 scaffold로 변경하고, 최소 경로는 `/agent-init --lite`로 제공.
+- task ledger 스캐폴딩, sentinel 병합 정책, Claude/Codex hard policy 산출물, Gemini soft rules, 변경 파일 기반 reviewer classifier 추가.
+- superpowers와 context-mode를 위한 foundation 감지/업데이트 가이드 추가.
+
 ## Visual-QA runtime wiring + agent-init i18n — 2026-05-22  (`harness-floor` v0.5.1)
 
 ### 수정 — visual-qa v0.4.0의 wiring 실제로 작동
