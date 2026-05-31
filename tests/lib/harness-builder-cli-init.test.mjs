@@ -28,6 +28,15 @@ const PLUGINS = {
       ".codex/skills/planner/SKILL.md",
       ".codex/skills/dev/SKILL.md",
       ".codex/skills/reviewer/SKILL.md",
+      ".codex/skills/orchestrator/SKILL.md",
+      ".codex/skills/verification-reviewer/SKILL.md",
+      ".codex/skills/qa-reviewer/SKILL.md",
+      ".codex/skills/design-reviewer/SKILL.md",
+      ".codex/skills/security-reviewer/SKILL.md",
+      ".codex/skills/data-reviewer/SKILL.md",
+      ".codex/hooks/agent-policy-hook.mjs",
+      "docs/tasks/index.md",
+      "docs/tasks/_template.md",
     ],
     stdoutContains: /\[hooks\]/,            // TOML snippet for ~/.codex/config.toml
     stdoutHeader:   /codex-config\.toml/,
@@ -69,6 +78,86 @@ function runInit(binPath, args, opts = {}) {
     env: { ...process.env, ...(opts.env ?? {}) },
   });
 }
+
+test("harness-builder-codex: AGENTS.md documents operational profile", () => {
+  const target = mkTarget("codex-agents");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target]);
+    assert.equal(res.status, 0, res.stderr);
+    const body = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+    assert.match(body, /docs\/tasks/);
+    assert.match(body, /pathspec/);
+    assert.match(body, /operational harness/i);
+    assert.match(body, /reviewer personas/i);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: --lite skips ledger and hooks", () => {
+  const target = mkTarget("codex-lite");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target, "--lite"]);
+    assert.equal(res.status, 0, res.stderr);
+
+    assert.ok(existsSync(resolve(target, "AGENTS.md")));
+    assert.ok(!existsSync(resolve(target, "docs/tasks/index.md")));
+    assert.ok(!existsSync(resolve(target, ".codex/hooks/agent-policy-hook.mjs")));
+
+    for (const rel of [
+      ".codex/skills/planner/SKILL.md",
+      ".codex/skills/dev/SKILL.md",
+      ".codex/skills/reviewer/SKILL.md",
+    ]) {
+      assert.ok(existsSync(resolve(target, rel)), `missing base skill ${rel}`);
+    }
+
+    for (const rel of [
+      ".codex/skills/orchestrator/SKILL.md",
+      ".codex/skills/verification-reviewer/SKILL.md",
+      ".codex/skills/qa-reviewer/SKILL.md",
+      ".codex/skills/design-reviewer/SKILL.md",
+      ".codex/skills/security-reviewer/SKILL.md",
+      ".codex/skills/data-reviewer/SKILL.md",
+    ]) {
+      assert.ok(!existsSync(resolve(target, rel)), `unexpected operational skill ${rel}`);
+    }
+
+    const body = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+    assert.match(body, /lite mode/i);
+    assert.doesNotMatch(body, /hard policy hook artifacts are active/i);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: --theme=lite skips ledger and hooks", () => {
+  const target = mkTarget("codex-theme-lite");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target, "--theme=lite"]);
+    assert.equal(res.status, 0, res.stderr);
+    assert.ok(existsSync(resolve(target, "AGENTS.md")));
+    assert.ok(!existsSync(resolve(target, "docs/tasks/index.md")));
+    assert.ok(!existsSync(resolve(target, ".codex/hooks/agent-policy-hook.mjs")));
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: --dry-run reports planned writes without writing files", () => {
+  const target = mkTarget("codex-dry-run");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target, "--dry-run"]);
+    assert.equal(res.status, 0, res.stderr);
+    assert.match(res.stdout, /dry-run: would write/);
+    assert.ok(!existsSync(resolve(target, "AGENTS.md")));
+    assert.ok(!existsSync(resolve(target, ".codex/hooks/agent-policy-hook.mjs")));
+    assert.ok(!existsSync(resolve(target, "docs/tasks/index.md")));
+    assert.match(res.stdout, PLUGINS.codex.stdoutHeader);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
 
 function mkTarget(slug) {
   return mkdtempSync(join(tmpdir(), `hb-${slug}-init-`));

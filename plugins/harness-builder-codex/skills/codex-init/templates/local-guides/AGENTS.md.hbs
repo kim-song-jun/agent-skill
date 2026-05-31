@@ -1,0 +1,13 @@
+# .codex Local Guide
+
+This folder contains Codex-local skills and hooks for {{purpose}}.
+
+## Scope
+
+- `.codex/skills/*/SKILL.md` files define role behavior for this repository.
+- `.codex/hooks/agent-policy-hook.mjs` is the repo-local policy hook referenced by the generated `~/.codex/config.toml` snippet.
+- Root `AGENTS.md` remains the operational index for project-wide rules and task ledger usage.
+
+## Editing
+
+Use `apply_patch` for changes. Keep role changes narrowly scoped to the relevant skill and verify generated hooks with `node --check`.

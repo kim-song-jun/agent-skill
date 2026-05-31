@@ -1,14 +1,17 @@
 ---
 name: codex-init
 description: >
-  Scaffold AGENTS.md, .codex/skills/, and an optional .codex/config.toml MCP
-  snippet for a new or existing project. Use at the start of a Codex CLI
-  engagement to give the agent durable project memory.
+  Scaffold AGENTS.md, .codex/skills/, an operational task ledger, a repo-local
+  Codex policy hook, and a config snippet for a new or existing project. Use
+  --lite to opt out of the heavy operational artifacts.
 ---
 
 # Codex Init
 
-You are scaffolding agent infrastructure for a Codex CLI project.
+You are scaffolding agent infrastructure for a Codex CLI project. The default
+profile is operational and heavy. `--lite` and `--theme=lite` keep only the
+root memory file and base planner/dev/reviewer skills. `--dry-run` prints
+planned writes without creating directories or files.
 
 ## Phase 1 — Gather
 
@@ -34,6 +37,7 @@ Build the discovery context:
 ```javascript
 import { render } from "./lib/render.mjs";
 
+const lite = false;
 const ctx = {
   purpose,
   size,
@@ -42,10 +46,22 @@ const ctx = {
   constraints,
   ...detected,
   services_str: detected.services.join(", "),
-  agents: [
+  operationalProfile: !lite,
+  liteProfile: lite,
+  agents: lite ? [
     { name: "planner",  when: "all planning" },
     { name: "dev",      when: "implementation" },
     { name: "reviewer", when: "final review" },
+  ] : [
+    { name: "planner",  when: "all planning" },
+    { name: "dev",      when: "implementation" },
+    { name: "reviewer", when: "final review" },
+    { name: "orchestrator",          when: "wave ownership and shared-tree safety" },
+    { name: "verification-reviewer", when: "tests, typecheck, lint, diff scope" },
+    { name: "qa-reviewer",           when: "user-flow and persona validation" },
+    { name: "design-reviewer",       when: "UI hierarchy and design tokens" },
+    { name: "security-reviewer",     when: "authz, secrets, destructive actions" },
+    { name: "data-reviewer",         when: "migrations, seeds, fixtures, backfills" },
   ],
 };
 ```
@@ -54,19 +70,24 @@ Render and write each template:
 
 - `templates/AGENTS.md.hbs` → `AGENTS.md` (project root)
 - `templates/skills/<role>/SKILL.md.hbs` → `.codex/skills/<role>/SKILL.md` for each agent role
+- `templates/hooks/agent-policy-hook.mjs` → `.codex/hooks/agent-policy-hook.mjs`
+- built-in task ledger templates → `docs/tasks/index.md` and `docs/tasks/_template.md`
+- `templates/local-guides/AGENTS.md.hbs` → `.codex/AGENTS.md`
 
 Use `apply_patch` for every file write. Refuse to overwrite existing files
-unless the user passes `--force`.
+unless the user passes `--force`. In lite mode, skip hooks, local guides,
+operational reviewer skills, and task-ledger files.
 
 ## Phase 3 — Summarize
 
-Print a 3-line summary: detected stack, runtime (if any), and the roles
-scaffolded. Note that hooks/MCP wiring is out of scope for this MVP.
+Print a 3-line summary: detected stack, runtime (if any), profile, and the
+roles scaffolded. Always print the Codex config snippet to stdout for manual
+merge. Do not claim that global config was patched automatically.
 
-## Phase 4 — Optional: emit Codex config stub
+## Phase 4 — Optional MCP config additions
 
-Ask the user (via `ask_user` or equivalent) whether to also emit
-`.codex/config.toml` with hook and MCP stubs. If yes:
+The CLI always emits `templates/codex-config.toml.hbs` to stdout. If collecting
+MCP servers interactively:
 
 1. Prompt for MCP servers (optional, empty list OK). For each, capture
    either `{ name, command, args }` (stdio) or `{ name, url }` (HTTP).
@@ -91,12 +112,11 @@ Ask the user (via `ask_user` or equivalent) whether to also emit
 3. Extend the ctx with defaults:
 
    ```javascript
-   ctx.hook_command_pretool = "echo 'pre apply_patch'";
-   ctx.hook_command_sessionstart = "echo 'session start'";
+   ctx.hook_command_pretool_toml = JSON.stringify(`node ${target}/.codex/hooks/agent-policy-hook.mjs`);
+   ctx.hook_command_sessionstart_toml = JSON.stringify("echo 'session start'");
    ctx.mcp_servers_block = mcp_servers_block;
    ```
 
-4. Render `templates/codex-config.toml.hbs` and write to `.codex/config.toml`
-   in the project root. Refuse to overwrite unless `--force`.
-
-The hook commands are no-ops by default; users edit them.
+4. Render `templates/codex-config.toml.hbs` to stdout. The operational
+   profile points PreToolUse at the repo-local hook. Lite mode documents that
+   no hard policy hook was installed.

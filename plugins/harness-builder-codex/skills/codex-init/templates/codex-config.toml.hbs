@@ -1,12 +1,17 @@
-# Stub Codex config produced by /codex-init.
-# Merge with your existing ~/.codex/config.toml or use as a starting point.
+# Codex config snippet produced by /codex-init.
+# Review and merge this into ~/.codex/config.toml manually.
 
 [hooks]
+{{#if operationalProfile}}
 PreToolUse = [
-  { matcher = "apply_patch", hooks = [{ type = "command", command = "{{hook_command_pretool}}" }] }
+  { matcher = ".*", hooks = [{ type = "command", command = {{hook_command_pretool_toml}} }] }
 ]
+{{/if}}
+{{#if liteProfile}}
+# Lite mode does not install a repo-local PreToolUse policy hook.
+{{/if}}
 SessionStart = [
-  { hooks = [{ type = "command", command = "{{hook_command_sessionstart}}" }] }
+  { hooks = [{ type = "command", command = {{hook_command_sessionstart_toml}} }] }
 ]
 {{#if mcp_servers_block}}
 

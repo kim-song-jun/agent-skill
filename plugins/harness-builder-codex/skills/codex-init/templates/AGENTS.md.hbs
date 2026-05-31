@@ -4,15 +4,18 @@
 
 ## Stack
 
-{{stack}}{{#if runtime}} (on {{runtime}}{{#if services_str}}: {{services_str}}{{/if}}){{/if}}{{#if deploy_targets}} — deploys to {{deploy_targets}}{{/if}}
+{{stack}}{{#if runtime}} (on {{runtime}}{{#if services_str}}: {{services_str}}{{/if}}){{/if}}{{#if deploy_targets}} - deploys to {{deploy_targets}}{{/if}}
 
 ## Operating Principles
 
-These apply to the main agent and to every role in `.codex/skills/`:
+These rules apply to the main Codex agent and every role in `.codex/skills/`:
 
-1. **Plan first.** For any non-trivial change, draft a brief plan before editing.
-2. **Edit via `apply_patch`.** All file modifications go through the apply_patch tool.
-3. **Shell via `shell_command` / `exec_command`.** Long-running tasks use `exec_command` to keep a PTY session.
+1. Plan before edits. For any non-trivial change, write a brief plan with target files and verification.
+2. Use `apply_patch` for manual file edits.
+3. Use context-mode for large logs, broad searches, screenshots, or noisy generated output when available.
+4. Commit with explicit pathspecs: `git commit -m "message" -- path/one path/two`.
+5. Avoid destructive git, docker, database, or force-push commands without explicit approval.
+6. Do not revert unrelated user or other-agent edits.
 
 ## Roles
 
@@ -20,6 +23,25 @@ These apply to the main agent and to every role in `.codex/skills/`:
 |------|-------------|------|
 {{#each agents}}| {{name}} | {{when}} | `.codex/skills/{{name}}/SKILL.md` |
 {{/each}}
+
+{{#if operationalProfile}}
+## Operational Profile
+
+This is the heavy operational harness profile.
+
+- `/agent-all` work uses `docs/tasks/NN-slug.md` files copied from `docs/tasks/_template.md`.
+- Keep Decision Matrix, Ambiguity Log, Progress Snapshot, and Verification sections current.
+- `AGENTS.md` at the repository root is the index; folder-level `AGENTS.md` files define local scope.
+- Reviewer personas are selected by changed-file classifier and the risk profile of the diff.
+- Use the orchestrator for wave ownership, HOT file detection, shared-tree safety, and repeated failure escalation.
+- The repo-local policy hook lives at `.codex/hooks/agent-policy-hook.mjs`; the generated config snippet points Codex PreToolUse at that hook.
+{{/if}}
+
+{{#if liteProfile}}
+## Lite Mode
+
+Lite mode keeps only the root `AGENTS.md` and the base planner, dev, and reviewer skills. It skips the task ledger, operational reviewer personas, local guide, and hard policy hook artifacts.
+{{/if}}
 
 {{#if constraints}}
 ## Special Constraints
