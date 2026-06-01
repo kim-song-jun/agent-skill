@@ -50,6 +50,7 @@ run_step "focused release contracts" \
     tests/lib/release-doc-contract.test.mjs \
     tests/lib/cross-platform-manifest.test.mjs \
     tests/lib/codex-current-hook-schema.test.mjs \
+    tests/lib/visual-qa-vendored-libs.test.mjs \
     tests/lib/agent-all-codex-dispatch.test.mjs \
     tests/lib/visual-qa-codex-dispatch.test.mjs \
     tests/lib/harness-builder-cli-init.test.mjs \

@@ -9,7 +9,7 @@
 // Usage:
 //   node plugins/harness-floor-codex/bin/init.mjs <target> [--ctx ctx.json] [--force] [--only=visual-qa|agent-all]
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, rmSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { render } from "./lib/render.mjs";
@@ -24,6 +24,15 @@ const INSTALL_MAP = {
   ],
   "agent-all": [
     { src: "skills/agent-all-codex/templates/agent-all.config.json.hbs", dst: ".agent-all.json" },
+  ],
+};
+
+const SKILL_DIR_MAP = {
+  "visual-qa": [
+    { srcDir: "skills/visual-qa-codex", dstDir: ".codex/skills/visual-qa-codex" },
+  ],
+  "agent-all": [
+    { srcDir: "skills/agent-all-codex", dstDir: ".codex/skills/agent-all-codex" },
   ],
 };
 
@@ -95,6 +104,20 @@ function main() {
       mkdirSync(dirname(dstPath), { recursive: true });
       const tpl = readFileSync(srcPath, "utf-8");
       writeFileSync(dstPath, render(tpl, ctx));
+      installed.push(dstPath);
+      console.log(`wrote ${dstPath}`);
+    }
+
+    for (const t of SKILL_DIR_MAP[bucket] ?? []) {
+      const srcPath = resolve(pluginRoot, t.srcDir);
+      const dstPath = resolve(target, t.dstDir);
+      if (existsSync(dstPath) && !args.force) {
+        console.error(`Refusing to overwrite ${dstPath} (use --force)`);
+        process.exit(2);
+      }
+      if (args.force) rmSync(dstPath, { recursive: true, force: true });
+      mkdirSync(dirname(dstPath), { recursive: true });
+      cpSync(srcPath, dstPath, { recursive: true });
       installed.push(dstPath);
       console.log(`wrote ${dstPath}`);
     }

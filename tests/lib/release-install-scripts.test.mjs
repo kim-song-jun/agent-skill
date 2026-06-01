@@ -134,6 +134,51 @@ test("install-platform codex all seeds visual-qa in comprehensive mode", () => {
   }
 });
 
+test("install-platform codex floor installs runnable workflow skill directories", () => {
+  const target = tmp("agent-skill-release-codex-floor-skills-target-");
+  const home = tmp("agent-skill-release-codex-floor-skills-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=floor",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    for (const rel of [
+      ".codex/skills/agent-all-codex/SKILL.md",
+      ".codex/skills/agent-all-codex/phases/0-preflight.md",
+      ".codex/skills/agent-all-codex/phases/6-loop.md",
+      ".codex/skills/agent-all-codex/lib/break-resolver.mjs",
+      ".codex/skills/agent-all-codex/lib/sequential-dispatch.mjs",
+      ".codex/skills/visual-qa-codex/SKILL.md",
+      ".codex/skills/visual-qa-codex/phases/1-config.md",
+      ".codex/skills/visual-qa-codex/phases/4-aggregate.md",
+      ".codex/skills/visual-qa-codex/lib/config-loader.mjs",
+      ".codex/skills/visual-qa-codex/lib/matrix-builder.mjs",
+      ".codex/skills/visual-qa-codex/lib/cost-estimator.mjs",
+      ".codex/skills/visual-qa-codex/lib/diff-runs.mjs",
+      ".codex/skills/visual-qa-codex/lib/verdict.mjs",
+      ".codex/skills/visual-qa-codex/templates/report.md.hbs",
+      ".codex/skills/visual-qa-page/SKILL.md",
+    ]) {
+      assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
+    }
+
+    const agentAll = readFileSync(resolve(target, ".codex/skills/agent-all-codex/SKILL.md"), "utf-8");
+    const visualQa = readFileSync(resolve(target, ".codex/skills/visual-qa-codex/SKILL.md"), "utf-8");
+    assert.match(agentAll, /^---\nname: agent-all-codex/m);
+    assert.match(visualQa, /^---\nname: visual-qa-codex/m);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test("update --dry-run exposes the exact selected install set without requiring claude", () => {
   const marketplace = JSON.parse(readFileSync(resolve(REPO, ".claude-plugin/marketplace.json"), "utf-8"));
   const expectedAll = marketplace.plugins.map((plugin) => plugin.name).sort();
