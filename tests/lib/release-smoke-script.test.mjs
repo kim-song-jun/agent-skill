@@ -26,6 +26,7 @@ test("release-smoke --fast runs Claude and Codex release gates without live CLIs
   assert.match(output, /Codex: ok/);
   assert.match(output, /release smoke: fresh release fixtures/);
   assert.match(output, /release fixture smoke: ok/);
+  assert.match(output, /Claude rendered fixture: ok/);
   assert.match(output, /Codex operational fixture: ok/);
   assert.match(output, /Codex lite fixture: ok/);
   assert.match(output, /release smoke: Claude marketplace dry-run/);

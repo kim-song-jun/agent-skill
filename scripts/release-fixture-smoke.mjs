@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { render } from "../plugins/harness-builder/skills/agent-init/lib/render.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -13,6 +14,42 @@ const CLAUDE_ESSENTIALS = [
   "harness-thrift",
   "harness-explore",
   "harness-debug",
+];
+
+const CLAUDE_RENDER_PRESENT = [
+  "CLAUDE.md",
+  "AGENTS.md",
+  ".claude/settings.local.json",
+  ".claude/hooks/context-mode-router.mjs",
+  ".claude/hooks/session-summary.mjs",
+  ".claude/hooks/cache-heal.mjs",
+  ".claude/hooks/agent-policy-hook.mjs",
+  ".claude/agents/planner.md",
+  ".claude/agents/dev.md",
+  ".claude/agents/reviewer.md",
+  ".claude/agents/orchestrator.md",
+  ".claude/agents/integration-dev.md",
+  ".claude/agents/verification-reviewer.md",
+  ".claude/agents/security-reviewer.md",
+  "docs/tasks/index.md",
+  "docs/tasks/_template.md",
+  "docs/tasks/_handoff-template.md",
+  "scripts/agent-task-ledger-check.mjs",
+  ".visual-qa.json",
+  ".agent-all.json",
+];
+
+const CLAUDE_OPERATIONAL_AGENTS = [
+  { name: "planner", when: "task docs and ambiguity control" },
+  { name: "dev", when: "implementation via TDD" },
+  { name: "reviewer", when: "final review" },
+  { name: "orchestrator", when: "wave ownership and HOT file detection" },
+  { name: "integration-dev", when: "cross-stack wiring and API contracts" },
+  { name: "verification-reviewer", when: "tests, typecheck, lint, diff scope" },
+  { name: "qa-reviewer", when: "user-flow and persona validation" },
+  { name: "design-reviewer", when: "UI hierarchy and design tokens" },
+  { name: "security-reviewer", when: "authz, secrets, destructive actions" },
+  { name: "data-reviewer", when: "migrations, seeds, fixtures, backfills" },
 ];
 
 const CODEX_OPERATIONAL_PRESENT = [
@@ -51,6 +88,7 @@ const CODEX_LITE_ABSENT = [
 export function runReleaseFixtureSmoke({ root = ROOT } = {}) {
   const checks = {
     claudeMarketplace: checkClaudeMarketplace(root),
+    claudeRendered: checkClaudeRendered(root),
     codexOperational: checkCodexOperational(root),
     codexLite: checkCodexLite(root),
   };
@@ -82,6 +120,107 @@ function checkClaudeMarketplace(root) {
     summary: `Claude marketplace dry-run: ${ok ? "ok" : "failed"} (${CLAUDE_ESSENTIALS.length - missing.length}/${CLAUDE_ESSENTIALS.length} plugins)`,
     details: ok ? "all essentials installable without a live claude binary" : compactFailure(res, missing),
   };
+}
+
+function checkClaudeRendered(root) {
+  return withFixture("agent-skill-release-claude-render-", ({ target }) => {
+    initGit(target);
+    const ctx = {
+      purpose: "Release fixture app",
+      stack: "typescript",
+      runtime: "docker",
+      services: ["postgres"],
+      services_str: "postgres",
+      deploy_targets: "vercel",
+      constraints: "",
+      interactionLang: "en",
+      language: "en",
+      operationalProfile: true,
+      liteProfile: false,
+      floorTheme: true,
+      degradedFoundations: false,
+      agents: CLAUDE_OPERATIONAL_AGENTS,
+      persona: "release",
+      title: "Release Fixture Task",
+      guidePath: "src",
+      baseUrl: "http://localhost:3000",
+      model: "claude-sonnet-4-6",
+      maxIter: 10,
+      maxCostUSD: 500,
+      waveSize: "large",
+      breakCondition: "npm test",
+    };
+
+    const renderJobs = [
+      ["plugins/harness-builder/skills/agent-init/templates/CLAUDE.md.hbs", "CLAUDE.md"],
+      ["plugins/harness-builder/skills/agent-init/templates/AGENTS.md.hbs", "AGENTS.md"],
+      ["plugins/harness-builder/skills/agent-init/templates/settings.local.json.hbs", ".claude/settings.local.json"],
+      ["plugins/harness-builder/skills/agent-init/templates/task-ledger/index.md.hbs", "docs/tasks/index.md"],
+      ["plugins/harness-builder/skills/agent-init/templates/task-ledger/_template.md.hbs", "docs/tasks/_template.md"],
+      ["plugins/harness-builder/skills/agent-init/templates/task-ledger/_handoff-template.md.hbs", "docs/tasks/_handoff-template.md"],
+      ["plugins/harness-floor/skills/visual-qa/templates/visual-qa.config.json.hbs", ".visual-qa.json"],
+      ["plugins/harness-floor/skills/agent-all/templates/agent-all.config.json.hbs", ".agent-all.json"],
+    ];
+    for (const [src, dest] of renderJobs) {
+      writeRendered(root, target, src, dest, ctx);
+    }
+
+    for (const agent of CLAUDE_OPERATIONAL_AGENTS) {
+      writeRendered(
+        root,
+        target,
+        `plugins/harness-builder/skills/agent-init/templates/agents/${agent.name}.md.hbs`,
+        `.claude/agents/${agent.name}.md`,
+        ctx,
+      );
+    }
+
+    const verbatimJobs = [
+      ["plugins/harness-builder/skills/agent-init/templates/hooks/context-mode-router.mjs", ".claude/hooks/context-mode-router.mjs"],
+      ["plugins/harness-builder/skills/agent-init/templates/hooks/session-summary.mjs", ".claude/hooks/session-summary.mjs"],
+      ["plugins/harness-builder/skills/agent-init/templates/hooks/cache-heal.mjs", ".claude/hooks/cache-heal.mjs"],
+      ["plugins/harness-builder/skills/agent-init/templates/hooks/agent-policy-hook.mjs", ".claude/hooks/agent-policy-hook.mjs"],
+      ["plugins/harness-builder/skills/agent-init/templates/task-ledger/agent-task-ledger-check.mjs", "scripts/agent-task-ledger-check.mjs"],
+    ];
+    for (const [src, dest] of verbatimJobs) {
+      writeVerbatim(root, target, src, dest);
+    }
+
+    const missing = missingFiles(target, CLAUDE_RENDER_PRESENT);
+    const settings = parseJsonFile(resolve(target, ".claude/settings.local.json"), "settings.local.json");
+    const visualQa = parseJsonFile(resolve(target, ".visual-qa.json"), ".visual-qa.json");
+    const agentAll = parseJsonFile(resolve(target, ".agent-all.json"), ".agent-all.json");
+    const hookChecks = [
+      ".claude/hooks/context-mode-router.mjs",
+      ".claude/hooks/session-summary.mjs",
+      ".claude/hooks/cache-heal.mjs",
+      ".claude/hooks/agent-policy-hook.mjs",
+      "scripts/agent-task-ledger-check.mjs",
+    ].map((file) => checkNodeSyntax(resolve(target, file), file));
+    const textChecks = [
+      ["CLAUDE.md includes operational lite guidance", /\/agent-init --lite/.test(readIfExists(resolve(target, "CLAUDE.md")))],
+      ["CLAUDE.md includes role routing", /Role Routing/.test(readIfExists(resolve(target, "CLAUDE.md")))],
+      ["settings registers policy hook", JSON.stringify(settings.value || {}).includes("agent-policy-hook.mjs")],
+      ["visual-qa is comprehensive", visualQa.value?.mode === "comprehensive"],
+      ["agent-all language is aligned", agentAll.value?.language === "en"],
+    ];
+    const failed = [
+      ...settings.errors,
+      ...visualQa.errors,
+      ...agentAll.errors,
+      ...hookChecks.filter((check) => !check.ok).map((check) => check.details),
+      ...textChecks.filter(([, pass]) => !pass).map(([name]) => name),
+    ];
+    const ok = missing.length === 0 && failed.length === 0;
+
+    return {
+      ok,
+      summary: `Claude rendered fixture: ${ok ? "ok" : "failed"} (${CLAUDE_RENDER_PRESENT.length - missing.length}/${CLAUDE_RENDER_PRESENT.length} artifacts)`,
+      details: ok
+        ? "fresh render produced Claude root memory, role agents, hooks, task ledger, and floor seed configs"
+        : formatIssues([...missing, ...failed]),
+    };
+  });
 }
 
 function checkCodexOperational(root) {
@@ -185,6 +324,42 @@ function readIfExists(file) {
   return existsSync(file) ? readFileSync(file, "utf-8") : "";
 }
 
+function writeRendered(root, target, sourceRel, destRel, ctx) {
+  writeFile(target, destRel, render(readText(root, sourceRel), ctx));
+}
+
+function writeVerbatim(root, target, sourceRel, destRel) {
+  writeFile(target, destRel, readText(root, sourceRel));
+}
+
+function writeFile(target, destRel, body) {
+  const dest = resolve(target, destRel);
+  mkdirSync(dirname(dest), { recursive: true });
+  writeFileSync(dest, body);
+}
+
+function parseJsonFile(file, label) {
+  try {
+    return { value: JSON.parse(readIfExists(file)), errors: [] };
+  } catch (error) {
+    return { value: null, errors: [`${label} invalid JSON: ${error.message}`] };
+  }
+}
+
+function checkNodeSyntax(file, label) {
+  const res = spawnSync(process.execPath, ["--check", file], {
+    encoding: "utf-8",
+  });
+  return {
+    ok: res.status === 0,
+    details: res.status === 0 ? `${label}: syntax ok` : `${label}: ${res.stderr || res.stdout}`,
+  };
+}
+
+function readText(root, file) {
+  return readFileSync(resolve(root, file), "utf-8");
+}
+
 function compactFailure(res, issues) {
   return [
     issues.length > 0 ? `issues: ${issues.join(", ")}` : null,
@@ -192,6 +367,10 @@ function compactFailure(res, issues) {
     res.stderr ? `stderr: ${res.stderr.trim().slice(0, 800)}` : null,
     res.stdout ? `stdout: ${res.stdout.trim().slice(0, 800)}` : null,
   ].filter(Boolean).join("; ");
+}
+
+function formatIssues(issues) {
+  return issues.length > 0 ? `issues: ${issues.join(", ")}` : "unknown failure";
 }
 
 function parseArgs(argv) {
