@@ -59,6 +59,30 @@ done
 # from a local clone); fall back to a temp clone (when piped from curl).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+DRY_RUN_METADATA_CLONE=""
+
+cleanup_dry_run_metadata_clone() {
+  if [ -n "${DRY_RUN_METADATA_CLONE:-}" ]; then
+    rm -rf "$DRY_RUN_METADATA_CLONE"
+  fi
+}
+
+resolve_plugin_groups_for_dry_run() {
+  if [ -f "$REPO_ROOT/scripts/lib/plugin-groups.sh" ]; then
+    return 0
+  fi
+
+  DRY_RUN_METADATA_CLONE="$(mktemp -d -t agent-skill-dry-run-XXXXXX)"
+  echo "→ resolving plugin metadata in temporary clone $DRY_RUN_METADATA_CLONE …"
+  if ! git clone --depth 1 https://github.com/kim-song-jun/agent-skill "$DRY_RUN_METADATA_CLONE" >/dev/null 2>&1; then
+    echo "Error: unable to clone agent-skill to resolve dry-run plugin metadata." >&2
+    echo "Run from a local clone, or retry when git/network access is available." >&2
+    return 1
+  fi
+
+  REPO_ROOT="$DRY_RUN_METADATA_CLONE"
+  trap cleanup_dry_run_metadata_clone EXIT
+}
 
 echo "→ foundation update plan"
 if [ -d "$REPO_ROOT/.git" ]; then
@@ -79,14 +103,13 @@ echo "  - no global CLI config files are patched by this script"
 
 if [ "$DRY_RUN" = "1" ]; then
   echo "Dry run requested; no git pull, marketplace update, uninstall, or install command will run."
-  if [ -f "$REPO_ROOT/scripts/lib/plugin-groups.sh" ]; then
-    MARKETPLACE="agent-skill"
-    . "$REPO_ROOT/scripts/lib/plugin-groups.sh"
-    select_plugins_for_mode "$MODE"
-    echo
-    echo "Selected plugin install dry-run:"
-    print_plugin_install_dry_run "${PLUGINS[@]}"
-  fi
+  resolve_plugin_groups_for_dry_run
+  MARKETPLACE="agent-skill"
+  . "$REPO_ROOT/scripts/lib/plugin-groups.sh"
+  select_plugins_for_mode "$MODE"
+  echo
+  echo "Selected plugin install dry-run:"
+  print_plugin_install_dry_run "${PLUGINS[@]}"
   exit 0
 fi
 

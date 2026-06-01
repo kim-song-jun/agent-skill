@@ -86,6 +86,7 @@ run_step "focused release contracts" \
     tests/lib/claude-native-release-contract.test.mjs \
     tests/lib/release-command-surface.test.mjs \
     tests/lib/release-install-scripts.test.mjs \
+    tests/lib/update-script-contract.test.mjs \
     tests/lib/release-doc-contract.test.mjs \
     tests/lib/cross-platform-manifest.test.mjs \
     tests/lib/codex-current-hook-schema.test.mjs \

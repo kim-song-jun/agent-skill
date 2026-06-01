@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 const scriptPath = "scripts/update.sh";
 const pluginGroupsPath = "scripts/lib/plugin-groups.sh";
@@ -235,6 +235,53 @@ printf '%s\\n' "$@" > "${argsFile}"
     assert.match(log, new RegExp(`plugin install ${plugin}`));
   }
   assert.doesNotMatch(log, /plugin uninstall harness-builder@agent-skill/);
+});
+
+test("dry-run from a script-only invocation resolves plugin metadata before printing selected Codex set", () => {
+  const fakeRepo = mkdtempSync(join(tmpdir(), "agent-skill-update-script-only-"));
+  const scriptsDir = join(fakeRepo, "scripts");
+  const binDir = join(fakeRepo, "bin");
+  const gitLog = join(fakeRepo, "git.log");
+  const pluginGroupsAbs = resolve(pluginGroupsPath);
+
+  mkdirSync(scriptsDir, { recursive: true });
+  mkdirSync(binDir, { recursive: true });
+  copyFileSync(scriptPath, join(scriptsDir, "update.sh"));
+  writeExecutable(
+    join(binDir, "git"),
+    `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${gitLog}"
+if [ "\${1:-}" = "clone" ]; then
+  dest="\${@: -1}"
+  mkdir -p "$dest/scripts/lib"
+  cp ${JSON.stringify(pluginGroupsAbs)} "$dest/scripts/lib/plugin-groups.sh"
+  exit 0
+fi
+exit 1
+`,
+  );
+
+  const result = spawnSync("bash", [join(scriptsDir, "update.sh"), "--dry-run", "--cli=codex"], {
+    cwd: fakeRepo,
+    env: {
+      ...process.env,
+      PATH: `${binDir}:${process.env.PATH}`,
+      HOME: fakeRepo,
+    },
+    encoding: "utf-8",
+  });
+
+  assert.equal(
+    result.status,
+    0,
+    `update.sh should exit 0\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+  );
+  assert.match(result.stdout, /clone agent-skill into a temporary directory/);
+  assert.match(result.stdout, /Selected plugin install dry-run/);
+  assert.match(result.stdout, /DRY-RUN: install harness-builder-codex@agent-skill for Codex CLI/);
+  assert.doesNotMatch(result.stderr, /claude' binary not found|codex' binary not found/i);
+  assert.match(readFileSync(gitLog, "utf-8"), /clone --depth 1 https:\/\/github\.com\/kim-song-jun\/agent-skill/);
 });
 
 function writeExecutable(path, content) {
