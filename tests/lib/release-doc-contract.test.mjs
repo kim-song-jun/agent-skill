@@ -151,8 +151,11 @@ test("platform plugin READMEs match implemented builder and floor ports", () => 
   const builder = read("plugins/harness-builder-codex/README.md");
   assert.match(builder, /operational/i);
   assert.match(builder, /--lite/);
+  assert.match(builder, /--theme=debug/);
   assert.match(builder, /AGENTS\.md/);
   assert.match(builder, /agent-policy-hook\.mjs/);
+  assert.match(builder, /--theme=debug[\s\S]{0,160}post-install doctor/i);
+  assert.match(builder, /--profile=debug/);
   assert.doesNotMatch(builder, /MVP|follow-ups|best-effort instruction/i);
 
   const nonCodexBuilders = [
@@ -443,7 +446,7 @@ test("manual release checklist is mapped to automated gates and Claude/Codex liv
   assert.match(body, /Codex slash-command metadata, headings, flags, and summary contracts/i);
   assert.match(body, /node --test[\s\S]{0,480}claude-native-release-contract\.test\.mjs/);
   assert.match(body, /node --test[\s\S]{0,480}release-install-scripts\.test\.mjs/);
-  assert.match(body, /Doctor coverage[\s\S]{0,220}Claude\/Codex operational and lite scaffolds/i);
+  assert.match(body, /Doctor coverage[\s\S]{0,260}Codex debug-only scaffolds/i);
   assert.match(body, /Phase 5 post-install doctor ordering[\s\S]{0,160}bootstrap commit/i);
   assert.match(body, /Claude Code live session/i);
   assert.match(body, /Codex CLI live session/i);
@@ -451,6 +454,7 @@ test("manual release checklist is mapped to automated gates and Claude/Codex liv
   assert.match(body, /\/codex-init --lite/);
   assert.match(body, /run \/agent-all for "smoke task"/);
   assert.match(body, /run \/visual-qa for the configured project/);
+  assert.match(body, /run \/debug "failing command"/);
   assert.match(body, /^run \/thrift$/m);
   assert.match(body, /run \/thrift summarise/);
   assert.match(body, /run \/thrift audit/);

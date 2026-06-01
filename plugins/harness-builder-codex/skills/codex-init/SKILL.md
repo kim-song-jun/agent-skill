@@ -21,12 +21,14 @@ prints the approved foundation update plan, then updates/installs only
 `--dry-run --update-foundations` prints the same plan without mutation. This
 does not patch global CLI config files.
 When `/codex-init` is run through `scripts/install-platform.sh`, the wrapper
-runs the post-install doctor automatically for `all`, `builder`, and `--lite`
-profiles. For a manual skill run, re-run the same check with
+runs the post-install doctor automatically for `all`, `builder`, `--lite`, and
+debug `--theme=debug` profiles, including the Codex debug doctor.
+For a manual skill run, re-run the same check with
 `node <plugin-root>/bin/doctor.mjs --target=. --platform=codex --profile=builder`
-or `--profile=lite`. When running from a source checkout instead of an installed
-plugin bundle, `node /path/to/agent-skill/scripts/doctor.mjs ...` is the
-equivalent compatibility wrapper.
+or `--profile=lite`. For a debug-only install, use `--profile=debug`. When
+running from a source checkout instead of an installed plugin bundle,
+`node /path/to/agent-skill/scripts/doctor.mjs ...` is the equivalent
+compatibility wrapper.
 For cleanup, use `node <plugin-root>/bin/clean.mjs --target=. --platform=codex --dry-run`
 first. The cleaner removes project-local Codex harness artifacts and preserves
 root `AGENTS.md` unless it has a complete agent-skill sentinel or `--force-root`

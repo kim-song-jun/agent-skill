@@ -50,4 +50,6 @@ test("Claude and Codex init skill docs expose the heavy default and lite opt-out
   assert.match(codex, /`--lite`[\s\S]{0,240}AGENTS and base skills only/);
   assert.match(codex, /`--theme=lite`[\s\S]{0,180}write root\s+AGENTS and base skills only/);
   assert.match(codex, /post-install doctor/i);
+  assert.match(codex, /--theme=debug[\s\S]{0,140}debug doctor/i);
+  assert.match(codex, /--profile=debug/);
 });

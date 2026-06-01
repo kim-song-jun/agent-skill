@@ -20,19 +20,21 @@ Emits:
 ```bash
 ./scripts/install-platform.sh --platform=codex --target=/path/to/project
 ./scripts/install-platform.sh --platform=codex --target=/path/to/project --update-foundations
+./scripts/install-platform.sh --platform=codex --target=/path/to/project --theme=debug
 ```
 
 Use `--force` when intentionally replacing generated artifacts in an existing
 project. `--update-foundations` refreshes only the approved foundation plugins
 through `scripts/update.sh --foundations-only`; combine it with `--dry-run` to
-print the exact plan without calling `claude`. Codex `all`, `builder`, and
-`--lite` installs run the post-install doctor automatically; pass
-`--no-doctor` only when intentionally deferring validation.
+print the exact plan without calling `claude`. Codex `all`, `builder`,
+`--lite`, and `--theme=debug` installs run the post-install doctor
+automatically; pass `--no-doctor` only when intentionally deferring validation.
 
 Manual doctor re-run from the plugin bundle:
 
 ```bash
 node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/project --platform=codex
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/project --platform=codex --profile=debug
 ```
 
 From a source checkout, `node scripts/doctor.mjs ...` is the equivalent
