@@ -342,6 +342,7 @@ const PLATFORM_CONTRACTS = {
       },
       {
         file: "plugins/harness-builder-codex/skills/codex-init/templates/AGENTS.md.hbs",
+        label: "floor language guidance",
         patterns: [
           /If you install the floor bundle, keep `\.agent-all\.json` `language` aligned/,
         ],
@@ -432,6 +433,7 @@ const PLATFORM_CONTRACTS = {
       },
       {
         file: "plugins/harness-builder-codex/skills/codex-init/templates/AGENTS.md.hbs",
+        label: "operational root guidance",
         patterns: [
           /Role Routing/i,
           /orchestrator[\s\S]{0,240}HOT-file/i,
@@ -674,11 +676,12 @@ function checkExists(root, file) {
   };
 }
 
-function checkText(root, { file, patterns = [], forbidden = [] }) {
+function checkText(root, { file, label = "", patterns = [], forbidden = [] }) {
+  const name = label ? `${file} matches release contract (${label})` : `${file} matches release contract`;
   if (!existsSync(resolve(root, file))) {
     return {
       ok: false,
-      name: `${file} matches release contract`,
+      name,
       details: "missing",
     };
   }
@@ -687,7 +690,7 @@ function checkText(root, { file, patterns = [], forbidden = [] }) {
   const foundForbidden = forbidden.filter((pattern) => pattern.test(text)).map(String);
   return {
     ok: missing.length === 0 && foundForbidden.length === 0,
-    name: `${file} matches release contract`,
+    name,
     details: [
       missing.length > 0 ? `missing: ${missing.join(", ")}` : null,
       foundForbidden.length > 0 ? `forbidden: ${foundForbidden.join(", ")}` : null,
