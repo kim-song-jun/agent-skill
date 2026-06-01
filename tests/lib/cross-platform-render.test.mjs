@@ -12,6 +12,7 @@ const CTX = {
   deploy_targets: "fly.io",
   constraints: "",
   language: "auto",
+  qa_personas: ["admin", "field operator"],
   agents: [
     { name: "planner",  when: "all planning" },
     { name: "dev",      when: "implementation" },
@@ -27,7 +28,15 @@ const CTX = {
 const CASES = [
   {
     tpl: "plugins/harness-builder-codex/skills/codex-init/templates/AGENTS.md.hbs",
-    contains: ["typescript (on docker: postgres, redis) - deploys to fly.io", "Project memory for Codex CLI"],
+    contains: [
+      "typescript (on docker: postgres, redis) - deploys to fly.io",
+      "Project memory for Codex CLI",
+      "## Orchestration Contract",
+      "## Role Gate Matrix",
+      "- admin",
+      "- field operator",
+    ],
+    extraCtx: { operationalProfile: true },
   },
   {
     tpl: "plugins/harness-builder-copilot/skills/copilot-init/templates/copilot-instructions.md.hbs",

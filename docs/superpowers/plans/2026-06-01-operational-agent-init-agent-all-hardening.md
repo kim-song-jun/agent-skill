@@ -19,14 +19,14 @@ Implemented through Task 12 as of 2026-06-01. The detailed TDD task list below i
 Completed scope:
 
 - Tasks 1-12 are implemented in repo artifacts: sentinel merge, folder guides, foundation checks, task ledger, pathspec policy, Claude/Codex/Gemini operational init surfaces, agent-all handoff runtime, changed-file reviewer routing, foundation update planning, docs, and release audit.
-- Latest hardening addition: Claude/Codex project-local cleanup contracts, plugin-local `clean.mjs` entrypoints, `clean.mjs --help` command-surface coverage, and `install-platform.sh --platform=codex --uninstall`. This sits alongside slash-command release audit coverage, Codex command-surface checks, `scripts/release-fixture-smoke.mjs`, and the Claude/Codex release readiness matrix for marketplace manifests, required init/floor/thrift files, hook schema expectations, reviewer routing, audit tokens, and root role routing.
+- Latest hardening addition: Claude/Codex operational orchestration contracts, role gate matrices, configured QA persona propagation, project-local cleanup contracts, plugin-local `clean.mjs` entrypoints, `clean.mjs --help` command-surface coverage, and `install-platform.sh --platform=codex --uninstall`. This sits alongside slash-command release audit coverage, Codex command-surface checks, `scripts/release-fixture-smoke.mjs`, and the Claude/Codex release readiness matrix for marketplace manifests, required init/floor/thrift files, hook schema expectations, reviewer routing, audit tokens, and root role routing.
 - Current release-doc contract pins stale test-count regressions so future changes must update public verification evidence.
 
 Verification evidence:
 
 - `node scripts/release-audit.mjs`: Claude/Codex readiness checks passing.
 - `node scripts/release-fixture-smoke.mjs`: Claude marketplace dry-run, Claude operational/lite render output, and Codex operational/lite fresh fixtures passing.
-- `node --test`: 1704/1704 passing.
+- `node --test`: 1705/1705 passing.
 - `./scripts/release-smoke.sh --fast --with-live-cli`: 346/346 passing with Claude Code and Codex CLI live probes.
 - `node scripts/sync-lib.mjs --check`: 33 vendored files match source.
 

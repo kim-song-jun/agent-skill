@@ -84,6 +84,32 @@ Use reviewer personas based on changed files:
 - `verification-reviewer`: tests, typecheck, lint, diff scope, and completion evidence.
 
 Keep each active task's Progress Snapshot current with owner, files, validation, blockers, and next action.
+
+## Orchestration Contract
+
+- Main thread/orchestrator owns task docs, user decisions, HOT-file serialization, final diff review, and pathspec commits.
+- Implementer roles own only their assigned file scope and must return changed files, commands run, verification result, blockers, and Self-Audit.
+- Reviewer roles are independent gates. They inspect the diff and evidence; they do not repair code unless explicitly re-dispatched for a retry.
+- Use `superpowers:dispatching-parallel-agents` only for disjoint ownership, `superpowers:subagent-driven-development` for implement/review loops, and context-mode for broad reads or long outputs.
+- If superpowers or context-mode is unavailable, record the degraded fallback in the task ledger before continuing.
+
+## Role Gate Matrix
+
+| Trigger | Required gate | Evidence |
+|---------|---------------|----------|
+| Feature or bug fix | implementer + `verification-reviewer` | tests/typecheck/lint or task-specific verification |
+| UI or user-visible flow | `design-reviewer` + `qa-reviewer` | UX findings plus `QA_AUDIT` |
+| Auth, permissions, secrets, destructive actions | `security-reviewer` | risk review with blocking issues first |
+| Models, migrations, seeds, fixtures, backfills | `data-reviewer` | data safety, rollback, and migration evidence |
+| Frontend + backend/API contract | `integration-dev` + `verification-reviewer` | contract or end-to-end evidence |
+
+{{#if qa_personas}}
+## Configured QA Personas
+
+QA review should explicitly walk these perspectives:
+{{#each qa_personas}}- {{this}}
+{{/each}}
+{{/if}}
 {{/if}}
 
 {{#if liteProfile}}

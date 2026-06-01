@@ -76,6 +76,24 @@ This is the heavy operational harness profile.
 
 Keep each active task's Progress Snapshot current with owner, files, validation, blockers, and next action.
 
+## Orchestration Contract
+
+- Main Codex thread/coordinator owns task docs, user decisions, HOT-file serialization, final diff review, and pathspec commits.
+- Implementer skills own only their assigned file scope and must return changed files, commands run, verification result, blockers, and Self-Audit.
+- Reviewer skills are independent gates. They inspect the diff and evidence; they do not repair code unless explicitly invoked for a retry.
+- Use superpowers for brainstorm/plan/verification when available, preserve Codex's sequential skill dispatch for floor workflows, and route broad reads or long outputs through context-mode or file-backed logs.
+- If superpowers or context-mode is unavailable, record the degraded fallback in the task ledger before continuing.
+
+## Role Gate Matrix
+
+| Trigger | Required gate | Evidence |
+|---------|---------------|----------|
+| Feature or bug fix | implementer + `verification-reviewer` | tests/typecheck/lint or task-specific verification |
+| UI or user-visible flow | `design-reviewer` + `qa-reviewer` | UX findings plus `QA_AUDIT` |
+| Auth, permissions, secrets, destructive actions | `security-reviewer` | risk review with blocking issues first |
+| Models, migrations, seeds, fixtures, backfills | `data-reviewer` | data safety, rollback, and migration evidence |
+| Frontend + backend/API contract | `integration-dev` + `verification-reviewer` | contract or end-to-end evidence |
+
 ## QA Personas
 
 The `qa-reviewer` should evaluate user-flow risk through these configured perspectives:

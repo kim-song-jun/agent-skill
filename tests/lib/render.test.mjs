@@ -97,7 +97,7 @@ const FIXTURES = [
   { tag: "mono-medium", ctx: { purpose: "Monorepo", stack: "javascript", deploy_targets: "cloudflare", agents: [{name:"planner",when:""},{name:"dev",when:""},{name:"designer",when:""},{name:"qa-general",when:""},{name:"tester",when:""},{name:"reviewer",when:""}], constraints: "", floorTheme: false } },
   { tag: "floor-theme", ctx: { purpose: "Floor test app", stack: "typescript", deploy_targets: "vercel", agents: [{name:"planner",when:"plan"},{name:"dev",when:"code"},{name:"reviewer",when:"review"}], constraints: "", floorTheme: true } },
   { tag: "ts-docker", ctx: { purpose: "Docker-based service", stack: "typescript", deploy_targets: "fly.io", runtime: "docker", services: ["postgres", "redis"], services_str: "postgres, redis", agents: [{name:"planner",when:"plan"},{name:"backend-dev",when:"server"},{name:"reviewer",when:"review"}], constraints: "", floorTheme: false } },
-  { tag: "operational-heavy", ctx: { purpose: "Operational app", stack: "typescript", deploy_targets: "vercel", operationalProfile: true, liteProfile: false, floorTheme: true, degradedFoundations: false, agents: [{ name: "planner", when: "task docs and ambiguity control" }, { name: "orchestrator", when: "wave ownership and HOT file detection" }, { name: "verification-reviewer", when: "evidence and diff scope audit" }], constraints: "" } },
+  { tag: "operational-heavy", ctx: { purpose: "Operational app", stack: "typescript", deploy_targets: "vercel", operationalProfile: true, liteProfile: false, floorTheme: true, degradedFoundations: false, qa_personas: ["admin", "field operator"], agents: [{ name: "planner", when: "task docs and ambiguity control" }, { name: "orchestrator", when: "wave ownership and HOT file detection" }, { name: "verification-reviewer", when: "evidence and diff scope audit" }], constraints: "" } },
   { tag: "lite-profile", ctx: { purpose: "Lite app", stack: "javascript", deploy_targets: "", operationalProfile: false, liteProfile: true, floorTheme: false, degradedFoundations: true, agents: [{ name: "planner", when: "planning" }, { name: "dev", when: "implementation" }, { name: "reviewer", when: "review" }], constraints: "" } },
 ];
 
@@ -153,6 +153,29 @@ test("includes operational Claude templates in render coverage", () => {
   for (const tplRel of EXPECTED_OPERATIONAL_TEMPLATES) {
     assert.ok(templates.has(tplRel), `missing template: ${tplRel}`);
   }
+});
+
+test("operational Claude root and QA reviewer templates publish orchestration gates and configured personas", () => {
+  const fx = FIXTURES.find(f => f.tag === "operational-heavy");
+  assert.ok(fx, "missing operational-heavy fixture");
+
+  for (const tplRel of ["CLAUDE.md.hbs", "AGENTS.md.hbs"]) {
+    const tpl = readFileSync(resolve(TEMPLATES_DIR, tplRel), "utf-8");
+    const out = render(tpl, { interactionLang: "en", ...fx.ctx });
+    assert.match(out, /## Orchestration Contract/);
+    assert.match(out, /Main thread\/orchestrator owns task docs/);
+    assert.match(out, /## Role Gate Matrix/);
+    assert.match(out, /UI or user-visible flow \| `design-reviewer` \+ `qa-reviewer`/);
+    assert.match(out, /## Configured QA Personas/);
+    assert.match(out, /- admin/);
+    assert.match(out, /- field operator/);
+  }
+
+  const qaTpl = readFileSync(resolve(TEMPLATES_DIR, "agents/qa-reviewer.md.hbs"), "utf-8");
+  const qaOut = render(qaTpl, fx.ctx);
+  assert.match(qaOut, /## Configured QA Personas/);
+  assert.match(qaOut, /- admin/);
+  assert.match(qaOut, /- field operator/);
 });
 
 test("lite profile snapshots only templates lite mode renders", () => {

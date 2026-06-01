@@ -78,7 +78,14 @@ const PLATFORM_CONTRACTS = {
       },
       {
         file: "plugins/harness-builder/skills/agent-init/templates/CLAUDE.md.hbs",
-        patterns: [/Role Routing/i, /orchestrator[\s\S]{0,240}HOT-file/i, /verification-reviewer/i],
+        patterns: [
+          /Role Routing/i,
+          /orchestrator[\s\S]{0,240}HOT-file/i,
+          /verification-reviewer/i,
+          /Orchestration Contract/i,
+          /Role Gate Matrix/i,
+          /Configured QA Personas/i,
+        ],
       },
       {
         file: "plugins/harness-builder/skills/agent-init/templates/settings.local.json.hbs",
@@ -169,7 +176,14 @@ const PLATFORM_CONTRACTS = {
       },
       {
         file: "plugins/harness-builder-codex/skills/codex-init/templates/AGENTS.md.hbs",
-        patterns: [/Role Routing/i, /orchestrator[\s\S]{0,240}HOT-file/i, /verification-reviewer/i],
+        patterns: [
+          /Role Routing/i,
+          /orchestrator[\s\S]{0,240}HOT-file/i,
+          /verification-reviewer/i,
+          /Orchestration Contract/i,
+          /Role Gate Matrix/i,
+          /QA Personas/i,
+        ],
       },
       {
         file: "plugins/harness-builder-codex/skills/codex-init/templates/codex-config.toml.hbs",

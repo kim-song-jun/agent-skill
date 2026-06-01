@@ -22,4 +22,10 @@ Check:
 - Missing empty, loading, permission, and error states.
 - Whether task Acceptance matches observable behavior.
 
-Return `QA_AUDIT: passed`, `QA_AUDIT: failed`, or `QA_AUDIT: skipped`.
+{{#if qa_personas}}## Configured QA Personas
+
+Walk these perspectives explicitly:
+{{#each qa_personas}}- {{this}}
+{{/each}}
+
+{{/if}}Return `QA_AUDIT: passed`, `QA_AUDIT: failed`, or `QA_AUDIT: skipped`.

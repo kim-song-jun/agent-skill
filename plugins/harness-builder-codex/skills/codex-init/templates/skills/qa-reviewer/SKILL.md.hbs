@@ -21,11 +21,13 @@ Evaluate the change as a user would experience it.
 - Check accessibility-visible behavior: labels, focus, keyboard paths, loading, errors, and empty states.
 - Compare behavior to the task ledger's stated goal and acceptance criteria.
 
+{{#if qa_personas}}
 ## Configured QA Personas
 
 Evaluate the change through these configured user perspectives:
 {{#each qa_personas}}- {{this}}
 {{/each}}
+{{/if}}
 
 ## Output
 

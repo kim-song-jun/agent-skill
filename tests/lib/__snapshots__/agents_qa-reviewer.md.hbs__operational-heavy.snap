@@ -22,4 +22,11 @@ Check:
 - Missing empty, loading, permission, and error states.
 - Whether task Acceptance matches observable behavior.
 
+## Configured QA Personas
+
+Walk these perspectives explicitly:
+- admin
+- field operator
+
+
 Return `QA_AUDIT: passed`, `QA_AUDIT: failed`, or `QA_AUDIT: skipped`.
