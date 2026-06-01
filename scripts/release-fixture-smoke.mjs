@@ -114,6 +114,84 @@ const CODEX_LITE_ABSENT = [
   ".thrift.json",
 ];
 
+const CODEX_BUILDER_PRESENT = [
+  "AGENTS.md",
+  ".codex/skills/planner/SKILL.md",
+  ".codex/skills/dev/SKILL.md",
+  ".codex/skills/reviewer/SKILL.md",
+  ".codex/skills/orchestrator/SKILL.md",
+  ".codex/skills/integration-dev/SKILL.md",
+  ".codex/skills/verification-reviewer/SKILL.md",
+  ".codex/skills/qa-reviewer/SKILL.md",
+  ".codex/skills/design-reviewer/SKILL.md",
+  ".codex/skills/security-reviewer/SKILL.md",
+  ".codex/skills/data-reviewer/SKILL.md",
+  ".codex/hooks/agent-policy-hook.mjs",
+  "docs/tasks/index.md",
+  "docs/tasks/_template.md",
+  "docs/tasks/_handoff-template.md",
+  "scripts/agent-task-ledger-check.mjs",
+];
+
+const CODEX_BUILDER_ABSENT = [
+  ".visual-qa.json",
+  ".agent-all.json",
+  ".thrift.json",
+  ".codex/skills/agent-all-codex/SKILL.md",
+  ".codex/skills/visual-qa-codex/SKILL.md",
+  ".codex/skills/visual-qa-page/SKILL.md",
+  ".codex/skills/debug-codex/SKILL.md",
+  ".codex/hooks/thrift-pretool-bash-telemetry.toml",
+  ".debug-artifacts",
+  "docs/debug/index.md",
+];
+
+const CODEX_FLOOR_PRESENT = [
+  ".visual-qa.json",
+  ".agent-all.json",
+  ".codex/skills/agent-all-codex/SKILL.md",
+  ".codex/skills/agent-all-codex/lib/sequential-dispatch.mjs",
+  ".codex/skills/visual-qa-codex/SKILL.md",
+  ".codex/skills/visual-qa-codex/lib/sequential-dispatch.mjs",
+  ".codex/skills/visual-qa-page/SKILL.md",
+];
+
+const CODEX_FLOOR_ABSENT = [
+  "AGENTS.md",
+  ".thrift.json",
+  ".codex/skills/planner/SKILL.md",
+  ".codex/skills/orchestrator/SKILL.md",
+  ".codex/skills/debug-codex/SKILL.md",
+  ".codex/hooks/agent-policy-hook.mjs",
+  ".codex/hooks/thrift-pretool-bash-telemetry.toml",
+  ".debug-artifacts",
+  "docs/tasks/index.md",
+  "docs/debug/index.md",
+];
+
+const CODEX_THRIFT_PRESENT = [
+  ".thrift.json",
+  ".codex/hooks/thrift-pretool-bash-telemetry.toml",
+  ".codex/hooks/thrift-pretool-read-coerce.toml",
+  ".codex/hooks/thrift-posttool-summariser-trigger.toml",
+  ".codex/hooks/thrift-sessionend-audit.toml",
+  ".codex/hooks/thrift-sessionstart-cache-prime.toml",
+];
+
+const CODEX_THRIFT_ABSENT = [
+  "AGENTS.md",
+  ".visual-qa.json",
+  ".agent-all.json",
+  ".codex/skills/planner/SKILL.md",
+  ".codex/skills/agent-all-codex/SKILL.md",
+  ".codex/skills/visual-qa-codex/SKILL.md",
+  ".codex/skills/debug-codex/SKILL.md",
+  ".codex/hooks/agent-policy-hook.mjs",
+  ".debug-artifacts",
+  "docs/tasks/index.md",
+  "docs/debug/index.md",
+];
+
 const CODEX_DEBUG_PRESENT = [
   ".codex/skills/debug-codex/SKILL.md",
   ".codex/skills/debug-codex/lib/debug-artifacts.mjs",
@@ -146,6 +224,9 @@ export function runReleaseFixtureSmoke({ root = ROOT } = {}) {
     claudePlatformLite: checkClaudePlatformLiteInstall(root),
     codexOperational: checkCodexOperational(root),
     codexLite: checkCodexLite(root),
+    codexBuilder: checkCodexBuilder(root),
+    codexFloor: checkCodexFloor(root),
+    codexThrift: checkCodexThrift(root),
     codexDebug: checkCodexDebug(root),
   };
 
@@ -733,6 +814,118 @@ function checkCodexLite(root) {
       details: ok
         ? "fresh git fixture received only builder-lite files, post-install lite doctor coverage, and no global config side effects"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failedStdout, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
+    };
+  });
+}
+
+function checkCodexBuilder(root) {
+  return withFixture("agent-skill-release-codex-builder-", ({ target, home }) => {
+    initGit(target);
+    const res = runInstallPlatform(root, target, home, ["--theme=builder"]);
+    const missing = missingFiles(target, CODEX_BUILDER_PRESENT);
+    const unexpected = existingFiles(target, CODEX_BUILDER_ABSENT);
+    const homeConfig = resolve(home, ".codex/config.toml");
+    const agents = readIfExists(resolve(target, "AGENTS.md"));
+    const qaReviewer = readIfExists(resolve(target, ".codex/skills/qa-reviewer/SKILL.md"));
+    const stdoutChecks = [
+      ["reports builder theme", /theme:\s+builder/i.test(res.stdout)],
+      ["runs builder-profile doctor", /profile:\s+builder/i.test(res.stdout)],
+      ["post-install doctor passes", /harness doctor: ok/i.test(res.stdout)],
+      ["AGENTS.md includes role gate matrix", /Role Gate Matrix/.test(agents)],
+      ["qa-reviewer skill includes QA audit tokens", /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/.test(qaReviewer)],
+      ["omits Playwright MCP snippet", !/\[mcp_servers\.playwright\]/.test(res.stdout)],
+      ["omits thrift instrumentation summary", !/instrument:\s+no/.test(res.stdout)],
+    ];
+    const failedStdout = stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name);
+    const ok = res.status === 0
+      && missing.length === 0
+      && unexpected.length === 0
+      && failedStdout.length === 0
+      && !existsSync(homeConfig);
+    const total = CODEX_BUILDER_PRESENT.length + CODEX_BUILDER_ABSENT.length;
+
+    return {
+      ok,
+      summary: `Codex builder fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
+      details: ok
+        ? "fresh git fixture received only Codex builder artifacts, post-install builder doctor coverage, role gate matrix, QA reviewer audit tokens, and no global config side effects"
+        : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failedStdout, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
+    };
+  });
+}
+
+function checkCodexFloor(root) {
+  return withFixture("agent-skill-release-codex-floor-", ({ target, home }) => {
+    initGit(target);
+    const res = runInstallPlatform(root, target, home, ["--theme=floor"]);
+    const missing = missingFiles(target, CODEX_FLOOR_PRESENT);
+    const unexpected = existingFiles(target, CODEX_FLOOR_ABSENT);
+    const agentAllRuntime = checkCodexAgentAllSequentialRuntime(target);
+    const visualQaRuntime = checkCodexVisualQaSequentialRuntime(target);
+    const visualQa = parseJsonFile(resolve(target, ".visual-qa.json"), ".visual-qa.json");
+    const agentAll = parseJsonFile(resolve(target, ".agent-all.json"), ".agent-all.json");
+    const homeConfig = resolve(home, ".codex/config.toml");
+    const stdoutChecks = [
+      ["reports floor theme", /theme:\s+floor/i.test(res.stdout)],
+      ["prints Playwright MCP snippet", /\[mcp_servers\.playwright\]/.test(res.stdout)],
+      ["prints prompt-level floor hook guidance", /No hook snippet is emitted for agent-all-codex/i.test(res.stdout)],
+      ["prints manual merge guidance", /Playwright MCP snippet and Codex floor guidance were printed to stdout for manual merge/i.test(res.stdout)],
+      ["visual-qa is comprehensive", visualQa.value?.mode === "comprehensive"],
+      ["agent-all config exists with waves", Boolean(agentAll.value?.waves)],
+      ["omits builder summary", !/AGENTS\.md|docs\/tasks/.test(res.stdout)],
+      ["omits thrift instrumentation summary", !/instrument:\s+no/.test(res.stdout)],
+    ];
+    const failedStdout = stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name);
+    const ok = res.status === 0
+      && missing.length === 0
+      && unexpected.length === 0
+      && failedStdout.length === 0
+      && agentAllRuntime.ok
+      && visualQaRuntime.ok
+      && !existsSync(homeConfig);
+    const total = CODEX_FLOOR_PRESENT.length + CODEX_FLOOR_ABSENT.length;
+
+    return {
+      ok,
+      summary: `Codex floor fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
+      details: ok
+        ? "fresh git fixture received only Codex floor artifacts, Playwright MCP/manual merge guidance, comprehensive visual-qa config, sequential agent-all-codex helper runtime, sequential visual-qa-codex helper runtime, and no global config side effects"
+        : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...visualQa.errors, ...agentAll.errors, ...failedStdout, agentAllRuntime.ok ? null : agentAllRuntime.details, visualQaRuntime.ok ? null : visualQaRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
+    };
+  });
+}
+
+function checkCodexThrift(root) {
+  return withFixture("agent-skill-release-codex-thrift-", ({ target, home }) => {
+    initGit(target);
+    const res = runInstallPlatform(root, target, home, ["--theme=thrift"]);
+    const missing = missingFiles(target, CODEX_THRIFT_PRESENT);
+    const unexpected = existingFiles(target, CODEX_THRIFT_ABSENT);
+    const thrift = parseJsonFile(resolve(target, ".thrift.json"), ".thrift.json");
+    const homeConfig = resolve(home, ".codex/config.toml");
+    const stdoutChecks = [
+      ["reports thrift theme", /theme:\s+thrift/i.test(res.stdout)],
+      ["uses codex thrift no-instrument path", /instrument:\s+no/.test(res.stdout)],
+      ["prints manual merge guidance", /Merge them into Codex config only after global command-hook instrumentation is approved/i.test(res.stdout)],
+      ["thrift config keeps summariser model", thrift.value?.summariser?.model === "gpt-5-nano"],
+      ["thrift config keeps context-mode policy", thrift.value?.contextMode?.coerceReadWhenOutputExceeds === 200],
+      ["omits builder/floor summary", !/AGENTS\.md|\.visual-qa\.json|\.agent-all\.json|\.codex\/skills\//.test(res.stdout)],
+    ];
+    const failedStdout = stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name);
+    const ok = res.status === 0
+      && missing.length === 0
+      && unexpected.length === 0
+      && thrift.errors.length === 0
+      && failedStdout.length === 0
+      && !existsSync(homeConfig);
+    const total = CODEX_THRIFT_PRESENT.length + CODEX_THRIFT_ABSENT.length;
+
+    return {
+      ok,
+      summary: `Codex thrift fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
+      details: ok
+        ? "fresh git fixture received only Codex thrift artifacts, no-instrument command-hook snippets, manual merge guidance, and no global config side effects"
+        : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...thrift.errors, ...failedStdout, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
 }

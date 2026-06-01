@@ -12,6 +12,7 @@
 - classifier gate reason과 dispatch별 pass criteria를 Claude/Codex Phase 4 문서 및 Codex sequential review prompt에 연결하고, coordinator gate의 `ORCHESTRATION_AUDIT` 출력 계약을 명시적으로 고정.
 - 터미널 Claude project bootstrap 경로에 release fixture coverage를 추가해 `install-platform.sh --platform=claude`가 operational 및 `--lite` scaffold를 만들고 post-install doctor를 실행하며 HOME을 패치하지 않음을 증명.
 - Codex release fixture를 강화해 operational/default-heavy와 `--lite` 설치가 post-install doctor 실행 및 성공을 직접 증명하도록 하고, 해당 smoke 계약을 release audit에도 고정.
+- Codex `install-platform.sh --theme=builder|floor|thrift` release fixture coverage 추가: 각 단일 theme 설치가 예상 project-local 산출물만 쓰고 global Codex config를 건드리지 않으며, floor sequential helper/runtime 및 thrift no-instrument 증거를 보존함을 증명.
 - Codex debug 포트를 마켓플레이스, Codex 설치 그룹, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, 공개 검증 문서에 등록. 현재 suite: 1755/1755 통과; fast release smoke: 424/424 통과.
 - Claude/Codex 터미널 operational bootstrap이 `claude` 사용 가능 시 승인된 foundation(`superpowers`, `context-mode`)만 자동 갱신하도록 변경. `--update-foundations` strict 모드와 `--no-update-foundations` opt-out 포함.
 - 기본 foundation auto-refresh에서 승인된 갱신이 실패해도 Claude/Codex bootstrap은 degraded foundation mode로 계속 진행하도록 강화. strict 실패는 `--update-foundations`에서만 유지.

@@ -30,6 +30,9 @@ test("release-smoke --fast runs Claude and Codex release gates without live CLIs
   assert.match(output, /Claude lite fixture: ok/);
   assert.match(output, /Codex operational fixture: ok/);
   assert.match(output, /Codex lite fixture: ok/);
+  assert.match(output, /Codex builder fixture: ok/);
+  assert.match(output, /Codex floor fixture: ok/);
+  assert.match(output, /Codex thrift fixture: ok/);
   assert.match(output, /release smoke: Claude marketplace dry-run/);
   assert.match(output, /DRY-RUN: claude plugin install harness-builder@agent-skill/);
   assert.match(output, /release smoke: Codex marketplace dry-run/);

@@ -15,6 +15,9 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.equal(result.checks.claudePlatformLite.ok, true);
   assert.equal(result.checks.codexOperational.ok, true);
   assert.equal(result.checks.codexLite.ok, true);
+  assert.equal(result.checks.codexBuilder.ok, true);
+  assert.equal(result.checks.codexFloor.ok, true);
+  assert.equal(result.checks.codexThrift.ok, true);
   assert.equal(result.checks.codexDebug.ok, true);
   assert.match(result.checks.claudeMarketplace.summary, /Claude marketplace dry-run: ok/);
   assert.match(result.checks.claudeRendered.summary, /Claude rendered fixture: ok/);
@@ -34,6 +37,16 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.codexOperational.details, /positional argv omits unsupported --prompt\/--skill flags/);
   assert.match(result.checks.codexLite.summary, /Codex lite fixture: ok/);
   assert.match(result.checks.codexLite.details, /post-install lite doctor coverage/);
+  assert.match(result.checks.codexBuilder.summary, /Codex builder fixture: ok \(26\/26 file checks\)/);
+  assert.match(result.checks.codexBuilder.details, /post-install builder doctor coverage/);
+  assert.match(result.checks.codexBuilder.details, /only Codex builder artifacts/);
+  assert.match(result.checks.codexFloor.summary, /Codex floor fixture: ok \(17\/17 file checks\)/);
+  assert.match(result.checks.codexFloor.details, /only Codex floor artifacts/);
+  assert.match(result.checks.codexFloor.details, /sequential agent-all-codex helper runtime/);
+  assert.match(result.checks.codexFloor.details, /sequential visual-qa-codex helper runtime/);
+  assert.match(result.checks.codexThrift.summary, /Codex thrift fixture: ok \(17\/17 file checks\)/);
+  assert.match(result.checks.codexThrift.details, /only Codex thrift artifacts/);
+  assert.match(result.checks.codexThrift.details, /no-instrument command-hook snippets/);
   assert.match(result.checks.codexDebug.summary, /Codex debug fixture: ok/);
   assert.match(result.checks.codexDebug.details, /only debug-codex artifacts/);
   assert.match(result.checks.codexDebug.details, /post-install debug doctor coverage/);
@@ -54,6 +67,9 @@ test("release fixture smoke CLI emits human-readable summaries", () => {
   assert.match(output, /Claude platform lite fixture: ok/);
   assert.match(output, /Codex operational fixture: ok/);
   assert.match(output, /Codex lite fixture: ok/);
+  assert.match(output, /Codex builder fixture: ok/);
+  assert.match(output, /Codex floor fixture: ok/);
+  assert.match(output, /Codex thrift fixture: ok/);
   assert.match(output, /Codex debug fixture: ok/);
 });
 
@@ -72,5 +88,8 @@ test("release fixture smoke CLI emits JSON", () => {
   assert.equal(data.checks.claudePlatformLite.ok, true);
   assert.equal(data.checks.codexOperational.ok, true);
   assert.equal(data.checks.codexLite.ok, true);
+  assert.equal(data.checks.codexBuilder.ok, true);
+  assert.equal(data.checks.codexFloor.ok, true);
+  assert.equal(data.checks.codexThrift.ok, true);
   assert.equal(data.checks.codexDebug.ok, true);
 });
