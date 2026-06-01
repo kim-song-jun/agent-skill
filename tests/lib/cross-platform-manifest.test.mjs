@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
+
+const STALE_RELEASE_COPY = /\b(?:future|MVP|placeholder|follow-up|deferred|TBD)\b/i;
 
 const PLUGINS = [
   "harness-builder-codex",
@@ -74,3 +76,60 @@ test("marketplace.json lists all seventeen plugins", () => {
     "harness-thrift-gemini",
   ]);
 });
+
+test("marketplace entries resolve to installable plugin manifests with skill surfaces", () => {
+  const data = JSON.parse(readFileSync(".claude-plugin/marketplace.json", "utf-8"));
+  assert.doesNotMatch(data.description, STALE_RELEASE_COPY);
+
+  const seen = new Set();
+  for (const plugin of data.plugins) {
+    assert.ok(plugin.name, "plugin name present");
+    assert.ok(plugin.description, `${plugin.name} description present`);
+    assert.doesNotMatch(plugin.description, STALE_RELEASE_COPY, `${plugin.name} has release-ready marketplace copy`);
+    assert.ok(plugin.source.startsWith("./plugins/"), `${plugin.name} uses a local plugin source`);
+
+    const source = resolve(plugin.source);
+    assert.ok(existsSync(source), `${plugin.name} source directory exists`);
+
+    const manifestPath = manifestFor(source, plugin.name);
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+    assert.equal(manifest.name, plugin.name, `${plugin.name} manifest name matches marketplace`);
+    assert.ok(manifest.version, `${plugin.name} manifest version present`);
+    assert.ok(manifest.description, `${plugin.name} manifest description present`);
+    assert.doesNotMatch(
+      manifest.description,
+      STALE_RELEASE_COPY,
+      `${plugin.name} manifest description is release-ready`,
+    );
+
+    const skillFiles = listSkillFiles(resolve(source, "skills"));
+    assert.ok(skillFiles.length > 0, `${plugin.name} exposes at least one SKILL.md`);
+    assert.equal(seen.has(plugin.name), false, `${plugin.name} appears once`);
+    seen.add(plugin.name);
+  }
+});
+
+function manifestFor(source, name) {
+  const candidates = [
+    join(source, "plugin.json"),
+    join(source, ".claude-plugin", "plugin.json"),
+  ];
+  const manifestPath = candidates.find((candidate) => existsSync(candidate));
+  assert.ok(manifestPath, `${name} has plugin.json or .claude-plugin/plugin.json`);
+  return manifestPath;
+}
+
+function listSkillFiles(dir) {
+  if (!existsSync(dir)) return [];
+  const files = [];
+  for (const entry of readdirSync(dir)) {
+    const path = join(dir, entry);
+    const stat = statSync(path);
+    if (stat.isDirectory()) {
+      files.push(...listSkillFiles(path));
+    } else if (entry === "SKILL.md") {
+      files.push(path);
+    }
+  }
+  return files;
+}
