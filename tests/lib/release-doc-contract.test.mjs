@@ -35,6 +35,7 @@ test("usage docs describe Codex lite setup paths", () => {
     assert.match(body, /codex-init --lite/);
     assert.match(body, /install-platform\.sh[\s\S]{0,360}--platform=codex[\s\S]{0,180}--lite/);
     assert.match(body, /Codex[\s\S]{0,420}(lite|경량|가벼운)/i);
+    assert.match(body, /lite[\s\S]{0,420}(automatic foundation update|자동 foundation 갱신)[\s\S]{0,420}--update-foundations/i);
     assert.match(body, /post-install doctor[\s\S]{0,260}(--no-doctor|검증을 의도적으로 미룰)/i);
     assert.match(body, /--profile=builder/);
     assert.doesNotMatch(body, /codex-init --theme=lite/);
@@ -62,8 +63,8 @@ test("usage docs describe agent-init language persistence", () => {
 test("readme files describe the current Codex config surface and current test count", () => {
   for (const path of ["README.md", "README.ko.md"]) {
     const body = read(path);
-    assert.match(body, /1760\/1760/);
-    assert.doesNotMatch(body, /1721\/1721|1721%20passing|1721 tests|1726\/1726|1726%20passing|1726 tests|1729\/1729|1729%20passing|1729 tests|1741\/1741|1741%20passing|1741 tests|1742\/1742|1742%20passing|1742 tests|1746\/1746|1746%20passing|1746 tests|1749\/1749|1749%20passing|1749 tests|1752\/1752|1752%20passing|1752 tests|1755\/1755|1755%20passing|1755 tests|1756\/1756|1756%20passing|1756 tests|1758\/1758|1758%20passing|1758 tests|1759\/1759|1759%20passing|1759 tests/);
+    assert.match(body, /1761\/1761/);
+    assert.doesNotMatch(body, /1721\/1721|1721%20passing|1721 tests|1726\/1726|1726%20passing|1726 tests|1729\/1729|1729%20passing|1729 tests|1741\/1741|1741%20passing|1741 tests|1742\/1742|1742%20passing|1742 tests|1746\/1746|1746%20passing|1746 tests|1749\/1749|1749%20passing|1749 tests|1752\/1752|1752%20passing|1752 tests|1755\/1755|1755%20passing|1755 tests|1756\/1756|1756%20passing|1756 tests|1758\/1758|1758%20passing|1758 tests|1759\/1759|1759%20passing|1759 tests|1760\/1760|1760%20passing|1760 tests/);
     assert.doesNotMatch(body, /1279\/1279|1279\+|1279%20passing|1547\+/);
     assert.doesNotMatch(body, /1719\/1719|1719%20passing|1719 tests/);
     assert.doesNotMatch(
@@ -97,6 +98,7 @@ test("readme files describe release-safe update and per-platform install paths",
   assert.match(english, /--foundations-only[\s\S]{0,260}bootstrap just the foundations/i);
   assert.match(english, /--cli=cursor\|copilot\|codex\|gemini/);
   assert.match(english, /operational installs[\s\S]{0,520}auto-updates[\s\S]{0,360}approved foundation plugins/i);
+  assert.match(english, /Lite installs skip[\s\S]{0,260}automatic foundation update[\s\S]{0,260}--update-foundations/i);
   assert.match(english, /degraded foundation warning/i);
   assert.match(english, /approved foundation update fails/i);
   assert.match(english, /--update-foundations[\s\S]{0,220}strict/i);
@@ -120,6 +122,7 @@ test("readme files describe release-safe update and per-platform install paths",
   assert.match(korean, /--foundations-only[\s\S]{0,320}foundation만 부트스트랩/i);
   assert.match(korean, /--cli=cursor\|copilot\|codex\|gemini/);
   assert.match(korean, /operational 설치[\s\S]{0,620}자동 갱신[\s\S]{0,300}foundation/i);
+  assert.match(korean, /Lite 설치[\s\S]{0,320}자동 foundation 갱신[\s\S]{0,320}--lite --update-foundations/i);
   assert.match(korean, /degraded foundation 경고/i);
   assert.match(korean, /foundation 갱신이 실패하면/i);
   assert.match(korean, /--update-foundations[\s\S]{0,260}strict/i);
@@ -370,8 +373,8 @@ test("Codex runtime specs describe the current sequential surface instead of sta
     assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
     assert.doesNotMatch(body, /1246\/1246|1279\/1279|1645\/1645|1646\/1646|1647\/1647|1648\/1648|1649\/1649|1650\/1650|1651\/1651|1652\/1652|1654\/1654|1656\/1656|1657\/1657|1659\/1659|1660\/1660|1661\/1661|1662\/1662|1663\/1663|1664\/1664|1665\/1665|1666\/1666|1667\/1667|1668\/1668|1669\/1669|1670\/1670|1671\/1671|1672\/1672|1673\/1673|1674\/1674|1675\/1675|1676\/1676|1681\/1681|1684\/1684|1685\/1685|1687\/1687|1688\/1688|1692\/1692|1696\/1696|1697\/1697|1698\/1698|1703\/1703|1704\/1704|1705\/1705|1706\/1706|1711\/1711|1715\/1715|1716\/1716|1718\/1718/);
     assert.doesNotMatch(body, /1719\/1719|1721\/1721/);
-    assert.doesNotMatch(body, /1726\/1726|1729\/1729|1741\/1741|1742\/1742|1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|1758\/1758|1759\/1759/);
-    assert.match(body, /1760\/1760/);
+    assert.doesNotMatch(body, /1726\/1726|1729\/1729|1741\/1741|1742\/1742|1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|1758\/1758|1759\/1759|1760\/1760/);
+    assert.match(body, /1761\/1761/);
     assert.match(body, /Codex CLI[\s\S]{0,260}(PreToolUse|prompt-level|sequential|프롬프트|순차)/i);
   }
 });
@@ -387,9 +390,9 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /Claude\/Codex QA and base\/specialized reviewer audit-token contracts/i);
   assert.match(plan, /Claude 52\/52 and Codex 58\/58 readiness checks passing/i);
   assert.match(plan, /Codex floor-conditional language guidance/i);
-  assert.match(plan, /node --test[\s\S]{0,120}1760\/1760/);
-  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}429\/429/);
-  assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|1758\/1758|1759\/1759|57\/57|412\/412|418\/418|421\/421|424\/424|425\/425|427\/427|428\/428/);
+  assert.match(plan, /node --test[\s\S]{0,120}1761\/1761/);
+  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}430\/430/);
+  assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|1758\/1758|1759\/1759|1760\/1760|57\/57|412\/412|418\/418|421\/421|424\/424|425\/425|427\/427|428\/428|429\/429/);
   assert.match(plan, /foundation auto-update/i);
   assert.match(plan, /install-platform\.sh --platform=codex --theme=all\|debug/);
   assert.match(plan, /Claude\/Codex `install-platform\.sh --uninstall` release-fixture roundtrips/i);

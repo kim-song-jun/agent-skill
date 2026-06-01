@@ -39,7 +39,8 @@
 #   Claude/Codex operational installs auto-update approved foundation plugins
 #   (superpowers + context-mode) when the claude CLI is available. Use
 #   --update-foundations for strict failure if that update cannot run, or
-#   --no-update-foundations to opt out.
+#   --no-update-foundations to opt out. Lite installs skip the automatic update
+#   unless --update-foundations is passed explicitly.
 #
 # --no-doctor:
 #   skip the automatic Claude/Codex post-install doctor check.
@@ -103,7 +104,8 @@ Usage:
   Claude/Codex operational installs auto-update approved foundation plugins
   (superpowers + context-mode) when the claude CLI is available. Use
   --update-foundations for strict failure if that update cannot run, or
-  --no-update-foundations to opt out.
+  --no-update-foundations to opt out. Lite installs skip the automatic update
+  unless --update-foundations is passed explicitly.
 
 --no-doctor:
   skip the automatic Claude/Codex post-install doctor check.
@@ -409,7 +411,7 @@ should_run_foundation_update() {
   if [ "$PLATFORM" != "claude" ] && [ "$PLATFORM" != "codex" ]; then
     return 1
   fi
-  if [ "$LITE" = "1" ]; then
+  if [ "$LITE" = "1" ] && [ "$FOUNDATION_MODE" = "auto" ]; then
     return 1
   fi
   return 0

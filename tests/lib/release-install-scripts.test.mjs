@@ -311,6 +311,51 @@ test("install-platform claude --lite installs only the lightweight project scaff
   }
 });
 
+test("install-platform lite respects explicit approved foundation updates", () => {
+  for (const platform of ["claude", "codex"]) {
+    const target = tmp(`agent-skill-release-${platform}-lite-foundations-target-`);
+    const home = tmp(`agent-skill-release-${platform}-lite-foundations-home-`);
+    const binDir = resolve(home, "bin");
+    const claudeLog = resolve(home, "claude.log");
+    try {
+      mkdirSync(binDir, { recursive: true });
+      writeFileSync(
+        resolve(binDir, "claude"),
+        `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${claudeLog}"
+exit 0
+`,
+        { mode: 0o755 },
+      );
+
+      const res = spawnSync("/bin/bash", [
+        INSTALL_PLATFORM,
+        `--platform=${platform}`,
+        `--target=${target}`,
+        "--lite",
+        "--update-foundations",
+      ], {
+        encoding: "utf-8",
+        env: { ...process.env, HOME: home, PATH: `${binDir}:${process.env.PATH}` },
+      });
+
+      assert.equal(res.status, 0, `${platform} stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+      assert.match(res.stdout, /approved foundation update/);
+      assert.match(readFileSync(claudeLog, "utf-8"), /plugin install superpowers@claude-plugins-official/);
+      assert.match(readFileSync(claudeLog, "utf-8"), /plugin install context-mode@context-mode/);
+
+      assert.ok(existsSync(resolve(target, platform === "claude" ? "CLAUDE.md" : "AGENTS.md")));
+      assert.ok(!existsSync(resolve(target, ".visual-qa.json")), "lite must not install floor seed config");
+      assert.ok(!existsSync(resolve(target, ".agent-all.json")), "lite must not install agent-all seed config");
+      assert.ok(!existsSync(resolve(target, ".thrift.json")), "lite must not install thrift config");
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+      rmSync(home, { recursive: true, force: true });
+    }
+  }
+});
+
 test("install-platform claude --dry-run --update-foundations prints the approved plan without writes", () => {
   const target = tmp("agent-skill-release-claude-platform-foundations-dry-run-target-");
   const home = tmp("agent-skill-release-claude-platform-foundations-dry-run-home-");
