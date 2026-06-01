@@ -1,8 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
+import { render } from "../../plugins/harness-builder/skills/agent-init/lib/render.mjs";
+import { loadConfig } from "../../plugins/harness-floor/skills/visual-qa/lib/config-loader.mjs";
+import { QA_AUTOSCAFFOLD_CONFIG } from "../../plugins/harness-floor/skills/agent-all/lib/break-resolver.mjs";
 
 function read(path) {
   return readFileSync(resolve(path), "utf-8");
@@ -62,4 +66,26 @@ test("Claude native hook entrypoints are syntax-valid JavaScript", () => {
     });
     assert.equal(res.status, 0, `${rel}\nstdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
   }
+});
+
+test("Claude native /agent-init floor seed config matches --qa comprehensive contract", () => {
+  const tpl = read("plugins/harness-floor/skills/visual-qa/templates/visual-qa.config.json.hbs");
+  const rendered = render(tpl, {
+    baseUrl: QA_AUTOSCAFFOLD_CONFIG.baseUrl,
+    model: QA_AUTOSCAFFOLD_CONFIG.analysis.model,
+  });
+  const cfg = JSON.parse(rendered);
+
+  assert.equal(cfg.mode, "comprehensive");
+  assert.deepEqual(cfg.comprehensive.scope, QA_AUTOSCAFFOLD_CONFIG.comprehensive.scope);
+  assert.deepEqual(cfg.comprehensive.interactions, QA_AUTOSCAFFOLD_CONFIG.comprehensive.interactions);
+  assert.deepEqual(cfg.comprehensive.cache, QA_AUTOSCAFFOLD_CONFIG.comprehensive.cache);
+  assert.deepEqual(cfg.comprehensive.verdict, QA_AUTOSCAFFOLD_CONFIG.comprehensive.verdict);
+
+  const dir = mkdtempSync(resolve(tmpdir(), "claude-native-visual-qa-seed-"));
+  const path = resolve(dir, ".visual-qa.json");
+  writeFileSync(path, rendered);
+  const loaded = loadConfig(path, {});
+  assert.equal(loaded.ok, true, JSON.stringify(loaded.errors));
+  assert.equal(loaded.config.mode, "comprehensive");
 });
