@@ -309,6 +309,8 @@ function checkCodexOperational(root) {
     const agents = readIfExists(resolve(target, "AGENTS.md"));
     const qaReviewer = readIfExists(resolve(target, ".codex/skills/qa-reviewer/SKILL.md"));
     const stdoutChecks = [
+      ["runs operational-profile doctor", /profile:\s+operational/i.test(res.stdout)],
+      ["post-install doctor passes", /harness doctor: ok/i.test(res.stdout)],
       ["prints current PreToolUse hook snippet", /\[\[hooks\.PreToolUse\]\]/.test(res.stdout)],
       ["prints Playwright MCP snippet", /\[mcp_servers\.playwright\]/.test(res.stdout)],
       ["uses codex thrift no-instrument path", /instrument:\s+no/.test(res.stdout)],
@@ -331,7 +333,7 @@ function checkCodexOperational(root) {
       ok,
       summary: `Codex operational fixture: ${ok ? "ok" : "failed"} (${CODEX_OPERATIONAL_PRESENT.length - missing.length}/${CODEX_OPERATIONAL_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh git fixture received operational builder, role gate matrix, QA personas, floor, thrift, debug, hooks, configs, and sequential agent-all-codex prompt helper runs from the installed fixture; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
+        ? "fresh git fixture received operational builder, role gate matrix, QA personas, floor, thrift, debug, hooks, configs, post-install operational doctor coverage, and sequential agent-all-codex prompt helper runs from the installed fixture; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
         : compactFailure(res, [...missing, ...failedStdout, agentAllRuntime.ok ? null : agentAllRuntime.details, visualQaRuntime.ok ? null : visualQaRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
@@ -617,6 +619,7 @@ function checkCodexLite(root) {
     const agents = readIfExists(resolve(target, "AGENTS.md"));
     const stdoutChecks = [
       ["reports lite profile", /profile: lite/i.test(res.stdout)],
+      ["post-install doctor passes", /harness doctor: ok/i.test(res.stdout)],
       ["omits PreToolUse hook snippet", !/\[\[hooks\.PreToolUse\]\]/.test(res.stdout)],
       ["omits Playwright MCP snippet", !/\[mcp_servers\.playwright\]/.test(res.stdout)],
       ["renders lite guidance", /lite mode/i.test(agents)],
@@ -632,7 +635,7 @@ function checkCodexLite(root) {
       ok,
       summary: `Codex lite fixture: ${ok ? "ok" : "failed"} (${CODEX_LITE_PRESENT.length + CODEX_LITE_ABSENT.length - missing.length - unexpected.length}/${CODEX_LITE_PRESENT.length + CODEX_LITE_ABSENT.length} file checks)`,
       details: ok
-        ? "fresh git fixture received only builder-lite files and no global config side effects"
+        ? "fresh git fixture received only builder-lite files, post-install lite doctor coverage, and no global config side effects"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failedStdout, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });

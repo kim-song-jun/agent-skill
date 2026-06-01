@@ -20,10 +20,12 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.codexOperational.summary, /Codex operational fixture: ok \(24\/24 artifacts\)/);
   assert.match(result.checks.codexOperational.details, /role gate matrix, QA personas/);
   assert.match(result.checks.codexOperational.details, /floor, thrift, debug, hooks, configs/);
+  assert.match(result.checks.codexOperational.details, /post-install operational doctor coverage/);
   assert.match(result.checks.codexOperational.details, /sequential agent-all-codex prompt helper runs from the installed fixture/);
   assert.match(result.checks.codexOperational.details, /sequential visual-qa-codex page helper runs from the installed fixture/);
   assert.match(result.checks.codexOperational.details, /positional argv omits unsupported --prompt\/--skill flags/);
   assert.match(result.checks.codexLite.summary, /Codex lite fixture: ok/);
+  assert.match(result.checks.codexLite.details, /post-install lite doctor coverage/);
   assert.match(result.checks.codexDebug.summary, /Codex debug fixture: ok/);
   assert.match(result.checks.codexDebug.details, /only debug-codex artifacts/);
   assert.match(result.checks.codexDebug.details, /post-install debug doctor coverage/);

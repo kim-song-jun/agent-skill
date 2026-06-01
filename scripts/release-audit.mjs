@@ -369,6 +369,20 @@ const PLATFORM_CONTRACTS = {
           /--uninstall[\s\S]{0,220}--platform=claude or --platform=codex/,
         ],
       },
+      {
+        file: "scripts/release-fixture-smoke.mjs",
+        patterns: [
+          /runs operational-profile doctor/,
+          /profile:\\s\+operational/,
+          /reports lite profile/,
+          /profile: lite/,
+          /post-install doctor passes/,
+          /harness doctor: ok/,
+          /post-install operational doctor coverage/,
+          /post-install lite doctor coverage/,
+          /post-install debug doctor coverage/,
+        ],
+      },
     ],
   },
 };
