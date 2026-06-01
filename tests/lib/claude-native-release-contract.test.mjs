@@ -163,6 +163,8 @@ test("Claude native role templates embed foundation and shared-tree discipline",
 
 test("Claude native persona reviewers emit the Phase 4 verification audit token expected by floor-policy", () => {
   const personaReviewers = [
+    "reviewer",
+    "verification-reviewer",
     "data-reviewer",
     "design-reviewer",
     "integration-dev",
@@ -175,8 +177,19 @@ test("Claude native persona reviewers emit the Phase 4 verification audit token 
     assert.match(body, /VERIFICATION_AUDIT: passed/, `${role} must document the pass token`);
     assert.match(body, /VERIFICATION_AUDIT: failed/, `${role} must document the fail token`);
     assert.match(body, /VERIFICATION_AUDIT: skipped/, `${role} must document the skipped token`);
+    assert.match(body, /literal line at the END/i, `${role} must make the audit token mechanically extractable`);
   }
 
   const phase4 = read("plugins/harness-floor/skills/agent-all/phases/4-gate.md");
   assert.match(phase4, /Other personas[\s\S]{0,260}VERIFICATION_AUDIT: passed\|failed\|skipped/);
+});
+
+test("Claude native QA reviewer emits the Phase 4 QA audit token expected by floor-policy", () => {
+  const body = read("plugins/harness-builder/skills/agent-init/templates/agents/qa-reviewer.md.hbs");
+
+  assert.match(body, /Phase 4 QA reviewer|QA Review Task/i);
+  assert.match(body, /QA_AUDIT: passed/);
+  assert.match(body, /QA_AUDIT: failed/);
+  assert.match(body, /QA_AUDIT: skipped/);
+  assert.match(body, /literal line at the END/i);
 });

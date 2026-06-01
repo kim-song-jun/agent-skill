@@ -165,7 +165,9 @@ test("harness-builder-claude: shell init writes operational scaffold and runs do
     assert.match(claude, /Role Gate Matrix/);
     assert.match(claude, /- Interaction language: `ko`/);
     assert.match(qa, /Configured QA Personas[\s\S]{0,120}general/);
+    assert.match(qa, /Phase 4 QA reviewer|QA Review Task/i);
     assert.match(qa, /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/);
+    assert.match(qa, /literal line at the END/i);
     assert.equal(agentAll.language, "ko");
     assert.ok(JSON.stringify(settings).includes("agent-policy-hook.mjs"));
     assert.ok(

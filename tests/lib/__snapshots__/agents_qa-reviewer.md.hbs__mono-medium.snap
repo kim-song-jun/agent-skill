@@ -22,4 +22,7 @@ Check:
 - Missing empty, loading, permission, and error states.
 - Whether task Acceptance matches observable behavior.
 
-Return `QA_AUDIT: passed`, `QA_AUDIT: failed`, or `QA_AUDIT: skipped`.
+When dispatched as a Phase 4 QA reviewer (description prefix `QA Review Task`), emit one literal line at the END:
+- `QA_AUDIT: passed` - user-flow audit passed
+- `QA_AUDIT: failed` - user-flow blocker found OR acceptance criteria are not exercised from the user's perspective
+- `QA_AUDIT: skipped` - no user-visible change to audit

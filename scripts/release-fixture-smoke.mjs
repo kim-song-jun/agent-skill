@@ -358,6 +358,15 @@ function checkClaudeRendered(root) {
     const orchestrator = readIfExists(resolve(target, ".claude/agents/orchestrator.md"));
     const frontendDev = readIfExists(resolve(target, ".claude/agents/frontend-dev.md"));
     const backendDev = readIfExists(resolve(target, ".claude/agents/backend-dev.md"));
+    const qaReviewer = readIfExists(resolve(target, ".claude/agents/qa-reviewer.md"));
+    const verificationAuditReviewers = {
+      "reviewer": readIfExists(resolve(target, ".claude/agents/reviewer.md")),
+      "verification-reviewer": readIfExists(resolve(target, ".claude/agents/verification-reviewer.md")),
+      "integration-dev": readIfExists(resolve(target, ".claude/agents/integration-dev.md")),
+      "design-reviewer": readIfExists(resolve(target, ".claude/agents/design-reviewer.md")),
+      "security-reviewer": readIfExists(resolve(target, ".claude/agents/security-reviewer.md")),
+      "data-reviewer": readIfExists(resolve(target, ".claude/agents/data-reviewer.md")),
+    };
     const policyHook = readIfExists(resolve(target, ".claude/hooks/agent-policy-hook.mjs"));
     const settingsText = JSON.stringify(settings.value || {});
     const hookChecks = [
@@ -379,8 +388,9 @@ function checkClaudeRendered(root) {
       [".claude backend-dev embeds backend discipline", /backend layer[\s\S]{0,120}APIs[\s\S]{0,80}business logic[\s\S]{0,80}migrations/.test(backendDev)],
       [".claude backend-dev references role-matched superpowers", /superpowers:test-driven-development[\s\S]{0,120}superpowers:verification-before-completion/.test(backendDev)],
       ["CLAUDE.md includes configured QA personas", /Configured QA Personas[\s\S]{0,120}auth[\s\S]{0,120}payments/.test(claude)],
-      [".claude qa-reviewer includes configured QA personas", /Configured QA Personas[\s\S]{0,120}auth[\s\S]{0,120}payments/.test(readIfExists(resolve(target, ".claude/agents/qa-reviewer.md")))],
-      [".claude qa-reviewer includes QA audit tokens", /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/.test(readIfExists(resolve(target, ".claude/agents/qa-reviewer.md")))],
+      [".claude qa-reviewer includes configured QA personas", /Configured QA Personas[\s\S]{0,120}auth[\s\S]{0,120}payments/.test(qaReviewer)],
+      ...claudeQaAuditTokenChecks(qaReviewer),
+      ...claudeVerificationAuditTokenChecks(verificationAuditReviewers),
       ["settings registers policy hook", settingsText.includes("agent-policy-hook.mjs")],
       ["settings registers Task PreToolUse policy hook", /"matcher":"Task"[\s\S]{0,180}agent-policy-hook\.mjs\\?" PreToolUse/.test(settingsText)],
       ["settings registers Task PostToolUse policy hook", /"PostToolUse"[\s\S]{0,220}"matcher":"Task"[\s\S]{0,180}agent-policy-hook\.mjs\\?" PostToolUse/.test(settingsText)],
@@ -404,7 +414,7 @@ function checkClaudeRendered(root) {
       ok,
       summary: `Claude rendered fixture: ${ok ? "ok" : "failed"} (${CLAUDE_RENDER_PRESENT.length - missing.length}/${CLAUDE_RENDER_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh Claude init produced root memory, role agents, executable hooks, executable task ledger checker, post-install doctor, and floor seed configs"
+        ? "fresh Claude init produced root memory, role agents, QA and base/specialized reviewer audit tokens, executable hooks, executable task ledger checker, post-install doctor, and floor seed configs"
         : compactFailure(res, [...missing, ...failed]),
     };
   });
@@ -492,6 +502,15 @@ function checkClaudePlatformInstall(root) {
     const orchestrator = readIfExists(resolve(target, ".claude/agents/orchestrator.md"));
     const frontendDev = readIfExists(resolve(target, ".claude/agents/frontend-dev.md"));
     const backendDev = readIfExists(resolve(target, ".claude/agents/backend-dev.md"));
+    const qaReviewer = readIfExists(resolve(target, ".claude/agents/qa-reviewer.md"));
+    const verificationAuditReviewers = {
+      "reviewer": readIfExists(resolve(target, ".claude/agents/reviewer.md")),
+      "verification-reviewer": readIfExists(resolve(target, ".claude/agents/verification-reviewer.md")),
+      "integration-dev": readIfExists(resolve(target, ".claude/agents/integration-dev.md")),
+      "design-reviewer": readIfExists(resolve(target, ".claude/agents/design-reviewer.md")),
+      "security-reviewer": readIfExists(resolve(target, ".claude/agents/security-reviewer.md")),
+      "data-reviewer": readIfExists(resolve(target, ".claude/agents/data-reviewer.md")),
+    };
     const settingsText = JSON.stringify(settings.value || {});
     const stdoutChecks = [
       ["reports Claude platform install", /Installing for claude/i.test(res.stdout)],
@@ -503,6 +522,8 @@ function checkClaudePlatformInstall(root) {
       [".claude platform frontend-dev embeds frontend discipline", /frontend layer[\s\S]{0,120}UI components[\s\S]{0,80}client-side logic[\s\S]{0,80}styles/.test(frontendDev)],
       [".claude platform backend-dev embeds backend discipline", /backend layer[\s\S]{0,120}APIs[\s\S]{0,80}business logic[\s\S]{0,80}migrations/.test(backendDev)],
       ["CLAUDE.md includes configured QA persona", /Configured QA Personas[\s\S]{0,120}auth/.test(claude)],
+      ...claudeQaAuditTokenChecks(qaReviewer),
+      ...claudeVerificationAuditTokenChecks(verificationAuditReviewers),
       ["settings registers policy hook", settingsText.includes("agent-policy-hook.mjs")],
       ["agent-all language is aligned", agentAll.value?.language === "en"],
     ];
@@ -519,7 +540,7 @@ function checkClaudePlatformInstall(root) {
       ok,
       summary: `Claude platform fixture: ${ok ? "ok" : "failed"} (${CLAUDE_RENDER_PRESENT.length - missing.length}/${CLAUDE_RENDER_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh terminal install-platform Claude fixture produced operational scaffold, executable generated hooks and task checker, post-install Claude platform doctor coverage, role gate matrix, QA persona propagation, and no HOME patching"
+        ? "fresh terminal install-platform Claude fixture produced operational scaffold, executable generated hooks and task checker, QA and base/specialized reviewer audit tokens, post-install Claude platform doctor coverage, role gate matrix, QA persona propagation, and no HOME patching"
         : compactFailure(res, [...missing, ...failed]),
     };
   });
@@ -1346,6 +1367,28 @@ function implementationRoutingChecks(label, text) {
     [`${label} routes UI work to frontend-dev`, /UI, routes, client state, browser behavior[\s\S]{0,160}`frontend-dev`/.test(text)],
     [`${label} routes API work to backend-dev`, /API, services, jobs, persistence[\s\S]{0,160}`backend-dev`/.test(text)],
     [`${label} routes cross-stack contracts through integration-dev`, /Frontend plus backend\/API contract[\s\S]{0,220}`integration-dev`[\s\S]{0,220}`frontend-dev`[\s\S]{0,220}`backend-dev`/.test(text)],
+  ];
+}
+
+function claudeVerificationAuditTokenChecks(roleBodies) {
+  const checks = [];
+  for (const [role, body] of Object.entries(roleBodies)) {
+    checks.push([`${role} agent includes Phase 4 review dispatch contract`, /Phase 4 reviewer[\s\S]{0,120}Review Task/i.test(body)]);
+    checks.push([`${role} agent includes VERIFICATION_AUDIT passed token`, /VERIFICATION_AUDIT: passed/.test(body)]);
+    checks.push([`${role} agent includes VERIFICATION_AUDIT failed token`, /VERIFICATION_AUDIT: failed/.test(body)]);
+    checks.push([`${role} agent includes VERIFICATION_AUDIT skipped token`, /VERIFICATION_AUDIT: skipped/.test(body)]);
+    checks.push([`${role} agent requires literal line at end`, /literal line at the END/i.test(body)]);
+  }
+  return checks;
+}
+
+function claudeQaAuditTokenChecks(body) {
+  return [
+    ["qa-reviewer agent includes Phase 4 QA review dispatch contract", /Phase 4 QA reviewer[\s\S]{0,120}QA Review Task/i.test(body)],
+    ["qa-reviewer agent includes QA_AUDIT passed token", /QA_AUDIT: passed/.test(body)],
+    ["qa-reviewer agent includes QA_AUDIT failed token", /QA_AUDIT: failed/.test(body)],
+    ["qa-reviewer agent includes QA_AUDIT skipped token", /QA_AUDIT: skipped/.test(body)],
+    ["qa-reviewer agent requires literal line at end", /literal line at the END/i.test(body)],
   ];
 }
 

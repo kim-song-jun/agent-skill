@@ -21,7 +21,8 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Added release-audit packaging coverage for public CLI script shebangs and executable bits, including direct release gate scripts.
 - Generated Claude/Codex hook and task-ledger checker scripts are now written with executable bits when present, and release fixtures prove their shebang/mode packaging in fresh installs.
 - Codex base and specialized reviewer personas now carry explicit Phase 4 `VERIFICATION_AUDIT` output contracts, and release fixtures/audits prove fresh operational and builder installs preserve those token surfaces.
-- Registered the Codex debug port in the marketplace, Codex plugin install group, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, and public verification docs. Current suite: 1756/1756 passing; fast release smoke: 426/426 passing.
+- Claude QA, base, and specialized reviewer personas now have the same Phase 4 machine-token output contract coverage in release fixtures and release audit as Codex.
+- Registered the Codex debug port in the marketplace, Codex plugin install group, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, and public verification docs. Current suite: 1758/1758 passing; fast release smoke: 427/427 passing.
 - Made Claude/Codex terminal operational bootstrap auto-refresh only approved foundations (`superpowers`, `context-mode`) when `claude` is available, with `--update-foundations` strict mode and `--no-update-foundations` opt-out.
 - Hardened foundation auto-refresh so default Claude/Codex bootstrap continues in degraded foundation mode if the approved update fails; strict failure remains opt-in through `--update-foundations`.
 - Changed `/agent-init` default to operational/heavy scaffold with `/agent-init --lite` as the minimal path.

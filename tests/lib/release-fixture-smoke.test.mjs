@@ -23,9 +23,11 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.equal(result.checks.codexUninstall.ok, true);
   assert.match(result.checks.claudeMarketplace.summary, /Claude marketplace dry-run: ok/);
   assert.match(result.checks.claudeRendered.summary, /Claude rendered fixture: ok/);
+  assert.match(result.checks.claudeRendered.details, /QA and base\/specialized reviewer audit tokens/);
   assert.match(result.checks.claudeLite.summary, /Claude lite fixture: ok/);
   assert.match(result.checks.claudePlatform.summary, /Claude platform fixture: ok \(25\/25 artifacts\)/);
   assert.match(result.checks.claudePlatform.details, /executable generated hooks and task checker/);
+  assert.match(result.checks.claudePlatform.details, /QA and base\/specialized reviewer audit tokens/);
   assert.match(result.checks.claudePlatform.details, /post-install Claude platform doctor coverage/);
   assert.match(result.checks.claudePlatform.details, /no HOME patching/);
   assert.match(result.checks.claudePlatformLite.summary, /Claude platform lite fixture: ok \(25\/25 file checks\)/);
