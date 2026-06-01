@@ -33,10 +33,16 @@ state capture, hypothesis tracking, bisection, and durable summaries.
 
 ## Install
 
-Once registered in the marketplace:
+From this repository checkout, install the Codex project-local skill:
 
+```bash
+./scripts/install-platform.sh --platform=codex --target=/path/to/project --theme=debug
 ```
-codex plugins install harness-debug-codex
+
+Codex `all` installs also include debug:
+
+```bash
+./scripts/install-platform.sh --platform=codex --target=/path/to/project --theme=all
 ```
 
 Then in your project:
@@ -72,10 +78,11 @@ user-edited config file is required for v0.1; defaults are inlined.
 ## Status
 
 v0.1 — phase docs, state checkpointing, structured error parsing,
-hypothesis tracking, bisection helpers, and Codex prompt-level entrypoint
-contract. Runtime execution is intentionally conservative: large shell
-output should go through context-mode when available, and Codex mutating
-experiments use `apply_patch` plus explicit tree restoration checks.
+hypothesis tracking, bisection helpers, Codex prompt-level entrypoint
+contract, and project-local installation into `.codex/skills/debug-codex/`.
+Runtime execution is intentionally conservative: large shell output should go
+through context-mode when available, and Codex mutating experiments use
+`apply_patch` plus explicit tree restoration checks.
 
 ## Roadmap
 

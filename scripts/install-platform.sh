@@ -18,10 +18,11 @@
 #   gemini          — Google Gemini CLI / antigravity (GEMINI.md + .gemini/skills/)
 #
 # --theme:
-#   all             — builder + floor + thrift (default)
+#   all             — builder + floor + thrift (+ debug for Codex) (default)
 #   builder         — just /agent-init (CLAUDE.md/AGENTS.md/GEMINI.md + agents)
 #   floor           — just /agent-all + /visual-qa (config files)
 #   thrift          — just /thrift (long-session cost optimization)
+#   debug           — just /debug (Codex only today)
 #
 # --lite:
 #   builder-only lightweight scaffold. For Codex, passes --lite through to
@@ -79,10 +80,11 @@ Usage:
   gemini          — Google Gemini CLI / antigravity (GEMINI.md + .gemini/skills/)
 
 --theme:
-  all             — builder + floor + thrift (default)
+  all             — builder + floor + thrift (+ debug for Codex) (default)
   builder         — just /agent-init (CLAUDE.md/AGENTS.md/GEMINI.md + agents)
   floor           — just /agent-all + /visual-qa (config files)
   thrift          — just /thrift (long-session cost optimization)
+  debug           — just /debug (Codex only today)
 
 --lite:
   builder-only lightweight scaffold. For Codex, passes --lite through to
@@ -115,6 +117,7 @@ Examples:
   ./scripts/install-platform.sh --platform=claude --target=. --lite
   ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-app
   ./scripts/install-platform.sh --platform=codex --target=. --theme=floor --dry-run
+  ./scripts/install-platform.sh --platform=codex --target=. --theme=debug
   ./scripts/install-platform.sh --platform=codex --target=. --update-foundations
   ./scripts/install-platform.sh --platform=codex --target=. --uninstall --dry-run
   ./scripts/install-platform.sh --platform=copilot --target=. --ctx=ctx.json --force
@@ -197,10 +200,10 @@ case "$PLATFORM" in
 esac
 
 case "$THEME" in
-  all|builder|floor|thrift) ;;
+  all|builder|floor|thrift|debug) ;;
   *)
     echo "Error: unknown theme '$THEME'." >&2
-    echo "Valid: all, builder, floor, thrift" >&2
+    echo "Valid: all, builder, floor, thrift, debug" >&2
     exit 1
     ;;
 esac
@@ -237,7 +240,7 @@ if [ "$HAS_LANG" = "1" ] && [ "$INIT_LANG" = "auto" ]; then
   INIT_LANG="$(detect_language_from_env)"
 fi
 
-if [ "$LITE" = "1" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ]; }; then
+if [ "$LITE" = "1" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ] || [ "$THEME" = "debug" ]; }; then
   echo "Error: --lite can only be used with --theme=all or --theme=builder." >&2
   exit 1
 fi
@@ -248,9 +251,15 @@ if [ "$UPDATE_FOUNDATIONS" = "1" ] && [ "$PLATFORM" != "claude" ] && [ "$PLATFOR
   exit 1
 fi
 
-if [ "$PLATFORM" = "claude" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ]; }; then
+if [ "$PLATFORM" = "claude" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ] || [ "$THEME" = "debug" ]; }; then
   echo "Error: Claude project bootstrap supports --theme=all, --theme=builder, or --lite." >&2
-  echo "Use install-all.sh or Claude Code /plugin install for Claude floor/thrift plugin installation." >&2
+  echo "Use install-all.sh or Claude Code /plugin install for Claude floor/thrift/debug plugin installation." >&2
+  exit 1
+fi
+
+if [ "$THEME" = "debug" ] && [ "$PLATFORM" != "codex" ]; then
+  echo "Error: --theme=debug is currently supported only with --platform=codex." >&2
+  echo "Claude uses /plugin install harness-debug@agent-skill; other debug ports are still pending." >&2
   exit 1
 fi
 
@@ -265,7 +274,7 @@ if [ "$FORCE_ROOT_CLEAN" = "1" ] && [ "$UNINSTALL" != "1" ]; then
   exit 1
 fi
 
-if [ "$VS_CODE_COPILOT" = "1" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ]; }; then
+if [ "$VS_CODE_COPILOT" = "1" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ] || [ "$THEME" = "debug" ]; }; then
   echo "Error: vscode-copilot supports only the builder instructions surface." >&2
   exit 1
 fi
@@ -442,6 +451,7 @@ case "$THEME" in
       run_init "harness-floor-$EMIT_PLATFORM" "init.mjs"
       if [ "$EMIT_PLATFORM" = "codex" ]; then
         run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs" --no-instrument
+        run_init "harness-debug-$EMIT_PLATFORM" "install.mjs"
       elif [ "$EMIT_PLATFORM" = "gemini" ]; then
         run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs" --no-instrument
       else
@@ -463,6 +473,9 @@ case "$THEME" in
     else
       run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs"
     fi
+    ;;
+  debug)
+    run_init "harness-debug-$EMIT_PLATFORM" "install.mjs"
     ;;
 esac
 
@@ -486,7 +499,7 @@ print_install_summary() {
         ;;
       codex)
         echo "  - AGENTS.md, .codex/skills/{planner,dev,reviewer}/ (builder-only lite scaffold)"
-        echo "  - Note: lite mode skips floor/thrift files and global Codex config snippets"
+        echo "  - Note: lite mode skips floor/thrift/debug files and global Codex config snippets"
         ;;
       vscode-copilot)
         echo "  - .github/copilot-instructions.md (VS Code instructions-only scaffold)"
@@ -531,7 +544,7 @@ print_install_summary() {
       echo "  - .github/copilot-instructions.md (VS Code instructions-only scaffold)"
       ;;
     codex:all)
-      echo "  - AGENTS.md, .codex/skills/, .codex/hooks/, .visual-qa.json, .agent-all.json, .thrift.json"
+      echo "  - AGENTS.md, .codex/skills/, .codex/hooks/, .visual-qa.json, .agent-all.json, .thrift.json, .debug-artifacts/, docs/debug/"
       echo "  - Note: Codex config snippets were printed to stdout; merge approved snippets into ~/.codex/config.toml"
       ;;
     codex:builder)
@@ -545,6 +558,10 @@ print_install_summary() {
     codex:thrift)
       echo "  - .thrift.json, .codex/hooks/thrift-*.toml"
       echo "  - Note: install-platform uses --no-instrument for Codex thrift; merge hook snippets manually after approval"
+      ;;
+    codex:debug)
+      echo "  - .codex/skills/debug-codex/, .debug-artifacts/, docs/debug/"
+      echo "  - Note: type run /debug \"<failing command>\" in Codex to start an investigation"
       ;;
     gemini:all)
       echo "  - GEMINI.md, .gemini/skills/, .visual-qa.json, .agent-all.json, .thrift.json"

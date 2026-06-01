@@ -231,6 +231,9 @@ test("install-platform claude --lite installs only the lightweight project scaff
       ".visual-qa.json",
       ".agent-all.json",
       ".thrift.json",
+      ".codex/skills/debug-codex/SKILL.md",
+      ".debug-artifacts",
+      "docs/debug/index.md",
     ]) {
       assert.ok(!existsSync(resolve(target, rel)), `unexpected lite artifact ${rel}`);
     }
@@ -351,6 +354,8 @@ test("install-platform codex --uninstall runs the conservative project cleaner",
     assert.ok(existsSync(resolve(target, "AGENTS.md")), "install should create root AGENTS.md");
     assert.ok(existsSync(resolve(target, ".codex/skills/dev/SKILL.md")), "install should create Codex role skills");
     assert.ok(existsSync(resolve(target, ".codex/hooks/agent-policy-hook.mjs")), "install should create Codex policy hook");
+    mkdirSync(resolve(target, ".codex/skills/debug-codex"), { recursive: true });
+    writeFileSync(resolve(target, ".codex/skills/debug-codex/SKILL.md"), "---\nname: debug-codex\n---\n");
 
     const dryRun = spawnSync("/bin/bash", [
       INSTALL_PLATFORM,
@@ -367,6 +372,7 @@ test("install-platform codex --uninstall runs the conservative project cleaner",
     assert.match(dryRun.stdout, /DRY-RUN: node .*scripts\/harness-clean\.mjs/);
     assert.match(dryRun.stdout, /harness clean: dry-run/);
     assert.ok(existsSync(resolve(target, ".codex/skills/dev/SKILL.md")), "dry-run must not remove role skills");
+    assert.ok(existsSync(resolve(target, ".codex/skills/debug-codex/SKILL.md")), "dry-run must not remove debug skill");
 
     const uninstall = spawnSync("/bin/bash", [
       INSTALL_PLATFORM,
@@ -382,6 +388,7 @@ test("install-platform codex --uninstall runs the conservative project cleaner",
     assert.match(uninstall.stdout, /harness clean: ok/);
     assert.ok(existsSync(resolve(target, "AGENTS.md")), "root AGENTS.md without sentinel is preserved by default");
     assert.ok(!existsSync(resolve(target, ".codex/skills/dev")), "role skill dir should be removed");
+    assert.ok(!existsSync(resolve(target, ".codex/skills/debug-codex")), "debug skill dir should be removed");
     assert.ok(!existsSync(resolve(target, ".codex/hooks/agent-policy-hook.mjs")), "policy hook should be removed");
     assert.ok(!existsSync(resolve(target, "docs/tasks/_template.md")), "generated task template should be removed");
     assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "uninstall must not patch global Codex config");
@@ -415,6 +422,7 @@ test("install-platform codex --dry-run reports selected scripts without writing 
     assert.match(res.stdout, /harness-builder-codex\/bin\/init\.mjs/);
     assert.match(res.stdout, /harness-floor-codex\/bin\/init\.mjs/);
     assert.match(res.stdout, /harness-thrift-codex\/bin\/install\.mjs/);
+    assert.match(res.stdout, /harness-debug-codex\/bin\/install\.mjs/);
     assert.match(res.stdout, /--no-instrument/);
     assert.match(res.stdout, /DRY-RUN: node .*scripts\/doctor\.mjs .*--platform=codex/);
     assert.ok(res.stdout.includes(target), "dry-run output should include the target path");
@@ -427,6 +435,9 @@ test("install-platform codex --dry-run reports selected scripts without writing 
       ".visual-qa.json",
       ".agent-all.json",
       ".thrift.json",
+      ".codex/skills/debug-codex/SKILL.md",
+      ".debug-artifacts",
+      "docs/debug/index.md",
     ]) {
       assert.ok(!existsSync(resolve(target, rel)), `dry-run wrote unexpected ${rel}`);
     }
@@ -610,9 +621,11 @@ test("install-platform codex all succeeds in a fresh project without patching gl
       ".codex/skills/planner/SKILL.md",
       ".codex/skills/orchestrator/SKILL.md",
       ".codex/skills/visual-qa-page/SKILL.md",
+      ".codex/skills/debug-codex/SKILL.md",
       ".codex/hooks/agent-policy-hook.mjs",
       ".codex/hooks/thrift-pretool-bash-telemetry.toml",
       "docs/tasks/index.md",
+      "docs/debug/index.md",
       ".visual-qa.json",
       ".agent-all.json",
       ".thrift.json",
@@ -621,12 +634,16 @@ test("install-platform codex all succeeds in a fresh project without patching gl
     }
 
     const agents = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+    const debugSkill = readFileSync(resolve(target, ".codex/skills/debug-codex/SKILL.md"), "utf-8");
     assert.match(agents, /Operational Profile/);
     assert.match(agents, /docs\/tasks/);
+    assert.match(debugSkill, /^---\nname: debug-codex/m);
+    assert.match(debugSkill, /run \/debug/);
 
     assert.match(res.stdout, /\[\[hooks\.PreToolUse\]\]/);
     assert.match(res.stdout, /\[mcp_servers\.playwright\]/);
     assert.match(res.stdout, /instrument:\s+no/);
+    assert.match(res.stdout, /\.codex\/skills\/debug-codex/);
     assert.match(res.stdout, /Post-install doctor/i);
     assert.match(res.stdout, /harness doctor: ok/i);
     assert.match(res.stdout, /platform: Codex/i);
@@ -649,6 +666,7 @@ test("install-platform codex all succeeds in a fresh project without patching gl
 
     assert.equal(skipped.status, 0, `stdout:\n${skipped.stdout}\nstderr:\n${skipped.stderr}`);
     assert.ok(existsSync(resolve(skipDoctorTarget, "AGENTS.md")), "skip-doctor run should still scaffold the project");
+    assert.ok(existsSync(resolve(skipDoctorTarget, ".codex/skills/debug-codex/SKILL.md")), "skip-doctor run should still install debug skill");
     assert.doesNotMatch(skipped.stdout, /Post-install doctor|harness doctor/i);
   } finally {
     rmSync(target, { recursive: true, force: true });
@@ -878,7 +896,10 @@ test("install-platform codex builder theme installs only builder artifacts and r
       ".thrift.json",
       ".codex/skills/agent-all-codex/SKILL.md",
       ".codex/skills/visual-qa-codex/SKILL.md",
+      ".codex/skills/debug-codex/SKILL.md",
       ".codex/hooks/thrift-pretool-bash-telemetry.toml",
+      ".debug-artifacts",
+      "docs/debug/index.md",
     ]) {
       assert.ok(!existsSync(resolve(target, rel)), `unexpected builder artifact ${rel}`);
     }
@@ -923,7 +944,10 @@ test("install-platform codex thrift theme installs only thrift artifacts and rep
       ".agent-all.json",
       ".codex/skills/planner/SKILL.md",
       ".codex/skills/agent-all-codex/SKILL.md",
+      ".codex/skills/debug-codex/SKILL.md",
       ".codex/hooks/agent-policy-hook.mjs",
+      ".debug-artifacts",
+      "docs/debug/index.md",
     ]) {
       assert.ok(!existsSync(resolve(target, rel)), `unexpected thrift artifact ${rel}`);
     }
@@ -932,6 +956,63 @@ test("install-platform codex thrift theme installs only thrift artifacts and rep
     assert.match(res.stdout, /\.thrift\.json/);
     assert.doesNotMatch(res.stdout, /AGENTS\.md|\.visual-qa\.json|\.agent-all\.json|\.codex\/skills\//);
     assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "thrift theme must not patch global Codex config via install-platform");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("install-platform codex debug theme installs only debug artifacts and reports them", () => {
+  const target = tmp("agent-skill-release-codex-debug-target-");
+  const home = tmp("agent-skill-release-codex-debug-home-");
+  const ctx = resolve(home, "ctx.json");
+  writeFileSync(ctx, "{}\n");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--ctx",
+      ctx,
+      "--theme=debug",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    for (const rel of [
+      ".codex/skills/debug-codex/SKILL.md",
+      ".codex/skills/debug-codex/lib/error-parser.mjs",
+      ".debug-artifacts",
+      "docs/debug/index.md",
+      ".gitignore",
+    ]) {
+      assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
+    }
+    for (const rel of [
+      "AGENTS.md",
+      "docs/tasks/index.md",
+      ".visual-qa.json",
+      ".agent-all.json",
+      ".thrift.json",
+      ".codex/skills/planner/SKILL.md",
+      ".codex/skills/agent-all-codex/SKILL.md",
+      ".codex/hooks/agent-policy-hook.mjs",
+      ".codex/hooks/thrift-pretool-bash-telemetry.toml",
+    ]) {
+      assert.ok(!existsSync(resolve(target, rel)), `unexpected debug artifact ${rel}`);
+    }
+
+    const skill = readFileSync(resolve(target, ".codex/skills/debug-codex/SKILL.md"), "utf-8");
+    assert.match(skill, /^---\nname: debug-codex/m);
+    assert.match(skill, /run \/debug/);
+    assert.match(readFileSync(resolve(target, ".gitignore"), "utf-8"), /\.debug-artifacts\//);
+    assert.match(res.stdout, /theme: debug/);
+    assert.match(res.stdout, /\.codex\/skills\/debug-codex/);
+    assert.match(res.stdout, /run \/debug/);
+    assert.doesNotMatch(res.stdout, /AGENTS\.md|\.visual-qa\.json|\.agent-all\.json|\.thrift\.json|instrument:\s+no/);
+    assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "debug theme must not patch global Codex config");
   } finally {
     rmSync(target, { recursive: true, force: true });
     rmSync(home, { recursive: true, force: true });
@@ -968,8 +1049,11 @@ test("install-platform codex floor theme installs only floor artifacts and repor
       ".thrift.json",
       ".codex/skills/planner/SKILL.md",
       ".codex/skills/orchestrator/SKILL.md",
+      ".codex/skills/debug-codex/SKILL.md",
       ".codex/hooks/agent-policy-hook.mjs",
       ".codex/hooks/thrift-pretool-bash-telemetry.toml",
+      ".debug-artifacts",
+      "docs/debug/index.md",
     ]) {
       assert.ok(!existsSync(resolve(target, rel)), `unexpected floor artifact ${rel}`);
     }

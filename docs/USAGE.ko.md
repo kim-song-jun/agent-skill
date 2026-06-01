@@ -173,9 +173,10 @@ run /agent-all for "Hard refactor that needs second-opinion"
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lang=ko
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lite
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --update-foundations
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --theme=debug
 ```
 
-기본 renderer 경로는 operational scaffold를 설치합니다. Claude가 아닌 플랫폼은 기본으로 무거운 builder + floor + thrift 번들을 설치합니다. `--lang=ko|en|auto`는 생성된 루트 지침과 `.agent-all.json` language 값을 builder/floor 설치 전체에서 맞춥니다. `--lite`는 builder-only 경로이며 floor/thrift 파일과 전역 Codex config 스니펫을 건너뜁니다. `--update-foundations`는 `scripts/update.sh --foundations-only`로 위임하고, `--dry-run`과 함께 쓰면 `claude` 호출 없이 승인된 계획만 출력합니다. Claude와 Codex `all`, `builder`, `--lite` 설치는 post-install doctor를 자동 실행하며, 검증을 의도적으로 미룰 때만 `--no-doctor`를 넘기세요.
+기본 renderer 경로는 operational scaffold를 설치합니다. Claude가 아닌 플랫폼은 기본으로 무거운 builder + floor + thrift 번들을 설치하며, Codex `all`은 debug skill도 함께 설치합니다. `--theme=debug`는 `run /debug "<failing command>"`용 `.codex/skills/debug-codex/`, `.debug-artifacts/`, `docs/debug/`만 설치합니다. `--lang=ko|en|auto`는 생성된 루트 지침과 `.agent-all.json` language 값을 builder/floor 설치 전체에서 맞춥니다. `--lite`는 builder-only 경로이며 floor/thrift/debug 파일과 전역 Codex config 스니펫을 건너뜁니다. `--update-foundations`는 `scripts/update.sh --foundations-only`로 위임하고, `--dry-run`과 함께 쓰면 `claude` 호출 없이 승인된 계획만 출력합니다. Claude와 Codex `all`, `builder`, `--lite` 설치는 post-install doctor를 자동 실행하며, 검증을 의도적으로 미룰 때만 `--no-doctor`를 넘기세요.
 
 수동 doctor 재실행:
 
@@ -198,9 +199,10 @@ node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/my-project -
 ```
 
 보수적 cleanup은 생성된 Claude/Codex 역할 파일, hook, floor/thrift config,
-task template, helper script를 제거합니다. 루트 가이드는 agent-skill sentinel이
-있을 때만 정리하며, 생성된 루트 가이드까지 의도적으로 제거하려면
-`install-platform.sh --uninstall`에 `--force-root-clean`을 같이 넘기세요.
+Codex debug skill 디렉터리, task template, helper script를 제거합니다.
+Debug 증거인 `docs/debug/`와 `.debug-artifacts/`는 보존합니다. 루트 가이드는
+agent-skill sentinel이 있을 때만 정리하며, 생성된 루트 가이드까지 의도적으로
+제거하려면 `install-platform.sh --uninstall`에 `--force-root-clean`을 같이 넘기세요.
 
 직접 라이브러리로 사용할 때, 핵심 모듈은 이식 가능한 Node.js입니다:
 

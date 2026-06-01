@@ -173,9 +173,10 @@ For a shell-driven install into a target repo, use the platform renderer. Claude
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lang=ko
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lite
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --update-foundations
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --theme=debug
 ```
 
-The default renderer path installs the operational scaffold. Non-Claude platforms install the heavy builder + floor + thrift bundle by default. `--lang=ko|en|auto` keeps generated root guidance and `.agent-all.json` language aligned across the builder/floor install. The `--lite` path is builder-only and skips floor/thrift files plus global Codex config snippets. `--update-foundations` delegates to `scripts/update.sh --foundations-only`; with `--dry-run`, it prints the approved plan without calling `claude`. Claude and Codex `all`, `builder`, and `--lite` installs run the post-install doctor automatically; pass `--no-doctor` only when intentionally deferring validation.
+The default renderer path installs the operational scaffold. Non-Claude platforms install the heavy builder + floor + thrift bundle by default, and Codex `all` also installs the debug skill. `--theme=debug` installs only `.codex/skills/debug-codex/`, `.debug-artifacts/`, and `docs/debug/` for `run /debug "<failing command>"`. `--lang=ko|en|auto` keeps generated root guidance and `.agent-all.json` language aligned across the builder/floor install. The `--lite` path is builder-only and skips floor/thrift/debug files plus global Codex config snippets. `--update-foundations` delegates to `scripts/update.sh --foundations-only`; with `--dry-run`, it prints the approved plan without calling `claude`. Claude and Codex `all`, `builder`, and `--lite` installs run the post-install doctor automatically; pass `--no-doctor` only when intentionally deferring validation.
 
 Manual doctor re-run:
 
@@ -198,10 +199,11 @@ node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/my-project -
 ```
 
 The conservative cleanup removes generated Claude/Codex role files, hooks,
-floor/thrift config files, task templates, and helper scripts. Root guidance
-is preserved unless it has an agent-skill sentinel; pass `--force-root-clean`
-through `install-platform.sh --uninstall` when intentionally removing
-generated-looking root guidance.
+floor/thrift config files, the Codex debug skill directory, task templates,
+and helper scripts. It preserves debug evidence in `docs/debug/` and
+`.debug-artifacts/`. Root guidance is preserved unless it has an agent-skill
+sentinel; pass `--force-root-clean` through `install-platform.sh --uninstall`
+when intentionally removing generated-looking root guidance.
 
 For direct library usage, the core modules are portable Node.js:
 

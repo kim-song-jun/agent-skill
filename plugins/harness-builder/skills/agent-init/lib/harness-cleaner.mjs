@@ -63,6 +63,7 @@ const CODEX_SKILL_DIRS = [
   ".codex/skills/agent-all-codex",
   ".codex/skills/visual-qa-codex",
   ".codex/skills/visual-qa-page",
+  ".codex/skills/debug-codex",
 ];
 
 const SHARED_GENERATED_FILES = [

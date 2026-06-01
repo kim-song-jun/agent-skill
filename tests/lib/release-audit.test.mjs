@@ -349,6 +349,8 @@ test("release audit fails incomplete Codex slash-command skill surfaces", () => 
       "# harness-debug-codex",
       "",
       "Codex CLI debug flow with run /debug, debug-codex, Release surface, structured error parsing, and .debug-state.json.",
+      "./scripts/install-platform.sh --platform=codex --target=/path/to/project --theme=debug",
+      "Installs .codex/skills/debug-codex.",
       "",
     ].join("\n"),
   );

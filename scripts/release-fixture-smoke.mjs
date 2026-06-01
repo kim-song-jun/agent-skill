@@ -87,9 +87,11 @@ const CODEX_OPERATIONAL_PRESENT = [
   ".codex/skills/visual-qa-codex/SKILL.md",
   ".codex/skills/visual-qa-codex/lib/sequential-dispatch.mjs",
   ".codex/skills/visual-qa-page/SKILL.md",
+  ".codex/skills/debug-codex/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
   ".codex/hooks/thrift-pretool-bash-telemetry.toml",
   "docs/tasks/index.md",
+  "docs/debug/index.md",
   ".visual-qa.json",
   ".agent-all.json",
   ".thrift.json",
@@ -298,7 +300,7 @@ function checkCodexOperational(root) {
       ok,
       summary: `Codex operational fixture: ${ok ? "ok" : "failed"} (${CODEX_OPERATIONAL_PRESENT.length - missing.length}/${CODEX_OPERATIONAL_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh git fixture received operational builder, role gate matrix, QA personas, floor, thrift, hooks, configs, and sequential agent-all-codex prompt helper runs from the installed fixture; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
+        ? "fresh git fixture received operational builder, role gate matrix, QA personas, floor, thrift, debug, hooks, configs, and sequential agent-all-codex prompt helper runs from the installed fixture; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
         : compactFailure(res, [...missing, ...failedStdout, agentAllRuntime.ok ? null : agentAllRuntime.details, visualQaRuntime.ok ? null : visualQaRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });

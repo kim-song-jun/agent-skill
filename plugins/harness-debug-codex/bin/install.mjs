@@ -1,32 +1,49 @@
 #!/usr/bin/env node
 // harness-debug-codex install — seeds the harness into a target project.
 //
-// Unlike harness-thrift (which patches settings.local.json with hooks)
-// or harness-floor (which scaffolds .visual-qa.json), harness-debug-codex
-// is fundamentally a per-session skill. The persistent file
+// Unlike harness-thrift (which patches settings.local.json with hooks),
+// harness-debug-codex is fundamentally a per-session skill. The persistent file
 // `.debug-state.json` is created on first `/debug` run, not at install
 // time. So this installer primarily:
 //
 //   1. Verifies the target is a git repo (warn-only).
-//   2. Creates `.debug-artifacts/` and `docs/debug/` directories so
+//   2. Installs `.codex/skills/debug-codex/` into the target project.
+//   3. Creates `.debug-artifacts/` and `docs/debug/` directories so
 //      Phase 1 and Phase 5 have somewhere to write.
-//   3. Writes a `.gitignore` entry for `.debug-artifacts/` so the
+//   4. Writes a `.gitignore` entry for `.debug-artifacts/` so the
 //      raw logs don't pollute commits.
-//   4. Optionally seeds `docs/debug/index.md`.
+//   5. Optionally seeds `docs/debug/index.md`.
 //
 // Usage:
-//   node plugins/harness-debug-codex/bin/install.mjs <target> [--dry-run]
+//   node plugins/harness-debug-codex/bin/install.mjs <target> [--ctx <path>]
+//                                                             [--dry-run]
 //                                                             [--no-gitignore]
+//                                                             [--force]
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, rmSync } from "node:fs";
+import { resolve, join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+const SKILL_SOURCE = resolve(SCRIPT_DIR, "..", "skills", "debug-codex");
 
 function parseArgs(argv) {
-  const args = { target: null, dryRun: false, noGitignore: false };
+  const args = { target: null, ctx: null, dryRun: false, noGitignore: false, force: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--dry-run") args.dryRun = true;
     else if (a === "--no-gitignore") args.noGitignore = true;
+    else if (a === "--force") args.force = true;
+    else if (a === "--ctx") {
+      const next = argv[++i];
+      if (!next || next.startsWith("--")) {
+        console.error("Missing value for --ctx");
+        printUsage();
+        process.exit(1);
+      }
+      args.ctx = next;
+    }
+    else if (a.startsWith("--ctx=")) args.ctx = a.slice("--ctx=".length);
     else if (!a.startsWith("--") && !args.target) args.target = a;
     else {
       console.error(`Unknown argument: ${a}`);
@@ -42,7 +59,7 @@ function parseArgs(argv) {
 }
 
 function printUsage() {
-  console.error("Usage: install.mjs <target> [--dry-run] [--no-gitignore]");
+  console.error("Usage: install.mjs <target> [--ctx <path>] [--dry-run] [--no-gitignore] [--force]");
 }
 
 function ensureDir(target, sub, dryRun) {
@@ -57,6 +74,28 @@ function ensureDir(target, sub, dryRun) {
   }
   mkdirSync(p, { recursive: true });
   console.log(`created ${p}`);
+}
+
+function installSkill(target, { dryRun, force }) {
+  const dest = resolve(target, ".codex/skills/debug-codex");
+  if (!existsSync(SKILL_SOURCE)) {
+    console.error(`Error: source skill directory missing: ${SKILL_SOURCE}`);
+    process.exit(2);
+  }
+  if (existsSync(dest) && !force) {
+    console.log(`exists ${dest}`);
+    return;
+  }
+  if (dryRun) {
+    console.log(`${existsSync(dest) ? "would replace" : "would install"} ${dest}`);
+    return;
+  }
+  mkdirSync(resolve(target, ".codex/skills"), { recursive: true });
+  if (existsSync(dest)) {
+    rmSync(dest, { recursive: true, force: true });
+  }
+  cpSync(SKILL_SOURCE, dest, { recursive: true });
+  console.log(`${force ? "replaced" : "installed"} ${dest}`);
 }
 
 const GITIGNORE_BLOCK = `
@@ -120,6 +159,7 @@ function main() {
 
   ensureDir(target, ".debug-artifacts", args.dryRun);
   ensureDir(target, "docs/debug", args.dryRun);
+  installSkill(target, { dryRun: args.dryRun, force: args.force });
 
   if (!args.noGitignore) {
     patchGitignore(target, args.dryRun);
@@ -130,11 +170,13 @@ function main() {
   console.log("");
   console.log("Debug install summary:");
   console.log(`  target:       ${target}`);
+  console.log(`  skill:        .codex/skills/debug-codex/`);
   console.log(`  artifacts:    .debug-artifacts/   (raw logs land here at Phase 1)`);
   console.log(`  docs:         docs/debug/         (debug-log.md land here at Phase 5)`);
   console.log(`  gitignore:    ${args.noGitignore ? "skipped" : "patched (.debug-artifacts/)"}`);
   console.log(`  state file:   .debug-state.json   (created on first /debug run)`);
   console.log(`  dry-run:      ${args.dryRun ? "yes" : "no"}`);
+  console.log(`  force:        ${args.force ? "yes" : "no"}`);
   console.log("");
   console.log("Type run /debug \"<failing command>\" in Codex to start an investigation.");
 }
