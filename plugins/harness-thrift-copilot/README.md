@@ -23,16 +23,10 @@ Theme C (`harness-floor-copilot`, cost-unrestricted runtime).
 
 ## Install
 
-Once registered in the marketplace:
+From this repo, install the Copilot thrift surface into a project with:
 
 ```
-/plugin install harness-thrift-copilot@<marketplace>
-```
-
-Then, in your project, scaffold the hooks + config:
-
-```
-node plugins/harness-thrift-copilot/bin/install.mjs <target>
+./scripts/install-platform.sh --platform=copilot --theme=thrift --target=/path/to/project
 ```
 
 This writes:
@@ -41,6 +35,12 @@ This writes:
   registrations — see *Hook format* below)
 - `<target>/.github/hooks/scripts/thrift-*.mjs` (the actual hook scripts)
 - `<target>/.github/hooks/scripts/lib/*.mjs` (shared lib modules)
+
+For direct renderer use, run:
+
+```
+node plugins/harness-thrift-copilot/bin/install.mjs /path/to/project [--force]
+```
 
 ## Hook format (Copilot vs Claude Code)
 
@@ -61,12 +61,9 @@ Hook files are append-only: existing user hooks in the same file are
 preserved; thrift entries are added by sentinel match (`thrift-` command
 prefix). `unpatchHooks()` removes only thrift entries.
 
-> **TODO: verify Copilot ask_user / store_memory schemas against live
-> CLI.** The hook payload shape, event names (`preToolUse` vs
-> `pre_tool_use` vs `PreToolUse`), and matcher matching semantics are
-> assumed per `plugins/harness-builder-copilot/skills/copilot-init/templates/hooks/*.json`.
-> Verify by running `gh copilot hooks list` (or equivalent) on a live
-> Copilot CLI.
+Runtime validation for Copilot remains prompt-level plus hook-file review:
+inspect `.github/hooks/thrift-*.json`, then run the target Copilot CLI command
+that lists or previews project hooks for the installed CLI version.
 
 ## Configuration
 
@@ -103,22 +100,22 @@ a Copilot-flavoured `cache` section (warns about intermediation):
 }
 ```
 
-## MVP scope (this iteration)
+## Release surface
 
-- thrift-copilot-core (config-loader, cost-estimator subclass with
-  OpenAI rate table)
-- thrift-copilot-instrument (`.github/hooks/*.json` patcher with
+- thrift-copilot-core: config-loader and cost-estimator with the OpenAI rate
+  table used by GitHub Copilot CLI accounting.
+- thrift-copilot-instrument: `.github/hooks/*.json` patcher with
   append-only sentinel revert)
-- thrift-copilot-store-memory-bridge (file fallback when
-  `store_memory` MCP tool isn't reachable)
-- All 6 phases (0-preflight … 5-audit) documented; phase 4 documented
-  as disabled-by-default
+- thrift-copilot-store-memory-bridge: file fallback when `store_memory` MCP
+  tooling is unavailable.
+- Six thrift phases: preflight, telemetry/coercion, summary pressure,
+  memory mirror, disabled-by-default cache prime, and audit.
 
 ## Status
 
-v0.1 — scaffold matches the decomposition spec. Live Copilot CLI
-verification deferred (sandbox lacks Copilot binary + `store_memory`
-MCP wiring).
+The Copilot port ships as a project-local Theme B surface. Hook registration is
+file-based under `.github/hooks/`, and phase 4 remains disabled by default
+because Copilot intermediates the underlying model layer.
 
 ## Cross-plugin isolation
 
@@ -128,11 +125,11 @@ store-memory-bridge) are independent copies with rate tables and
 patcher logic tailored to Copilot. See `references/porting-notes.md`
 for the rationale.
 
-## Future work
+## Known limits
 
 - Spike `store_memory` payload-size limits + GC behaviour.
-- Verify `.github/hooks/*.json` event names against a live Copilot CLI
-  ≥v0.0.380.
+- Confirm `.github/hooks/*.json` event names against the installed Copilot CLI
+  version used by the target project.
 - If Copilot exposes per-call token counts, swap the heuristic byte→token
   estimator for a real count.
 - Wire to `context-mode-copilot` once that port exists.

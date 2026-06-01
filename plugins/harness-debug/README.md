@@ -28,6 +28,9 @@ cost-unrestricted multi-agent).
   HOW to think; harness-debug supplies WHAT to think about and WHERE
   the conclusions land.
 
+This gives Claude Code a structured debugging harness around reproduction,
+state capture, hypothesis tracking, bisection, and durable summaries.
+
 ## Install
 
 Once registered in the marketplace:
@@ -50,22 +53,22 @@ State file `.debug-state.json` at project root. Schema in
 `docs/superpowers/specs/2026-05-18-harness-debug-design.md`. No
 user-edited config file is required for v0.1; defaults are inlined.
 
-## MVP scope (this iteration)
+## Release surface
 
-- debug-core (state-checkpoint, error-parser dispatch, Phase 0 + 1)
-- debug-error-parser (10 format parsers: python, node, pytest, jest,
+- debug-core: state checkpointing, error-parser dispatch, and Phase 0/1
+  workflow entry.
+- debug-error-parser: 10 format parsers for python, node, pytest, jest,
   node-test, rustc, tsc, cc, eslint, generic-exit)
-- debug-bisector (ddmin input bisector + git bisect wrapper)
-- debug-hypothesis-tracker (add / decide / promote)
-- debug-repro-suggester (Phase 1 vague-input clarifier)
-- debug-summariser (Phase 5 markdown log)
+- debug-bisector: ddmin input bisection and git bisect wrapper.
+- debug-hypothesis-tracker: add, decide, and promote hypothesis state.
+- debug-repro-suggester: Phase 1 vague-input clarifier.
+- debug-summariser: Phase 5 markdown log writer.
 
 ## Status
 
-v0.1 — implementation matches the design spec
-(`docs/superpowers/specs/2026-05-18-harness-debug-design.md`). Live
-Claude Code verification deferred (sandbox lacks running CC); unit
-tests cover all lib modules.
+The Claude Code debug surface matches
+`docs/superpowers/specs/2026-05-18-harness-debug-design.md`; unit tests cover
+the shipped lib modules and parsers.
 
 ## Future work
 

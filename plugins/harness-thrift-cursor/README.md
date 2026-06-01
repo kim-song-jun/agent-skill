@@ -42,16 +42,23 @@ Gemini siblings.
 
 ## Install
 
-Cursor has no plugin loader. Use the bundled renderer:
+Cursor has no plugin loader. Use the release installer from this repo:
 
 ```
-node plugins/harness-thrift-cursor/bin/install.mjs /path/to/your/project [--force]
+./scripts/install-platform.sh --platform=cursor --theme=thrift --target=/path/to/project
 ```
 
-Flags:
-- `--force` — overwrite existing `.thrift.json` and `.cursor/rules/thrift.mdc`.
-- `--dry-run` — print what would be written; do not write.
-- `--ctx <path>` — JSON file overriding template context defaults
+The platform installer delegates to the bundled renderer and keeps all
+artifacts project-local. For direct renderer use, run:
+
+```
+node plugins/harness-thrift-cursor/bin/install.mjs /path/to/project [--force]
+```
+
+Direct renderer flags:
+- `--force` - overwrite existing `.thrift.json` and `.cursor/rules/thrift.mdc`.
+- `--dry-run` - print what would be written; do not write.
+- `--ctx <path>` - JSON file overriding template context defaults
   (`everyNTurns`, `everyMTokensOutput`, `summariserModel`, `date`).
 
 What gets written to `<target>`:
@@ -60,6 +67,24 @@ What gets written to `<target>`:
 .thrift.json                     (config seed; cache section omitted)
 .cursor/rules/thrift.mdc         (alwaysApply rule encoding the workflow)
 ```
+
+## Release surface
+
+- `.thrift.json` seed, with the cache section omitted because Cursor exposes
+  no prompt-cache primitive.
+- `.cursor/rules/thrift.mdc` advisory-only workflow rule.
+- `bin/install.mjs` renderer for project-local install, dry-run, force, and
+  context overrides.
+- Cursor-adapted `lib/config-loader.mjs` and `lib/cost-estimator.mjs`; rate
+  reporting remains advisory-only because Cursor does not surface token
+  counts.
+
+## Runtime validation
+
+The release contract verifies the emitted files and stale-wording guardrails.
+Runtime behavior is intentionally advisory-only: open Cursor in the target
+workspace and confirm the rule appears in `.cursor/rules/thrift.mdc`, then ask
+the planner to follow it for a long-session recap.
 
 ## Usage
 
@@ -102,20 +127,11 @@ Note the absence of the `cache` section relative to the Claude Code
 version — Cursor exposes no cache primitive so the field is omitted
 to avoid implying an unimplemented feature.
 
-## MVP scope
-
-- `.thrift.json` seed (cache section omitted)
-- `.cursor/rules/thrift.mdc` advisory rule
-- `bin/install.mjs` renderer
-- `lib/config-loader.mjs` and `lib/cost-estimator.mjs` adapted for the
-  Cursor environment (no cache fields; rate table documented as
-  "advisory only — Cursor does not surface token counts").
-
 ## Status
 
-v0.1 — scaffold matches the per-platform decomposition spec section
-for Cursor. Live Cursor verification deferred (sandbox lacks running
-Cursor).
+The Cursor port ships as an advisory-only Theme B surface. It matches the
+per-platform decomposition for Cursor while keeping runtime enforcement in the
+Cursor rule layer rather than hook code.
 
 ## References
 

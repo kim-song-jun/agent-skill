@@ -182,6 +182,61 @@ test("install-platform codex all succeeds in a fresh project without patching gl
   }
 });
 
+test("install-platform gemini all succeeds without patching global Gemini settings", () => {
+  const target = tmp("agent-skill-release-gemini-target-");
+  const home = tmp("agent-skill-release-gemini-home-");
+  const thriftOnlyTarget = tmp("agent-skill-release-gemini-thrift-target-");
+  const thriftOnlyHome = tmp("agent-skill-release-gemini-thrift-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=gemini",
+      `--target=${target}`,
+      "--theme=all",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    for (const rel of [
+      "GEMINI.md",
+      ".gemini/skills/planner/SKILL.md",
+      ".visual-qa.json",
+      ".agent-all.json",
+      ".thrift.json",
+      ".gemini/hooks/thrift-beforetool-bash-telemetry.mjs",
+    ]) {
+      assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
+    }
+
+    assert.match(res.stdout, /instrument:\s+no/);
+    assert.match(res.stdout, /manual merge|settings\.json/i);
+    assert.ok(!existsSync(resolve(home, ".gemini/settings.json")), "installer must not create or patch global Gemini settings");
+
+    const thriftOnly = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=gemini",
+      `--target=${thriftOnlyTarget}`,
+      "--theme=thrift",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: thriftOnlyHome },
+    });
+
+    assert.equal(thriftOnly.status, 0, `stdout:\n${thriftOnly.stdout}\nstderr:\n${thriftOnly.stderr}`);
+    assert.ok(existsSync(resolve(thriftOnlyTarget, ".thrift.json")), "missing thrift-only .thrift.json");
+    assert.match(thriftOnly.stdout, /instrument:\s+no/);
+    assert.match(thriftOnly.stdout, /Merge the following into ~\/\.gemini\/settings\.json \(hooks\)/);
+    assert.ok(!existsSync(resolve(thriftOnlyHome, ".gemini/settings.json")), "thrift theme must not patch global Gemini settings");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+    rmSync(thriftOnlyTarget, { recursive: true, force: true });
+    rmSync(thriftOnlyHome, { recursive: true, force: true });
+  }
+});
+
 test("install-platform codex --lang=ko persists language into builder and floor artifacts", () => {
   const target = tmp("agent-skill-release-codex-lang-target-");
   const home = tmp("agent-skill-release-codex-lang-home-");

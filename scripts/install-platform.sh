@@ -287,6 +287,8 @@ case "$THEME" in
       run_init "harness-floor-$EMIT_PLATFORM" "init.mjs"
       if [ "$EMIT_PLATFORM" = "codex" ]; then
         run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs" --no-instrument
+      elif [ "$EMIT_PLATFORM" = "gemini" ]; then
+        run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs" --no-instrument
       else
         run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs"
       fi
@@ -300,6 +302,8 @@ case "$THEME" in
     ;;
   thrift)
     if [ "$EMIT_PLATFORM" = "codex" ]; then
+      run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs" --no-instrument
+    elif [ "$EMIT_PLATFORM" = "gemini" ]; then
       run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs" --no-instrument
     else
       run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs"
