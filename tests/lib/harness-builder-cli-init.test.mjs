@@ -782,6 +782,13 @@ test("harness-builder-codex: generated role skills embed foundation and shared-t
       assert.match(body, /context-mode|file-backed logs|large output/i, `${role} must route bulk context`);
       assert.match(body, /shared-tree|unrelated edits|HOT-file/i, `${role} must preserve shared workspace safety`);
     }
+
+    const orchestrator = readFileSync(resolve(target, ".codex/skills/orchestrator/SKILL.md"), "utf-8");
+    assert.match(orchestrator, /## Role Gate Matrix/);
+    assert.match(orchestrator, /sequential dispatch/i);
+    assert.match(orchestrator, /UI or user-visible flow \| `design-reviewer` \+ `qa-reviewer`/);
+    assert.match(orchestrator, /Auth, permissions, secrets, destructive actions \| `security-reviewer`/);
+    assert.match(orchestrator, /Frontend \+ backend\/API contract \| `integration-dev` \+ `verification-reviewer`/);
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

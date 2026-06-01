@@ -94,6 +94,15 @@ const PLATFORM_CONTRACTS = {
         ],
       },
       {
+        file: "plugins/harness-builder/skills/agent-init/templates/agents/orchestrator.md.hbs",
+        patterns: [
+          /Role Gate Matrix/i,
+          /UI or user-visible flow[\s\S]{0,120}design-reviewer[\s\S]{0,80}qa-reviewer/i,
+          /Auth, permissions, secrets, destructive actions[\s\S]{0,120}security-reviewer/i,
+          /Frontend \+ backend\/API contract[\s\S]{0,120}integration-dev[\s\S]{0,80}verification-reviewer/i,
+        ],
+      },
+      {
         file: "plugins/harness-builder/skills/agent-init/templates/settings.local.json.hbs",
         patterns: [
           /agent-policy-hook\.mjs/,
@@ -286,6 +295,16 @@ const PLATFORM_CONTRACTS = {
           /Orchestration Contract/i,
           /Role Gate Matrix/i,
           /QA Personas/i,
+        ],
+      },
+      {
+        file: "plugins/harness-builder-codex/skills/codex-init/templates/skills/orchestrator/SKILL.md.hbs",
+        patterns: [
+          /Role Gate Matrix/i,
+          /sequential dispatch/i,
+          /UI or user-visible flow[\s\S]{0,120}design-reviewer[\s\S]{0,80}qa-reviewer/i,
+          /Auth, permissions, secrets, destructive actions[\s\S]{0,120}security-reviewer/i,
+          /Frontend \+ backend\/API contract[\s\S]{0,120}integration-dev[\s\S]{0,80}verification-reviewer/i,
         ],
       },
       {

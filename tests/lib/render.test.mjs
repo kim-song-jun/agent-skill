@@ -176,6 +176,12 @@ test("operational Claude root and QA reviewer templates publish orchestration ga
   assert.match(qaOut, /## Configured QA Personas/);
   assert.match(qaOut, /- admin/);
   assert.match(qaOut, /- field operator/);
+
+  const orchestratorTpl = readFileSync(resolve(TEMPLATES_DIR, "agents/orchestrator.md.hbs"), "utf-8");
+  const orchestratorOut = render(orchestratorTpl, fx.ctx);
+  assert.match(orchestratorOut, /## Role Gate Matrix/);
+  assert.match(orchestratorOut, /UI or user-visible flow \| `design-reviewer` \+ `qa-reviewer`/);
+  assert.match(orchestratorOut, /Frontend \+ backend\/API contract \| `integration-dev` \+ `verification-reviewer`/);
 });
 
 test("lite profile snapshots only templates lite mode renders", () => {
