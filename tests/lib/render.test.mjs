@@ -102,10 +102,12 @@ const FIXTURES = [
 ];
 
 const LITE_PROFILE_TEMPLATES = new Set([
+  "AGENTS.md.hbs",
   "CLAUDE.md.hbs",
 ]);
 
 const EXPECTED_OPERATIONAL_TEMPLATES = [
+  "AGENTS.md.hbs",
   "local-guides/CLAUDE.md.hbs",
   "task-ledger/CLAUDE.md.hbs",
   "task-ledger/index.md.hbs",
@@ -182,6 +184,11 @@ test("lite profile snapshots only templates lite mode renders", () => {
     fixturesForTemplate("CLAUDE.md.hbs").some(fx => fx.tag === "lite-profile"),
     true,
     "lite-profile should still snapshot root CLAUDE.md.hbs"
+  );
+  assert.equal(
+    fixturesForTemplate("AGENTS.md.hbs").some(fx => fx.tag === "lite-profile"),
+    true,
+    "lite-profile should still snapshot root AGENTS.md.hbs"
   );
 });
 

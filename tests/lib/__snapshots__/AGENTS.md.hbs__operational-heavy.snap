@@ -1,0 +1,43 @@
+# Operational app
+
+> Companion project memory for agents that read `AGENTS.md`. Maintained by `/agent-init`; `CLAUDE.md` remains the Claude Code primary guide.
+
+## Stack
+
+typescript - deploys to vercel
+
+## Operating Principles
+
+These rules mirror the Claude Code harness so non-Claude agents can participate safely:
+
+1. Read `CLAUDE.md` first when present; it is the primary operating index.
+2. Plan before edits and keep plans in `docs/superpowers/plans/` for multi-step work.
+3. Use context-mode or file-backed logs for broad searches, test output, screenshots, and noisy generated output when available.
+4. Never use destructive git, docker, database, or force-push commands without explicit user approval.
+5. Commit with explicit pathspecs: `git commit -m "message" -- path/one path/two`.
+6. Do not revert unrelated user or other-agent edits.
+
+
+## Operational Harness
+
+- Every `/agent-all` run must resolve to a task document under `docs/tasks/`.
+- Keep Decision Matrix, Ambiguity Log, Progress Snapshot, and Verification current.
+- Use `.claude/agents/` reviewer personas for role-specific implementation and review gates.
+- Folder-level `AGENTS.md` or `CLAUDE.md` files define local ownership and validation scope.
+- Repo-local policy hooks block destructive commands and pathspec-free commits where the host supports hooks.
+
+## Work Folders
+
+- `docs/superpowers/specs/` - brainstorming output.
+- `docs/superpowers/plans/` - implementation plans.
+- `docs/tasks/` - task ledger.
+- `docs/decisions/` - concise decision records.
+
+## Role Roster
+
+| Role | When to use | File |
+|------|-------------|------|
+| planner | task docs and ambiguity control | `.claude/agents/planner.md` |
+| orchestrator | wave ownership and HOT file detection | `.claude/agents/orchestrator.md` |
+| verification-reviewer | evidence and diff scope audit | `.claude/agents/verification-reviewer.md` |
+

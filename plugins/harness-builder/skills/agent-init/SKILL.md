@@ -1,6 +1,6 @@
 ---
 name: agent-init
-description: Bootstrap a Claude Code agent harness in the current project — CLAUDE.md, .claude/agents/, hooks, plugin wiring, all in one invocation. Use when starting a new project or adopting Claude Code on an existing one without an existing CLAUDE.md. (Renamed from /harness-init in v0.2.0)
+description: Bootstrap a Claude Code agent harness in the current project — CLAUDE.md, AGENTS.md, .claude/agents/, hooks, plugin wiring, all in one invocation. Use when starting a new project or adopting Claude Code on an existing one without an existing CLAUDE.md. (Renamed from /harness-init in v0.2.0)
 ---
 
 # /agent-init
@@ -41,7 +41,7 @@ The skill runs 5 phases strictly in order. Each phase is described in a separate
 |-------|------|---------|
 | 0 (preflight) | `phases/1-discover.md` § Preflight | git check, conflict scan, plugin scan |
 | 1 | `phases/1-discover.md` | brainstorming + stack detection |
-| 2 | `phases/2-claude-md.md` | render & write CLAUDE.md |
+| 2 | `phases/2-claude-md.md` | render & write CLAUDE.md and AGENTS.md |
 | 3 | `phases/3-agents.md` | fan-out render of `.claude/agents/*.md` |
 | 4 | `phases/4-hooks.md` | copy hooks, register in `settings.local.json` |
 | 5 | `phases/5-wire.md` | surface missing plugins, commit, summarise |

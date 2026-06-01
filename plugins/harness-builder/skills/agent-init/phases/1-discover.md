@@ -3,7 +3,7 @@
 ## Preflight (run before Phase 1 proper)
 
 1. Confirm `pwd` is a git repository (`.git/` exists). If not: print `git init` suggestion, abort.
-2. Check for existing artefacts. Preserve existing `CLAUDE.md` via sentinel merge in Phase 2. Abort (unless `--force` or `--merge`) if any of these generated artefacts already exist:
+2. Check for existing artefacts. Preserve existing `CLAUDE.md` and `AGENTS.md` via sentinel merge in Phase 2. Abort (unless `--force` or `--merge`) if any of these generated artefacts already exist:
    - `.claude/agents/` non-empty
    - `.claude/hooks/` contains any of `context-mode-router.mjs`, `session-summary.mjs`, `cache-heal.mjs`
 3. Read `~/.claude/plugins/installed_plugins.json` and the active `settings.json` `enabledPlugins`. Call:

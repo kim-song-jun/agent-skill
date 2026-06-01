@@ -102,6 +102,21 @@ test("phase 5 creates docs tasks directory before writing task ledger files", ()
   );
 });
 
+test("agent-init root guidance covers both CLAUDE.md and AGENTS.md", () => {
+  const skill = readSkill();
+  const phase2 = readPhase("2-claude-md.md");
+  const phase5 = readPhase("5-wire.md");
+
+  assert.match(skill, /CLAUDE\.md[\s\S]{0,80}AGENTS\.md/);
+  assert.match(phase2, /templates\/CLAUDE\.md\.hbs/);
+  assert.match(phase2, /templates\/AGENTS\.md\.hbs/);
+  assert.match(phase2, /Root files:[^\n]*`CLAUDE\.md`[^\n]*`AGENTS\.md`/);
+  assert.match(phase2, /Write `CLAUDE\.md` and `AGENTS\.md`/);
+  assert.match(phase5, /planned root files \(`CLAUDE\.md`, `AGENTS\.md`, `\.gitignore`/);
+  assert.match(phase5, /git add -- CLAUDE\.md AGENTS\.md/);
+  assert.match(phase5, /git commit .* -- CLAUDE\.md AGENTS\.md/);
+});
+
 test("theme context is resolved before phase 2 rendering and phase 5 does not backfill it", () => {
   const phase1 = readPhase("1-discover.md");
   const phase2 = readPhase("2-claude-md.md");
