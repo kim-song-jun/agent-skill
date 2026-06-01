@@ -4,7 +4,7 @@
 
 1. If `--dry-run` is set, use the in-memory context from prior phases, including Phase 1's stashed `plugin_scan`, and print the complete no-write plan without reading or writing `.claude/.agent-init-state.json`. Then exit before filesystem mutations, global config patches, foundation updates, state updates, or commits. Include:
    - planned root files (`CLAUDE.md`, `AGENTS.md`, `.gitignore`, `.visual-qa.json`, `.agent-all.json` as applicable)
-   - local guide files
+   - local guide files, including every generated folder-level `CLAUDE.md` and `AGENTS.md` as explicit pathspecs in the commit plan
    - agent files
    - hook files
    - settings changes for `.claude/settings.local.json`
@@ -67,10 +67,10 @@
 
 10. Single git commit with explicit pathspecs:
    ```bash
-   git add -- CLAUDE.md AGENTS.md .claude/ .gitignore docs/ scripts/ .visual-qa.json .agent-all.json
-   git commit -m "chore: bootstrap harness via /agent-init" -- CLAUDE.md AGENTS.md .claude/ .gitignore docs/ scripts/ .visual-qa.json .agent-all.json
+   git add -- CLAUDE.md AGENTS.md .claude/ .gitignore docs/ scripts/ .visual-qa.json .agent-all.json <generated-local-guide-paths>
+   git commit -m "chore: bootstrap harness via /agent-init" -- CLAUDE.md AGENTS.md .claude/ .gitignore docs/ scripts/ .visual-qa.json .agent-all.json <generated-local-guide-paths>
    ```
-   Omit any path that was skipped by lite mode, legacy mode, or platform selection.
+   Omit any path that was skipped by lite mode, legacy mode, or platform selection. Replace `<generated-local-guide-paths>` with the exact folder-level guidance files rendered in Phase 2; do not substitute broad top-level directory pathspecs.
 
 11. Set top-level `commit` to the new SHA and push `{ "phase": 5, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`. Write to disk (this update happens AFTER the commit in step 10, and `.agent-init-state.json` is `.gitignored` from step 5 so it stays out of git).
 
@@ -78,6 +78,6 @@
 
 Print the success summary:
 - Phases completed: 5 / 5
-- CLAUDE.md, AGENTS.md, N agents, hooks installed, task ledger status
+- CLAUDE.md, AGENTS.md, N local guides, N agents, hooks installed, task ledger status
 - Missing plugins (if any) — with the exact install commands
 - Next step suggestion: "Try `/agent-init --dry-run` or invoke planner with `/plan <goal>`."

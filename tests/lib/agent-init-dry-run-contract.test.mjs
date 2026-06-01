@@ -117,6 +117,18 @@ test("agent-init root guidance covers both CLAUDE.md and AGENTS.md", () => {
   assert.match(phase5, /git commit .* -- CLAUDE\.md AGENTS\.md/);
 });
 
+test("agent-init local guidance covers both folder-level CLAUDE.md and AGENTS.md", () => {
+  const phase2 = readPhase("2-claude-md.md");
+  const phase5 = readPhase("5-wire.md");
+
+  assert.match(phase2, /templates\/local-guides\/CLAUDE\.md\.hbs/);
+  assert.match(phase2, /templates\/local-guides\/AGENTS\.md\.hbs/);
+  assert.match(phase2, /Local guide files:[^\n]*`CLAUDE\.md`[^\n]*`AGENTS\.md`/);
+  assert.match(phase2, /render `CLAUDE\.md` and `AGENTS\.md` local guides/i);
+  assert.match(phase2, /mergeSentinelSection[\s\S]{0,160}local guide/);
+  assert.match(phase5, /local guide files[\s\S]{0,220}explicit pathspecs/i);
+});
+
 test("theme context is resolved before phase 2 rendering and phase 5 does not backfill it", () => {
   const phase1 = readPhase("1-discover.md");
   const phase2 = readPhase("2-claude-md.md");

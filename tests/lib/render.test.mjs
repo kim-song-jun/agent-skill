@@ -109,6 +109,7 @@ const LITE_PROFILE_TEMPLATES = new Set([
 const EXPECTED_OPERATIONAL_TEMPLATES = [
   "AGENTS.md.hbs",
   "local-guides/CLAUDE.md.hbs",
+  "local-guides/AGENTS.md.hbs",
   "task-ledger/CLAUDE.md.hbs",
   "task-ledger/index.md.hbs",
   "task-ledger/_template.md.hbs",
