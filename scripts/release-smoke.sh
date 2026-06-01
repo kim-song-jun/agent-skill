@@ -102,6 +102,7 @@ run_step "focused release contracts" \
     tests/agent-all/lib/gate-plan.test.mjs \
     tests/agent-all/policy/coordinator-audit-validator.test.mjs \
     tests/agent-all/policy/hook-router-coordinator.test.mjs \
+    tests/agent-all/policy/install.test.mjs \
     tests/lib/agent-all-codex.test.mjs \
     tests/lib/agent-all-codex-dispatch.test.mjs \
     tests/lib/visual-qa-codex-dispatch.test.mjs \

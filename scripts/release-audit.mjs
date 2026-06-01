@@ -23,6 +23,7 @@ const PLATFORM_CONTRACTS = {
       "plugins/harness-builder/skills/agent-init/templates/AGENTS.md.hbs",
       "plugins/harness-builder/skills/agent-init/templates/settings.local.json.hbs",
       "plugins/harness-builder/skills/agent-init/templates/hooks/agent-policy-hook.mjs",
+      "plugins/harness-floor/bin/install-floor-policy.mjs",
       "plugins/harness-floor/bin/floor-policy-hook.mjs",
       "plugins/harness-floor/skills/agent-all/SKILL.md",
       "plugins/harness-floor/skills/agent-all/lib/gate-plan.mjs",
@@ -114,6 +115,18 @@ const PLATFORM_CONTRACTS = {
           /VERIFICATION_AUDIT/,
           /git commit requires explicit pathspec/,
         ],
+      },
+      {
+        file: "plugins/harness-floor/bin/install-floor-policy.mjs",
+        patterns: [
+          /matcher: "Task"/,
+          /hooks: \[\{ type: "command", command \}\]/,
+          /node "\$\{hookScriptAbsPath\}" PreToolUse/,
+          /node "\$\{hookScriptAbsPath\}" PostToolUse/,
+          /cannot parse .*refusing to patch/,
+          /floor-policy-\(\?:hook\|pre\|post\)/,
+        ],
+        forbidden: [/floor-policy-pre node/, /floor-policy-post node/],
       },
       {
         file: "plugins/harness-floor/skills/agent-all/phases/4-gate.md",
