@@ -10,10 +10,12 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.equal(result.ok, true);
   assert.equal(result.checks.claudeMarketplace.ok, true);
   assert.equal(result.checks.claudeRendered.ok, true);
+  assert.equal(result.checks.claudeLite.ok, true);
   assert.equal(result.checks.codexOperational.ok, true);
   assert.equal(result.checks.codexLite.ok, true);
   assert.match(result.checks.claudeMarketplace.summary, /Claude marketplace dry-run: ok/);
   assert.match(result.checks.claudeRendered.summary, /Claude rendered fixture: ok/);
+  assert.match(result.checks.claudeLite.summary, /Claude lite fixture: ok/);
   assert.match(result.checks.codexOperational.summary, /Codex operational fixture: ok/);
   assert.match(result.checks.codexLite.summary, /Codex lite fixture: ok/);
 });
@@ -28,6 +30,7 @@ test("release fixture smoke CLI emits human-readable summaries", () => {
   assert.match(output, /release fixture smoke: ok/);
   assert.match(output, /Claude marketplace dry-run: ok/);
   assert.match(output, /Claude rendered fixture: ok/);
+  assert.match(output, /Claude lite fixture: ok/);
   assert.match(output, /Codex operational fixture: ok/);
   assert.match(output, /Codex lite fixture: ok/);
 });
@@ -42,6 +45,7 @@ test("release fixture smoke CLI emits JSON", () => {
   assert.equal(data.ok, true);
   assert.equal(data.checks.claudeMarketplace.ok, true);
   assert.equal(data.checks.claudeRendered.ok, true);
+  assert.equal(data.checks.claudeLite.ok, true);
   assert.equal(data.checks.codexOperational.ok, true);
   assert.equal(data.checks.codexLite.ok, true);
 });

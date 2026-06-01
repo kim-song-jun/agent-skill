@@ -8,8 +8,9 @@
 
 ## Language
 
-- Interaction language: `{{interactionLang}}`
-- Downstream `/agent-all` config keeps `.agent-all.json` `language` aligned with this value.
+- Interaction language: `{{interactionLang}}`{{#if operationalProfile}}
+- Downstream `/agent-all` config keeps `.agent-all.json` `language` aligned with this value.{{/if}}{{#if liteProfile}}
+- Lite mode does not seed downstream `/agent-all` config; if you add it later, keep its language aligned with this value.{{/if}}
 
 ## Operating Principles
 

@@ -21,7 +21,7 @@ The fast smoke gate verifies:
 - Claude marketplace dry-run install coverage.
 - Codex marketplace dry-run install coverage.
 - Claude/Codex release readiness audit for required manifests, files, hooks, role routing, and audit tokens.
-- Fresh Claude marketplace/render and Codex operational/lite git fixtures through the release fixture smoke gate.
+- Fresh Claude marketplace plus Claude/Codex operational/lite git fixtures through the release fixture smoke gate.
 - Claude native release contracts.
 - Codex install renderers for operational and lite profiles.
 - Codex floor and visual-qa sequential dispatch contracts.

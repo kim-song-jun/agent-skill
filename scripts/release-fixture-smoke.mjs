@@ -52,6 +52,41 @@ const CLAUDE_OPERATIONAL_AGENTS = [
   { name: "data-reviewer", when: "migrations, seeds, fixtures, backfills" },
 ];
 
+const CLAUDE_LITE_AGENTS = [
+  { name: "planner", when: "planning" },
+  { name: "dev", when: "implementation" },
+  { name: "reviewer", when: "review" },
+];
+
+const CLAUDE_LITE_PRESENT = [
+  "CLAUDE.md",
+  "AGENTS.md",
+  ".claude/settings.local.json",
+  ".claude/hooks/context-mode-router.mjs",
+  ".claude/hooks/session-summary.mjs",
+  ".claude/hooks/cache-heal.mjs",
+  ".claude/agents/planner.md",
+  ".claude/agents/dev.md",
+  ".claude/agents/reviewer.md",
+];
+
+const CLAUDE_LITE_ABSENT = [
+  ".claude/hooks/agent-policy-hook.mjs",
+  ".claude/agents/orchestrator.md",
+  ".claude/agents/integration-dev.md",
+  ".claude/agents/verification-reviewer.md",
+  ".claude/agents/qa-reviewer.md",
+  ".claude/agents/design-reviewer.md",
+  ".claude/agents/security-reviewer.md",
+  ".claude/agents/data-reviewer.md",
+  "docs/tasks/index.md",
+  "docs/tasks/_template.md",
+  "docs/tasks/_handoff-template.md",
+  "scripts/agent-task-ledger-check.mjs",
+  ".visual-qa.json",
+  ".agent-all.json",
+];
+
 const CODEX_OPERATIONAL_PRESENT = [
   "AGENTS.md",
   ".codex/skills/planner/SKILL.md",
@@ -89,6 +124,7 @@ export function runReleaseFixtureSmoke({ root = ROOT } = {}) {
   const checks = {
     claudeMarketplace: checkClaudeMarketplace(root),
     claudeRendered: checkClaudeRendered(root),
+    claudeLite: checkClaudeLite(root),
     codexOperational: checkCodexOperational(root),
     codexLite: checkCodexLite(root),
   };
@@ -219,6 +255,97 @@ function checkClaudeRendered(root) {
       details: ok
         ? "fresh render produced Claude root memory, role agents, hooks, task ledger, and floor seed configs"
         : formatIssues([...missing, ...failed]),
+    };
+  });
+}
+
+function checkClaudeLite(root) {
+  return withFixture("agent-skill-release-claude-lite-", ({ target }) => {
+    initGit(target);
+    const ctx = {
+      purpose: "Release fixture lite app",
+      stack: "javascript",
+      runtime: "",
+      services: [],
+      services_str: "",
+      deploy_targets: "",
+      constraints: "",
+      interactionLang: "en",
+      language: "en",
+      operationalProfile: false,
+      liteProfile: true,
+      floorTheme: false,
+      degradedFoundations: true,
+      agents: CLAUDE_LITE_AGENTS,
+      persona: "release",
+      title: "Release Fixture Lite Task",
+      guidePath: "src",
+    };
+
+    const renderJobs = [
+      ["plugins/harness-builder/skills/agent-init/templates/CLAUDE.md.hbs", "CLAUDE.md"],
+      ["plugins/harness-builder/skills/agent-init/templates/AGENTS.md.hbs", "AGENTS.md"],
+      ["plugins/harness-builder/skills/agent-init/templates/settings.local.json.hbs", ".claude/settings.local.json"],
+    ];
+    for (const [src, dest] of renderJobs) {
+      writeRendered(root, target, src, dest, ctx);
+    }
+
+    for (const agent of CLAUDE_LITE_AGENTS) {
+      writeRendered(
+        root,
+        target,
+        `plugins/harness-builder/skills/agent-init/templates/agents/${agent.name}.md.hbs`,
+        `.claude/agents/${agent.name}.md`,
+        ctx,
+      );
+    }
+
+    const verbatimJobs = [
+      ["plugins/harness-builder/skills/agent-init/templates/hooks/context-mode-router.mjs", ".claude/hooks/context-mode-router.mjs"],
+      ["plugins/harness-builder/skills/agent-init/templates/hooks/session-summary.mjs", ".claude/hooks/session-summary.mjs"],
+      ["plugins/harness-builder/skills/agent-init/templates/hooks/cache-heal.mjs", ".claude/hooks/cache-heal.mjs"],
+    ];
+    for (const [src, dest] of verbatimJobs) {
+      writeVerbatim(root, target, src, dest);
+    }
+
+    const missing = missingFiles(target, CLAUDE_LITE_PRESENT);
+    const unexpected = existingFiles(target, CLAUDE_LITE_ABSENT);
+    const settings = parseJsonFile(resolve(target, ".claude/settings.local.json"), "settings.local.json");
+    const hookChecks = [
+      ".claude/hooks/context-mode-router.mjs",
+      ".claude/hooks/session-summary.mjs",
+      ".claude/hooks/cache-heal.mjs",
+    ].map((file) => checkNodeSyntax(resolve(target, file), file));
+    const claude = readIfExists(resolve(target, "CLAUDE.md"));
+    const agents = readIfExists(resolve(target, "AGENTS.md"));
+    const renderedText = `${claude}\n${agents}`;
+    const settingsText = JSON.stringify(settings.value || {});
+    const textChecks = [
+      ["CLAUDE.md includes lite harness guidance", /Lite Harness/.test(claude)],
+      ["AGENTS.md includes lite skip guidance", /Task-ledger and hard-policy artifacts are intentionally skipped/.test(agents)],
+      ["settings keeps context-mode router", settingsText.includes("context-mode-router.mjs")],
+      ["settings omits policy hook", !settingsText.includes("agent-policy-hook.mjs")],
+      ["lite docs omit task ledger paths", !/docs\/tasks\//.test(renderedText)],
+      ["lite docs omit agent-all runtime config", !/\.agent-all\.json/.test(renderedText)],
+    ];
+    const failed = [
+      ...settings.errors,
+      ...hookChecks.filter((check) => !check.ok).map((check) => check.details),
+      ...textChecks.filter(([, pass]) => !pass).map(([name]) => name),
+    ];
+    const ok = missing.length === 0
+      && unexpected.length === 0
+      && failed.length === 0;
+    const total = CLAUDE_LITE_PRESENT.length + CLAUDE_LITE_ABSENT.length;
+
+    return {
+      ok,
+      summary: `Claude lite fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
+      details: ok
+        ? "fresh render produced Claude lite root memory, minimal agents, and non-policy hooks only"
+        : formatIssues([...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failed]),
     };
   });
 }

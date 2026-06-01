@@ -9,7 +9,7 @@ javascript
 ## Language
 
 - Interaction language: `en`
-- Downstream `/agent-all` config keeps `.agent-all.json` `language` aligned with this value.
+- Lite mode does not seed downstream `/agent-all` config; if you add it later, keep its language aligned with this value.
 
 ## Operating Principles
 
