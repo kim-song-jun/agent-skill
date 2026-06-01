@@ -383,6 +383,7 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|412\/412|418\/418|421\/421/);
   assert.match(plan, /foundation auto-update/i);
   assert.match(plan, /install-platform\.sh --platform=codex --theme=all\|debug/);
+  assert.match(plan, /Claude\/Codex `install-platform\.sh --uninstall` release-fixture roundtrips/i);
   assert.match(plan, /Codex operational\/default-heavy, builder, and lite post-install doctor evidence/i);
   assert.match(plan, /Codex floor\/thrift single-theme release fixtures/i);
   assert.match(plan, /post-install doctor coverage/i);
@@ -461,7 +462,8 @@ test("manual release checklist is mapped to automated gates and Claude/Codex liv
   assert.match(body, /node --test[\s\S]{0,480}claude-native-release-contract\.test\.mjs/);
   assert.match(body, /node --test[\s\S]{0,480}release-install-scripts\.test\.mjs/);
   assert.match(body, /Codex install renderers[\s\S]{0,180}builder, floor, thrift/i);
-  assert.match(body, /Fresh release fixture coverage[\s\S]{0,260}Codex operational\/lite\/builder\/floor\/thrift\/debug installs/i);
+  assert.match(body, /Fresh release fixture coverage[\s\S]{0,320}Codex operational\/lite\/builder\/floor\/thrift\/debug installs/i);
+  assert.match(body, /Fresh release fixture coverage[\s\S]{0,360}Claude\/Codex install→uninstall roundtrips/i);
   assert.match(body, /Doctor coverage[\s\S]{0,260}Codex debug-only scaffolds/i);
   assert.match(body, /Phase 5 post-install doctor ordering[\s\S]{0,160}bootstrap commit/i);
   assert.match(body, /Claude Code live session/i);
@@ -489,6 +491,7 @@ test("CLI runtime checklist points at the release readiness audit gate", () => {
   assert.match(body, /release-audit\.mjs/);
   assert.match(body, /release-fixture-smoke\.mjs/);
   assert.match(body, /release readiness audit/i);
+  assert.match(body, /Claude\/Codex install→uninstall roundtrips/i);
   assert.match(body, /Codex builder\/floor\/thrift\/debug git fixtures/i);
   assert.match(body, /operational, lite, builder, floor, thrift, and debug profiles/i);
   assert.match(body, /release-smoke\.sh --fast --with-live-cli/);

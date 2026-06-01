@@ -215,6 +215,36 @@ const CODEX_DEBUG_ABSENT = [
   ".thrift.json",
 ];
 
+const CLAUDE_UNINSTALL_REMOVED = [
+  ".claude/agents/dev.md",
+  ".claude/agents/orchestrator.md",
+  ".claude/hooks/context-mode-router.mjs",
+  ".claude/hooks/session-summary.mjs",
+  ".claude/hooks/cache-heal.mjs",
+  ".claude/hooks/agent-policy-hook.mjs",
+  "docs/tasks/_template.md",
+  "docs/tasks/_handoff-template.md",
+  "scripts/agent-task-ledger-check.mjs",
+  ".visual-qa.json",
+  ".agent-all.json",
+];
+
+const CODEX_UNINSTALL_REMOVED = [
+  ".codex/skills/dev/SKILL.md",
+  ".codex/skills/orchestrator/SKILL.md",
+  ".codex/skills/agent-all-codex/SKILL.md",
+  ".codex/skills/visual-qa-codex/SKILL.md",
+  ".codex/skills/debug-codex/SKILL.md",
+  ".codex/hooks/agent-policy-hook.mjs",
+  ".codex/hooks/thrift-pretool-bash-telemetry.toml",
+  "docs/tasks/_template.md",
+  "docs/tasks/_handoff-template.md",
+  "scripts/agent-task-ledger-check.mjs",
+  ".visual-qa.json",
+  ".agent-all.json",
+  ".thrift.json",
+];
+
 export function runReleaseFixtureSmoke({ root = ROOT } = {}) {
   const checks = {
     claudeMarketplace: checkClaudeMarketplace(root),
@@ -222,12 +252,14 @@ export function runReleaseFixtureSmoke({ root = ROOT } = {}) {
     claudeLite: checkClaudeLite(root),
     claudePlatform: checkClaudePlatformInstall(root),
     claudePlatformLite: checkClaudePlatformLiteInstall(root),
+    claudeUninstall: checkClaudePlatformUninstall(root),
     codexOperational: checkCodexOperational(root),
     codexLite: checkCodexLite(root),
     codexBuilder: checkCodexBuilder(root),
     codexFloor: checkCodexFloor(root),
     codexThrift: checkCodexThrift(root),
     codexDebug: checkCodexDebug(root),
+    codexUninstall: checkCodexPlatformUninstall(root),
   };
 
   return {
@@ -471,6 +503,48 @@ function checkClaudePlatformLiteInstall(root) {
       details: ok
         ? "fresh terminal install-platform Claude lite fixture produced only lite scaffold files, post-install Claude platform lite doctor coverage, and no HOME patching"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failed]),
+    };
+  });
+}
+
+function checkClaudePlatformUninstall(root) {
+  return withFixture("agent-skill-release-claude-uninstall-", ({ target, home }) => {
+    initGit(target);
+    const install = runInstallPlatform(root, target, home, ["--no-doctor"], "claude");
+    const installProducedScaffold = install.status === 0 && existsSync(resolve(target, ".claude/agents/dev.md"));
+    const dryRun = runInstallPlatform(root, target, home, ["--uninstall", "--dry-run"], "claude");
+    const dryRunMutated = CLAUDE_UNINSTALL_REMOVED.some((file) => !existsSync(resolve(target, file)));
+    const uninstall = runInstallPlatform(root, target, home, ["--uninstall"], "claude");
+
+    const stillPresent = existingFiles(target, CLAUDE_UNINSTALL_REMOVED);
+    const settings = parseJsonFile(resolve(target, ".claude/settings.local.json"), "settings.local.json");
+    const settingsText = JSON.stringify(settings.value || {});
+    const homeSettings = resolve(home, ".claude/settings.local.json");
+    const stdoutChecks = [
+      ["install produced Claude scaffold", installProducedScaffold],
+      ["dry-run reports cleaner without mutation", dryRun.status === 0 && /harness clean: dry-run/i.test(dryRun.stdout) && !dryRunMutated],
+      ["uninstall reports cleaner success", uninstall.status === 0 && /harness clean: ok/i.test(uninstall.stdout)],
+      ["root CLAUDE.md is preserved for manual review", existsSync(resolve(target, "CLAUDE.md"))],
+      ["root AGENTS.md is preserved for manual review", existsSync(resolve(target, "AGENTS.md"))],
+      ["settings omits generated hook registrations", !settingsText.includes(".claude/hooks/")],
+      ["does not patch HOME settings", !existsSync(homeSettings)],
+    ];
+    const failed = [
+      ...settings.errors,
+      ...stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name),
+    ];
+    const ok = install.status === 0
+      && dryRun.status === 0
+      && uninstall.status === 0
+      && stillPresent.length === 0
+      && failed.length === 0;
+
+    return {
+      ok,
+      summary: `Claude uninstall fixture: ${ok ? "ok" : "failed"} (${CLAUDE_UNINSTALL_REMOVED.length - stillPresent.length}/${CLAUDE_UNINSTALL_REMOVED.length} removals)`,
+      details: ok
+        ? "fresh terminal Claude install-platform uninstall roundtrip removed generated agents, hooks, task ledger, and floor configs while preserving root guidance and avoiding HOME patching"
+        : compactFailure(uninstall, [...stillPresent.map((file) => `still present ${file}`), ...failed]),
     };
   });
 }
@@ -959,6 +1033,43 @@ function checkCodexDebug(root) {
       details: ok
         ? "fresh git fixture received only debug-codex artifacts, post-install debug doctor coverage, and no global config side effects"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failedStdout, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
+    };
+  });
+}
+
+function checkCodexPlatformUninstall(root) {
+  return withFixture("agent-skill-release-codex-uninstall-", ({ target, home }) => {
+    initGit(target);
+    const install = runInstallPlatform(root, target, home, ["--theme=all", "--no-doctor"]);
+    const installProducedScaffold = install.status === 0 && existsSync(resolve(target, ".codex/skills/dev/SKILL.md"));
+    const dryRun = runInstallPlatform(root, target, home, ["--uninstall", "--dry-run"]);
+    const dryRunMutated = CODEX_UNINSTALL_REMOVED.some((file) => !existsSync(resolve(target, file)));
+    const uninstall = runInstallPlatform(root, target, home, ["--uninstall"]);
+
+    const stillPresent = existingFiles(target, CODEX_UNINSTALL_REMOVED);
+    const homeConfig = resolve(home, ".codex/config.toml");
+    const stdoutChecks = [
+      ["install produced Codex scaffold", installProducedScaffold],
+      ["dry-run reports cleaner without mutation", dryRun.status === 0 && /harness clean: dry-run/i.test(dryRun.stdout) && !dryRunMutated],
+      ["uninstall reports cleaner success", uninstall.status === 0 && /harness clean: ok/i.test(uninstall.stdout)],
+      ["root AGENTS.md is preserved for manual review", existsSync(resolve(target, "AGENTS.md"))],
+      ["debug docs are preserved as evidence", existsSync(resolve(target, "docs/debug/index.md"))],
+      ["debug artifacts are preserved as evidence", existsSync(resolve(target, ".debug-artifacts"))],
+      ["does not patch global Codex config", !existsSync(homeConfig)],
+    ];
+    const failed = stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name);
+    const ok = install.status === 0
+      && dryRun.status === 0
+      && uninstall.status === 0
+      && stillPresent.length === 0
+      && failed.length === 0;
+
+    return {
+      ok,
+      summary: `Codex uninstall fixture: ${ok ? "ok" : "failed"} (${CODEX_UNINSTALL_REMOVED.length - stillPresent.length}/${CODEX_UNINSTALL_REMOVED.length} removals)`,
+      details: ok
+        ? "fresh terminal Codex install-platform uninstall roundtrip removed generated skills, hooks, task ledger, and floor/thrift configs while preserving root guidance, debug evidence, and global config"
+        : compactFailure(uninstall, [...stillPresent.map((file) => `still present ${file}`), ...failed]),
     };
   });
 }
