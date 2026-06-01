@@ -40,8 +40,11 @@ const PLUGINS = {
       ".codex/skills/security-reviewer/SKILL.md",
       ".codex/skills/data-reviewer/SKILL.md",
       ".codex/hooks/agent-policy-hook.mjs",
+      "scripts/agent-task-ledger-check.mjs",
+      "docs/tasks/AGENTS.md",
       "docs/tasks/index.md",
       "docs/tasks/_template.md",
+      "docs/tasks/_handoff-template.md",
     ],
     stdoutContains: /\[\[hooks\.PreToolUse\]\]/, // TOML snippet for ~/.codex/config.toml
     stdoutHeader:   /codex-config\.toml/,
@@ -242,13 +245,25 @@ test("harness-builder-codex: generated task ledger matches agent-all contract", 
 
     const index = readFileSync(resolve(target, "docs/tasks/index.md"), "utf-8");
     const template = readFileSync(resolve(target, "docs/tasks/_template.md"), "utf-8");
+    const handoffTemplate = readFileSync(resolve(target, "docs/tasks/_handoff-template.md"), "utf-8");
+    const guide = readFileSync(resolve(target, "docs/tasks/AGENTS.md"), "utf-8");
 
     assert.match(index, /^## Active$/m);
     assert.doesNotMatch(index, /^## Active Tasks$/m);
     assert.deepEqual(validateTaskDoc(template), { ok: true, errors: [] });
+    assert.match(handoffTemplate, /^## Active Task$/m);
+    assert.match(handoffTemplate, /^## Next Action$/m);
+    assert.match(guide, /Every active `\/agent-all` run must have one task document/);
     for (const section of REQUIRED_SECTIONS) {
       assert.match(template, new RegExp(`^## ${section}$`, "m"));
     }
+
+    const check = spawnSync("node", ["scripts/agent-task-ledger-check.mjs", "docs/tasks/_template.md"], {
+      cwd: target,
+      encoding: "utf-8",
+    });
+    assert.equal(check.status, 0, check.stderr);
+    assert.match(check.stdout, /task ledger ok/);
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

@@ -48,64 +48,6 @@ const OPERATIONAL_AGENTS = [
 
 const OPERATIONAL_SKILL_RE = /^skills\/(orchestrator|verification-reviewer|qa-reviewer|design-reviewer|security-reviewer|data-reviewer)\//;
 
-const TASK_LEDGER_TEMPLATES = [
-  {
-    rel: "task-ledger/index.md.hbs",
-    body: `# Task Index
-
-<!-- agent-skill:operational:start -->
-## Active
-
-## Completed
-
-## Backlog
-<!-- agent-skill:operational:end -->
-`,
-  },
-  {
-    rel: "task-ledger/_template.md.hbs",
-    body: `# NN-task-slug
-
-## Goal
-
-## Acceptance
-
-## Scope
-
-## Out of Scope
-
-## File Ownership
-
-## Phases
-
-## Decision Matrix
-
-| Decision | Options | Choice | Rationale |
-|---|---|---|---|
-
-## Ambiguity Log
-
-## Progress Snapshot
-
-Current phase:
-Current git state:
-Completed:
-Remaining:
-Blockers:
-Latest validation:
-Next action:
-
-## Verification
-
-## Risk / Rollback
-
-## Handoff
-
-## Follow-up
-`,
-  },
-];
-
 function parseArgs(argv) {
   const args = { target: null, ctxPath: null, force: false, lite: false, dryRun: false };
   for (let i = 0; i < argv.length; i++) {
@@ -194,8 +136,11 @@ function relToTarget(rel) {
   if (stripped.startsWith("skills/")) return `.codex/${stripped}`;
   if (stripped === "hooks/agent-policy-hook.mjs") return ".codex/hooks/agent-policy-hook.mjs";
   if (stripped === "local-guides/AGENTS.md") return ".codex/AGENTS.md";
+  if (stripped === "task-ledger/AGENTS.md") return "docs/tasks/AGENTS.md";
   if (stripped === "task-ledger/index.md") return "docs/tasks/index.md";
   if (stripped === "task-ledger/_template.md") return "docs/tasks/_template.md";
+  if (stripped === "task-ledger/_handoff-template.md") return "docs/tasks/_handoff-template.md";
+  if (stripped === "task-ledger/agent-task-ledger-check.mjs") return "scripts/agent-task-ledger-check.mjs";
   // Unknown layout — drop under .codex/ to be safe.
   return `.codex/${stripped}`;
 }
@@ -208,7 +153,7 @@ function main() {
     process.exit(1);
   }
   const ctx = loadCtx(args.ctxPath, target, { lite: args.lite });
-  const templates = [...listTemplates(templatesDir), ...TASK_LEDGER_TEMPLATES];
+  const templates = listTemplates(templatesDir);
   const stdoutChunks = [];
   const plannedWrites = [];
   let skippedLiteConfig = false;
