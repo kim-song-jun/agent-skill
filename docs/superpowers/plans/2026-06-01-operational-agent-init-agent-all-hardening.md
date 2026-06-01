@@ -25,8 +25,8 @@ Completed scope:
 Verification evidence:
 
 - `node scripts/release-audit.mjs`: Claude/Codex readiness checks passing.
-- `node --test`: 1638/1638 passing.
-- `./scripts/release-smoke.sh --fast --with-live-cli`: 282/282 passing with Claude Code and Codex CLI live probes.
+- `node --test`: 1639/1639 passing.
+- `./scripts/release-smoke.sh --fast --with-live-cli`: 283/283 passing with Claude Code and Codex CLI live probes.
 - `node scripts/sync-lib.mjs --check`: 31 vendored files match source.
 
 ## Scope Decomposition
