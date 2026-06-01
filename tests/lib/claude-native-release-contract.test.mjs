@@ -105,3 +105,32 @@ test("Claude native /agent-init phase docs cover parallel agent fan-out and fina
   assert.match(phase5, /N local guides/);
   assert.match(phase5, /commit[\s\S]{0,260}explicit pathspecs/i);
 });
+
+test("Claude native role templates embed foundation and shared-tree discipline", () => {
+  const roleTemplates = [
+    "backend-dev",
+    "data-reviewer",
+    "design-reviewer",
+    "designer",
+    "dev",
+    "doc-writer",
+    "frontend-dev",
+    "integration-dev",
+    "orchestrator",
+    "planner",
+    "qa",
+    "qa-reviewer",
+    "reviewer",
+    "security-reviewer",
+    "tester",
+    "verification-reviewer",
+  ];
+
+  for (const role of roleTemplates) {
+    const body = read(`plugins/harness-builder/skills/agent-init/templates/agents/${role}.md.hbs`);
+    assert.match(body, /CLAUDE\.md[\s\S]{0,120}docs\/tasks/, `${role} must read root and task context`);
+    assert.match(body, /superpowers:/, `${role} must name the matching superpowers workflow`);
+    assert.match(body, /context-mode|ctx_batch_execute|ctx_execute/i, `${role} must route bulk context`);
+    assert.match(body, /shared-tree|unrelated edits|HOT-file/i, `${role} must preserve shared workspace safety`);
+  }
+});

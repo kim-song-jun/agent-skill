@@ -415,6 +415,37 @@ test("harness-builder-codex: --lang=auto resolves Korean locale before writing A
   }
 });
 
+test("harness-builder-codex: generated role skills embed foundation and shared-tree discipline", () => {
+  const target = mkTarget("codex-role-discipline");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target]);
+    assert.equal(res.status, 0, res.stderr);
+
+    const roles = [
+      "planner",
+      "dev",
+      "reviewer",
+      "orchestrator",
+      "verification-reviewer",
+      "qa-reviewer",
+      "design-reviewer",
+      "security-reviewer",
+      "data-reviewer",
+      "integration-dev",
+    ];
+
+    for (const role of roles) {
+      const body = readFileSync(resolve(target, `.codex/skills/${role}/SKILL.md`), "utf-8");
+      assert.match(body, /AGENTS\.md[\s\S]{0,160}docs\/tasks/, `${role} must read root and task context`);
+      assert.match(body, /superpowers:/, `${role} must name the matching superpowers workflow`);
+      assert.match(body, /context-mode|file-backed logs|large output/i, `${role} must route bulk context`);
+      assert.match(body, /shared-tree|unrelated edits|HOT-file/i, `${role} must preserve shared workspace safety`);
+    }
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
 test("harness-builder-codex: invalid --lang value fails before writing files", () => {
   const target = mkTarget("codex-lang-invalid");
   try {
