@@ -421,23 +421,30 @@ test("harness-builder-codex: generated role skills embed foundation and shared-t
     const res = runInit(PLUGINS.codex.bin, [target]);
     assert.equal(res.status, 0, res.stderr);
 
-    const roles = [
-      "planner",
-      "dev",
-      "reviewer",
-      "orchestrator",
-      "verification-reviewer",
-      "qa-reviewer",
-      "design-reviewer",
-      "security-reviewer",
-      "data-reviewer",
-      "integration-dev",
-    ];
+    const roleSkills = {
+      planner: ["brainstorming", "writing-plans", "dispatching-parallel-agents"],
+      dev: ["test-driven-development", "verification-before-completion"],
+      reviewer: ["requesting-code-review", "verification-before-completion"],
+      orchestrator: [
+        "dispatching-parallel-agents",
+        "subagent-driven-development",
+        "verification-before-completion",
+      ],
+      "verification-reviewer": ["requesting-code-review", "verification-before-completion"],
+      "qa-reviewer": ["requesting-code-review", "verification-before-completion"],
+      "design-reviewer": ["requesting-code-review", "verification-before-completion"],
+      "security-reviewer": ["requesting-code-review", "verification-before-completion"],
+      "data-reviewer": ["requesting-code-review", "verification-before-completion"],
+      "integration-dev": ["test-driven-development", "verification-before-completion"],
+    };
 
-    for (const role of roles) {
+    for (const [role, skills] of Object.entries(roleSkills)) {
       const body = readFileSync(resolve(target, `.codex/skills/${role}/SKILL.md`), "utf-8");
       assert.match(body, /AGENTS\.md[\s\S]{0,160}docs\/tasks/, `${role} must read root and task context`);
-      assert.match(body, /superpowers:/, `${role} must name the matching superpowers workflow`);
+      assert.doesNotMatch(body, /superpowers:\*/, `${role} must not use a generic superpowers placeholder`);
+      for (const skill of skills) {
+        assert.match(body, new RegExp(`superpowers:${skill}`), `${role} must name ${skill}`);
+      }
       assert.match(body, /context-mode|file-backed logs|large output/i, `${role} must route bulk context`);
       assert.match(body, /shared-tree|unrelated edits|HOT-file/i, `${role} must preserve shared workspace safety`);
     }

@@ -107,29 +107,36 @@ test("Claude native /agent-init phase docs cover parallel agent fan-out and fina
 });
 
 test("Claude native role templates embed foundation and shared-tree discipline", () => {
-  const roleTemplates = [
-    "backend-dev",
-    "data-reviewer",
-    "design-reviewer",
-    "designer",
-    "dev",
-    "doc-writer",
-    "frontend-dev",
-    "integration-dev",
-    "orchestrator",
-    "planner",
-    "qa",
-    "qa-reviewer",
-    "reviewer",
-    "security-reviewer",
-    "tester",
-    "verification-reviewer",
-  ];
+  const roleSkills = {
+    "backend-dev": ["test-driven-development", "verification-before-completion"],
+    "data-reviewer": ["requesting-code-review", "verification-before-completion"],
+    "design-reviewer": ["requesting-code-review", "verification-before-completion"],
+    designer: ["brainstorming", "verification-before-completion"],
+    dev: ["test-driven-development", "verification-before-completion"],
+    "doc-writer": ["brainstorming", "verification-before-completion"],
+    "frontend-dev": ["brainstorming", "test-driven-development", "verification-before-completion"],
+    "integration-dev": ["test-driven-development", "verification-before-completion"],
+    orchestrator: [
+      "dispatching-parallel-agents",
+      "subagent-driven-development",
+      "verification-before-completion",
+    ],
+    planner: ["brainstorming", "writing-plans", "dispatching-parallel-agents"],
+    qa: ["brainstorming", "verification-before-completion"],
+    "qa-reviewer": ["requesting-code-review", "verification-before-completion"],
+    reviewer: ["requesting-code-review", "verification-before-completion"],
+    "security-reviewer": ["requesting-code-review", "verification-before-completion"],
+    tester: ["systematic-debugging", "verification-before-completion"],
+    "verification-reviewer": ["requesting-code-review", "verification-before-completion"],
+  };
 
-  for (const role of roleTemplates) {
+  for (const [role, skills] of Object.entries(roleSkills)) {
     const body = read(`plugins/harness-builder/skills/agent-init/templates/agents/${role}.md.hbs`);
     assert.match(body, /CLAUDE\.md[\s\S]{0,120}docs\/tasks/, `${role} must read root and task context`);
-    assert.match(body, /superpowers:/, `${role} must name the matching superpowers workflow`);
+    assert.doesNotMatch(body, /superpowers:\*/, `${role} must not use a generic superpowers placeholder`);
+    for (const skill of skills) {
+      assert.match(body, new RegExp(`superpowers:${skill}`), `${role} must name ${skill}`);
+    }
     assert.match(body, /context-mode|ctx_batch_execute|ctx_execute/i, `${role} must route bulk context`);
     assert.match(body, /shared-tree|unrelated edits|HOT-file/i, `${role} must preserve shared workspace safety`);
   }

@@ -13,7 +13,7 @@ You verify implementations match their spec before merge.
 ## Harness Discipline
 
 - Read root `CLAUDE.md`/`AGENTS.md` and the active `docs/tasks/NN-slug.md` before acting when they exist.
-- Invoke the matching `superpowers:*` workflow before edits or final claims; if unavailable, state the fallback.
+- Invoke role-matched superpowers before edits or final claims: `superpowers:requesting-code-review`, `superpowers:verification-before-completion`; if unavailable, state the fallback.
 - Use context-mode (`ctx_batch_execute`/`ctx_execute`) or file-backed logs for broad searches, long test output, screenshots, and generated output.
 - Respect shared-tree safety: stay in assigned paths, do not revert unrelated edits, and report HOT-file conflicts to the orchestrator.
 
