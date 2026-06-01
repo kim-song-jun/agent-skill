@@ -45,6 +45,7 @@ test("install-platform codex all succeeds in a fresh project without patching gl
       "AGENTS.md",
       ".codex/skills/planner/SKILL.md",
       ".codex/skills/orchestrator/SKILL.md",
+      ".codex/skills/visual-qa-page/SKILL.md",
       ".codex/hooks/agent-policy-hook.mjs",
       ".codex/hooks/thrift-pretool-bash-telemetry.toml",
       "docs/tasks/index.md",
@@ -66,6 +67,39 @@ test("install-platform codex all succeeds in a fresh project without patching gl
     assert.doesNotMatch(res.stdout, /MVP scope|follow-up plan/i);
     assert.doesNotMatch(res.stderr, /Cannot patch/);
     assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "installer must not create or patch global Codex config");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("install-platform codex all emits only dispatchable floor skill roles", () => {
+  const target = tmp("agent-skill-release-codex-graph-target-");
+  const home = tmp("agent-skill-release-codex-graph-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=all",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    const agentAll = JSON.parse(readFileSync(resolve(target, ".agent-all.json"), "utf-8"));
+    const configuredRoles = Object.values(agentAll.waves)
+      .flatMap((wave) => wave.rolesAllowed);
+    for (const role of configuredRoles) {
+      assert.ok(!role.includes("*"), `role globs are not dispatchable in Codex sequential mode: ${role}`);
+      assert.ok(existsSync(resolve(target, `.codex/skills/${role}/SKILL.md`)), `missing skill file for ${role}`);
+    }
+
+    const visualQaPage = readFileSync(resolve(target, ".codex/skills/visual-qa-page/SKILL.md"), "utf-8");
+    assert.match(visualQaPage, /^---\nname: visual-qa-page/m);
+    assert.match(visualQaPage, /OUTPUT_DIR/);
+    assert.match(visualQaPage, /End with one JSON line/);
   } finally {
     rmSync(target, { recursive: true, force: true });
     rmSync(home, { recursive: true, force: true });

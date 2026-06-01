@@ -20,6 +20,7 @@ const pluginRoot = resolve(here, "..");
 const INSTALL_MAP = {
   "visual-qa": [
     { src: "skills/visual-qa-codex/templates/visual-qa.config.json.hbs", dst: ".visual-qa.json" },
+    { src: "skills/visual-qa-codex/templates/skills/visual-qa-page/SKILL.md.hbs", dst: ".codex/skills/visual-qa-page/SKILL.md" },
   ],
   "agent-all": [
     { src: "skills/agent-all-codex/templates/agent-all.config.json.hbs", dst: ".agent-all.json" },
