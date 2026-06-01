@@ -26,7 +26,7 @@ Verification evidence:
 
 - `node scripts/release-audit.mjs`: Claude/Codex readiness checks passing.
 - `node scripts/release-fixture-smoke.mjs`: Claude marketplace dry-run, Claude operational/lite render output, and Codex operational/lite fresh fixtures passing.
-- `node --test`: 1659/1659 passing.
+- `node --test`: 1660/1660 passing.
 - `./scripts/release-smoke.sh --fast --with-live-cli`: 302/302 passing with Claude Code and Codex CLI live probes.
 - `node scripts/sync-lib.mjs --check`: 31 vendored files match source.
 

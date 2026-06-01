@@ -41,6 +41,7 @@ test("PreToolUse on plain 'Review Task' keeps existing Verification directive", 
 
 test("PreToolUse on persona review tasks injects Verification directive", () => {
   for (const description of [
+    "Spec Review Task 1: Add OAuth",
     "Verification Review Task 1: Add OAuth",
     "Security Review Task 1: Add OAuth",
     "Data Review Task 1: Add OAuth",
@@ -77,6 +78,7 @@ test("PostToolUse on QA Review rejects when QA_AUDIT token is missing", () => {
 
 test("PostToolUse on persona review tasks rejects when VERIFICATION_AUDIT token is missing", () => {
   for (const description of [
+    "Spec Review Task 1: foo",
     "Verification Review Task 1: foo",
     "Security Review Task 1: foo",
     "Data Review Task 1: foo",

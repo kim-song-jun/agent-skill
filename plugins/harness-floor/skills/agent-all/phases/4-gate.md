@@ -21,7 +21,8 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
    `wave.baseCommit` is the pre-wave commit captured by Phase 3 before implementation. For older state without `baseCommit`, fall back to `git diff <wave.startCommit>^..<wave.endCommit>` and `git diff --name-only <wave.startCommit>^..<wave.endCommit>` when `wave.startCommit` has a parent. If `wave.startCommit` is a root commit with no parent, use the empty-tree hash (`4b825dc642cb6eb9a060e54bf8d69288fbee4904`) as the diff base.
 
 2. If `gates.specReview`:
-   - Dispatch a spec-reviewer subagent. Prompt includes: the plan section for this wave, the diff, and a request to flag any spec deviations.
+   - Dispatch the generated `reviewer` subagent with `mode=spec`. Prompt includes: the plan section for this wave, the diff, and a request to flag any spec deviations.
+   - Use description prefix `Spec Review Task <N>: <title>` so the `floor-policy` hook routes the task through the technical review audit validator.
 
 3. If `gates.qualityReview`:
    - Load `const { reviewers } = classifyChangedFiles(files)` from `lib/changed-file-classifier.mjs`, where `files` is the `git diff --name-only <wave.baseCommit>..<wave.endCommit>` output, or the compatibility fallback output described above.
