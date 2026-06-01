@@ -14,6 +14,10 @@ test("usage docs present --lite as canonical and retire Codex agent-hook hard-en
     assert.doesNotMatch(body, /agent-init --theme=lite/);
     assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
     assert.match(body, /Codex CLI[\s\S]{0,240}(Prompt-level|프롬프트)/);
+    assert.doesNotMatch(body, /3 to 9 role files|3개에서 9개 역할 파일/);
+    assert.match(body, /\.claude\/agents\/\*\.md[\s\S]{0,300}(orchestrator|오케스트레이터)/i);
+    assert.match(body, /\.claude\/agents\/\*\.md[\s\S]{0,420}(security-reviewer|보안)/i);
+    assert.match(body, /\.claude\/agents\/\*\.md[\s\S]{0,420}(data-reviewer|데이터)/i);
   }
 });
 
