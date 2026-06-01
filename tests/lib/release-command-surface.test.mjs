@@ -22,6 +22,7 @@ test("codex-init CLI help documents canonical release flags", () => {
   assert.match(output, /--theme=lite/);
   assert.match(output, /--lang=en\|ko\|auto/);
   assert.match(output, /--dry-run/);
+  assert.match(output, /--update-foundations/);
   assert.doesNotMatch(output, /target directory does not exist/);
 });
 

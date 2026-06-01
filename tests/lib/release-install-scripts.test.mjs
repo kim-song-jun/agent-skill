@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { QA_AUTOSCAFFOLD_CONFIG as CODEX_QA_AUTOSCAFFOLD_CONFIG } from "../../plugins/harness-floor-codex/skills/agent-all-codex/lib/break-resolver.mjs";
@@ -52,6 +52,7 @@ test("install-platform --help documents dry-run and canonical wrapper flags", ()
   assert.match(res.stdout, /--ctx(?:[ =]|=<)/);
   assert.match(res.stdout, /--dry-run/);
   assert.match(res.stdout, /--lang=en\|ko\|auto/);
+  assert.match(res.stdout, /--update-foundations/);
   assert.doesNotMatch(res.stderr, /--platform and --target are required/);
 });
 
@@ -94,6 +95,122 @@ test("install-platform codex --dry-run reports selected scripts without writing 
       assert.ok(!existsSync(resolve(target, rel)), `dry-run wrote unexpected ${rel}`);
     }
     assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "dry-run must not create or patch global Codex config");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("install-platform codex --dry-run --update-foundations prints approved foundation plan without mutation", () => {
+  const target = tmp("agent-skill-release-platform-foundations-dry-run-target-");
+  const home = tmp("agent-skill-release-platform-foundations-dry-run-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=builder",
+      "--dry-run",
+      "--update-foundations",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home, PATH: "/usr/bin:/bin" },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /foundation update plan/i);
+    assert.match(res.stdout, /Selected foundation update dry-run/);
+    assert.match(res.stdout, /DRY-RUN: claude plugin marketplace update claude-plugins-official/);
+    assert.match(res.stdout, /DRY-RUN: claude plugin marketplace update context-mode/);
+    assert.match(res.stdout, /DRY-RUN: claude plugin install superpowers@claude-plugins-official/);
+    assert.match(res.stdout, /DRY-RUN: claude plugin install context-mode@context-mode/);
+    assert.match(res.stdout, /harness-builder-codex\/bin\/init\.mjs/);
+    assert.ok(!existsSync(resolve(target, "AGENTS.md")), "dry-run must not write AGENTS.md");
+    assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "dry-run must not patch global Codex config");
+    assert.doesNotMatch(res.stderr, /claude' binary not found/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("install-platform codex --update-foundations refreshes approved foundations only", () => {
+  const target = tmp("agent-skill-release-platform-foundations-target-");
+  const home = tmp("agent-skill-release-platform-foundations-home-");
+  const binDir = resolve(home, "bin");
+  const pluginsDir = resolve(home, ".claude/plugins");
+  const claudeLog = resolve(home, "claude.log");
+  try {
+    mkdirSync(binDir, { recursive: true });
+    mkdirSync(pluginsDir, { recursive: true });
+    writeFileSync(
+      resolve(pluginsDir, "installed_plugins.json"),
+      JSON.stringify({
+        plugins: {
+          "superpowers@claude-plugins-official": {},
+          "harness-builder-codex@agent-skill": {},
+        },
+      }),
+    );
+    writeFileSync(
+      resolve(binDir, "claude"),
+      `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${claudeLog}"
+exit 0
+`,
+      { mode: 0o755 },
+    );
+
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=builder",
+      "--update-foundations",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home, PATH: `${binDir}:${process.env.PATH}` },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /foundation update plan/i);
+    assert.match(res.stdout, /no global CLI config files are patched/i);
+    assert.ok(existsSync(resolve(target, "AGENTS.md")), "normal run should scaffold AGENTS.md");
+    assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "must not patch global Codex config");
+
+    const log = readFileSync(claudeLog, "utf-8");
+    assert.match(log, /plugin marketplace update claude-plugins-official/);
+    assert.match(log, /plugin marketplace update context-mode/);
+    assert.match(log, /plugin uninstall superpowers@claude-plugins-official/);
+    assert.match(log, /plugin install superpowers@claude-plugins-official/);
+    assert.match(log, /plugin install context-mode@context-mode/);
+    assert.doesNotMatch(log, /harness-builder-codex@agent-skill/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("install-platform rejects --update-foundations outside Codex before writing scaffold files", () => {
+  const target = tmp("agent-skill-release-platform-foundations-non-codex-target-");
+  const home = tmp("agent-skill-release-platform-foundations-non-codex-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=gemini",
+      `--target=${target}`,
+      "--update-foundations",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.notEqual(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stderr, /--update-foundations is currently supported only with --platform=codex/);
+    assert.match(res.stderr, /scripts\/update\.sh --foundations-only/);
+    assert.ok(!existsSync(resolve(target, "GEMINI.md")), "unsupported foundation update flag must fail before writing GEMINI.md");
+    assert.ok(!existsSync(resolve(home, ".gemini/settings.json")), "unsupported foundation update flag must not patch global Gemini settings");
   } finally {
     rmSync(target, { recursive: true, force: true });
     rmSync(home, { recursive: true, force: true });

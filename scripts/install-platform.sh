@@ -7,7 +7,7 @@
 # to the target project.
 #
 # Usage:
-#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run]
+#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations]
 #
 # --platform:
 #   cursor          — Cursor IDE (.cursor/rules + .cursor/agents)
@@ -33,6 +33,10 @@
 # --dry-run:
 #   print the selected renderer commands without writing files.
 #
+# --update-foundations:
+#   for Codex installs, also update/install approved foundation plugins
+#   (superpowers + context-mode) through scripts/update.sh --foundations-only.
+#
 # Examples:
 #   ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-app
 #   ./scripts/install-platform.sh --platform=codex --target=. --theme=floor
@@ -50,7 +54,7 @@ our own renderer scripts. Each `bin/init.mjs` writes the right files
 to the target project.
 
 Usage:
-  ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run]
+  ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations]
 
 --platform:
   cursor          — Cursor IDE (.cursor/rules + .cursor/agents)
@@ -76,9 +80,14 @@ Usage:
 --dry-run:
   print the selected renderer commands without writing files.
 
+--update-foundations:
+  for Codex installs, also update/install approved foundation plugins
+  (superpowers + context-mode) through scripts/update.sh --foundations-only.
+
 Examples:
   ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-app
   ./scripts/install-platform.sh --platform=codex --target=. --theme=floor --dry-run
+  ./scripts/install-platform.sh --platform=codex --target=. --update-foundations
   ./scripts/install-platform.sh --platform=copilot --target=. --ctx=ctx.json --force
 USAGE
 }
@@ -94,6 +103,7 @@ LITE=0
 HAS_LANG=0
 INIT_LANG=""
 DRY_RUN=0
+UPDATE_FOUNDATIONS=0
 
 while [ "$#" -gt 0 ]; do
   arg="$1"
@@ -118,6 +128,7 @@ while [ "$#" -gt 0 ]; do
     --lite)       LITE=1 ;;
     --lang=*)     INIT_LANG="${arg#*=}"; HAS_LANG=1 ;;
     --dry-run)    DRY_RUN=1 ;;
+    --update-foundations) UPDATE_FOUNDATIONS=1 ;;
     -h|--help)
       print_usage
       exit 0
@@ -196,6 +207,12 @@ if [ "$LITE" = "1" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ]; }; 
   exit 1
 fi
 
+if [ "$UPDATE_FOUNDATIONS" = "1" ] && [ "$PLATFORM" != "codex" ]; then
+  echo "Error: --update-foundations is currently supported only with --platform=codex." >&2
+  echo "Use scripts/update.sh --foundations-only to refresh the approved Claude Code foundations directly." >&2
+  exit 1
+fi
+
 if [ "$VS_CODE_COPILOT" = "1" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ]; }; then
   echo "Error: vscode-copilot supports only the builder instructions surface." >&2
   exit 1
@@ -259,6 +276,17 @@ run_init() {
   fi
 }
 
+run_foundation_update() {
+  echo
+  echo "  → approved foundation update"
+  if [ "$DRY_RUN" = "1" ]; then
+    echo "  DRY-RUN: $(format_cmd bash "$REPO_ROOT/scripts/update.sh" --dry-run --foundations-only)"
+    bash "$REPO_ROOT/scripts/update.sh" --dry-run --foundations-only
+    return 0
+  fi
+  bash "$REPO_ROOT/scripts/update.sh" --foundations-only
+}
+
 run_builder_init() {
   if [ "$VS_CODE_COPILOT" = "1" ]; then
     run_init "harness-builder-$EMIT_PLATFORM" "init.mjs" --vscode-only
@@ -310,6 +338,10 @@ case "$THEME" in
     fi
     ;;
 esac
+
+if [ "$UPDATE_FOUNDATIONS" = "1" ]; then
+  run_foundation_update
+fi
 
 print_install_summary() {
   local platform="$1"

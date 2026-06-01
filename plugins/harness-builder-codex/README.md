@@ -19,10 +19,13 @@ Emits:
 
 ```bash
 ./scripts/install-platform.sh --platform=codex --target=/path/to/project
+./scripts/install-platform.sh --platform=codex --target=/path/to/project --update-foundations
 ```
 
 Use `--force` when intentionally replacing generated artifacts in an existing
-project.
+project. `--update-foundations` refreshes only the approved foundation plugins
+through `scripts/update.sh --foundations-only`; combine it with `--dry-run` to
+print the exact plan without calling `claude`.
 
 ## Usage
 

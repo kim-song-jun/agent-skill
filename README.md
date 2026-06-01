@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1685%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1688%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..." --loop --qa` per feature; the agent brainstorms → plans → writes → tests → **visually QAs every page** → opens the PR — and keeps iterating until tests AND the UI both pass — without you babysitting every turn.
 
@@ -466,6 +466,7 @@ cd /tmp/agent-skill
 # OpenAI Codex CLI
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lang=ko
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --update-foundations
 
 # OpenAI Codex CLI, lightweight builder-only scaffold
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lite
@@ -474,7 +475,7 @@ cd /tmp/agent-skill
 ./scripts/install-platform.sh --platform=gemini --target=/path/to/my-project
 ```
 
-Default installs all three themes (builder + floor + thrift). Use `--theme=floor` or `--theme=thrift` to install just one. Use `--lite` for a builder-only lightweight scaffold; for Codex this passes through to `codex-init --lite` and skips floor/thrift files plus global config snippets. VS Code Copilot is instructions-only and does not accept floor/thrift theme installs. Use `--lang=ko|en|auto` to keep generated root guidance and `.agent-all.json` language aligned across builder/floor artifacts. `install-platform.sh` writes project-local files and prints any global config snippets to stdout; it does not patch global CLI config files.
+Default installs all three themes (builder + floor + thrift). Use `--theme=floor` or `--theme=thrift` to install just one. Use `--lite` for a builder-only lightweight scaffold; for Codex this passes through to `codex-init --lite` and skips floor/thrift files plus global config snippets. VS Code Copilot is instructions-only and does not accept floor/thrift theme installs. Use `--lang=ko|en|auto` to keep generated root guidance and `.agent-all.json` language aligned across builder/floor artifacts. For Codex, add `--update-foundations` to refresh only the approved foundation plugins (`superpowers@claude-plugins-official`, `context-mode@context-mode`) during bootstrap; `--dry-run --update-foundations` prints the exact approved plan without calling `claude`. `install-platform.sh` writes project-local files and prints any global config snippets to stdout; it does not patch global CLI config files.
 
 ### What each platform receives
 
@@ -683,7 +684,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 - **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for design docs per plugin.
 - **All 17 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
-- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1685 tests, all green.
+- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1688 tests, all green.
 - **Per-platform porting** — see specs ending in `-impl-spec.md` or `-decomposition.md` under `docs/superpowers/specs/`.
 - **Cross-platform support matrix** — see [docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md](docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md).
 - **Hook precedence (if you're mixing plugins that all register hooks)** — see [docs/superpowers/specs/2026-05-18-hook-precedence-integration.md](docs/superpowers/specs/2026-05-18-hook-precedence-integration.md).
@@ -694,7 +695,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 | Layer | Status | Note |
 |---|---|---|
-| Unit/integration tests | ✅ **1685/1685 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-fixture-smoke, command-surface, and visual-qa regressions |
+| Unit/integration tests | ✅ **1688/1688 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-fixture-smoke, command-surface, and visual-qa regressions |
 | Install renderers (5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
 | Marketplace registration | ✅ 17 plugins listed | sync between local + origin |
 | Claude Code skills | ✅ ship today | core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug` |
@@ -742,7 +743,7 @@ Before submitting:
 ./scripts/release-smoke.sh --fast --with-live-cli  # also probe installed Claude/Codex CLIs
 node scripts/release-audit.mjs           # Claude/Codex release readiness matrix
 node scripts/release-fixture-smoke.mjs   # fresh Claude/Codex release fixtures
-node --test                              # 1685/1685 must pass
+node --test                              # 1688/1688 must pass
 node scripts/sync-lib.mjs --check        # vendored shared libs in sync
 ```
 
