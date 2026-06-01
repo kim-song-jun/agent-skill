@@ -154,6 +154,7 @@ test("harness-builder-claude: shell init writes operational scaffold and runs do
     const claude = readFileSync(resolve(target, "CLAUDE.md"), "utf-8");
     const qa = readFileSync(resolve(target, ".claude/agents/qa-reviewer.md"), "utf-8");
     const settings = JSON.parse(readFileSync(resolve(target, ".claude/settings.local.json"), "utf-8"));
+    const policyHook = readFileSync(resolve(target, ".claude/hooks/agent-policy-hook.mjs"), "utf-8");
     const agentAll = JSON.parse(readFileSync(resolve(target, ".agent-all.json"), "utf-8"));
 
     assert.match(claude, /Orchestration Contract/);
@@ -163,6 +164,21 @@ test("harness-builder-claude: shell init writes operational scaffold and runs do
     assert.match(qa, /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/);
     assert.equal(agentAll.language, "ko");
     assert.ok(JSON.stringify(settings).includes("agent-policy-hook.mjs"));
+    assert.ok(
+      (settings.hooks.PreToolUse || []).some(
+        (group) => group.matcher === "Task" && JSON.stringify(group).includes("PreToolUse"),
+      ),
+      "operational Claude settings should register Task PreToolUse policy hook",
+    );
+    assert.ok(
+      (settings.hooks.PostToolUse || []).some(
+        (group) => group.matcher === "Task" && JSON.stringify(group).includes("PostToolUse"),
+      ),
+      "operational Claude settings should register Task PostToolUse policy hook",
+    );
+    assert.match(policyHook, /ORCHESTRATION_AUDIT/);
+    assert.match(policyHook, /QA_AUDIT/);
+    assert.match(policyHook, /VERIFICATION_AUDIT/);
     assert.match(res.stdout, /Post-install doctor/);
     assert.match(res.stdout, /harness doctor: ok/);
     assert.match(res.stdout, /platform: Claude/);

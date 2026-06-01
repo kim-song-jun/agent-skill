@@ -253,6 +253,18 @@ test("settings template wires operational policy hook only for operational profi
     operationalPreToolCommands.some(command => command.includes(".claude/hooks/agent-policy-hook.mjs")),
     "operational settings should register the policy hook on fresh installs",
   );
+  const operationalTaskPre = operational.hooks.PreToolUse.find(group => group.matcher === "Task");
+  assert.ok(operationalTaskPre, "operational settings should register Task PreToolUse policy hook");
+  assert.ok(
+    operationalTaskPre.hooks.some(hook => hook.command.includes("agent-policy-hook.mjs") && hook.command.includes("PreToolUse")),
+    "operational Task PreToolUse should route through the project-local policy hook",
+  );
+  const operationalTaskPost = operational.hooks.PostToolUse.find(group => group.matcher === "Task");
+  assert.ok(operationalTaskPost, "operational settings should register Task PostToolUse policy hook");
+  assert.ok(
+    operationalTaskPost.hooks.some(hook => hook.command.includes("agent-policy-hook.mjs") && hook.command.includes("PostToolUse")),
+    "operational Task PostToolUse should route through the project-local policy hook",
+  );
 
   const lite = JSON.parse(render(tpl, { operationalProfile: false, liteProfile: true }));
   const litePreToolCommands = lite.hooks.PreToolUse
@@ -266,6 +278,7 @@ test("settings template wires operational policy hook only for operational profi
     !litePreToolCommands.some(command => command.includes(".claude/hooks/agent-policy-hook.mjs")),
     "lite settings should not register a policy hook file it does not install",
   );
+  assert.equal(lite.hooks.PostToolUse, undefined, "lite settings should not register Task PostToolUse hooks");
 });
 
 test("task ledger check rejects active index entries pointing to missing task docs", () => {

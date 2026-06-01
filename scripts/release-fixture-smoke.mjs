@@ -199,6 +199,8 @@ function checkClaudeRendered(root) {
     const settings = parseJsonFile(resolve(target, ".claude/settings.local.json"), "settings.local.json");
     const visualQa = parseJsonFile(resolve(target, ".visual-qa.json"), ".visual-qa.json");
     const agentAll = parseJsonFile(resolve(target, ".agent-all.json"), ".agent-all.json");
+    const policyHook = readIfExists(resolve(target, ".claude/hooks/agent-policy-hook.mjs"));
+    const settingsText = JSON.stringify(settings.value || {});
     const hookChecks = [
       ".claude/hooks/context-mode-router.mjs",
       ".claude/hooks/session-summary.mjs",
@@ -214,7 +216,12 @@ function checkClaudeRendered(root) {
       ["CLAUDE.md includes configured QA personas", /Configured QA Personas[\s\S]{0,120}auth[\s\S]{0,120}payments/.test(readIfExists(resolve(target, "CLAUDE.md")))],
       [".claude qa-reviewer includes configured QA personas", /Configured QA Personas[\s\S]{0,120}auth[\s\S]{0,120}payments/.test(readIfExists(resolve(target, ".claude/agents/qa-reviewer.md")))],
       [".claude qa-reviewer includes QA audit tokens", /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/.test(readIfExists(resolve(target, ".claude/agents/qa-reviewer.md")))],
-      ["settings registers policy hook", JSON.stringify(settings.value || {}).includes("agent-policy-hook.mjs")],
+      ["settings registers policy hook", settingsText.includes("agent-policy-hook.mjs")],
+      ["settings registers Task PreToolUse policy hook", /"matcher":"Task"[\s\S]{0,180}agent-policy-hook\.mjs\\?" PreToolUse/.test(settingsText)],
+      ["settings registers Task PostToolUse policy hook", /"PostToolUse"[\s\S]{0,220}"matcher":"Task"[\s\S]{0,180}agent-policy-hook\.mjs\\?" PostToolUse/.test(settingsText)],
+      ["policy hook includes orchestration audit token", /ORCHESTRATION_AUDIT/.test(policyHook)],
+      ["policy hook includes QA audit token", /QA_AUDIT/.test(policyHook)],
+      ["policy hook includes verification audit token", /VERIFICATION_AUDIT/.test(policyHook)],
       ["visual-qa is comprehensive", visualQa.value?.mode === "comprehensive"],
       ["agent-all language is aligned", agentAll.value?.language === "en"],
     ];

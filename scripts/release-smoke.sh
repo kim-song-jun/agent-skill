@@ -97,6 +97,7 @@ run_step "focused release contracts" \
     tests/lib/codex-install-hook.test.mjs \
     tests/lib/debug-artifacts.test.mjs \
     tests/lib/visual-qa-vendored-libs.test.mjs \
+    tests/agent-all/lib/generated-policy-hook.test.mjs \
     tests/agent-all/lib/changed-file-classifier.test.mjs \
     tests/agent-all/lib/gate-plan.test.mjs \
     tests/agent-all/policy/coordinator-audit-validator.test.mjs \

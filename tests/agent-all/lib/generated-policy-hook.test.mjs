@@ -26,6 +26,19 @@ function runHook({ projectDir, command }) {
   );
 }
 
+function runHookPayload({ projectDir, event, payload }) {
+  return spawnSync(
+    process.execPath,
+    [HOOK, event],
+    {
+      cwd: projectDir,
+      env: { ...process.env, CLAUDE_PROJECT_DIR: projectDir },
+      input: JSON.stringify(payload),
+      encoding: "utf-8",
+    },
+  );
+}
+
 test("generated policy hook blocks project-configured destructive commands and flags", () => {
   const projectDir = tempProject();
   try {
@@ -46,6 +59,119 @@ test("generated policy hook blocks project-configured destructive commands and f
     const confirm = runHook({ projectDir, command: "deploy --yes" });
     assert.equal(confirm.status, 2);
     assert.match(confirm.stderr, /destructive confirmation flag: --yes/);
+  } finally {
+    rmSync(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("generated policy hook injects coordinator Task audit directive", () => {
+  const projectDir = tempProject();
+  try {
+    const result = runHookPayload({
+      projectDir,
+      event: "PreToolUse",
+      payload: {
+        tool_name: "Task",
+        tool_input: {
+          description: "Orchestration Gate Task",
+          prompt: "Inspect the plan.",
+        },
+      },
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    const output = JSON.parse(result.stdout);
+    assert.match(output.tool_input.prompt, /ORCHESTRATION_AUDIT: passed/);
+    assert.doesNotMatch(output.tool_input.prompt, /QA_AUDIT:/);
+    assert.doesNotMatch(output.tool_input.prompt, /VERIFICATION_AUDIT:/);
+  } finally {
+    rmSync(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("generated policy hook injects reviewer and QA Task audit directives", () => {
+  const projectDir = tempProject();
+  try {
+    const reviewer = runHookPayload({
+      projectDir,
+      event: "PreToolUse",
+      payload: {
+        tool_name: "Task",
+        tool_input: {
+          description: "Spec Review Task",
+          prompt: "Review the implementation.",
+        },
+      },
+    });
+    assert.equal(reviewer.status, 0, reviewer.stderr);
+    const reviewerOutput = JSON.parse(reviewer.stdout);
+    assert.match(reviewerOutput.tool_input.prompt, /VERIFICATION_AUDIT: passed/);
+    assert.doesNotMatch(reviewerOutput.tool_input.prompt, /QA_AUDIT:/);
+
+    const qa = runHookPayload({
+      projectDir,
+      event: "PreToolUse",
+      payload: {
+        tool_name: "Task",
+        tool_input: {
+          description: "QA Review Task",
+          prompt: "Review the user flow.",
+        },
+      },
+    });
+    assert.equal(qa.status, 0, qa.stderr);
+    const qaOutput = JSON.parse(qa.stdout);
+    assert.match(qaOutput.tool_input.prompt, /QA_AUDIT: passed/);
+    assert.doesNotMatch(qaOutput.tool_input.prompt, /VERIFICATION_AUDIT:/);
+  } finally {
+    rmSync(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("generated policy hook rejects Task audit results without required tokens", () => {
+  const projectDir = tempProject();
+  try {
+    for (const [description, message] of [
+      ["Orchestration Gate Task", /ORCHESTRATION_AUDIT/],
+      ["QA Review Task", /QA_AUDIT/],
+      ["Security Review Task", /VERIFICATION_AUDIT/],
+    ]) {
+      const result = runHookPayload({
+        projectDir,
+        event: "PostToolUse",
+        payload: {
+          tool_name: "Task",
+          tool_input: { description, prompt: "Review." },
+          result: "Looks fine.",
+        },
+      });
+
+      assert.equal(result.status, 2, `${description} should be rejected`);
+      assert.match(result.stderr, message);
+    }
+  } finally {
+    rmSync(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("generated policy hook rejects implementer DONE without verification evidence", () => {
+  const projectDir = tempProject();
+  try {
+    const result = runHookPayload({
+      projectDir,
+      event: "PostToolUse",
+      payload: {
+        tool_name: "Task",
+        tool_input: {
+          description: "Implement Task 1",
+          prompt: "Implement the task.",
+        },
+        result: "STATUS: DONE\nTests passed.",
+      },
+    });
+
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /verification_passed/);
   } finally {
     rmSync(projectDir, { recursive: true, force: true });
   }

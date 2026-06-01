@@ -49,6 +49,14 @@ const COMMIT_LONG_OPTIONS_WITH_VALUES = new Set([
 
 const COMMIT_SHORT_OPTIONS_WITH_VALUES = new Set(["C", "F", "c", "m", "t"]);
 
+const IMPLEMENTER_DIRECTIVE = `\n\n---\nDecision-Surfacing Protocol\nBefore implementation, identify unresolved product/API/data/UX decisions. If decisions are needed, report them before editing. Before reporting STATUS: DONE, run verification and include a literal verification_passed line.\n`;
+
+const REVIEWER_DIRECTIVE = `\n\n---\nAt the END of your review, output one literal line:\n\`VERIFICATION_AUDIT: passed\` if verification evidence is present and acceptable,\n\`VERIFICATION_AUDIT: failed\` if verification evidence is missing or failed,\n\`VERIFICATION_AUDIT: skipped\` only if verification is not applicable.\n`;
+
+const QA_DIRECTIVE = `\n\n---\nYou are the QA team. Audit the user-side flow, not tech-stack correctness.\n\nAt the END of your review, output one literal line:\n\`QA_AUDIT: passed\` if the user-facing flow holds up,\n\`QA_AUDIT: failed\` if it does not,\n\`QA_AUDIT: skipped\` only if no user-visible change exists.\n`;
+
+const COORDINATOR_DIRECTIVE = `\n\n---\nYou are the orchestration gate. Inspect shared files, HOT-file ownership, retry sequencing, and pathspec commit risk before reviewer dispatch.\n\nAt the END of your review, output one literal line:\n\`ORCHESTRATION_AUDIT: passed\` if ownership and sequencing are safe,\n\`ORCHESTRATION_AUDIT: failed\` if there is a blocking coordination risk,\n\`ORCHESTRATION_AUDIT: skipped\` only if orchestration review is not applicable.\n`;
+
 function shellTokens(command) {
   const tokens = [];
   let token = "";
@@ -380,6 +388,105 @@ function loadPolicyOptions() {
   return options;
 }
 
+function taskParams(payload) {
+  if (payload?.parameters && typeof payload.parameters === "object") return payload.parameters;
+  if (payload?.tool_input && typeof payload.tool_input === "object") return payload.tool_input;
+  if (payload?.toolInput && typeof payload.toolInput === "object") return payload.toolInput;
+  return {};
+}
+
+function setTaskParams(payload, params) {
+  if (payload?.parameters && typeof payload.parameters === "object") payload.parameters = params;
+  else if (payload?.tool_input && typeof payload.tool_input === "object") payload.tool_input = params;
+  else if (payload?.toolInput && typeof payload.toolInput === "object") payload.toolInput = params;
+  else payload.parameters = params;
+  return payload;
+}
+
+function toolName(payload) {
+  return payload?.tool ?? payload?.tool_name ?? payload?.toolName;
+}
+
+function isTaskPayload(payload) {
+  return toolName(payload) === "Task";
+}
+
+function isImplementerDispatch(params) {
+  return typeof params?.description === "string" && /^implement task\b/i.test(params.description);
+}
+
+function isQaReviewerDispatch(params) {
+  return typeof params?.description === "string" && /^qa review task\b/i.test(params.description);
+}
+
+function isCoordinatorDispatch(params) {
+  return typeof params?.description === "string" && /^orchestration gate task\b/i.test(params.description);
+}
+
+function isReviewerDispatch(params) {
+  if (typeof params?.description !== "string") return false;
+  if (isQaReviewerDispatch(params)) return false;
+  return /^(?:review task|.+\sreview task)\b/i.test(params.description);
+}
+
+function taskResultText(payload) {
+  const value = payload?.result ?? payload?.tool_response ?? payload?.toolResponse ?? payload?.response ?? "";
+  if (typeof value === "string") return value;
+  return JSON.stringify(value ?? "");
+}
+
+function validateAuditToken(text, token) {
+  const re = new RegExp(`${token}:\\s*(passed|failed|skipped)\\b`);
+  return re.test(String(text ?? ""));
+}
+
+function validateVerificationReport(text) {
+  const body = String(text ?? "");
+  if (!/STATUS:\s*DONE\b/i.test(body)) return true;
+  return /verification_passed\b/i.test(body);
+}
+
+function handleTaskHook(event, payload) {
+  const params = taskParams(payload);
+  const isImpl = isImplementerDispatch(params);
+  const isQa = isQaReviewerDispatch(params);
+  const isCoord = isCoordinatorDispatch(params);
+  const isRev = isReviewerDispatch(params);
+  if (!isImpl && !isQa && !isCoord && !isRev) return false;
+
+  if (event === "PreToolUse") {
+    if (isImpl) params.prompt = `${params.prompt || ""}${IMPLEMENTER_DIRECTIVE}`;
+    else if (isCoord) params.prompt = `${params.prompt || ""}${COORDINATOR_DIRECTIVE}`;
+    else if (isQa) params.prompt = `${params.prompt || ""}${QA_DIRECTIVE}`;
+    else if (isRev) params.prompt = `${params.prompt || ""}${REVIEWER_DIRECTIVE}`;
+    process.stdout.write(JSON.stringify(setTaskParams(payload, params)));
+    process.exit(0);
+  }
+
+  if (event === "PostToolUse") {
+    const text = taskResultText(payload);
+    if (isImpl && !validateVerificationReport(text)) {
+      console.error("Implementer must include verification_passed before reporting STATUS: DONE.");
+      process.exit(2);
+    }
+    if (isCoord && !validateAuditToken(text, "ORCHESTRATION_AUDIT")) {
+      console.error("Coordinator must include ORCHESTRATION_AUDIT: passed|failed|skipped.");
+      process.exit(2);
+    }
+    if (isQa && !validateAuditToken(text, "QA_AUDIT")) {
+      console.error("QA reviewer must include QA_AUDIT: passed|failed|skipped.");
+      process.exit(2);
+    }
+    if (isRev && !validateAuditToken(text, "VERIFICATION_AUDIT")) {
+      console.error("Reviewer must include VERIFICATION_AUDIT: passed|failed|skipped.");
+      process.exit(2);
+    }
+    process.exit(0);
+  }
+
+  return false;
+}
+
 let input = "";
 try {
   input = readFileSync(0, "utf-8");
@@ -389,6 +496,11 @@ let payload = {};
 try {
   payload = input.trim() ? JSON.parse(input) : {};
 } catch {}
+
+const event = process.argv[2] || payload?.hook_event_name || payload?.hookEventName || "";
+if (isTaskPayload(payload) && handleTaskHook(event, payload)) {
+  process.exit(0);
+}
 
 const command = (payload?.tool_input?.command ?? payload?.command ?? "").toString();
 const result = analyzeShellCommand(command, loadPolicyOptions());

@@ -94,7 +94,26 @@ const PLATFORM_CONTRACTS = {
       },
       {
         file: "plugins/harness-builder/skills/agent-init/templates/settings.local.json.hbs",
-        patterns: [/agent-policy-hook\.mjs/, /context-mode-router\.mjs/, /session-summary\.mjs/],
+        patterns: [
+          /agent-policy-hook\.mjs/,
+          /context-mode-router\.mjs/,
+          /session-summary\.mjs/,
+          /PostToolUse/,
+          /"matcher": "Task"/,
+          /agent-policy-hook\.mjs\\?" PreToolUse/,
+          /agent-policy-hook\.mjs\\?" PostToolUse/,
+        ],
+      },
+      {
+        file: "plugins/harness-builder/skills/agent-init/templates/hooks/agent-policy-hook.mjs",
+        patterns: [
+          /Decision-Surfacing Protocol/,
+          /verification_passed/,
+          /ORCHESTRATION_AUDIT/,
+          /QA_AUDIT/,
+          /VERIFICATION_AUDIT/,
+          /git commit requires explicit pathspec/,
+        ],
       },
       {
         file: "plugins/harness-floor/skills/agent-all/phases/4-gate.md",
