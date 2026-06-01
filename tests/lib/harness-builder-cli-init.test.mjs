@@ -149,6 +149,57 @@ test("harness-builder-codex: AGENTS.md documents operational profile", () => {
   }
 });
 
+test("harness-builder-codex: preserves existing AGENTS.md with sentinel merge", () => {
+  const target = mkTarget("codex-agents-merge");
+  try {
+    writeFileSync(resolve(target, "AGENTS.md"), "# Existing Project Rules\n\nKeep this local rule.\n");
+
+    const res = runInit(PLUGINS.codex.bin, [target], { env: { PURPOSE: "Merged Codex Project" } });
+    assert.equal(res.status, 0, res.stderr);
+
+    const body = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+    assert.match(body, /# Existing Project Rules/);
+    assert.match(body, /Keep this local rule/);
+    assert.match(body, /<!-- agent-skill:operational:start -->/);
+    assert.match(body, /Merged Codex Project/);
+    assert.match(body, /<!-- agent-skill:operational:end -->/);
+    assert.ok(existsSync(resolve(target, ".codex/skills/orchestrator/SKILL.md")));
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: replaces only prior AGENTS.md sentinel section", () => {
+  const target = mkTarget("codex-agents-replace");
+  try {
+    writeFileSync(
+      resolve(target, "AGENTS.md"),
+      [
+        "# Existing Project Rules",
+        "",
+        "Keep this local rule.",
+        "",
+        "<!-- agent-skill:operational:start -->",
+        "# Old generated section",
+        "<!-- agent-skill:operational:end -->",
+        "",
+      ].join("\n"),
+    );
+
+    const res = runInit(PLUGINS.codex.bin, [target], { env: { PURPOSE: "Replacement Codex Project" } });
+    assert.equal(res.status, 0, res.stderr);
+
+    const body = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+    assert.match(body, /Keep this local rule/);
+    assert.match(body, /Replacement Codex Project/);
+    assert.doesNotMatch(body, /Old generated section/);
+    assert.equal((body.match(/agent-skill:operational:start/g) || []).length, 1);
+    assert.equal((body.match(/agent-skill:operational:end/g) || []).length, 1);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
 test("harness-builder-codex: generated task ledger matches agent-all contract", () => {
   const target = mkTarget("codex-task-ledger-contract");
   try {

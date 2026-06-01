@@ -20,6 +20,7 @@ import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { detectProject } from "../skills/codex-init/lib/detect-stack.mjs";
 import { render } from "../skills/codex-init/lib/render.mjs";
+import { mergeSentinelSection } from "../skills/codex-init/lib/sentinel-merge.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = resolve(here, "..");
@@ -27,6 +28,7 @@ const templatesDir = resolve(pluginRoot, "skills/codex-init/templates");
 
 // Templates emitted to stdout (not written to disk) — user merges manually.
 const STDOUT_TEMPLATES = new Set(["codex-config.toml.hbs"]);
+const MERGEABLE_GUIDES = new Set(["AGENTS.md"]);
 
 const BASE_AGENTS = [
   { name: "planner",  when: "all planning" },
@@ -218,20 +220,28 @@ function main() {
       continue;
     }
     const outPath = resolve(target, rel);
-    plannedWrites.push({ outPath, rendered });
+    plannedWrites.push({ rel, outPath, rendered });
   }
 
+  const finalWrites = plannedWrites.map(({ rel, outPath, rendered }) => {
+    if (MERGEABLE_GUIDES.has(rel) && existsSync(outPath)) {
+      const merged = mergeSentinelSection(readFileSync(outPath, "utf-8"), rendered);
+      return { rel, outPath, rendered: merged.content, action: merged.action, merged: true };
+    }
+    return { rel, outPath, rendered, action: "write", merged: false };
+  });
+
   if (!args.force && !args.dryRun) {
-    const conflict = plannedWrites.find(({ outPath }) => existsSync(outPath));
+    const conflict = finalWrites.find(({ outPath, merged }) => !merged && existsSync(outPath));
     if (conflict) {
       console.error(`Refusing to overwrite ${conflict.outPath} (use --force)`);
       process.exit(2);
     }
   }
 
-  for (const { outPath, rendered } of plannedWrites) {
+  for (const { outPath, rendered, action, merged } of finalWrites) {
     if (args.dryRun) {
-      console.log(`dry-run: would write ${outPath}`);
+      console.log(`dry-run: would ${merged ? action : "write"} ${outPath}`);
       continue;
     }
     mkdirSync(dirname(outPath), { recursive: true });
