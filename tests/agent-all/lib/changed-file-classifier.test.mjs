@@ -11,6 +11,28 @@ test("frontend UI files add design and QA reviewers plus base reviewers", () => 
   ]);
 });
 
+test("Vue router stores composables and assets add design and QA reviewers", () => {
+  assert.deepEqual(
+    classifyChangedFiles([
+      "src/router/index.ts",
+      "src/stores/preferences.ts",
+      "src/composables/useFeatureFlags.ts",
+      "src/assets/theme.ts",
+    ]).reviewers,
+    ["design-reviewer", "qa-reviewer", "reviewer", "verification-reviewer"],
+  );
+});
+
+test("Vue auth store changes add frontend and security reviewers", () => {
+  assert.deepEqual(classifyChangedFiles(["src/stores/auth.ts", "src/composables/useSession.ts"]).reviewers, [
+    "design-reviewer",
+    "qa-reviewer",
+    "reviewer",
+    "security-reviewer",
+    "verification-reviewer",
+  ]);
+});
+
 test("backend models add data and security reviewers", () => {
   assert.deepEqual(classifyChangedFiles(["backend/users/models.py"]).reviewers, [
     "data-reviewer",
@@ -18,6 +40,36 @@ test("backend models add data and security reviewers", () => {
     "security-reviewer",
     "verification-reviewer",
   ]);
+});
+
+test("Django app views viewsets urls and admin add security reviewer", () => {
+  assert.deepEqual(
+    classifyChangedFiles([
+      "apps/users/views.py",
+      "apps/users/viewsets.py",
+      "apps/users/urls.py",
+      "apps/users/admin.py",
+    ]).reviewers,
+    ["reviewer", "security-reviewer", "verification-reviewer"],
+  );
+});
+
+test("Django app tasks and services combine with Vue frontend changes as integration work", () => {
+  assert.deepEqual(
+    classifyChangedFiles([
+      "src/router/index.ts",
+      "apps/billing/tasks.py",
+      "apps/billing/celery.py",
+      "apps/billing/services/invoices.py",
+    ]).reviewers,
+    [
+      "design-reviewer",
+      "integration-dev",
+      "qa-reviewer",
+      "reviewer",
+      "verification-reviewer",
+    ],
+  );
 });
 
 test("backend migrations add data and security reviewers", () => {
@@ -119,6 +171,14 @@ test("docs-only or unknown files return only base reviewers", () => {
     "reviewer",
     "verification-reviewer",
   ]);
+  assert.deepEqual(
+    classifyChangedFiles([
+      "docs/src/components/Button.tsx",
+      "documentation/src/router/index.ts",
+      "docs/apps/users/views.py",
+    ]).reviewers,
+    ["reviewer", "verification-reviewer"],
+  );
 });
 
 test("auth, API route, and security-ish backend files add security reviewer", () => {

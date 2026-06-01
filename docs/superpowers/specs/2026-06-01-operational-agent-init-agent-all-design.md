@@ -329,7 +329,10 @@ Initial rule examples:
 | Path / pattern | Additional reviewers |
 |---|---|
 | `frontend/src/**`, CSS, UI components | `design-reviewer`, `qa-reviewer` |
+| Vue/Nuxt app paths such as `src/router/**`, `src/stores/**`, `src/composables/**`, `src/assets/**` | `design-reviewer`, `qa-reviewer` |
 | `backend/**/models.py`, migrations | `data-reviewer`, `security-reviewer` |
+| Django/DRF app surfaces such as `apps/*/views.py`, `viewsets.py`, `urls.py`, `admin.py` | `security-reviewer` |
+| Django app tasks/services such as `apps/*/tasks.py`, `apps/*/celery.py`, `apps/*/services/*.py` | backend signal for `integration-dev` when frontend is also touched |
 | seed scripts, fixtures | `data-reviewer` |
 | auth, permissions, middleware, serializers, API views | `security-reviewer` |
 | tests, CI, build config | `verification-reviewer` |
@@ -338,6 +341,7 @@ Initial rule examples:
 Classifier behavior is conservative:
 
 - Add reviewers only when rules are confident.
+- Ignore documentation/example paths such as `docs/**`, `documentation/**`, and `notes/**`.
 - Fall back to generic `reviewer` when uncertain.
 - Keep the mapping deterministic and unit tested.
 

@@ -83,6 +83,7 @@ test("agent-all-codex: changed-file classifier matches Claude source of truth", 
     ["frontend/src/LoginForm.tsx", "backend/api/views.py", "backend/db/migrations/001.sql"],
     ["docs/README.md"],
     ["server/auth/session.ts", "fixtures/users.json"],
+    ["src/router/index.ts", "apps/users/viewsets.py", "apps/billing/celery.py"],
   ];
 
   for (const files of cases) {
@@ -92,6 +93,25 @@ test("agent-all-codex: changed-file classifier matches Claude source of truth", 
       `classifier mismatch for ${files.join(", ")}`,
     );
   }
+});
+
+test("agent-all-codex: changed-file classifier routes POSCO-style Django and Vue gates", () => {
+  assert.deepEqual(
+    classifyCodexChangedFiles([
+      "src/stores/auth.ts",
+      "src/composables/useSession.ts",
+      "apps/users/admin.py",
+      "apps/users/views.py",
+    ]).reviewers,
+    [
+      "design-reviewer",
+      "integration-dev",
+      "qa-reviewer",
+      "reviewer",
+      "security-reviewer",
+      "verification-reviewer",
+    ],
+  );
 });
 
 test("agent-all-codex: all template files exist", () => {

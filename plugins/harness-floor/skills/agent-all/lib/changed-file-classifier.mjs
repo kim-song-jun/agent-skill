@@ -1,8 +1,12 @@
 const BASE_REVIEWERS = ["reviewer", "verification-reviewer"];
 
 const FRONTEND_PATH_RE = /(^|\/)(app|components|frontend|pages|public|src\/components|src\/pages|ui)(\/|$)/;
+const FRONTEND_APP_PATH_RE = /(^|\/)src\/(?:assets|composables|layouts|router|routes|stores?|views)(\/|$)/;
 const FRONTEND_EXT_RE = /\.(css|scss|sass|less|jsx|tsx|vue|svelte)$/;
 const BACKEND_PATH_RE = /(^|\/)(api|backend|server|services|workers|jobs)(\/|$)/;
+const DJANGO_BACKEND_RE =
+  /(^|\/)(?:apps|backend|server)\/[^/]+\/(?:(?:admin|celery|tasks|urls|views?|viewsets?)\.py|services\/[^/]+\.py)$/;
+const DJANGO_SECURITY_RE = /(^|\/)(?:apps|backend|server)\/[^/]+\/(?:admin|urls|views?|viewsets?)\.py$/;
 const DOCS_PATH_RE = /(^|\/)(docs?|documentation|notes)(\/|$)/;
 const SECURITY_PATH_RE =
   /(^|\/)(auth|authentication|authorization|login|middleware|oauth|permissions?|security|sessions?)(\/|[-_.])/;
@@ -22,11 +26,13 @@ function normalizedPath(file) {
 }
 
 function isFrontendFile(file) {
-  return FRONTEND_PATH_RE.test(file) || FRONTEND_EXT_RE.test(file);
+  if (isDocumentationFile(file)) return false;
+  return FRONTEND_PATH_RE.test(file) || FRONTEND_APP_PATH_RE.test(file) || FRONTEND_EXT_RE.test(file);
 }
 
 function isBackendFile(file) {
-  return BACKEND_PATH_RE.test(file) || DATA_PATH_RE.test(file) || DATA_EXT_RE.test(file);
+  if (isDocumentationFile(file)) return false;
+  return BACKEND_PATH_RE.test(file) || DJANGO_BACKEND_RE.test(file) || DATA_PATH_RE.test(file) || DATA_EXT_RE.test(file);
 }
 
 function isSecurityFile(file) {
@@ -36,6 +42,7 @@ function isSecurityFile(file) {
     SECURITY_NAME_RE.test(file) ||
     API_ROUTE_RE.test(file) ||
     API_VIEW_RE.test(file) ||
+    DJANGO_SECURITY_RE.test(file) ||
     SERIALIZER_RE.test(file) ||
     isDbStructureFile(file)
   );
