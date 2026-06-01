@@ -19,9 +19,9 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
   assert.equal(result.platforms.claude.checks.length, 52);
-  assert.equal(result.platforms.codex.checks.length, 57);
+  assert.equal(result.platforms.codex.checks.length, 58);
   assert.match(result.platforms.claude.summary, /Claude: ok \(52\/52 checks\)/);
-  assert.match(result.platforms.codex.summary, /Codex: ok \(57\/57 checks\)/);
+  assert.match(result.platforms.codex.summary, /Codex: ok \(58\/58 checks\)/);
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "public CLI scripts are executable with shebangs"),
   );
@@ -53,6 +53,9 @@ test("release audit reports Claude and Codex as independently ready", () => {
   );
   assert.ok(
     result.platforms.codex.checks.some((check) => check.name === "plugins/harness-builder-codex/skills/codex-init/templates/skills/design-reviewer/SKILL.md.hbs matches release contract"),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some((check) => check.name === "plugins/harness-builder-codex/skills/codex-init/templates/AGENTS.md.hbs matches release contract"),
   );
   assert.ok(
     result.platforms.codex.checks.some((check) => check.name === "scripts/install-platform.sh matches release contract"),

@@ -385,10 +385,11 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /public CLI script executable\/shebang packaging/i);
   assert.match(plan, /generated hook\/task-checker executable packaging/i);
   assert.match(plan, /Claude\/Codex QA and base\/specialized reviewer audit-token contracts/i);
-  assert.match(plan, /Claude 52\/52 and Codex 57\/57 readiness checks passing/i);
+  assert.match(plan, /Claude 52\/52 and Codex 58\/58 readiness checks passing/i);
+  assert.match(plan, /Codex floor-conditional language guidance/i);
   assert.match(plan, /node --test[\s\S]{0,120}1759\/1759/);
   assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}428\/428/);
-  assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|1758\/1758|412\/412|418\/418|421\/421|424\/424|425\/425|427\/427/);
+  assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|1758\/1758|57\/57|412\/412|418\/418|421\/421|424\/424|425\/425|427\/427/);
   assert.match(plan, /foundation auto-update/i);
   assert.match(plan, /install-platform\.sh --platform=codex --theme=all\|debug/);
   assert.match(plan, /Claude\/Codex `install-platform\.sh --uninstall` release-fixture roundtrips/i);

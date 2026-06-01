@@ -54,12 +54,14 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.codexOperational.details, /positional argv omits unsupported --prompt\/--skill flags/);
   assert.match(result.checks.codexLite.summary, /Codex lite fixture: ok/);
   assert.match(result.checks.codexLite.details, /no hook\/task checker side effects/);
+  assert.match(result.checks.codexLite.details, /floor-conditional language guidance/);
   assert.match(result.checks.codexLite.details, /post-install lite doctor coverage/);
   assert.match(result.checks.codexBuilder.summary, /Codex builder fixture: ok \(28\/28 file checks\)/);
   assert.match(result.checks.codexBuilder.details, /executable hook\/task checker/);
   assert.match(result.checks.codexBuilder.details, /post-install builder doctor coverage/);
   assert.match(result.checks.codexBuilder.details, /QA and base\/specialized reviewer audit tokens/);
   assert.match(result.checks.codexBuilder.details, /only Codex builder artifacts/);
+  assert.match(result.checks.codexBuilder.details, /floor-conditional language guidance/);
   assert.match(result.checks.codexFloor.summary, /Codex floor fixture: ok \(19\/19 file checks\)/);
   assert.match(result.checks.codexFloor.details, /only Codex floor artifacts/);
   assert.match(result.checks.codexFloor.details, /sequential agent-all-codex helper runtime/);

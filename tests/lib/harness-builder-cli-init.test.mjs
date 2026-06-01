@@ -736,7 +736,8 @@ test("harness-builder-codex: --lang=ko records the selected language in AGENTS.m
     const body = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
     assert.match(body, /^## Language$/m);
     assert.match(body, /- Interaction language: `ko`/);
-    assert.match(body, /- Downstream workflow config should keep `\.agent-all\.json` `language` aligned with this value\./);
+    assert.match(body, /- If you install the floor bundle, keep `\.agent-all\.json` `language` aligned with this value\./);
+    assert.doesNotMatch(body, /Downstream workflow config should keep/);
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

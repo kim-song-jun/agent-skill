@@ -1203,6 +1203,8 @@ test("install-platform codex --lite installs only the builder lite scaffold", ()
 
     const agents = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
     assert.match(agents, /lite mode/i);
+    assert.match(agents, /If you install the floor bundle, keep `\.agent-all\.json` `language` aligned/);
+    assert.doesNotMatch(agents, /Downstream workflow config should keep/);
     assert.match(res.stdout, /profile: lite/i);
     assert.match(res.stdout, /Post-install doctor/i);
     assert.match(res.stdout, /harness doctor: ok/i);
@@ -1262,6 +1264,9 @@ test("install-platform codex builder theme installs only builder artifacts and r
     assert.match(res.stdout, /profile: builder/i);
     assert.doesNotMatch(res.stdout, /\.visual-qa\.json|\.agent-all\.json|\.thrift\.json/);
     assert.doesNotMatch(res.stdout, /\[mcp_servers\.playwright\]|instrument:\s+no/);
+    const agents = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+    assert.match(agents, /If you install the floor bundle, keep `\.agent-all\.json` `language` aligned/);
+    assert.doesNotMatch(agents, /Downstream workflow config should keep/);
   } finally {
     rmSync(target, { recursive: true, force: true });
     rmSync(home, { recursive: true, force: true });

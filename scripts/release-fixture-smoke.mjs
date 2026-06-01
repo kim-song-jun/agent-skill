@@ -1132,6 +1132,8 @@ function checkCodexLite(root) {
       ["omits PreToolUse hook snippet", !/\[\[hooks\.PreToolUse\]\]/.test(res.stdout)],
       ["omits Playwright MCP snippet", !/\[mcp_servers\.playwright\]/.test(res.stdout)],
       ["renders lite guidance", /lite mode/i.test(agents)],
+      ["uses floor-conditional language guidance", /If you install the floor bundle, keep `\.agent-all\.json` `language` aligned/.test(agents)],
+      ["does not claim existing downstream workflow config", !/Downstream workflow config should keep/.test(agents)],
     ];
     const failedStdout = stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name);
     const ok = res.status === 0
@@ -1144,7 +1146,7 @@ function checkCodexLite(root) {
       ok,
       summary: `Codex lite fixture: ${ok ? "ok" : "failed"} (${CODEX_LITE_PRESENT.length + CODEX_LITE_ABSENT.length - missing.length - unexpected.length}/${CODEX_LITE_PRESENT.length + CODEX_LITE_ABSENT.length} file checks)`,
       details: ok
-        ? "fresh git fixture received only builder-lite files, no hook/task checker side effects, post-install lite doctor coverage, and no global config side effects"
+        ? "fresh git fixture received only builder-lite files, floor-conditional language guidance, no hook/task checker side effects, post-install lite doctor coverage, and no global config side effects"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failedStdout, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
@@ -1181,6 +1183,8 @@ function checkCodexBuilder(root) {
       [".codex backend-dev skill embeds backend responsibilities", /Implement APIs, services, jobs, migrations, persistence/.test(backendDev)],
       ["qa-reviewer skill includes QA audit tokens", /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/.test(qaReviewer)],
       ...codexVerificationAuditTokenChecks(verificationAuditReviewers),
+      ["uses floor-conditional language guidance", /If you install the floor bundle, keep `\.agent-all\.json` `language` aligned/.test(agents)],
+      ["does not claim existing downstream workflow config", !/Downstream workflow config should keep/.test(agents)],
       ["omits Playwright MCP snippet", !/\[mcp_servers\.playwright\]/.test(res.stdout)],
       ["omits thrift instrumentation summary", !/instrument:\s+no/.test(res.stdout)],
     ];
@@ -1196,7 +1200,7 @@ function checkCodexBuilder(root) {
       ok,
       summary: `Codex builder fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
       details: ok
-        ? "fresh git fixture received only Codex builder artifacts, executable hook/task checker, post-install builder doctor coverage, role gate matrix, QA and base/specialized reviewer audit tokens, and no global config side effects"
+        ? "fresh git fixture received only Codex builder artifacts, floor-conditional language guidance, executable hook/task checker, post-install builder doctor coverage, role gate matrix, QA and base/specialized reviewer audit tokens, and no global config side effects"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failedStdout, ...executableScriptErrors(target, CODEX_EXECUTABLE_GENERATED), existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });

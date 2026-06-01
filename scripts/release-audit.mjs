@@ -341,6 +341,13 @@ const PLATFORM_CONTRACTS = {
         ],
       },
       {
+        file: "plugins/harness-builder-codex/skills/codex-init/templates/AGENTS.md.hbs",
+        patterns: [
+          /If you install the floor bundle, keep `\.agent-all\.json` `language` aligned/,
+        ],
+        forbidden: [/Downstream workflow config should keep/],
+      },
+      {
         file: "plugins/harness-floor-codex/skills/agent-all-codex/SKILL.md",
         patterns: [
           /^---\nname: agent-all-codex\n/m,
