@@ -38,8 +38,10 @@ Build the discovery context:
 
 ```javascript
 import { render } from "./lib/render.mjs";
+import { scanFoundationState } from "./lib/foundation-check.mjs";
 
 const lite = false;
+const foundationState = scanFoundationState({ installedPluginIds });
 const ctx = {
   purpose,
   size,
@@ -50,6 +52,9 @@ const ctx = {
   services_str: detected.services.join(", "),
   operationalProfile: !lite,
   liteProfile: lite,
+  degradedFoundations: !lite && foundationState.degraded,
+  foundationMissing: foundationState.missing.join(", "),
+  foundationInstructions: foundationState.instructions,
   agents: lite ? [
     { name: "planner",  when: "all planning" },
     { name: "dev",      when: "implementation" },
@@ -86,6 +91,10 @@ Use `apply_patch` for every file write. Refuse to overwrite existing files
 unless the user passes `--force`; check every planned write before creating
 directories or files. In lite mode, skip hooks, local guides, operational
 reviewer skills, task-ledger/workspace files, and Codex config snippet output.
+In operational mode, detect whether `superpowers@claude-plugins-official` and
+`context-mode@context-mode` are installed. Missing foundations do not abort the
+scaffold; render the degraded foundation status and install commands into
+`AGENTS.md`.
 
 ## Phase 3 — Summarize
 

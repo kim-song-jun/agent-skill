@@ -168,6 +168,51 @@ test("harness-builder-codex: AGENTS.md documents operational profile", () => {
   }
 });
 
+test("harness-builder-codex: default AGENTS.md records degraded foundation status", () => {
+  const target = mkTarget("codex-foundations-missing");
+  const home = mkTarget("codex-foundations-home-missing");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target], { env: { HOME: home } });
+    assert.equal(res.status, 0, res.stderr);
+    const body = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+
+    assert.match(body, /Foundation Status/);
+    assert.match(body, /degraded mode/i);
+    assert.match(body, /superpowers@claude-plugins-official/);
+    assert.match(body, /context-mode@context-mode/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: default AGENTS.md omits foundation warning when installed", () => {
+  const target = mkTarget("codex-foundations-installed");
+  const home = mkTarget("codex-foundations-home-installed");
+  try {
+    mkdirSync(resolve(home, ".claude/plugins"), { recursive: true });
+    writeFileSync(
+      resolve(home, ".claude/plugins/installed_plugins.json"),
+      JSON.stringify({
+        plugins: {
+          "superpowers@claude-plugins-official": [{}],
+          "context-mode@context-mode": [{}],
+        },
+      }),
+    );
+
+    const res = runInit(PLUGINS.codex.bin, [target], { env: { HOME: home } });
+    assert.equal(res.status, 0, res.stderr);
+    const body = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+
+    assert.doesNotMatch(body, /Foundation Status/);
+    assert.doesNotMatch(body, /degraded mode/i);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test("harness-builder-codex: preserves existing AGENTS.md with sentinel merge", () => {
   const target = mkTarget("codex-agents-merge");
   try {

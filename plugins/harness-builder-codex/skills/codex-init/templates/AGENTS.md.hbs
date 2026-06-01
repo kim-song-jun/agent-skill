@@ -37,6 +37,17 @@ This is the heavy operational harness profile.
 - The repo-local policy hook lives at `.codex/hooks/agent-policy-hook.mjs`; the generated config snippet points Codex `PreToolUse` for `Bash` at that hook.
 {{/if}}
 
+{{#if degradedFoundations}}
+## Foundation Status
+
+This harness is in degraded mode because superpowers or context-mode is missing. Install or update the recommended foundations before long-running work.
+
+Missing: {{foundationMissing}}
+
+{{#each foundationInstructions}}- `{{this}}`
+{{/each}}
+{{/if}}
+
 {{#if liteProfile}}
 ## Lite Mode
 

@@ -19,6 +19,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { detectProject } from "../skills/codex-init/lib/detect-stack.mjs";
+import { scanFoundationState } from "../skills/codex-init/lib/foundation-check.mjs";
 import { detectGuideDirs } from "../skills/codex-init/lib/folder-guides.mjs";
 import { render } from "../skills/codex-init/lib/render.mjs";
 import { mergeSentinelSection } from "../skills/codex-init/lib/sentinel-merge.mjs";
@@ -80,6 +81,19 @@ function tomlString(value) {
   return JSON.stringify(String(value));
 }
 
+function loadInstalledPluginIds(homeDir = process.env.HOME || process.env.USERPROFILE || "") {
+  if (!homeDir) return [];
+  const installedPath = resolve(homeDir, ".claude/plugins/installed_plugins.json");
+  if (!existsSync(installedPath)) return [];
+  try {
+    const parsed = JSON.parse(readFileSync(installedPath, "utf-8"));
+    const plugins = parsed && typeof parsed.plugins === "object" ? parsed.plugins : parsed;
+    return plugins && typeof plugins === "object" ? Object.keys(plugins) : [];
+  } catch {
+    return [];
+  }
+}
+
 function loadCtx(ctxPath, target, options = {}) {
   let ctx;
   if (ctxPath) {
@@ -95,12 +109,18 @@ function loadCtx(ctxPath, target, options = {}) {
   }
   const detected = detectProject(target);
   const lite = Boolean(options.lite);
+  const foundationState = scanFoundationState({
+    installedPluginIds: loadInstalledPluginIds(),
+  });
   return {
     ...ctx,
     ...detected,
     target_path: target,
     operationalProfile: !lite,
     liteProfile: lite,
+    degradedFoundations: !lite && foundationState.degraded,
+    foundationMissing: foundationState.missing.join(", "),
+    foundationInstructions: foundationState.instructions,
     services_str: detected.services.join(", "),
     agents: lite ? BASE_AGENTS : [...BASE_AGENTS, ...OPERATIONAL_AGENTS],
     hook_command_pretool_toml: tomlString(`node "$(git rev-parse --show-toplevel)/.codex/hooks/agent-policy-hook.mjs"`),
