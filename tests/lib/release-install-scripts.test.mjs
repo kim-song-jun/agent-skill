@@ -74,6 +74,57 @@ test("install-platform codex all succeeds in a fresh project without patching gl
   }
 });
 
+test("install-platform codex --lang=ko persists language into builder and floor artifacts", () => {
+  const target = tmp("agent-skill-release-codex-lang-target-");
+  const home = tmp("agent-skill-release-codex-lang-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=all",
+      "--lang=ko",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    const agents = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+    const agentAll = JSON.parse(readFileSync(resolve(target, ".agent-all.json"), "utf-8"));
+
+    assert.match(agents, /Interaction language:\s+`?ko`?/);
+    assert.equal(agentAll.language, "ko");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("install-platform rejects invalid --lang before writing scaffold files", () => {
+  const target = tmp("agent-skill-release-codex-invalid-lang-target-");
+  const home = tmp("agent-skill-release-codex-invalid-lang-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--lang=fr",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.notEqual(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stderr, /--lang must be one of: en, ko, auto/);
+    assert.ok(!existsSync(resolve(target, "AGENTS.md")), "invalid --lang must fail before writing AGENTS.md");
+    assert.ok(!existsSync(resolve(target, ".agent-all.json")), "invalid --lang must fail before writing .agent-all.json");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test("install-platform codex --lite installs only the builder lite scaffold", () => {
   const target = tmp("agent-skill-release-codex-lite-target-");
   const home = tmp("agent-skill-release-codex-lite-home-");

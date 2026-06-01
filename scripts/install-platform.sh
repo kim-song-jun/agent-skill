@@ -7,7 +7,7 @@
 # to the target project.
 #
 # Usage:
-#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx CTX] [--force] [--theme=THEME] [--lite]
+#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx CTX] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto]
 #
 # --platform:
 #   cursor          — Cursor IDE (.cursor/rules + .cursor/agents)
@@ -26,6 +26,10 @@
 #   builder-only lightweight scaffold. For Codex, passes --lite through to
 #   codex-init so it writes AGENTS.md + base skills only.
 #
+# --lang:
+#   persist the interaction language into generated root guidance and
+#   .agent-all.json where supported. Valid values: en, ko, auto.
+#
 # Examples:
 #   ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-app
 #   ./scripts/install-platform.sh --platform=codex --target=. --theme=floor
@@ -41,6 +45,8 @@ HAS_CTX=0
 HAS_FORCE=0
 THEME="all"
 LITE=0
+HAS_LANG=0
+INIT_LANG=""
 
 for arg in "$@"; do
   case "$arg" in
@@ -50,6 +56,7 @@ for arg in "$@"; do
     --force)      HAS_FORCE=1 ;;
     --theme=*)    THEME="${arg#*=}" ;;
     --lite)       LITE=1 ;;
+    --lang=*)     INIT_LANG="${arg#*=}"; HAS_LANG=1 ;;
     -h|--help)
       sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
@@ -89,6 +96,16 @@ case "$THEME" in
     ;;
 esac
 
+if [ "$HAS_LANG" = "1" ]; then
+  case "$INIT_LANG" in
+    en|ko|auto) ;;
+    *)
+      echo "Error: --lang must be one of: en, ko, auto." >&2
+      exit 1
+      ;;
+  esac
+fi
+
 if [ "$LITE" = "1" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ]; }; then
   echo "Error: --lite can only be used with --theme=all or --theme=builder." >&2
   exit 1
@@ -122,7 +139,11 @@ run_init() {
     cmd+=(--force)
   fi
   cmd+=("$@")
-  "${cmd[@]}"
+  if [ "$HAS_LANG" = "1" ]; then
+    AGENT_INIT_LANG="$INIT_LANG" "${cmd[@]}"
+  else
+    "${cmd[@]}"
+  fi
   local status=$?
   set -e
   if [ $status -ne 0 ]; then
@@ -133,9 +154,17 @@ run_init() {
 
 run_builder_init() {
   if [ "$LITE" = "1" ] && [ "$EMIT_PLATFORM" = "codex" ]; then
-    run_init "harness-builder-$EMIT_PLATFORM" "init.mjs" --lite
+    if [ "$HAS_LANG" = "1" ]; then
+      run_init "harness-builder-$EMIT_PLATFORM" "init.mjs" --lite --lang="$INIT_LANG"
+    else
+      run_init "harness-builder-$EMIT_PLATFORM" "init.mjs" --lite
+    fi
   else
-    run_init "harness-builder-$EMIT_PLATFORM" "init.mjs"
+    if [ "$HAS_LANG" = "1" ] && [ "$EMIT_PLATFORM" = "codex" ]; then
+      run_init "harness-builder-$EMIT_PLATFORM" "init.mjs" --lang="$INIT_LANG"
+    else
+      run_init "harness-builder-$EMIT_PLATFORM" "init.mjs"
+    fi
   fi
 }
 

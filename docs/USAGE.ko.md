@@ -164,10 +164,11 @@ run /agent-all for "Hard refactor that needs second-opinion"
 
 ```bash
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lang=ko
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lite
 ```
 
-기본 renderer 경로는 무거운 builder + floor + thrift 번들을 설치합니다. `--lite`는 builder-only 경로이며 floor/thrift 파일과 전역 Codex config 스니펫을 건너뜁니다.
+기본 renderer 경로는 무거운 builder + floor + thrift 번들을 설치합니다. `--lang=ko|en|auto`는 builder/floor 설치 전체에서 `AGENTS.md`와 `.agent-all.json` language 값을 맞춥니다. `--lite`는 builder-only 경로이며 floor/thrift 파일과 전역 Codex config 스니펫을 건너뜁니다.
 
 직접 라이브러리로 사용할 때, 핵심 모듈은 이식 가능한 Node.js입니다:
 

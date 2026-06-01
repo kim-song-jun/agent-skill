@@ -164,10 +164,11 @@ For a shell-driven install into a target repo, use the platform renderer:
 
 ```bash
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lang=ko
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lite
 ```
 
-The default renderer path installs the heavy builder + floor + thrift bundle. The `--lite` path is builder-only and skips floor/thrift files plus global Codex config snippets.
+The default renderer path installs the heavy builder + floor + thrift bundle. `--lang=ko|en|auto` keeps `AGENTS.md` and `.agent-all.json` language aligned across the builder/floor install. The `--lite` path is builder-only and skips floor/thrift files plus global Codex config snippets.
 
 For direct library usage, the core modules are portable Node.js:
 
