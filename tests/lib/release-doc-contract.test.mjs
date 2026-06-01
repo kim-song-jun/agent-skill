@@ -20,9 +20,9 @@ test("usage docs present --lite as canonical and retire Codex agent-hook hard-en
 test("readme files describe the current Codex config surface and current test count", () => {
   for (const path of ["README.md", "README.ko.md"]) {
     const body = read(path);
-    assert.match(body, /1554\/1554/);
+    assert.match(body, /1557\/1557/);
     assert.doesNotMatch(body, /1279\/1279|1279\+|1279%20passing/);
-    assert.doesNotMatch(body, /1552\/1552|1552%20passing/);
+    assert.doesNotMatch(body, /1552\/1552|1552%20passing|1554\/1554|1554%20passing/);
     assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
     assert.match(body, /\[\[hooks\.PreToolUse\]\]|\[mcp_servers\.playwright\]/);
     assert.match(body, /Codex CLI[\s\S]{0,320}(prompt-level|sequential|프롬프트|순차)/i);

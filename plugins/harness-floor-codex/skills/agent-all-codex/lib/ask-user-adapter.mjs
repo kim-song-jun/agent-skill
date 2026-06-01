@@ -5,9 +5,9 @@
 //   ask_user({ prompt: string, choices?: string[], multi?: boolean })
 //     → { selected: string | string[] | null, freeForm?: string }
 //
-// Codex also supports `exec_command` PTY which could drive a richer TUI
-// (e.g., FZF-style picker). This adapter uses plain `ask_user` by default;
-// the exec_command path is documented in the spec but not implemented here.
+// Codex also supports `exec_command` PTY for terminal prompt adapters.
+// This adapter remains host-agnostic: callers inject either the plain
+// ask_user invoker or the exec_command invoker from host-invoker.mjs.
 //
 // Contract: see spec doc, identical to other 3 platform adapters.
 

@@ -14,10 +14,11 @@
 // (`value`, `choice`, `text`, raw string). The wrapper normalizes those
 // into the strict `{selected, freeForm}` contract.
 //
-// Codex additionally exposes an `exec_command` PTY primitive that could
-// drive a richer FZF-style multi-select TUI. That path is documented in
-// the spec but not yet implemented — see `codexExecCommandInvoker` below
-// for the placeholder factory.
+// Codex additionally exposes an `exec_command` PTY primitive that can
+// drive a terminal prompt for environments where plain `ask_user` is not
+// the right surface. The wrapper below renders numbered choices, reads a
+// single answer from `/dev/tty`, and normalizes stdout into the same
+// `{selected, freeForm}` contract.
 //
 // Contract (invoker shape):
 //   invoker({prompt, choices, multi}) => Promise<{selected, freeForm}>
@@ -53,23 +54,107 @@ export function codexAskUserInvoker({ toolCaller } = {}) {
   };
 }
 
-// Placeholder for the FZF-style TTY path described in the spec.
-//
-// `execCommand` would invoke Codex's `exec_command` PTY primitive (e.g.,
-// shelling out to `fzf` with the choices piped in) and return the user's
-// selection. Until that path is wired up, this factory throws on use
-// and callers should fall back to `codexAskUserInvoker`.
+function heredocDelimiter(text) {
+  let n = 0;
+  while (true) {
+    const delimiter = `CODEX_ASK_USER_${n}_EOF`;
+    if (!String(text).split(/\r?\n/).includes(delimiter)) return delimiter;
+    n++;
+  }
+}
+
+function renderTerminalPrompt({ prompt, choices = [], multi = false }) {
+  const lines = [prompt];
+  if (choices.length > 0) {
+    lines.push("");
+    choices.forEach((choice, index) => {
+      lines.push(`${index + 1}. ${choice}`);
+    });
+    lines.push("");
+    lines.push(multi
+      ? "Enter numbers or labels separated by commas:"
+      : "Enter number or label:");
+  } else {
+    lines.push("");
+    lines.push("Enter response:");
+  }
+  return lines.join("\n");
+}
+
+function buildTerminalCommand(renderedPrompt) {
+  const delimiter = heredocDelimiter(renderedPrompt);
+  return [
+    `cat <<'${delimiter}' >&2`,
+    renderedPrompt,
+    delimiter,
+    "IFS= read -r answer </dev/tty",
+    `printf '%s\\n' "$answer"`,
+  ].join("\n");
+}
+
+function stdoutFromExecReply(reply) {
+  if (reply == null) return "";
+  if (typeof reply === "string") return reply;
+  const status = reply.status ?? reply.code ?? reply.exitCode ?? 0;
+  if (status !== 0) {
+    const detail = reply.stderr || reply.error || "";
+    throw new Error(
+      `codexExecCommandInvoker: exec_command failed with status ${status}`
+      + `${detail ? `: ${detail}` : ""}`,
+    );
+  }
+  return reply.stdout
+    ?? reply.output
+    ?? reply.text
+    ?? reply.response
+    ?? "";
+}
+
+function mapTokenToChoice(token, choices) {
+  const trimmed = token.trim();
+  if (/^\d+$/.test(trimmed)) {
+    const index = Number(trimmed) - 1;
+    if (index >= 0 && index < choices.length) return choices[index];
+  }
+  const exact = choices.find((choice) => choice === trimmed);
+  if (exact !== undefined) return exact;
+  const folded = choices.find((choice) => choice.toLowerCase() === trimmed.toLowerCase());
+  return folded ?? trimmed;
+}
+
+function normalizeExecReply(reply, { choices = [], multi = false }) {
+  const text = String(stdoutFromExecReply(reply)).trim();
+  if (choices.length === 0) {
+    return { selected: null, freeForm: text };
+  }
+  if (!text) return { selected: null };
+  const tokens = multi
+    ? text.split(/[,\n]/).map((token) => token.trim()).filter(Boolean)
+    : [text.split(/\r?\n/)[0].trim()].filter(Boolean);
+  if (tokens.length === 0) return { selected: null };
+  const selected = tokens.map((token) => mapTokenToChoice(token, choices));
+  return { selected: multi ? selected : selected[0] };
+}
+
+// Terminal-prompt path described in the spec. `execCommand` invokes
+// Codex's exec_command primitive and may be a thin wrapper around the
+// host tool in production or a test double in unit tests.
 export function codexExecCommandInvoker({ execCommand } = {}) {
   if (typeof execCommand !== "function") {
     throw new Error("codexExecCommandInvoker: execCommand must be a function");
   }
-  // eslint-disable-next-line no-unused-vars
-  return async function invoker(_args) {
-    throw new Error(
-      "codexExecCommandInvoker: FZF/exec_command TTY path is not yet implemented; "
-      + "fall back to codexAskUserInvoker (plain ask_user) for now.",
-    );
+  return async function invoker({ prompt, choices, multi } = {}) {
+    const choicesArr = Array.isArray(choices) ? choices : [];
+    const renderedPrompt = renderTerminalPrompt({ prompt, choices: choicesArr, multi });
+    const command = buildTerminalCommand(renderedPrompt);
+    const reply = await execCommand({
+      command,
+      prompt,
+      choices: choicesArr,
+      multi: !!multi,
+    });
+    return normalizeExecReply(reply, { choices: choicesArr, multi: !!multi });
   };
 }
 
-export const __internal = { normalizeReply };
+export const __internal = { normalizeReply, normalizeExecReply, renderTerminalPrompt };

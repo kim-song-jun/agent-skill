@@ -80,6 +80,14 @@ test("agent-all-codex: hook snippet does not emit unsupported agent hook", () =>
   assert.ok(!body.includes("timeout_seconds"));
 });
 
+test("agent-all-codex: user prompt invoker surface has no unimplemented exec_command path", () => {
+  for (const rel of ["lib/host-invoker.mjs", "lib/ask-user-adapter.mjs"]) {
+    const body = readFileSync(resolve(SKILL_ROOT, rel), "utf-8");
+    assert.ok(body.includes("exec_command") || body.includes("ask_user"), `${rel} should document prompt primitives`);
+    assert.doesNotMatch(body, /not yet implemented|not implemented here/i);
+  }
+});
+
 test("agent-all-codex: porting-notes flags unsupported legacy hook schema", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "references/porting-notes.md"), "utf-8");
   assert.ok(body.includes("current Codex hooks"));
