@@ -17,6 +17,17 @@ with the configured LLM, produces `docs/visual-qa/<slug>/report.md`.
 
 ## Usage
 
+From an installed Codex project, open `codex` in the repo and type the public
+harness entrypoint:
+
+```
+run /visual-qa for the configured project
+```
+
+This routes to the local `visual-qa-codex` workflow contract below. The
+Codex-specific skill name remains visible so installed files, release audits,
+and phase paths can stay platform-explicit.
+
 ```
 /visual-qa-codex
 /visual-qa-codex --resume

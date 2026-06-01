@@ -138,9 +138,11 @@ const PLATFORM_CONTRACTS = {
           /--budget=<USD>/,
           /--dispatch=sequential/,
           /--resume/,
+          /run \/visual-qa/,
           /Playwright MCP/,
           /When done[\s\S]{0,220}dispatch strategy/i,
         ],
+        forbidden: [/codex skill run/i, /codex exec\s+["'][^"']+["']/i],
       },
       {
         file: "plugins/harness-thrift-codex/skills/thrift-codex/SKILL.md",

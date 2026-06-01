@@ -260,8 +260,11 @@ test("release audit fails incomplete Codex slash-command skill surfaces", () => 
       "",
       "# /visual-qa-codex",
       "",
+      "Public entrypoint: run /visual-qa for the configured project.",
       "comprehensive mode, Playwright MCP, --resume --force --yes --budget=<USD> --dispatch=sequential.",
       "When done, print summary, dispatch strategy, and report path.",
+      "Stale entrypoint: codex skill run /visual-qa-codex",
+      "Stale entrypoint: codex exec \"visual smoke\"",
       "",
     ].join("\n"),
   );
@@ -297,4 +300,12 @@ test("release audit fails incomplete Codex slash-command skill surfaces", () => 
   assert.ok(staleEntrypoint, JSON.stringify(result.platforms.codex.checks, null, 2));
   assert.match(staleEntrypoint.details, /forbidden/);
   assert.match(staleEntrypoint.details, /codex skill run/);
+
+  const staleVisualQaEntrypoint = result.platforms.codex.checks.find(
+    (check) => !check.ok && check.name.includes("visual-qa-codex/SKILL.md"),
+  );
+  assert.ok(staleVisualQaEntrypoint, JSON.stringify(result.platforms.codex.checks, null, 2));
+  assert.match(staleVisualQaEntrypoint.details, /forbidden/);
+  assert.match(staleVisualQaEntrypoint.details, /codex skill run/);
+  assert.match(staleVisualQaEntrypoint.details, /codex exec/);
 });
