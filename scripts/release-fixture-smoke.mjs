@@ -334,6 +334,10 @@ function checkClaudeRendered(root) {
     const settings = parseJsonFile(resolve(target, ".claude/settings.local.json"), "settings.local.json");
     const visualQa = parseJsonFile(resolve(target, ".visual-qa.json"), ".visual-qa.json");
     const agentAll = parseJsonFile(resolve(target, ".agent-all.json"), ".agent-all.json");
+    const claude = readIfExists(resolve(target, "CLAUDE.md"));
+    const orchestrator = readIfExists(resolve(target, ".claude/agents/orchestrator.md"));
+    const frontendDev = readIfExists(resolve(target, ".claude/agents/frontend-dev.md"));
+    const backendDev = readIfExists(resolve(target, ".claude/agents/backend-dev.md"));
     const policyHook = readIfExists(resolve(target, ".claude/hooks/agent-policy-hook.mjs"));
     const settingsText = JSON.stringify(settings.value || {});
     const hookChecks = [
@@ -344,11 +348,17 @@ function checkClaudeRendered(root) {
       "scripts/agent-task-ledger-check.mjs",
     ].map((file) => checkNodeSyntax(resolve(target, file), file));
     const textChecks = [
-      ["CLAUDE.md includes operational lite guidance", /\/agent-init --lite/.test(readIfExists(resolve(target, "CLAUDE.md")))],
-      ["CLAUDE.md includes role routing", /Role Routing/.test(readIfExists(resolve(target, "CLAUDE.md")))],
-      ["CLAUDE.md includes orchestration contract", /Orchestration Contract/.test(readIfExists(resolve(target, "CLAUDE.md")))],
-      ["CLAUDE.md includes role gate matrix", /Role Gate Matrix/.test(readIfExists(resolve(target, "CLAUDE.md")))],
-      ["CLAUDE.md includes configured QA personas", /Configured QA Personas[\s\S]{0,120}auth[\s\S]{0,120}payments/.test(readIfExists(resolve(target, "CLAUDE.md")))],
+      ["CLAUDE.md includes operational lite guidance", /\/agent-init --lite/.test(claude)],
+      ["CLAUDE.md includes role routing", /Role Routing/.test(claude)],
+      ["CLAUDE.md includes orchestration contract", /Orchestration Contract/.test(claude)],
+      ["CLAUDE.md includes role gate matrix", /Role Gate Matrix/.test(claude)],
+      ...implementationRoutingChecks("CLAUDE.md", claude),
+      ...implementationRoutingChecks(".claude orchestrator", orchestrator),
+      [".claude frontend-dev embeds frontend discipline", /frontend layer[\s\S]{0,120}UI components[\s\S]{0,80}client-side logic[\s\S]{0,80}styles/.test(frontendDev)],
+      [".claude frontend-dev references role-matched superpowers", /superpowers:brainstorming[\s\S]{0,120}superpowers:test-driven-development[\s\S]{0,120}superpowers:verification-before-completion/.test(frontendDev)],
+      [".claude backend-dev embeds backend discipline", /backend layer[\s\S]{0,120}APIs[\s\S]{0,80}business logic[\s\S]{0,80}migrations/.test(backendDev)],
+      [".claude backend-dev references role-matched superpowers", /superpowers:test-driven-development[\s\S]{0,120}superpowers:verification-before-completion/.test(backendDev)],
+      ["CLAUDE.md includes configured QA personas", /Configured QA Personas[\s\S]{0,120}auth[\s\S]{0,120}payments/.test(claude)],
       [".claude qa-reviewer includes configured QA personas", /Configured QA Personas[\s\S]{0,120}auth[\s\S]{0,120}payments/.test(readIfExists(resolve(target, ".claude/agents/qa-reviewer.md")))],
       [".claude qa-reviewer includes QA audit tokens", /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/.test(readIfExists(resolve(target, ".claude/agents/qa-reviewer.md")))],
       ["settings registers policy hook", settingsText.includes("agent-policy-hook.mjs")],
@@ -463,6 +473,7 @@ function checkClaudePlatformInstall(root) {
       ["runs operational-profile doctor", /profile:\s+operational/i.test(res.stdout)],
       ["post-install doctor passes", /harness doctor: ok/i.test(res.stdout)],
       ["CLAUDE.md includes role gate matrix", /Role Gate Matrix/.test(claude)],
+      ...implementationRoutingChecks("CLAUDE.md", claude),
       ["CLAUDE.md includes configured QA persona", /Configured QA Personas[\s\S]{0,120}auth/.test(claude)],
       ["settings registers policy hook", settingsText.includes("agent-policy-hook.mjs")],
       ["agent-all language is aligned", agentAll.value?.language === "en"],
@@ -578,6 +589,9 @@ function checkCodexOperational(root) {
     const visualQaRuntime = checkCodexVisualQaSequentialRuntime(target);
     const homeConfig = resolve(home, ".codex/config.toml");
     const agents = readIfExists(resolve(target, "AGENTS.md"));
+    const orchestrator = readIfExists(resolve(target, ".codex/skills/orchestrator/SKILL.md"));
+    const frontendDev = readIfExists(resolve(target, ".codex/skills/frontend-dev/SKILL.md"));
+    const backendDev = readIfExists(resolve(target, ".codex/skills/backend-dev/SKILL.md"));
     const qaReviewer = readIfExists(resolve(target, ".codex/skills/qa-reviewer/SKILL.md"));
     const stdoutChecks = [
       ["runs operational-profile doctor", /profile:\s+operational/i.test(res.stdout)],
@@ -588,6 +602,12 @@ function checkCodexOperational(root) {
       ["does not emit legacy agent hook snippet", !/\[\[hooks\.agent\]\]/.test(res.stdout)],
       ["AGENTS.md includes orchestration contract", /Orchestration Contract/.test(agents)],
       ["AGENTS.md includes role gate matrix", /Role Gate Matrix/.test(agents)],
+      ...implementationRoutingChecks("AGENTS.md", agents),
+      ...implementationRoutingChecks(".codex orchestrator skill", orchestrator),
+      [".codex frontend-dev skill embeds frontend responsibilities", /Implement UI components, routes, styles, client state/.test(frontendDev)],
+      [".codex frontend-dev skill references role-matched superpowers", /superpowers:brainstorming[\s\S]{0,120}superpowers:test-driven-development[\s\S]{0,120}superpowers:verification-before-completion/.test(frontendDev)],
+      [".codex backend-dev skill embeds backend responsibilities", /Implement APIs, services, jobs, migrations, persistence/.test(backendDev)],
+      [".codex backend-dev skill references role-matched superpowers", /superpowers:test-driven-development[\s\S]{0,120}superpowers:verification-before-completion/.test(backendDev)],
       ["AGENTS.md includes QA personas", /QA Personas[\s\S]{0,120}general/.test(agents)],
       ["qa-reviewer skill includes configured QA personas", /Configured QA Personas[\s\S]{0,120}general/.test(qaReviewer)],
       ["qa-reviewer skill includes QA audit tokens", /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/.test(qaReviewer)],
@@ -920,12 +940,19 @@ function checkCodexBuilder(root) {
     const unexpected = existingFiles(target, CODEX_BUILDER_ABSENT);
     const homeConfig = resolve(home, ".codex/config.toml");
     const agents = readIfExists(resolve(target, "AGENTS.md"));
+    const orchestrator = readIfExists(resolve(target, ".codex/skills/orchestrator/SKILL.md"));
+    const frontendDev = readIfExists(resolve(target, ".codex/skills/frontend-dev/SKILL.md"));
+    const backendDev = readIfExists(resolve(target, ".codex/skills/backend-dev/SKILL.md"));
     const qaReviewer = readIfExists(resolve(target, ".codex/skills/qa-reviewer/SKILL.md"));
     const stdoutChecks = [
       ["reports builder theme", /theme:\s+builder/i.test(res.stdout)],
       ["runs builder-profile doctor", /profile:\s+builder/i.test(res.stdout)],
       ["post-install doctor passes", /harness doctor: ok/i.test(res.stdout)],
       ["AGENTS.md includes role gate matrix", /Role Gate Matrix/.test(agents)],
+      ...implementationRoutingChecks("AGENTS.md", agents),
+      ...implementationRoutingChecks(".codex orchestrator skill", orchestrator),
+      [".codex frontend-dev skill embeds frontend responsibilities", /Implement UI components, routes, styles, client state/.test(frontendDev)],
+      [".codex backend-dev skill embeds backend responsibilities", /Implement APIs, services, jobs, migrations, persistence/.test(backendDev)],
       ["qa-reviewer skill includes QA audit tokens", /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/.test(qaReviewer)],
       ["omits Playwright MCP snippet", !/\[mcp_servers\.playwright\]/.test(res.stdout)],
       ["omits thrift instrumentation summary", !/instrument:\s+no/.test(res.stdout)],
@@ -1173,6 +1200,15 @@ function checkNodeSyntax(file, label) {
     ok: res.status === 0,
     details: res.status === 0 ? `${label}: syntax ok` : `${label}: ${res.stderr || res.stdout}`,
   };
+}
+
+function implementationRoutingChecks(label, text) {
+  return [
+    [`${label} includes implementation routing matrix`, /Implementation Routing Matrix/.test(text)],
+    [`${label} routes UI work to frontend-dev`, /UI, routes, client state, browser behavior[\s\S]{0,160}`frontend-dev`/.test(text)],
+    [`${label} routes API work to backend-dev`, /API, services, jobs, persistence[\s\S]{0,160}`backend-dev`/.test(text)],
+    [`${label} routes cross-stack contracts through integration-dev`, /Frontend plus backend\/API contract[\s\S]{0,220}`integration-dev`[\s\S]{0,220}`frontend-dev`[\s\S]{0,220}`backend-dev`/.test(text)],
+  ];
 }
 
 function compactFailure(res, issues) {
