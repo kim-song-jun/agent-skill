@@ -238,8 +238,10 @@ test("release audit fails incomplete Codex slash-command skill surfaces", () => 
       "",
       "# /agent-all-codex",
       "",
+      "Public entrypoint: run /agent-all for \"smoke task\".",
       "Flags: --loop --qa --dispatch=sequential --resume --force --yes.",
       "Uses sequential skill invocations. When done, print summary and dispatch strategy.",
+      "Stale entrypoint: codex skill run /agent-all-codex",
       "",
     ].join("\n"),
   );
@@ -288,4 +290,11 @@ test("release audit fails incomplete Codex slash-command skill surfaces", () => 
   );
   assert.ok(failed, JSON.stringify(result.platforms.codex.checks, null, 2));
   assert.match(failed.details, /\/codex-init/);
+
+  const staleEntrypoint = result.platforms.codex.checks.find(
+    (check) => !check.ok && check.name.includes("agent-all-codex/SKILL.md"),
+  );
+  assert.ok(staleEntrypoint, JSON.stringify(result.platforms.codex.checks, null, 2));
+  assert.match(staleEntrypoint.details, /forbidden/);
+  assert.match(staleEntrypoint.details, /codex skill run/);
 });

@@ -123,9 +123,11 @@ const PLATFORM_CONTRACTS = {
           /--qa/,
           /--dispatch=sequential/,
           /--resume/,
+          /run \/agent-all for/,
           /sequential skill/i,
           /When done[\s\S]{0,180}dispatch strategy/i,
         ],
+        forbidden: [/codex skill run/i, /codex exec\s+["'][^"']+["']/i],
       },
       {
         file: "plugins/harness-floor-codex/skills/visual-qa-codex/SKILL.md",

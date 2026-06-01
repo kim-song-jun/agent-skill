@@ -16,6 +16,17 @@ invocation of `.codex/skills/<role>/SKILL.md` per wave task.
 
 ## Usage
 
+From an installed Codex project, open `codex` in the repo and type the public
+harness entrypoint:
+
+```
+run /agent-all for "add user signup form"
+```
+
+This routes to the local `agent-all-codex` workflow contract below. The
+Codex-specific skill name remains visible so installed files, release audits,
+and phase paths can stay platform-explicit.
+
 ```
 /agent-all-codex "add user signup form"
 /agent-all-codex docs/tasks/12-fix-login.md
