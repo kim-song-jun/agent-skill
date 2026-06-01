@@ -30,6 +30,12 @@ const templatesDir = resolve(pluginRoot, "skills/codex-init/templates");
 // Templates emitted to stdout (not written to disk) — user merges manually.
 const STDOUT_TEMPLATES = new Set(["codex-config.toml.hbs"]);
 const FOLDER_GUIDE_TEMPLATE_REL = "folder-guides/AGENTS.md.hbs";
+const OPERATIONAL_WORKSPACE_FILES = [
+  "docs/superpowers/specs/.gitkeep",
+  "docs/superpowers/plans/.gitkeep",
+  "docs/decisions/.gitkeep",
+  "docs/tasks/.gitkeep",
+];
 
 const BASE_AGENTS = [
   { name: "planner",  when: "all planning" },
@@ -174,6 +180,10 @@ function main() {
     plannedWrites.push({ rel, outPath, rendered });
   }
   if (ctx.operationalProfile) {
+    for (const rel of OPERATIONAL_WORKSPACE_FILES) {
+      plannedWrites.push({ rel, outPath: resolve(target, rel), rendered: "" });
+    }
+
     const folderGuideTemplate = readFileSync(resolve(templatesDir, FOLDER_GUIDE_TEMPLATE_REL), "utf-8");
     for (const guide of detectGuideDirs(target)) {
       const rel = `${guide.path}/AGENTS.md`;

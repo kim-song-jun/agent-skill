@@ -73,13 +73,19 @@ Render and write each template:
 - `templates/AGENTS.md.hbs` → `AGENTS.md` (project root)
 - `templates/skills/<role>/SKILL.md.hbs` → `.codex/skills/<role>/SKILL.md` for each agent role
 - `templates/hooks/agent-policy-hook.mjs` → `.codex/hooks/agent-policy-hook.mjs`
-- built-in task ledger templates → `docs/tasks/index.md` and `docs/tasks/_template.md`
+- `templates/task-ledger/AGENTS.md.hbs` → `docs/tasks/AGENTS.md`
+- `templates/task-ledger/index.md.hbs` → `docs/tasks/index.md`
+- `templates/task-ledger/_template.md.hbs` → `docs/tasks/_template.md`
+- `templates/task-ledger/_handoff-template.md.hbs` → `docs/tasks/_handoff-template.md`
+- `templates/task-ledger/agent-task-ledger-check.mjs` → `scripts/agent-task-ledger-check.mjs`
+- operational workspace keepfiles → `docs/superpowers/specs/`, `docs/superpowers/plans/`, `docs/decisions/`, and `docs/tasks/`
 - `templates/local-guides/AGENTS.md.hbs` → `.codex/AGENTS.md`
+- `templates/folder-guides/AGENTS.md.hbs` → `<detected-folder>/AGENTS.md`
 
 Use `apply_patch` for every file write. Refuse to overwrite existing files
 unless the user passes `--force`; check every planned write before creating
 directories or files. In lite mode, skip hooks, local guides, operational
-reviewer skills, task-ledger files, and Codex config snippet output.
+reviewer skills, task-ledger/workspace files, and Codex config snippet output.
 
 ## Phase 3 — Summarize
 

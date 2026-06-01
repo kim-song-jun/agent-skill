@@ -10,6 +10,8 @@ Emits:
 - `.codex/skills/<role>/SKILL.md` per role
 - `.codex/hooks/agent-policy-hook.mjs`
 - task-ledger files under `docs/tasks/`
+- operational workspace directories under `docs/superpowers/specs/`,
+  `docs/superpowers/plans/`, and `docs/decisions/`
 - a current `~/.codex/config.toml` snippet on stdout using command-hook tables
   such as `[[hooks.PreToolUse]]`
 

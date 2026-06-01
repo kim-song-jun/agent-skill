@@ -41,6 +41,10 @@ const PLUGINS = {
       ".codex/skills/data-reviewer/SKILL.md",
       ".codex/hooks/agent-policy-hook.mjs",
       "scripts/agent-task-ledger-check.mjs",
+      "docs/superpowers/specs/.gitkeep",
+      "docs/superpowers/plans/.gitkeep",
+      "docs/decisions/.gitkeep",
+      "docs/tasks/.gitkeep",
       "docs/tasks/AGENTS.md",
       "docs/tasks/index.md",
       "docs/tasks/_template.md",
@@ -101,6 +105,17 @@ test("harness-builder-codex: SKILL.md documents that lite skips config snippet o
   assert.match(body, /--lite[\s\S]*skips?[\s\S]*reviewer personas/i);
   assert.doesNotMatch(body, /Always print the Codex config snippet/i);
   assert.doesNotMatch(body, /CLI always emits `templates\/codex-config\.toml\.hbs`/i);
+});
+
+test("harness-builder-codex: SKILL.md documents operational workspace outputs", () => {
+  const body = readFileSync(CODEX_INIT_SKILL, "utf-8");
+
+  assert.match(body, /docs\/superpowers\/specs\//);
+  assert.match(body, /docs\/superpowers\/plans\//);
+  assert.match(body, /docs\/decisions\//);
+  assert.match(body, /docs\/tasks\/AGENTS\.md/);
+  assert.match(body, /docs\/tasks\/_handoff-template\.md/);
+  assert.match(body, /scripts\/agent-task-ledger-check\.mjs/);
 });
 
 test("harness-builder-codex: config template is operational-only hook snippet", () => {
