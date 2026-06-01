@@ -29,6 +29,7 @@ import {
 import {
   resolveSkillPath,
   buildSkillPrompt,
+  buildReviewPrompt,
   buildSequentialInvocation,
   buildSequentialShellCommand,
   parseSkillResult,
@@ -357,6 +358,69 @@ test("sequential-dispatch: buildSkillPrompt includes task metadata", () => {
   assert.match(prompt, /End with a JSON line/);
 });
 
+test("sequential-dispatch: buildSkillPrompt includes the dispatch contract", () => {
+  const prompt = buildSkillPrompt({
+    task: {
+      id: "t-1",
+      title: "Fix login",
+      files: ["src/auth.js"],
+      forbiddenFiles: ["src/billing.js"],
+      body: "Detailed description",
+    },
+    plan: { path: "docs/plan.md" },
+    workingDirectory: "/repo",
+    skillPath: "/repo/.codex/skills/dev/SKILL.md",
+  });
+
+  assert.match(prompt, /## Dispatch Contract/);
+  assert.match(prompt, /Working directory:\s*\/repo/);
+  assert.match(prompt, /Owned files or line ranges:[\s\S]*src\/auth\.js/);
+  assert.match(prompt, /Forbidden files or areas:[\s\S]*src\/billing\.js/);
+  assert.match(prompt, /DO NOT:[\s\S]*destructive commands/i);
+  assert.match(prompt, /DO NOT:[\s\S]*self-commit/i);
+  assert.match(prompt, /Self-Audit/);
+  assert.match(prompt, /Do not self-commit/i);
+});
+
+test("sequential-dispatch: buildSkillPrompt asks implementers for changed files, not self-created commits", () => {
+  const prompt = buildSkillPrompt({
+    task: { id: "t-1", title: "Fix login", files: ["src/auth.js"] },
+    plan: { path: "docs/plan.md" },
+  });
+
+  assert.match(prompt, /changedFiles/);
+  assert.match(prompt, /coordinator will create scoped commits/i);
+  assert.doesNotMatch(prompt, /"commits": \["<sha>"/);
+});
+
+test("sequential-dispatch: buildReviewPrompt includes reviewer dispatch contract", () => {
+  const prompt = buildReviewPrompt({
+    review: {
+      id: "wave-1-review",
+      title: "Review wave 1",
+      persona: "verification-reviewer",
+      changedFiles: ["src/auth.js"],
+      forbiddenFiles: ["src/billing.js"],
+      diffRange: "abc..def",
+      mode: "quality",
+    },
+    plan: { path: "docs/plan.md", section: "Task 1" },
+    workingDirectory: "/repo",
+    skillPath: "/repo/.codex/skills/verification-reviewer/SKILL.md",
+  });
+
+  assert.match(prompt, /# Sequential review dispatch/);
+  assert.match(prompt, /Working directory:\s*\/repo/);
+  assert.match(prompt, /Owned files or line ranges:[\s\S]*src\/auth\.js/);
+  assert.match(prompt, /Diff range:\s*abc\.\.def/);
+  assert.match(prompt, /Forbidden files or areas:[\s\S]*src\/billing\.js/);
+  assert.match(prompt, /DO NOT:[\s\S]*self-commit/i);
+  assert.match(prompt, /verdict, issues by severity, audit token/i);
+  assert.match(prompt, /Self-Audit/);
+  assert.match(prompt, /Do not self-commit/i);
+  assert.doesNotMatch(prompt, /"commits": \["<sha>"/);
+});
+
 test("sequential-dispatch: buildSkillPrompt embeds role skill body when provided", () => {
   const prompt = buildSkillPrompt({
     task: { id: "t-1", title: "Fix login" },
@@ -416,6 +480,15 @@ test("sequential-dispatch: parseSkillResult finds JSON tail", () => {
   assert.deepEqual(r.commits, ["sha1", "sha2"]);
 });
 
+test("sequential-dispatch: parseSkillResult captures changedFiles for coordinator commits", () => {
+  const r = parseSkillResult(
+    `{"status":"completed","changedFiles":["src/auth.js"],"errors":[]}`,
+  );
+  assert.equal(r.status, "completed");
+  assert.deepEqual(r.changedFiles, ["src/auth.js"]);
+  assert.deepEqual(r.commits, []);
+});
+
 test("sequential-dispatch: parseSkillResult tolerates noise after JSON", () => {
   const stdout = [
     `{"status":"blocked","errors":["X"]}`,
@@ -441,7 +514,7 @@ test("sequential-dispatch: parseSkillResult handles empty/null input", () => {
 
 test("sequential-dispatch: dispatchSequential happy path returns unified shape", async () => {
   const runner = async () => ({
-    stdout: `{"status":"completed","commits":["sha-x"],"errors":[]}`,
+    stdout: `{"status":"completed","commits":["sha-x"],"changedFiles":["src/auth.js"],"verification":"node --test passed","errors":[]}`,
     stderr: "", status: 0,
   });
   const r = await dispatchSequential({
@@ -453,6 +526,8 @@ test("sequential-dispatch: dispatchSequential happy path returns unified shape",
   assert.equal(r.taskId, "t1");
   assert.equal(r.status, "completed");
   assert.deepEqual(r.commits, ["sha-x"]);
+  assert.deepEqual(r.changedFiles, ["src/auth.js"]);
+  assert.equal(r.verification, "node --test passed");
   assert.equal(r.costUSD, 0);
 });
 

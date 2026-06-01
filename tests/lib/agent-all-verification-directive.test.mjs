@@ -25,6 +25,26 @@ const PHASE_4_PATHS = [
   "plugins/harness-floor-gemini/skills/agent-all-gemini/phases/4-gate.md",
 ];
 
+const CLAUDE_CODEX_PHASE_3_PATHS = [
+  "plugins/harness-floor/skills/agent-all/phases/3-dispatch.md",
+  "plugins/harness-floor-codex/skills/agent-all-codex/phases/3-dispatch.md",
+];
+
+const CLAUDE_CODEX_PHASE_4_PATHS = [
+  "plugins/harness-floor/skills/agent-all/phases/4-gate.md",
+  "plugins/harness-floor-codex/skills/agent-all-codex/phases/4-gate.md",
+];
+
+function assertDispatchContract(body, path) {
+  assert.match(body, /Dispatch Prompt Contract|Dispatch Contract/i, `${path} missing dispatch contract section`);
+  assert.match(body, /Working directory/i, `${path} missing working directory contract`);
+  assert.match(body, /Owned files|Owned file ranges|Owned files or line ranges/i, `${path} missing owned-files contract`);
+  assert.match(body, /Forbidden files|Forbidden areas/i, `${path} missing forbidden-files contract`);
+  assert.match(body, /DO NOT/, `${path} missing DO NOT list requirement`);
+  assert.match(body, /Self-Audit/, `${path} missing Self-Audit output requirement`);
+  assert.match(body, /Do not self-commit|self-commit/i, `${path} missing self-commit prohibition`);
+}
+
 for (const p of PHASE_3_PATHS) {
   test(`${p}: mandates superpowers:verification-before-completion in subagent dispatch`, () => {
     const body = readFileSync(resolve(p), "utf-8");
@@ -39,6 +59,21 @@ for (const p of PHASE_3_PATHS) {
   });
 }
 
+for (const p of CLAUDE_CODEX_PHASE_3_PATHS) {
+  test(`${p}: mandates the implementer dispatch prompt contract`, () => {
+    const body = readFileSync(resolve(p), "utf-8");
+    assertDispatchContract(body, p);
+  });
+
+  test(`${p}: reconciles no self-commit with coordinator-owned commit recording`, () => {
+    const body = readFileSync(resolve(p), "utf-8");
+    assert.match(body, /coordinator|orchestrator/i, `${p} should name the commit owner`);
+    assert.match(body, /pathspec commit/i, `${p} should require scoped pathspec commits`);
+    assert.match(body, /record.*commit/i, `${p} should record coordinator-created commit SHAs`);
+    assert.match(body, /changed files/i, `${p} should require implementers to report changed files`);
+  });
+}
+
 for (const p of PHASE_4_PATHS) {
   test(`${p}: mandates reviewer to verify implementer ran verification`, () => {
     const body = readFileSync(resolve(p), "utf-8");
@@ -49,5 +84,12 @@ for (const p of PHASE_4_PATHS) {
   test(`${p}: documents the two-layer safety net (Phase 3 verifies, Phase 4 audits)`, () => {
     const body = readFileSync(resolve(p), "utf-8");
     assert.match(body, /two-layer safety net|Two-layer safety net/, `${p} should reference the two-layer safety net`);
+  });
+}
+
+for (const p of CLAUDE_CODEX_PHASE_4_PATHS) {
+  test(`${p}: mandates the reviewer dispatch prompt contract`, () => {
+    const body = readFileSync(resolve(p), "utf-8");
+    assertDispatchContract(body, p);
   });
 }

@@ -60,6 +60,23 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
 
 7. Push `{phase: 4, completedAt}` to `phases` once all waves processed.
 
+## Dispatch Prompt Contract (mandatory)
+
+Every reviewer Task prompt in this phase MUST include:
+
+- Working directory: the repository root where review commands must run.
+- Owned files or line ranges: the changed-file list and the diff range under review; reviewers may inspect related files but must not edit unless explicitly dispatched for a retry fix.
+- Forbidden files or areas: files outside the wave diff, files owned by other active agents, and any path not needed for the review verdict.
+- DO NOT:
+  - Do not run destructive commands, force-push, or reset shared state.
+  - Do not rewrite implementation code during review unless the orchestrator dispatched a retry implementer.
+  - Do not stage broad changes or self-commit.
+  - Do not revert unrelated user or other-agent edits.
+- Expected output: verdict, issues by severity, audit token, verification evidence checked, and a concise `Self-Audit` covering reviewed scope, unreviewed items, shortcuts, and next action.
+- Reusable references: task doc, plan section, diff command, changed-file list, reviewer persona file, and relevant root guidance.
+
+Do not self-commit from a reviewer subagent. Report findings and verification evidence back to the orchestrator for retry or pathspec commit review.
+
 ## Per-reviewer verification check (mandatory)
 
 Every reviewer subagent's prompt MUST include the following directive:

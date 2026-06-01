@@ -11,24 +11,33 @@ For each wave with `status === "completed"`:
 
 1. Compute the wave diff and changed-file list via `shell_command`:
    ```bash
-   git diff <wave.startCommit>..<wave.endCommit>
-   git diff --name-only <wave.startCommit>..<wave.endCommit>
+   git diff <wave.baseCommit>..<wave.endCommit>
+   git diff --name-only <wave.baseCommit>..<wave.endCommit>
    ```
+   `wave.baseCommit` is the pre-wave commit captured by Phase 3 before the
+   coordinator-created task commits. For older state without `baseCommit`,
+   fall back to `git diff <wave.startCommit>^..<wave.endCommit>` and
+   `git diff --name-only <wave.startCommit>^..<wave.endCommit>` when
+   `wave.startCommit` has a parent. If `wave.startCommit` is a root commit
+   with no parent, use the empty-tree hash
+   (`4b825dc642cb6eb9a060e54bf8d69288fbee4904`) as the diff base.
 2. If `gates.specReview`: dispatch the `reviewer` skill (via the same
    strategy as Phase 3) with `mode=spec`, passing the diff + plan section.
 3. If `gates.qualityReview`:
    - Load `const { reviewers } = classifyChangedFiles(files)` from
      `lib/changed-file-classifier.mjs`, where `files` is the
-     `git diff --name-only <wave.startCommit>..<wave.endCommit>` output.
+     `git diff --name-only <wave.baseCommit>..<wave.endCommit>` output, or the
+     compatibility fallback output described above.
    - Dispatch one sequential review invocation per returned persona by reading
      `.codex/skills/<persona>/SKILL.md`.
    - The classifier always returns `reviewer` and `verification-reviewer`.
    - It adds `qa-reviewer`, `design-reviewer`, `security-reviewer`,
      `data-reviewer`, and `integration-dev` when the changed-file set requires
      user-flow, UI, security, data, or cross-stack review.
-   - Prompt each persona with the wave plan section, diff, changed-file list,
-     and persona context. Preserve Codex's sequential strategy; do not use the
-     unsupported legacy agent hook.
+   - Prompt each persona with `lib/sequential-dispatch.mjs`
+     `buildReviewPrompt`, including the wave plan section, diff, changed-file
+     list, and persona context. Preserve Codex's sequential strategy; do not
+     use the unsupported legacy agent hook.
    - `qa-reviewer` audits user-side flow only: missing scenarios, persona
      confusion, accessibility-visible behavior, and acceptance gaps. NOT
      tech-stack verification.
@@ -69,6 +78,23 @@ The role skills selected by `classifyChangedFiles(files)` must exist under
 ## Output
 
 Print one line per wave: `Wave <i> gate: <issuesCount> issues (<critical>c <major>m <minor>n), <retries> retries`.
+
+## Dispatch Prompt Contract (mandatory)
+
+Every sequential reviewer invocation in this phase MUST receive a prompt containing:
+
+- Working directory: the repository root where review commands must run.
+- Owned files or line ranges: the changed-file list and the diff range under review; reviewers may inspect related files but must not edit unless explicitly invoked for retry implementation.
+- Forbidden files or areas: files outside the wave diff, files owned by other active agents, and any path not needed for the review verdict.
+- DO NOT:
+  - Do not run destructive commands, force-push, or reset shared state.
+  - Do not rewrite implementation code during review unless the coordinator dispatched a retry implementer.
+  - Do not stage broad changes or self-commit.
+  - Do not revert unrelated user or other-agent edits.
+- Expected output: verdict, issues by severity, audit token, verification evidence checked, and a concise `Self-Audit` covering reviewed scope, unreviewed items, shortcuts, and next action.
+- Reusable references: task doc, plan section, diff command, changed-file list, reviewer skill path, and relevant root guidance.
+
+Do not self-commit from a reviewer invocation. Report findings and verification evidence back to the coordinator for retry or pathspec commit review.
 
 ## Per-reviewer verification check (mandatory)
 

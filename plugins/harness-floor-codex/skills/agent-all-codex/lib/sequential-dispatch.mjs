@@ -47,8 +47,10 @@ export function resolveSkillPath(role, projectRoot) {
  * @param {string} args.task.id
  * @param {string} args.task.title
  * @param {string[]} [args.task.files=[]]
+ * @param {string[]} [args.task.forbiddenFiles=[]]
  * @param {string} [args.task.body=""]
  * @param {object} [args.plan]      — context (path, summary)
+ * @param {string} [args.workingDirectory]
  * @returns {string}
  */
 export function buildSkillPrompt(args) {
@@ -59,8 +61,10 @@ export function buildSkillPrompt(args) {
   assertNonEmpty("task.id", task.id);
   assertNonEmpty("task.title", task.title);
   const files = Array.isArray(task.files) ? task.files : [];
+  const forbiddenFiles = Array.isArray(task.forbiddenFiles) ? task.forbiddenFiles : [];
   const bodyText = task.body || "(no body provided)";
   const planRef = plan?.path ? `Plan: ${plan.path}` : "Plan: (inline)";
+  const workingDirectory = args.workingDirectory || plan?.workingDirectory || process.cwd();
   const roleSkill = skillBody
     ? [
         "## Role Skill",
@@ -95,6 +99,31 @@ export function buildSkillPrompt(args) {
     "## Files in scope",
     files.length ? files.map((f) => `- ${f}`).join("\n") : "(none declared)",
     "",
+    "## Dispatch Contract",
+    "",
+    `- Working directory: ${workingDirectory}`,
+    "- Owned files or line ranges:",
+    files.length
+      ? files.map((f) => `  - ${f}`).join("\n")
+      : "  - (none declared; ask the orchestrator before broad edits)",
+    "- Forbidden files or areas:",
+    forbiddenFiles.length
+      ? forbiddenFiles.map((f) => `  - ${f}`).join("\n")
+      : "  - Any file outside the owned set unless the task explicitly requires it and you report the expansion.",
+    "- DO NOT:",
+    "  - Do not run destructive commands or force-push commands.",
+    "  - Do not stage broad changes, amend shared history, or self-commit.",
+    "  - Do not revert unrelated user or other-agent edits.",
+    "- Expected output:",
+    "  - Include a concise Self-Audit covering requested scope, files changed, verification run, unprocessed items, and shortcuts.",
+    "  - End with the required JSON line.",
+    "- Reusable references:",
+    `  - ${planRef}`,
+    `  - Role skill: ${skillPath || "(inline)"}`,
+    "",
+    "Do not self-commit. Report changed files, verification evidence, and blockers back to the orchestrator.",
+    "The coordinator will create scoped commits after inspecting the changed files and verification evidence.",
+    "",
     "## Task body",
     "",
     bodyText,
@@ -102,7 +131,120 @@ export function buildSkillPrompt(args) {
     "## Required output",
     "",
     "End with a JSON line:",
-    '`{"status": "completed"|"blocked", "commits": ["<sha>", ...], "errors": ["..."]}`',
+    '`{"status": "completed"|"blocked", "changedFiles": ["<path>", ...], "verification": "<command/result>", "errors": ["..."]}`',
+  ].join("\n");
+}
+
+/**
+ * Build a reviewer prompt for Phase 4 sequential fallback. This intentionally
+ * differs from the implementer prompt: reviewers produce verdicts and audit
+ * evidence, not commits.
+ *
+ * @param {object} args
+ * @param {object} args.review
+ * @param {string} [args.review.id]
+ * @param {string} [args.review.title]
+ * @param {string} [args.review.persona]
+ * @param {string[]} [args.review.changedFiles=[]]
+ * @param {string[]} [args.review.forbiddenFiles=[]]
+ * @param {string} [args.review.diffRange]
+ * @param {string} [args.review.diff]
+ * @param {string} [args.review.mode]
+ * @param {object} [args.plan]      — context (path, section, summary)
+ * @param {string} [args.skillPath]
+ * @param {string} [args.skillBody]
+ * @param {string} [args.workingDirectory]
+ * @returns {string}
+ */
+export function buildReviewPrompt(args) {
+  const { review, plan, skillPath, skillBody } = args;
+  if (!review || typeof review !== "object") {
+    throw new Error("buildReviewPrompt: review object required");
+  }
+  const persona = review.persona || review.role || "reviewer";
+  const id = review.id || `review/${persona}`;
+  const title = review.title || `Review ${persona}`;
+  assertNonEmpty("review.id", id);
+  assertNonEmpty("review.title", title);
+  const changedFiles = Array.isArray(review.changedFiles) ? review.changedFiles : [];
+  const forbiddenFiles = Array.isArray(review.forbiddenFiles) ? review.forbiddenFiles : [];
+  const planRef = plan?.path ? `Plan: ${plan.path}` : "Plan: (inline)";
+  const planSection = plan?.section ? `Plan section: ${plan.section}` : "Plan section: (not provided)";
+  const workingDirectory = args.workingDirectory || plan?.workingDirectory || process.cwd();
+  const diffRange = review.diffRange || "(not provided)";
+  const diffBody = review.diff || "(diff not inlined; use the provided diff command/range)";
+  const roleSkill = skillBody
+    ? [
+        "## Reviewer Skill",
+        "",
+        `Path: ${skillPath || "(inline)"}`,
+        "",
+        "Follow this reviewer skill for the gate:",
+        "",
+        "```markdown",
+        skillBody,
+        "```",
+        "",
+      ]
+    : skillPath
+      ? [
+          "## Reviewer Skill",
+          "",
+          `Path: ${skillPath}`,
+          "",
+          "The dispatcher could not inline the skill body; load and follow this reviewer skill before auditing.",
+          "",
+        ]
+      : [];
+
+  return [
+    "# Sequential review dispatch (agent-all-codex fallback)",
+    "",
+    ...roleSkill,
+    `Review ID: ${id}`,
+    `Title:     ${title}`,
+    `Persona:   ${persona}`,
+    `Mode:      ${review.mode || "quality"}`,
+    planRef,
+    planSection,
+    "",
+    "## Dispatch Contract",
+    "",
+    `- Working directory: ${workingDirectory}`,
+    "- Owned files or line ranges:",
+    changedFiles.length
+      ? changedFiles.map((f) => `  - ${f}`).join("\n")
+      : "  - (none declared; review only the supplied diff range)",
+    `- Diff range: ${diffRange}`,
+    "- Forbidden files or areas:",
+    forbiddenFiles.length
+      ? forbiddenFiles.map((f) => `  - ${f}`).join("\n")
+      : "  - Files outside the wave diff unless needed to explain the review verdict.",
+    "- DO NOT:",
+    "  - Do not run destructive commands or force-push commands.",
+    "  - Do not rewrite implementation code unless this is an explicit retry-fix invocation.",
+    "  - Do not stage broad changes, amend shared history, or self-commit.",
+    "  - Do not revert unrelated user or other-agent edits.",
+    "- Expected output:",
+    "  - Include verdict, issues by severity, audit token, verification evidence checked, and a concise Self-Audit.",
+    "  - End with the required JSON line.",
+    "- Reusable references:",
+    `  - ${planRef}`,
+    `  - ${planSection}`,
+    `  - Reviewer skill: ${skillPath || "(inline)"}`,
+    "",
+    "Do not self-commit. Report findings, verification evidence, and blockers back to the coordinator.",
+    "",
+    "## Diff",
+    "",
+    "```diff",
+    diffBody,
+    "```",
+    "",
+    "## Required output",
+    "",
+    "End with a JSON line:",
+    '`{"status": "passed"|"failed"|"blocked", "issues": [{"severity": "critical"|"major"|"minor", "file": "<path>", "message": "..."}], "audit": "QA_AUDIT: passed|failed|skipped or VERIFICATION_AUDIT: passed|failed|skipped", "errors": ["..."]}`',
   ].join("\n");
 }
 
@@ -118,6 +260,7 @@ export function buildSkillPrompt(args) {
  * @param {string} [opts.subcommand="exec"]
  * @param {string} [opts.skillPath] — pre-resolved override; otherwise derived from task.role
  * @param {string} [opts.skillBody] — optional inlined SKILL.md content
+ * @param {string} [opts.workingDirectory]
  * @returns {{argv: string[], skillPath: string, prompt: string}}
  */
 export function buildSequentialInvocation(opts) {
@@ -133,6 +276,7 @@ export function buildSequentialInvocation(opts) {
     plan: opts.plan,
     skillPath,
     skillBody: opts.skillBody,
+    workingDirectory: opts.workingDirectory,
   });
   return {
     skillPath,
@@ -164,11 +308,11 @@ export function buildSequentialShellCommand(opts) {
  * scan from the bottom to be resilient to interleaved log output.
  *
  * @param {string} stdout
- * @returns {{status: string, commits: string[], errors: string[]}}
+ * @returns {{status: string, commits: string[], changedFiles: string[], errors: string[], verification?: string}}
  */
 export function parseSkillResult(stdout) {
   if (!stdout || typeof stdout !== "string") {
-    return { status: "unknown", commits: [], errors: ["empty skill output"] };
+    return { status: "unknown", commits: [], changedFiles: [], errors: ["empty skill output"] };
   }
   const lines = stdout.trim().split(/\r?\n/);
   for (let i = lines.length - 1; i >= 0; i--) {
@@ -179,6 +323,8 @@ export function parseSkillResult(stdout) {
       return {
         status: parsed.status ?? "unknown",
         commits: Array.isArray(parsed.commits) ? parsed.commits : [],
+        changedFiles: Array.isArray(parsed.changedFiles) ? parsed.changedFiles : [],
+        verification: typeof parsed.verification === "string" ? parsed.verification : undefined,
         errors: Array.isArray(parsed.errors) ? parsed.errors : [],
       };
     } catch {
@@ -188,6 +334,7 @@ export function parseSkillResult(stdout) {
   return {
     status: "unknown",
     commits: [],
+    changedFiles: [],
     errors: ["no JSON result line found in skill output"],
   };
 }
@@ -200,7 +347,8 @@ export function parseSkillResult(stdout) {
  * @param {Parameters<typeof buildSequentialInvocation>[0]} opts
  * @param {(command: string) => Promise<{stdout: string, stderr: string, status: number}>} shellRunner
  * @returns {Promise<{agentId: string, taskId: string, status: string,
- *                    commits: string[], costUSD: number, errors: string[]}>}
+ *                    commits: string[], changedFiles: string[], verification?: string,
+ *                    costUSD: number, errors: string[]}>}
  */
 export async function dispatchSequential(opts, shellRunner) {
   if (typeof shellRunner !== "function") {
@@ -235,6 +383,8 @@ export async function dispatchSequential(opts, shellRunner) {
     taskId: opts.task.id,
     status: result?.status === 0 ? parsed.status : "blocked",
     commits: parsed.commits,
+    changedFiles: parsed.changedFiles,
+    verification: parsed.verification,
     costUSD: 0, // sequential mode has no per-task cost report; coordinator estimates
     errors: result?.status === 0
       ? parsed.errors
