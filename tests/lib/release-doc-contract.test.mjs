@@ -347,7 +347,7 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /Implemented through Task 12/i);
   assert.match(plan, /root role routing/i);
   assert.match(plan, /node --test[\s\S]{0,120}1716\/1716/);
-  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}356\/356/);
+  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}363\/363/);
   assert.match(plan, /release-audit\.mjs/);
   assert.match(plan, /release-fixture-smoke\.mjs/);
   assert.match(plan, /historical TDD checklist/i);

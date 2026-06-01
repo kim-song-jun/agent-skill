@@ -87,6 +87,7 @@ run_step "focused release contracts" \
     tests/lib/claude-native-release-contract.test.mjs \
     tests/lib/doctor-script.test.mjs \
     tests/lib/harness-cleaner.test.mjs \
+    tests/lib/release-audit.test.mjs \
     tests/lib/release-command-surface.test.mjs \
     tests/lib/release-install-scripts.test.mjs \
     tests/lib/update-script-contract.test.mjs \
