@@ -207,6 +207,94 @@ test("install-platform codex --lite installs only the builder lite scaffold", ()
   }
 });
 
+test("install-platform codex builder theme installs only builder artifacts and reports them", () => {
+  const target = tmp("agent-skill-release-codex-builder-target-");
+  const home = tmp("agent-skill-release-codex-builder-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=builder",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    for (const rel of [
+      "AGENTS.md",
+      ".codex/skills/planner/SKILL.md",
+      ".codex/skills/orchestrator/SKILL.md",
+      ".codex/hooks/agent-policy-hook.mjs",
+      "docs/tasks/index.md",
+    ]) {
+      assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
+    }
+    for (const rel of [
+      ".visual-qa.json",
+      ".agent-all.json",
+      ".thrift.json",
+      ".codex/skills/agent-all-codex/SKILL.md",
+      ".codex/skills/visual-qa-codex/SKILL.md",
+      ".codex/hooks/thrift-pretool-bash-telemetry.toml",
+    ]) {
+      assert.ok(!existsSync(resolve(target, rel)), `unexpected builder artifact ${rel}`);
+    }
+
+    assert.match(res.stdout, /theme: builder/);
+    assert.doesNotMatch(res.stdout, /\.visual-qa\.json|\.agent-all\.json|\.thrift\.json/);
+    assert.doesNotMatch(res.stdout, /\[mcp_servers\.playwright\]|instrument:\s+no/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("install-platform codex thrift theme installs only thrift artifacts and reports them", () => {
+  const target = tmp("agent-skill-release-codex-thrift-target-");
+  const home = tmp("agent-skill-release-codex-thrift-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=thrift",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    for (const rel of [
+      ".thrift.json",
+      ".codex/hooks/thrift-pretool-bash-telemetry.toml",
+      ".codex/hooks/thrift-posttool-summariser-trigger.toml",
+      ".codex/hooks/thrift-sessionend-audit.toml",
+    ]) {
+      assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
+    }
+    for (const rel of [
+      "AGENTS.md",
+      ".visual-qa.json",
+      ".agent-all.json",
+      ".codex/skills/planner/SKILL.md",
+      ".codex/skills/agent-all-codex/SKILL.md",
+      ".codex/hooks/agent-policy-hook.mjs",
+    ]) {
+      assert.ok(!existsSync(resolve(target, rel)), `unexpected thrift artifact ${rel}`);
+    }
+
+    assert.match(res.stdout, /theme: thrift/);
+    assert.match(res.stdout, /\.thrift\.json/);
+    assert.doesNotMatch(res.stdout, /AGENTS\.md|\.visual-qa\.json|\.agent-all\.json|\.codex\/skills\//);
+    assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "thrift theme must not patch global Codex config via install-platform");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test("install-platform codex all emits only dispatchable floor skill roles", () => {
   const target = tmp("agent-skill-release-codex-graph-target-");
   const home = tmp("agent-skill-release-codex-graph-home-");

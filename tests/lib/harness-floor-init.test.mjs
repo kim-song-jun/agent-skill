@@ -93,7 +93,7 @@ test("harness-floor-cursor: --only=agent-all skips visual-qa kit", () => {
 
 test("harness-floor-cursor: --ctx supplies template variables", () => {
   const target = makeTmp();
-  const ctxPath = join(target, "..", "ctx.json");
+  const ctxPath = resolve(target, "ctx.json");
   try {
     writeFileSync(ctxPath, JSON.stringify({
       baseUrl: "https://staging.example.com",
@@ -155,7 +155,7 @@ for (const plugin of ["copilot", "codex", "gemini"]) {
 
   test(`harness-floor-${plugin}: --ctx language persists to .agent-all.json`, () => {
     const target = makeTmp();
-    const ctxPath = join(target, "..", `${plugin}-ctx-lang.json`);
+    const ctxPath = resolve(target, `${plugin}-ctx-lang.json`);
     try {
       writeFileSync(ctxPath, JSON.stringify({ language: "ko" }));
       const res = runInit(plugin, [target, "--only=agent-all", "--ctx", ctxPath]);

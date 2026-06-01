@@ -218,43 +218,95 @@ case "$THEME" in
     ;;
 esac
 
-echo
-echo "Done. Inspect the target project for the new files:"
-if [ "$LITE" = "1" ]; then
-  case "$EMIT_PLATFORM" in
-    cursor)
-      echo "  - .cursor/rules/, .cursor/agents/ (builder-only lite scaffold)"
+print_install_summary() {
+  local platform="$1"
+  local theme="$2"
+  local lite="$3"
+
+  if [ "$lite" = "1" ]; then
+    case "$platform" in
+      cursor)
+        echo "  - .cursor/rules/, .cursor/agents/ (builder-only lite scaffold)"
+        ;;
+      copilot)
+        echo "  - .github/copilot-instructions.md, .github/instructions/ (builder-only lite scaffold)"
+        ;;
+      codex)
+        echo "  - AGENTS.md, .codex/skills/{planner,dev,reviewer}/ (builder-only lite scaffold)"
+        echo "  - Note: lite mode skips floor/thrift files and global Codex config snippets"
+        ;;
+      gemini)
+        echo "  - GEMINI.md, .gemini/skills/ (builder-only lite scaffold)"
+        ;;
+    esac
+    return 0
+  fi
+
+  case "$platform:$theme" in
+    cursor:all)
+      echo "  - .cursor/rules/, .cursor/agents/, .visual-qa.json, .agent-all.json, .thrift.json"
       ;;
-    copilot)
-      echo "  - .github/copilot-instructions.md, .github/instructions/ (builder-only lite scaffold)"
+    cursor:builder)
+      echo "  - .cursor/rules/, .cursor/agents/"
       ;;
-    codex)
-      echo "  - AGENTS.md, .codex/skills/{planner,dev,reviewer}/ (builder-only lite scaffold)"
-      echo "  - Note: lite mode skips floor/thrift files and global Codex config snippets"
+    cursor:floor)
+      echo "  - .visual-qa.json, .agent-all.json"
       ;;
-    gemini)
-      echo "  - GEMINI.md, .gemini/skills/ (builder-only lite scaffold)"
+    cursor:thrift)
+      echo "  - .thrift.json, .cursor/rules/"
+      ;;
+    copilot:all)
+      echo "  - .github/copilot-instructions.md, .github/instructions/, .github/hooks/, .visual-qa.json, .agent-all.json, .thrift.json"
+      ;;
+    copilot:builder)
+      echo "  - .github/copilot-instructions.md, .github/instructions/"
+      ;;
+    copilot:floor)
+      echo "  - .visual-qa.json, .agent-all.json"
+      ;;
+    copilot:thrift)
+      echo "  - .thrift.json, .github/hooks/"
+      ;;
+    codex:all)
+      echo "  - AGENTS.md, .codex/skills/, .codex/hooks/, .visual-qa.json, .agent-all.json, .thrift.json"
+      echo "  - Note: Codex config snippets were printed to stdout; merge approved snippets into ~/.codex/config.toml"
+      ;;
+    codex:builder)
+      echo "  - AGENTS.md, .codex/skills/, .codex/hooks/agent-policy-hook.mjs, docs/tasks/"
+      echo "  - Note: codex-config.toml policy-hook snippet was printed to stdout; merge into ~/.codex/config.toml"
+      ;;
+    codex:floor)
+      echo "  - .visual-qa.json, .agent-all.json, .codex/skills/{agent-all-codex,visual-qa-codex,visual-qa-page}/"
+      echo "  - Note: Playwright MCP and Codex floor snippets were printed to stdout for manual merge"
+      ;;
+    codex:thrift)
+      echo "  - .thrift.json, .codex/hooks/thrift-*.toml"
+      echo "  - Note: install-platform uses --no-instrument for Codex thrift; merge hook snippets manually after approval"
+      ;;
+    gemini:all)
+      echo "  - GEMINI.md, .gemini/skills/, .visual-qa.json, .agent-all.json, .thrift.json"
+      echo "  - Note: gemini-settings.json snippet was printed to stdout; merge into ~/.gemini/settings.json"
+      ;;
+    gemini:builder)
+      echo "  - GEMINI.md, .gemini/skills/"
+      ;;
+    gemini:floor)
+      echo "  - .visual-qa.json, .agent-all.json"
+      echo "  - Note: Gemini floor settings snippet was printed to stdout for manual merge"
+      ;;
+    gemini:thrift)
+      echo "  - .thrift.json"
+      echo "  - Note: Gemini thrift settings snippet was printed to stdout for manual merge"
       ;;
   esac
+}
+
+echo
+echo "Done. Inspect the target project for the new files:"
+print_install_summary "$EMIT_PLATFORM" "$THEME" "$LITE"
+if [ "$LITE" = "1" ]; then
   exit 0
 fi
-
-case "$EMIT_PLATFORM" in
-  cursor)
-    echo "  - .cursor/rules/, .cursor/agents/, .visual-qa.json, .agent-all.json, .thrift.json"
-    ;;
-  copilot)
-    echo "  - .github/copilot-instructions.md, .github/hooks/, .visual-qa.json, .agent-all.json, .thrift.json"
-    ;;
-  codex)
-    echo "  - AGENTS.md, .codex/skills/, .visual-qa.json, .agent-all.json, .thrift.json"
-    echo "  - Note: codex-config.toml snippet was printed to stdout — merge into ~/.codex/config.toml"
-    ;;
-  gemini)
-    echo "  - GEMINI.md, .gemini/skills/, .visual-qa.json, .agent-all.json, .thrift.json"
-    echo "  - Note: gemini-settings.json snippet was printed to stdout — merge into ~/.gemini/settings.json"
-    ;;
-esac
 
 if [ "$PLATFORM" = "vscode-copilot" ]; then
   echo
