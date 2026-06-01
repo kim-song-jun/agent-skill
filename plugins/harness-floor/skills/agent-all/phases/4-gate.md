@@ -25,10 +25,12 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
    - Use description prefix `Spec Review Task <N>: <title>` so the `floor-policy` hook routes the task through the technical review audit validator.
 
 3. If `gates.qualityReview`:
-   - Load `const { reviewers } = classifyChangedFiles(files)` from `lib/changed-file-classifier.mjs`, where `files` is the `git diff --name-only <wave.baseCommit>..<wave.endCommit>` output, or the compatibility fallback output described above.
+   - Load `const { reviewers, coordinators } = classifyChangedFiles(files)` from `lib/changed-file-classifier.mjs`, where `files` is the `git diff --name-only <wave.baseCommit>..<wave.endCommit>` output, or the compatibility fallback output described above.
+   - Dispatch returned `coordinators` first. Today this is `orchestrator` for shared manifests/lockfiles, CI/build config, or broad non-doc changes. Prompt it to identify HOT files, unsafe ownership overlap, retry sequencing, and pathspec commit risk before reviewer dispatch.
    - Dispatch one reviewer subagent per returned `reviewers` persona.
    - The classifier always returns the base `reviewer` and `verification-reviewer` personas.
    - The classifier adds `design-reviewer`, `qa-reviewer`, `security-reviewer`, `data-reviewer`, and `integration-dev` only when the changed-file set requires them.
+   - The classifier returns `coordinators: ["orchestrator"]` when the changed-file set needs wave ownership review rather than another audit reviewer.
    - Description prefixes:
      - `reviewer`: `Review Task <N>: <title>`
      - `verification-reviewer`: `Verification Review Task <N>: <title>`
@@ -46,6 +48,7 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
 4b. **Classifier-based gate.** Wave passes Phase 4 iff:
    - `VERIFICATION_AUDIT ∈ {passed, skipped}` for the `verification-reviewer` dispatch, AND
    - `QA_AUDIT ∈ {passed, skipped}` for the `qa-reviewer` dispatch when the classifier returned `qa-reviewer`, AND
+   - no returned coordinator reports HOT-file ownership conflicts, unsafe retry sequencing, or pathspec commit risk, AND
    - no returned reviewer persona reports blocking issues.
 
    Tech success ≠ user-flow success. A `passed` Verification audit alongside a `failed` QA audit fails the wave; the QA defect report becomes input to the next iteration's plan.

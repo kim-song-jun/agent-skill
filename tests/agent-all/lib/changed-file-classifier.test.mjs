@@ -23,6 +23,24 @@ test("Vue router stores composables and assets add design and QA reviewers", () 
   );
 });
 
+test("Vue and Nuxt API plugin middleware paths add design and QA reviewers", () => {
+  assert.deepEqual(
+    classifyChangedFiles([
+      "src/api/http-client.ts",
+      "src/plugins/dayjs.ts",
+      "src/middleware/requireAuth.ts",
+      "src/services/user-preferences.ts",
+    ]).reviewers,
+    [
+      "design-reviewer",
+      "qa-reviewer",
+      "reviewer",
+      "security-reviewer",
+      "verification-reviewer",
+    ],
+  );
+});
+
 test("Vue auth store changes add frontend and security reviewers", () => {
   assert.deepEqual(classifyChangedFiles(["src/stores/auth.ts", "src/composables/useSession.ts"]).reviewers, [
     "design-reviewer",
@@ -164,6 +182,38 @@ test("frontend plus backend touch adds integration developer", () => {
     "reviewer",
     "verification-reviewer",
   ]);
+});
+
+test("shared manifests locks and CI config add orchestrator for wave ownership", () => {
+  const result = classifyChangedFiles([
+    "package.json",
+    "pnpm-lock.yaml",
+    ".github/workflows/test.yml",
+    "docker-compose.yml",
+  ]);
+  assert.deepEqual(result.reviewers, [
+    "reviewer",
+    "verification-reviewer",
+  ]);
+  assert.deepEqual(result.coordinators, ["orchestrator"]);
+});
+
+test("broad non-doc changes add orchestrator even without a specific persona match", () => {
+  const result = classifyChangedFiles([
+    "lib/a.ts",
+    "lib/b.ts",
+    "lib/c.ts",
+    "lib/d.ts",
+    "lib/e.ts",
+    "lib/f.ts",
+    "lib/g.ts",
+    "lib/h.ts",
+  ]);
+  assert.deepEqual(result.reviewers, [
+    "reviewer",
+    "verification-reviewer",
+  ]);
+  assert.deepEqual(result.coordinators, ["orchestrator"]);
 });
 
 test("docs-only or unknown files return only base reviewers", () => {

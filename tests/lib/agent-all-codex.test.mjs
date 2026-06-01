@@ -66,6 +66,9 @@ test("agent-all-codex: phase 4 uses changed-file classifier persona gates", () =
 
   assert.match(body, /changed-file-classifier\.mjs/);
   assert.match(body, /classifyChangedFiles\(files\)/);
+  assert.match(body, /coordinators/);
+  assert.match(body, /orchestrator/);
+  assert.match(body, /HOT files|HOT-file/);
   assert.match(body, /\.codex\/skills\/<persona>\/SKILL\.md/);
   assert.match(body, /verification-reviewer/);
   assert.match(body, /qa-reviewer/);
@@ -84,6 +87,7 @@ test("agent-all-codex: changed-file classifier matches Claude source of truth", 
     ["docs/README.md"],
     ["server/auth/session.ts", "fixtures/users.json"],
     ["src/router/index.ts", "apps/users/viewsets.py", "apps/billing/celery.py"],
+    ["package.json", "pnpm-lock.yaml", ".github/workflows/test.yml"],
   ];
 
   for (const files of cases) {
@@ -96,13 +100,14 @@ test("agent-all-codex: changed-file classifier matches Claude source of truth", 
 });
 
 test("agent-all-codex: changed-file classifier routes POSCO-style Django and Vue gates", () => {
+  const result = classifyCodexChangedFiles([
+    "src/stores/auth.ts",
+    "src/composables/useSession.ts",
+    "apps/users/admin.py",
+    "apps/users/views.py",
+  ]);
   assert.deepEqual(
-    classifyCodexChangedFiles([
-      "src/stores/auth.ts",
-      "src/composables/useSession.ts",
-      "apps/users/admin.py",
-      "apps/users/views.py",
-    ]).reviewers,
+    result.reviewers,
     [
       "design-reviewer",
       "integration-dev",
@@ -111,6 +116,11 @@ test("agent-all-codex: changed-file classifier routes POSCO-style Django and Vue
       "security-reviewer",
       "verification-reviewer",
     ],
+  );
+  assert.deepEqual(result.coordinators, []);
+  assert.deepEqual(
+    classifyCodexChangedFiles(["package.json", "pnpm-lock.yaml", ".github/workflows/test.yml"]).coordinators,
+    ["orchestrator"],
   );
 });
 

@@ -24,16 +24,22 @@ For each wave with `status === "completed"`:
 2. If `gates.specReview`: dispatch the `reviewer` skill (via the same
    strategy as Phase 3) with `mode=spec`, passing the diff + plan section.
 3. If `gates.qualityReview`:
-   - Load `const { reviewers } = classifyChangedFiles(files)` from
+   - Load `const { reviewers, coordinators } = classifyChangedFiles(files)` from
      `lib/changed-file-classifier.mjs`, where `files` is the
      `git diff --name-only <wave.baseCommit>..<wave.endCommit>` output, or the
      compatibility fallback output described above.
+   - Invoke returned `coordinators` first. Today this is `orchestrator` for
+     shared manifests/lockfiles, CI/build config, or broad non-doc changes.
+     Prompt it to identify HOT files, unsafe ownership overlap, retry
+     sequencing, and pathspec commit risk before reviewer dispatch.
    - Dispatch one sequential review invocation per returned persona by reading
      `.codex/skills/<persona>/SKILL.md`.
    - The classifier always returns `reviewer` and `verification-reviewer`.
    - It adds `qa-reviewer`, `design-reviewer`, `security-reviewer`,
      `data-reviewer`, and `integration-dev` when the changed-file set requires
      user-flow, UI, security, data, or cross-stack review.
+   - It returns `coordinators: ["orchestrator"]` when the changed-file set
+     needs wave ownership review rather than another audit reviewer.
    - Prompt each persona with `lib/sequential-dispatch.mjs`
      `buildReviewPrompt`, including the wave plan section, diff, changed-file
      list, and persona context. Preserve Codex's sequential strategy; do not
@@ -51,6 +57,8 @@ For each wave with `status === "completed"`:
      `verification-reviewer`, AND
    - `QA_AUDIT` is `passed` or `skipped` for `qa-reviewer` when the classifier
      returned `qa-reviewer`, AND
+   - no returned coordinator reports HOT-file ownership conflicts, unsafe retry
+     sequencing, or pathspec commit risk, AND
    - no returned reviewer persona reports blocking issues.
 
    Tech success != user-flow success. A passed Verification audit alongside a
@@ -69,11 +77,12 @@ For each wave with `status === "completed"`:
 ## Codex-specific
 
 The role skills selected by `classifyChangedFiles(files)` must exist under
-`.codex/skills/<persona>/SKILL.md`. The default operational roster from
-`/codex-init` ships `reviewer`, `verification-reviewer`, `qa-reviewer`,
+`.codex/skills/<persona>/SKILL.md`. This includes both returned reviewers and
+coordinators. The default operational roster from `/codex-init` ships
+`orchestrator`, `reviewer`, `verification-reviewer`, `qa-reviewer`,
 `design-reviewer`, `security-reviewer`, `data-reviewer`, and
 `integration-dev`. If any selected persona is missing, abort with
-`missing reviewer persona: <persona> — upgrade /codex-init`.
+`missing review persona: <persona> — upgrade /codex-init`.
 
 ## Output
 

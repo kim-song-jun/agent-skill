@@ -7,7 +7,7 @@
 ## 미출시
 
 - `harness-debug-codex` 추가: Codex CLI용 `/debug` 포트. `debug-codex` skill 계약, `run /debug` 공개 진입점, 구조화된 오류 파싱, 가설 상태 유지, superpowers fallback 포함.
-- Codex debug 포트를 마켓플레이스, Codex 설치 그룹, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, 공개 검증 문서에 등록. 현재 suite: 1726/1726 통과; fast release smoke: 372/372 통과.
+- Codex debug 포트를 마켓플레이스, Codex 설치 그룹, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, 공개 검증 문서에 등록. 현재 suite: 1729/1729 통과; fast release smoke: 393/393 통과.
 - `/agent-init` 기본값을 운영형/무거운 scaffold로 변경하고, 최소 경로는 `/agent-init --lite`로 제공.
 - task ledger 스캐폴딩, sentinel 병합 정책, Claude hard policy 산출물, Codex command-policy 산출물, Gemini soft rules, 변경 파일 기반 reviewer classifier 추가.
 - superpowers와 context-mode를 위한 foundation 감지/업데이트 가이드 추가.

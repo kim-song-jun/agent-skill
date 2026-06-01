@@ -309,6 +309,7 @@ Verification roles are split into:
 
 For each completed wave:
 
+0. `orchestrator` when the changed-file classifier returns a coordinator for shared files or broad non-doc changes
 1. `tester`
 2. `verification-reviewer`
 3. `qa-reviewer`
@@ -329,18 +330,21 @@ Initial rule examples:
 | Path / pattern | Additional reviewers |
 |---|---|
 | `frontend/src/**`, CSS, UI components | `design-reviewer`, `qa-reviewer` |
-| Vue/Nuxt app paths such as `src/router/**`, `src/stores/**`, `src/composables/**`, `src/assets/**` | `design-reviewer`, `qa-reviewer` |
+| Vue/Nuxt app paths such as `src/router/**`, `src/stores/**`, `src/composables/**`, `src/assets/**`, `src/api/**`, `src/plugins/**`, `src/middleware/**`, `src/services/**` | `design-reviewer`, `qa-reviewer` |
 | `backend/**/models.py`, migrations | `data-reviewer`, `security-reviewer` |
 | Django/DRF app surfaces such as `apps/*/views.py`, `viewsets.py`, `urls.py`, `admin.py` | `security-reviewer` |
 | Django app tasks/services such as `apps/*/tasks.py`, `apps/*/celery.py`, `apps/*/services/*.py` | backend signal for `integration-dev` when frontend is also touched |
 | seed scripts, fixtures | `data-reviewer` |
 | auth, permissions, middleware, serializers, API views | `security-reviewer` |
+| package manifests, lockfiles, Docker/compose files, CI workflow config | coordinator `orchestrator` |
+| 8 or more non-doc files in one wave | coordinator `orchestrator` |
 | tests, CI, build config | `verification-reviewer` |
 | both frontend and backend touched | `integration-dev`, `verification-reviewer` |
 
 Classifier behavior is conservative:
 
 - Add reviewers only when rules are confident.
+- Add coordinators only when wave ownership, shared files, or retry sequencing need explicit review.
 - Ignore documentation/example paths such as `docs/**`, `documentation/**`, and `notes/**`.
 - Fall back to generic `reviewer` when uncertain.
 - Keep the mapping deterministic and unit tested.
