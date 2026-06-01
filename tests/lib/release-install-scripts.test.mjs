@@ -141,6 +141,7 @@ test("install-platform --help documents dry-run and canonical wrapper flags", ()
   assert.match(res.stdout, /--dry-run/);
   assert.match(res.stdout, /--lang=en\|ko\|auto/);
   assert.match(res.stdout, /--update-foundations/);
+  assert.match(res.stdout, /--no-update-foundations/);
   assert.match(res.stdout, /--no-doctor/);
   assert.match(res.stdout, /--uninstall/);
   assert.match(res.stdout, /--force-root-clean/);
@@ -157,6 +158,7 @@ test("install-platform claude all succeeds in a fresh project and runs doctor", 
       `--target=${target}`,
       "--theme=all",
       "--lang=ko",
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
       env: { ...process.env, HOME: home },
@@ -287,6 +289,7 @@ test("install-platform claude --uninstall runs the conservative project cleaner"
       "--platform=claude",
       `--target=${target}`,
       "--no-doctor",
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
       env: { ...process.env, HOME: home },
@@ -345,6 +348,7 @@ test("install-platform codex --uninstall runs the conservative project cleaner",
       `--target=${target}`,
       "--theme=builder",
       "--no-doctor",
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
       env: { ...process.env, HOME: home },
@@ -539,6 +543,138 @@ exit 0
   }
 });
 
+test("install-platform codex operational bootstrap auto-updates approved foundations by default", () => {
+  const target = tmp("agent-skill-release-platform-foundations-auto-target-");
+  const home = tmp("agent-skill-release-platform-foundations-auto-home-");
+  const binDir = resolve(home, "bin");
+  const pluginsDir = resolve(home, ".claude/plugins");
+  const claudeLog = resolve(home, "claude.log");
+  try {
+    mkdirSync(binDir, { recursive: true });
+    mkdirSync(pluginsDir, { recursive: true });
+    writeFileSync(
+      resolve(pluginsDir, "installed_plugins.json"),
+      JSON.stringify({
+        plugins: {
+          "superpowers@claude-plugins-official": {},
+          "harness-builder-codex@agent-skill": {},
+        },
+      }),
+    );
+    writeFileSync(
+      resolve(binDir, "claude"),
+      `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${claudeLog}"
+exit 0
+`,
+      { mode: 0o755 },
+    );
+
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=builder",
+      "--no-doctor",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home, PATH: `${binDir}:${process.env.PATH}` },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /approved foundation auto-update/);
+    assert.ok(existsSync(resolve(target, "AGENTS.md")), "default auto-update run should still scaffold AGENTS.md");
+    assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "foundation auto-update must not patch Codex config");
+
+    const log = readFileSync(claudeLog, "utf-8");
+    assert.match(log, /plugin marketplace update claude-plugins-official/);
+    assert.match(log, /plugin marketplace update context-mode/);
+    assert.match(log, /plugin uninstall superpowers@claude-plugins-official/);
+    assert.match(log, /plugin install superpowers@claude-plugins-official/);
+    assert.match(log, /plugin install context-mode@context-mode/);
+    assert.doesNotMatch(log, /harness-builder-codex@agent-skill/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("install-platform codex auto foundation update degrades without claude", () => {
+  const target = tmp("agent-skill-release-platform-foundations-auto-no-claude-target-");
+  const home = tmp("agent-skill-release-platform-foundations-auto-no-claude-home-");
+  const binDir = resolve(home, "bin");
+  try {
+    mkdirSync(binDir, { recursive: true });
+    writeFileSync(
+      resolve(binDir, "node"),
+      `#!/usr/bin/env bash
+exec ${JSON.stringify(process.execPath)} "$@"
+`,
+      { mode: 0o755 },
+    );
+
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=builder",
+      "--no-doctor",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home, PATH: `${binDir}:/usr/bin:/bin` },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /foundation auto-update skipped/);
+    assert.match(res.stdout, /degraded foundation mode/);
+    assert.ok(existsSync(resolve(target, "AGENTS.md")), "missing claude should not block Codex project scaffold");
+    assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "must not patch global Codex config");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("install-platform codex --no-update-foundations skips default foundation auto-update", () => {
+  const target = tmp("agent-skill-release-platform-foundations-opt-out-target-");
+  const home = tmp("agent-skill-release-platform-foundations-opt-out-home-");
+  const binDir = resolve(home, "bin");
+  const claudeLog = resolve(home, "claude.log");
+  try {
+    mkdirSync(binDir, { recursive: true });
+    writeFileSync(
+      resolve(binDir, "claude"),
+      `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${claudeLog}"
+exit 99
+`,
+      { mode: 0o755 },
+    );
+
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=builder",
+      "--no-doctor",
+      "--no-update-foundations",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home, PATH: `${binDir}:${process.env.PATH}` },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.ok(existsSync(resolve(target, "AGENTS.md")), "opt-out run should still scaffold AGENTS.md");
+    assert.ok(!existsSync(claudeLog), "opt-out must not call claude");
+    assert.doesNotMatch(res.stdout, /foundation auto-update|foundation update plan/i);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test("install-platform rejects --update-foundations outside Claude/Codex before writing scaffold files", () => {
   const target = tmp("agent-skill-release-platform-foundations-non-codex-target-");
   const home = tmp("agent-skill-release-platform-foundations-non-codex-home-");
@@ -610,6 +746,7 @@ test("install-platform codex all succeeds in a fresh project without patching gl
       "--platform=codex",
       `--target=${target}`,
       "--theme=all",
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
       env: { ...process.env, HOME: home },
@@ -660,6 +797,7 @@ test("install-platform codex all succeeds in a fresh project without patching gl
       `--target=${skipDoctorTarget}`,
       "--theme=all",
       "--no-doctor",
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
       env: { ...process.env, HOME: skipDoctorHome },
@@ -742,6 +880,7 @@ test("install-platform codex --lang=ko persists language into builder and floor 
       `--target=${target}`,
       "--theme=all",
       "--lang=ko",
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
       env: { ...process.env, HOME: home },
@@ -769,6 +908,7 @@ test("install-platform codex --lang=auto resolves locale before persisting langu
       `--target=${target}`,
       "--theme=all",
       "--lang=auto",
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
       env: {
@@ -876,6 +1016,7 @@ test("install-platform codex builder theme installs only builder artifacts and r
       "--platform=codex",
       `--target=${target}`,
       "--theme=builder",
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
       env: { ...process.env, HOME: home },
@@ -925,6 +1066,7 @@ test("install-platform codex thrift theme installs only thrift artifacts and rep
       "--platform=codex",
       `--target=${target}`,
       "--theme=thrift",
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
       env: { ...process.env, HOME: home },
@@ -976,6 +1118,7 @@ test("install-platform codex debug theme installs only debug artifacts and repor
       "--ctx",
       ctx,
       "--theme=debug",
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
       env: { ...process.env, HOME: home },
@@ -1033,6 +1176,7 @@ test("install-platform codex floor theme installs only floor artifacts and repor
       "--platform=codex",
       `--target=${target}`,
       "--theme=floor",
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
       env: { ...process.env, HOME: home },
@@ -1084,6 +1228,7 @@ test("install-platform codex all emits only dispatchable floor skill roles", () 
       "--platform=codex",
       `--target=${target}`,
       "--theme=all",
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
       env: { ...process.env, HOME: home },
@@ -1117,6 +1262,7 @@ test("install-platform codex all seeds visual-qa in comprehensive mode", () => {
       "--platform=codex",
       `--target=${target}`,
       "--theme=all",
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
       env: { ...process.env, HOME: home },
@@ -1144,6 +1290,7 @@ test("install-platform codex floor installs runnable workflow skill directories"
       "--platform=codex",
       `--target=${target}`,
       "--theme=floor",
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
       env: { ...process.env, HOME: home },

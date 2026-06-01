@@ -697,6 +697,7 @@ function runInstallPlatform(root, target, home, extraArgs) {
     resolve(root, "scripts/install-platform.sh"),
     "--platform=codex",
     `--target=${target}`,
+    "--no-update-foundations",
     ...extraArgs,
   ], {
     encoding: "utf-8",

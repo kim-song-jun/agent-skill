@@ -8,7 +8,8 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 - Added `harness-debug-codex`, a Codex CLI port of `/debug` with the `debug-codex` skill contract, `run /debug` public entrypoint, structured error parsing, hypothesis state persistence, and superpowers fallback.
 - Added deterministic Phase 4 gate planning for Claude/Codex `/agent-all`: `buildGatePlan`, coordinator-first `orchestrator` dispatch, `ORCHESTRATION_AUDIT`, and release-audited Codex mirror parity.
-- Registered the Codex debug port in the marketplace, Codex plugin install group, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, and public verification docs. Current suite: 1749/1749 passing; fast release smoke: 418/418 passing.
+- Registered the Codex debug port in the marketplace, Codex plugin install group, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, and public verification docs. Current suite: 1752/1752 passing; fast release smoke: 421/421 passing.
+- Made Claude/Codex terminal operational bootstrap auto-refresh only approved foundations (`superpowers`, `context-mode`) when `claude` is available, with `--update-foundations` strict mode and `--no-update-foundations` opt-out.
 - Changed `/agent-init` default to operational/heavy scaffold with `/agent-init --lite` as the minimal path.
 - Added task ledger scaffolding, sentinel merge policy, Claude hard policy artifacts, Codex command-policy artifacts, Gemini soft rules, and changed-file reviewer classifier.
 - Added foundation detection/update guidance for superpowers and context-mode.

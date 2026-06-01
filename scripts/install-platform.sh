@@ -7,7 +7,7 @@
 # because they do not have comparable AI-workflow marketplaces.
 #
 # Usage:
-#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations] [--no-doctor] [--uninstall] [--force-root-clean]
+#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations|--no-update-foundations] [--no-doctor] [--uninstall] [--force-root-clean]
 #
 # --platform:
 #   claude          — Claude Code project files (CLAUDE.md + .claude/)
@@ -35,9 +35,11 @@
 # --dry-run:
 #   print the selected renderer commands without writing files.
 #
-# --update-foundations:
-#   for Claude/Codex installs, also update/install approved foundation plugins
-#   (superpowers + context-mode) through scripts/update.sh --foundations-only.
+# --update-foundations / --no-update-foundations:
+#   Claude/Codex operational installs auto-update approved foundation plugins
+#   (superpowers + context-mode) when the claude CLI is available. Use
+#   --update-foundations for strict failure if that update cannot run, or
+#   --no-update-foundations to opt out.
 #
 # --no-doctor:
 #   skip the automatic Claude/Codex post-install doctor check.
@@ -69,7 +71,7 @@ still run outside Claude Code. Other tools install through renderer scripts
 because they do not have comparable AI-workflow marketplaces.
 
 Usage:
-  ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations] [--no-doctor] [--uninstall] [--force-root-clean]
+  ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations|--no-update-foundations] [--no-doctor] [--uninstall] [--force-root-clean]
 
 --platform:
   claude          — Claude Code project files (CLAUDE.md + .claude/)
@@ -97,9 +99,11 @@ Usage:
 --dry-run:
   print the selected renderer commands without writing files.
 
---update-foundations:
-  for Claude/Codex installs, also update/install approved foundation plugins
-  (superpowers + context-mode) through scripts/update.sh --foundations-only.
+--update-foundations / --no-update-foundations:
+  Claude/Codex operational installs auto-update approved foundation plugins
+  (superpowers + context-mode) when the claude CLI is available. Use
+  --update-foundations for strict failure if that update cannot run, or
+  --no-update-foundations to opt out.
 
 --no-doctor:
   skip the automatic Claude/Codex post-install doctor check.
@@ -118,7 +122,7 @@ Examples:
   ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-app
   ./scripts/install-platform.sh --platform=codex --target=. --theme=floor --dry-run
   ./scripts/install-platform.sh --platform=codex --target=. --theme=debug
-  ./scripts/install-platform.sh --platform=codex --target=. --update-foundations
+  ./scripts/install-platform.sh --platform=codex --target=. --no-update-foundations
   ./scripts/install-platform.sh --platform=codex --target=. --uninstall --dry-run
   ./scripts/install-platform.sh --platform=copilot --target=. --ctx=ctx.json --force
 USAGE
@@ -135,7 +139,7 @@ LITE=0
 HAS_LANG=0
 INIT_LANG=""
 DRY_RUN=0
-UPDATE_FOUNDATIONS=0
+FOUNDATION_MODE="auto"
 NO_DOCTOR=0
 UNINSTALL=0
 FORCE_ROOT_CLEAN=0
@@ -163,7 +167,8 @@ while [ "$#" -gt 0 ]; do
     --lite)       LITE=1 ;;
     --lang=*)     INIT_LANG="${arg#*=}"; HAS_LANG=1 ;;
     --dry-run)    DRY_RUN=1 ;;
-    --update-foundations) UPDATE_FOUNDATIONS=1 ;;
+    --update-foundations) FOUNDATION_MODE="strict" ;;
+    --no-update-foundations) FOUNDATION_MODE="skip" ;;
     --no-doctor)  NO_DOCTOR=1 ;;
     --uninstall)  UNINSTALL=1 ;;
     --force-root-clean) FORCE_ROOT_CLEAN=1 ;;
@@ -245,7 +250,7 @@ if [ "$LITE" = "1" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ] || [
   exit 1
 fi
 
-if [ "$UPDATE_FOUNDATIONS" = "1" ] && [ "$PLATFORM" != "claude" ] && [ "$PLATFORM" != "codex" ]; then
+if [ "$FOUNDATION_MODE" = "strict" ] && [ "$PLATFORM" != "claude" ] && [ "$PLATFORM" != "codex" ]; then
   echo "Error: --update-foundations is currently supported only with --platform=claude or --platform=codex." >&2
   echo "Use scripts/update.sh --foundations-only to refresh the approved Claude Code foundations directly." >&2
   exit 1
@@ -363,13 +368,36 @@ run_init() {
 
 run_foundation_update() {
   echo
-  echo "  → approved foundation update"
+  if [ "$FOUNDATION_MODE" = "auto" ]; then
+    echo "  → approved foundation auto-update"
+  else
+    echo "  → approved foundation update"
+  fi
   if [ "$DRY_RUN" = "1" ]; then
     echo "  DRY-RUN: $(format_cmd bash "$REPO_ROOT/scripts/update.sh" --dry-run --foundations-only)"
     bash "$REPO_ROOT/scripts/update.sh" --dry-run --foundations-only
     return 0
   fi
+  if [ "$FOUNDATION_MODE" = "auto" ] && ! command -v claude >/dev/null 2>&1; then
+    echo "  ⚠ foundation auto-update skipped: 'claude' binary not found in PATH."
+    echo "    Scaffold will continue in degraded foundation mode."
+    echo "    Re-run with --update-foundations after installing Claude Code, or pass --no-update-foundations to opt out."
+    return 0
+  fi
   bash "$REPO_ROOT/scripts/update.sh" --foundations-only
+}
+
+should_run_foundation_update() {
+  if [ "$FOUNDATION_MODE" = "skip" ]; then
+    return 1
+  fi
+  if [ "$PLATFORM" != "claude" ] && [ "$PLATFORM" != "codex" ]; then
+    return 1
+  fi
+  if [ "$LITE" = "1" ]; then
+    return 1
+  fi
+  return 0
 }
 
 should_run_post_install_doctor() {
@@ -441,7 +469,7 @@ run_builder_init() {
   fi
 }
 
-if [ "$UPDATE_FOUNDATIONS" = "1" ]; then
+if should_run_foundation_update; then
   run_foundation_update
 fi
 

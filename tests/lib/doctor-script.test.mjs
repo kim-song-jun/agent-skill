@@ -70,6 +70,7 @@ test("doctor validates an installed Codex operational scaffold", () => {
       INSTALL_PLATFORM,
       "--platform=codex",
       `--target=${target}`,
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
       env: { ...process.env, HOME: home },
@@ -112,6 +113,7 @@ test("doctor accepts Codex lite but fails the same target when operational is re
       "--platform=codex",
       `--target=${target}`,
       "--lite",
+      "--no-update-foundations",
     ], {
       encoding: "utf-8",
     });
@@ -152,6 +154,7 @@ test("doctor validates a Codex debug-only scaffold without requiring builder fil
       "--platform=codex",
       `--target=${target}`,
       "--theme=debug",
+      "--no-update-foundations",
       "--no-doctor",
     ], {
       encoding: "utf-8",
@@ -320,6 +323,7 @@ test("doctor rejects operational scaffolds missing orchestration guidance and QA
       "--platform=codex",
       `--target=${target}`,
       "--theme=builder",
+      "--no-update-foundations",
       "--no-doctor",
     ], {
       encoding: "utf-8",
@@ -376,6 +380,7 @@ test("plugin-local doctor wrappers validate Claude and Codex scaffolds without t
       "--platform=codex",
       `--target=${codexTarget}`,
       "--theme=builder",
+      "--no-update-foundations",
       "--no-doctor",
     ], {
       encoding: "utf-8",

@@ -8,7 +8,8 @@
 
 - `harness-debug-codex` 추가: Codex CLI용 `/debug` 포트. `debug-codex` skill 계약, `run /debug` 공개 진입점, 구조화된 오류 파싱, 가설 상태 유지, superpowers fallback 포함.
 - Claude/Codex `/agent-all` Phase 4에 deterministic gate plan 추가: `buildGatePlan`, coordinator-first `orchestrator` dispatch, `ORCHESTRATION_AUDIT`, release-audited Codex mirror parity 포함.
-- Codex debug 포트를 마켓플레이스, Codex 설치 그룹, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, 공개 검증 문서에 등록. 현재 suite: 1749/1749 통과; fast release smoke: 418/418 통과.
+- Codex debug 포트를 마켓플레이스, Codex 설치 그룹, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, 공개 검증 문서에 등록. 현재 suite: 1752/1752 통과; fast release smoke: 421/421 통과.
+- Claude/Codex 터미널 operational bootstrap이 `claude` 사용 가능 시 승인된 foundation(`superpowers`, `context-mode`)만 자동 갱신하도록 변경. `--update-foundations` strict 모드와 `--no-update-foundations` opt-out 포함.
 - `/agent-init` 기본값을 운영형/무거운 scaffold로 변경하고, 최소 경로는 `/agent-init --lite`로 제공.
 - task ledger 스캐폴딩, sentinel 병합 정책, Claude hard policy 산출물, Codex command-policy 산출물, Gemini soft rules, 변경 파일 기반 reviewer classifier 추가.
 - superpowers와 context-mode를 위한 foundation 감지/업데이트 가이드 추가.

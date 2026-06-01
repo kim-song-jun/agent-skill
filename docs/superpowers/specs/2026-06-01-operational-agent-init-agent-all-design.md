@@ -390,9 +390,9 @@ Policy:
 
 - Automatic detection: yes
 - Recommendation output: yes
-- User-approved install/update: yes, through interactive approval or `--update-foundations`
+- User-approved install/update: yes, through interactive approval, `install-platform.sh` auto mode for Claude/Codex operational installs, or strict `--update-foundations`
 - Silent global update or patch: no
-- Optional explicit flag: `--update-foundations`
+- Optional explicit flags: `--update-foundations` for strict update failure, `--no-update-foundations` to opt out of terminal auto mode
 
 `scripts/update.sh` should refresh marketplace/cache and reinstall platform artifacts, but global config changes must remain opt-in. The command must print which foundations will change before changing them.
 
@@ -452,8 +452,9 @@ Changes:
 
 - Detect installed superpowers/context-mode foundations during heavy `/agent-init`.
 - Print degraded-mode warnings when required foundations are missing.
-- Add `--update-foundations` to run the approved update/install path.
-- Add `--dry-run --update-foundations` to show the foundation update plan without changing local or global state.
+- Terminal Claude/Codex operational installs auto-run the approved foundation update/install path when `claude` is available, continue with a degraded-mode warning when it is missing, and allow `--no-update-foundations` opt-out.
+- Add `--update-foundations` to make the approved update/install path strict.
+- Add `--dry-run` foundation output to show the approved update plan without changing local or global state.
 - Route large logs, broad search outputs, and bulky screenshots to context-mode guidance in generated Claude/Codex/Gemini instructions.
 - Keep global CLI config patches separate from foundation package updates, with a second explicit approval gate for global config changes.
 

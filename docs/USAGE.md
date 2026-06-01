@@ -172,11 +172,12 @@ For a shell-driven install into a target repo, use the platform renderer. Claude
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lang=ko
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lite
-./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --update-foundations
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --no-update-foundations
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --update-foundations  # strict foundation refresh
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --theme=debug
 ```
 
-The default renderer path installs the operational scaffold. Non-Claude platforms install the heavy builder + floor + thrift bundle by default, and Codex `all` also installs the debug skill. `--theme=debug` installs only `.codex/skills/debug-codex/`, `.debug-artifacts/`, and `docs/debug/` for `run /debug "<failing command>"`. `--lang=ko|en|auto` keeps generated root guidance and `.agent-all.json` language aligned across the builder/floor install. The `--lite` path is builder-only and skips floor/thrift/debug files plus global Codex config snippets. `--update-foundations` delegates to `scripts/update.sh --foundations-only`; with `--dry-run`, it prints the approved plan without calling `claude`. Claude and Codex `all`, `builder`, `--lite`, and Codex `--theme=debug` installs run the post-install doctor automatically; pass `--no-doctor` only when intentionally deferring validation.
+The default renderer path installs the operational scaffold. Non-Claude platforms install the heavy builder + floor + thrift bundle by default, and Codex `all` also installs the debug skill. `--theme=debug` installs only `.codex/skills/debug-codex/`, `.debug-artifacts/`, and `docs/debug/` for `run /debug "<failing command>"`. `--lang=ko|en|auto` keeps generated root guidance and `.agent-all.json` language aligned across the builder/floor install. The `--lite` path is builder-only and skips floor/thrift/debug files plus global Codex config snippets. Claude/Codex operational installs auto-update only the approved foundations (`superpowers@claude-plugins-official`, `context-mode@context-mode`) when the `claude` CLI is available; when `claude` is missing, the renderer prints a degraded foundation warning and continues. Use `--update-foundations` to make that update strict, `--no-update-foundations` to opt out, and `--dry-run` to print the approved plan without calling `claude`. Claude and Codex `all`, `builder`, `--lite`, and Codex `--theme=debug` installs run the post-install doctor automatically; pass `--no-doctor` only when intentionally deferring validation.
 
 Manual doctor re-run:
 
