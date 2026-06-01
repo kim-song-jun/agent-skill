@@ -332,6 +332,8 @@ test("Codex runtime specs describe the current sequential surface instead of sta
   const runtimeChecklist = read("docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md");
   assert.match(runtimeChecklist, /release-smoke\.sh --fast --with-live-cli/);
   assert.match(runtimeChecklist, /release fixture smoke[\s\S]{0,260}installed fixture[\s\S]{0,260}sequential agent-all-codex prompt helper/i);
+  assert.match(runtimeChecklist, /stack-specific Codex sequential role dispatch proof/i);
+  assert.match(runtimeChecklist, /frontend-dev\/backend-dev role-skill inlining/i);
   assert.match(runtimeChecklist, /release fixture smoke[\s\S]{0,360}installed fixture[\s\S]{0,360}sequential visual-qa-codex page helper/i);
   assert.match(runtimeChecklist, /codex exec[\s\S]{0,180}\[PROMPT\]/);
   assert.match(runtimeChecklist, /Manual Host UX Observation/i);
@@ -379,8 +381,8 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /Implemented through Task 12/i);
   assert.match(plan, /root role routing/i);
   assert.match(plan, /node --test[\s\S]{0,120}1756\/1756/);
-  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}424\/424/);
-  assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|1755\/1755|412\/412|418\/418|421\/421/);
+  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}425\/425/);
+  assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|1755\/1755|412\/412|418\/418|421\/421|424\/424/);
   assert.match(plan, /foundation auto-update/i);
   assert.match(plan, /install-platform\.sh --platform=codex --theme=all\|debug/);
   assert.match(plan, /Claude\/Codex `install-platform\.sh --uninstall` release-fixture roundtrips/i);
