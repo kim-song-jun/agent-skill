@@ -57,6 +57,22 @@ const OPERATIONAL_AGENTS = [
 const OPERATIONAL_SKILL_RE = /^skills\/(orchestrator|verification-reviewer|qa-reviewer|design-reviewer|security-reviewer|data-reviewer|integration-dev)\//;
 
 const LANGUAGE_VALUES = new Set(["en", "ko", "auto"]);
+const USAGE = "Usage: init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--lite|--theme=lite] [--lang=en|ko|auto] [--dry-run]";
+
+function printHelp() {
+  console.log([
+    USAGE,
+    "",
+    "Options:",
+    "  --ctx <ctx.json>        Read scaffold context from a JSON file.",
+    "  --force                 Overwrite non-mergeable generated files.",
+    "  --lite                  Canonical lightweight scaffold: AGENTS.md + planner/dev/reviewer only.",
+    "  --theme=lite            Legacy alias for --lite.",
+    "  --lang=en|ko|auto       Persist interaction language in generated guidance.",
+    "  --dry-run               Print planned writes without creating files.",
+    "  -h, --help              Show this help.",
+  ].join("\n"));
+}
 
 function parseLanguageArg(value) {
   if (!LANGUAGE_VALUES.has(value)) {
@@ -81,7 +97,7 @@ function resolveLanguage(value) {
 }
 
 function parseArgs(argv) {
-  const args = { target: null, ctxPath: null, force: false, lite: false, dryRun: false, lang: null };
+  const args = { target: null, ctxPath: null, force: false, lite: false, dryRun: false, lang: null, help: false };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--ctx") args.ctxPath = argv[++i];
     else if (argv[i] === "--force") args.force = true;
@@ -94,10 +110,16 @@ function parseArgs(argv) {
     else if (argv[i] === "--dry-run") args.dryRun = true;
     else if (argv[i].startsWith("--lang=")) args.lang = parseLanguageArg(argv[i].slice("--lang=".length));
     else if (argv[i] === "--lang") args.lang = parseLanguageArg(argv[++i]);
+    else if (argv[i] === "-h" || argv[i] === "--help") args.help = true;
+    else if (argv[i].startsWith("-")) {
+      console.error(`Unknown flag: ${argv[i]}`);
+      console.error(USAGE);
+      process.exit(1);
+    }
     else if (!args.target) args.target = argv[i];
   }
-  if (!args.target) {
-    console.error("Usage: init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--lite|--theme=lite] [--lang=en|ko|auto] [--dry-run]");
+  if (!args.target && !args.help) {
+    console.error(USAGE);
     process.exit(1);
   }
   return args;
@@ -202,6 +224,10 @@ function relToTarget(rel) {
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
+  if (args.help) {
+    printHelp();
+    return;
+  }
   const target = resolve(args.target);
   if (!existsSync(target)) {
     console.error(`Error: target directory does not exist: ${target}`);
