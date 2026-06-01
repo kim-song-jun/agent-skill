@@ -16,11 +16,31 @@
 
 set -euo pipefail
 
+usage() {
+  cat <<'EOF'
+Usage: bash scripts/update.sh [options]
+
+Options:
+  --dry-run       Print the update/install plan and selected plugins; change nothing.
+  --all           Update/install all 17 agent-skill plugins.
+  --claude-code   Update/install the Claude Code essentials (default).
+  --cli=codex     Update/install the Codex plugin set.
+  --cli=copilot   Update/install the GitHub Copilot plugin set.
+  --cli=gemini    Update/install the Gemini plugin set.
+  --cli=cursor    Update/install the Cursor plugin set.
+  -h, --help      Show this help and exit.
+EOF
+}
+
 DRY_RUN=0
 MODE="claude-code"
 PASSTHROUGH=()
 for arg in "$@"; do
   case "$arg" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
     --dry-run)
       DRY_RUN=1
       PASSTHROUGH+=("$arg")
@@ -50,7 +70,9 @@ for arg in "$@"; do
       PASSTHROUGH+=("$arg")
       ;;
     *)
-      PASSTHROUGH+=("$arg")
+      echo "Error: unknown argument: $arg" >&2
+      usage >&2
+      exit 2
       ;;
   esac
 done

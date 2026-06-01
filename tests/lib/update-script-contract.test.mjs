@@ -64,6 +64,60 @@ test("dry-run exits before git pull, marketplace update, uninstall, or install c
   }
 });
 
+test("help exits before git, marketplace, or install commands", () => {
+  const fakeRepo = mkdtempSync(join(tmpdir(), "agent-skill-update-help-"));
+  const scriptsDir = join(fakeRepo, "scripts");
+  const binDir = join(fakeRepo, "bin");
+
+  mkdirSync(scriptsDir, { recursive: true });
+  mkdirSync(binDir, { recursive: true });
+  copyFileSync(scriptPath, join(scriptsDir, "update.sh"));
+  writeExecutable(join(binDir, "git"), "#!/usr/bin/env bash\necho git-should-not-run >&2\nexit 99\n");
+  writeExecutable(join(binDir, "claude"), "#!/usr/bin/env bash\necho claude-should-not-run >&2\nexit 99\n");
+
+  const result = spawnSync("bash", [join(scriptsDir, "update.sh"), "--help"], {
+    cwd: fakeRepo,
+    env: {
+      ...process.env,
+      PATH: `${binDir}:${process.env.PATH}`,
+      HOME: fakeRepo,
+    },
+    encoding: "utf-8",
+  });
+
+  assert.equal(result.status, 0, `stdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+  assert.match(result.stdout, /Usage:/);
+  assert.doesNotMatch(result.stdout, /foundation update plan/);
+  assert.doesNotMatch(result.stderr, /should-not-run/);
+});
+
+test("unknown update flags fail before git, marketplace, or install commands", () => {
+  const fakeRepo = mkdtempSync(join(tmpdir(), "agent-skill-update-unknown-"));
+  const scriptsDir = join(fakeRepo, "scripts");
+  const binDir = join(fakeRepo, "bin");
+
+  mkdirSync(scriptsDir, { recursive: true });
+  mkdirSync(binDir, { recursive: true });
+  copyFileSync(scriptPath, join(scriptsDir, "update.sh"));
+  writeExecutable(join(binDir, "git"), "#!/usr/bin/env bash\necho git-should-not-run >&2\nexit 99\n");
+  writeExecutable(join(binDir, "claude"), "#!/usr/bin/env bash\necho claude-should-not-run >&2\nexit 99\n");
+
+  const result = spawnSync("bash", [join(scriptsDir, "update.sh"), "--helo"], {
+    cwd: fakeRepo,
+    env: {
+      ...process.env,
+      PATH: `${binDir}:${process.env.PATH}`,
+      HOME: fakeRepo,
+    },
+    encoding: "utf-8",
+  });
+
+  assert.equal(result.status, 2, `stdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+  assert.match(result.stderr, /unknown argument: --helo/);
+  assert.doesNotMatch(result.stdout, /foundation update plan/);
+  assert.doesNotMatch(result.stderr, /should-not-run/);
+});
+
 test("selected platform flags are passed through with sanitized PASSTHROUGH array", () => {
   assert.match(script, /PASSTHROUGH=\(\)/);
   for (const flag of [
