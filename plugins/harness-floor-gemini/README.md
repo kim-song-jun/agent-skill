@@ -1,29 +1,44 @@
 # harness-floor-gemini
 
-> **Decision-surfacing enforcement: 🟡 Soft.** Gemini CLI does not have a tool-call hook system today. The decision-protocol is prompt-only via `.gemini/agent-all-decision-protocol.md` (referenced from `GEMINI.md`). A non-compliant subagent cannot be blocked at the harness layer — compliance is best-effort. Hard enforcement (PostToolUse rejection) is only available on Claude Code, Copilot CLI, and Codex CLI.
+> **Decision-surfacing enforcement: 🟡 Soft.** Gemini CLI does not expose a
+> tool-call hook system today. The decision protocol is prompt-only through
+> `.gemini/agent-all-decision-protocol.md`; non-compliant subprocess results are
+> surfaced by the coordinator and reviewers rather than blocked by the harness
+> layer.
 
-Scaffold-level visual-qa support for Gemini CLI. Emits:
+Operational floor support for Gemini CLI. Ships Gemini ports of
+`agent-all-gemini` and `visual-qa-gemini`, with project-local config seeds and
+a Playwright MCP snippet for manual merge into Gemini settings.
+
+Emits:
 
 - `.visual-qa.json` at project root
-- Playwright MCP snippet printed to stdout — merge into `~/.gemini/settings.json`
+- `.agent-all.json` at project root
+- `.gemini/agent-all-decision-protocol.md`
+- Playwright MCP snippet printed to stdout for `~/.gemini/settings.json`
 
 ## Install
 
+```bash
+./scripts/install-platform.sh --platform=gemini --theme=floor --target=/path/to/project
 ```
-gemini extensions install <repo-url>
-```
+
+The default platform install (`--theme=all`) also runs the Gemini builder and
+thrift renderers. The floor-only install writes the workflow configs above and
+prints the settings snippet instead of patching global config.
 
 ## Usage
 
-Run `/visual-qa-gemini`. The skill emits the config and the MCP snippet.
+Open Gemini CLI in the target repository and ask it to follow the generated
+workflow guidance for `agent-all-gemini` or `visual-qa-gemini`.
 
-## MVP scope
+`agent-all-gemini` runs intent -> plan -> subprocess wave dispatch -> gate ->
+PR. `visual-qa-gemini` runs config -> discover -> capture -> aggregate ->
+summary. Both ports use `run_shell_command` helpers and output files to manage
+parallel subprocess work.
 
-This is **scaffold-only**. The full 6-phase pipeline lives in
-`plugins/harness-floor/skills/visual-qa/SKILL.md` (Claude Code). Porting
-to Gemini requires its subagent dispatch primitive (still under
-investigation — likely `activate_skill` calls plus `run_shell_command`
-subprocesses) and is tracked as a future spec.
+## Settings
 
-For now, run Playwright commands via `run_shell_command` and have the
-model analyze captured images via `read_file` and the configured LLM.
+Merge the printed `mcpServers` entry into `~/.gemini/settings.json` before
+running visual checks. The installer does not write or modify global Gemini
+settings files.
