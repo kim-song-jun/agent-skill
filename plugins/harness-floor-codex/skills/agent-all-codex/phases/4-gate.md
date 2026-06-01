@@ -80,9 +80,10 @@ For each wave with `status === "completed"`:
 The role skills selected by `classifyChangedFiles(files)` must exist under
 `.codex/skills/<persona>/SKILL.md`. This includes both returned reviewers and
 coordinators. The default operational roster from `/codex-init` ships
-`orchestrator`, `reviewer`, `verification-reviewer`, `qa-reviewer`,
-`design-reviewer`, `security-reviewer`, `data-reviewer`, and
-`integration-dev`. If any selected persona is missing, abort with
+`orchestrator`, `frontend-dev`, `backend-dev`, `reviewer`,
+`verification-reviewer`, `qa-reviewer`, `design-reviewer`,
+`security-reviewer`, `data-reviewer`, and `integration-dev`. If any selected
+persona is missing, abort with
 `missing review persona: <persona> — upgrade /codex-init`.
 
 ## Output

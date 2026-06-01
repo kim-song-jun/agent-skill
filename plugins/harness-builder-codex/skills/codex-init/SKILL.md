@@ -85,6 +85,8 @@ const ctx = {
     { name: "dev",      when: "implementation" },
     { name: "reviewer", when: "final review" },
     { name: "orchestrator",          when: "wave ownership and shared-tree safety" },
+    { name: "frontend-dev",          when: "frontend UI, client logic, styling" },
+    { name: "backend-dev",           when: "backend APIs, services, migrations" },
     { name: "integration-dev",        when: "cross-stack wiring and API contracts" },
     { name: "verification-reviewer", when: "tests, typecheck, lint, diff scope" },
     { name: "qa-reviewer",           when: "user-flow and persona validation" },

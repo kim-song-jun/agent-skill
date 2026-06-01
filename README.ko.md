@@ -143,7 +143,7 @@ cat ~/.claude/plugins/installed_plugins.json | python3 -m json.tool | grep -B1 a
 
 ### `/agent-init` — 프로젝트 설정
 
-프로젝트당 한 번만 실행. 운영 모드는 task ledger 파일, 로컬 폴더 가이드, Claude/Codex 정책 훅, reviewer 페르소나를 생성합니다. 기존 `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`는 덮어쓰지 않고 `agent-skill:operational` sentinel 섹션만 추가하거나 교체합니다.
+프로젝트당 한 번만 실행. 운영 모드는 task ledger 파일, 로컬 폴더 가이드, Claude/Codex 정책 훅, stack-specific 구현 persona, reviewer 페르소나를 생성합니다. 기존 `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`는 덮어쓰지 않고 `agent-skill:operational` sentinel 섹션만 추가하거나 교체합니다.
 
 ```
 /agent-init                       # 기본값: 운영형/무거운 scaffold

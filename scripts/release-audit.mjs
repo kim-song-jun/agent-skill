@@ -21,6 +21,9 @@ const PLATFORM_CONTRACTS = {
       "plugins/harness-builder/skills/agent-init/lib/harness-cleaner.mjs",
       "plugins/harness-builder/skills/agent-init/templates/CLAUDE.md.hbs",
       "plugins/harness-builder/skills/agent-init/templates/AGENTS.md.hbs",
+      "plugins/harness-builder/skills/agent-init/templates/agents/frontend-dev.md.hbs",
+      "plugins/harness-builder/skills/agent-init/templates/agents/backend-dev.md.hbs",
+      "plugins/harness-builder/skills/agent-init/templates/agents/orchestrator.md.hbs",
       "plugins/harness-builder/skills/agent-init/templates/settings.local.json.hbs",
       "plugins/harness-builder/skills/agent-init/templates/hooks/agent-policy-hook.mjs",
       "plugins/harness-floor/bin/install-floor-policy.mjs",
@@ -87,6 +90,8 @@ const PLATFORM_CONTRACTS = {
         patterns: [
           /Role Routing/i,
           /orchestrator[\s\S]{0,240}HOT-file/i,
+          /Implementation Routing Matrix/i,
+          /frontend-dev[\s\S]{0,240}backend-dev/i,
           /verification-reviewer/i,
           /Orchestration Contract/i,
           /Role Gate Matrix/i,
@@ -96,6 +101,9 @@ const PLATFORM_CONTRACTS = {
       {
         file: "plugins/harness-builder/skills/agent-init/templates/agents/orchestrator.md.hbs",
         patterns: [
+          /Implementation Routing Matrix/i,
+          /UI, routes, client state, browser behavior[\s\S]{0,120}frontend-dev/i,
+          /API, services, jobs, persistence[\s\S]{0,120}backend-dev/i,
           /Role Gate Matrix/i,
           /UI or user-visible flow[\s\S]{0,120}design-reviewer[\s\S]{0,80}qa-reviewer/i,
           /Auth, permissions, secrets, destructive actions[\s\S]{0,120}security-reviewer/i,
@@ -205,6 +213,9 @@ const PLATFORM_CONTRACTS = {
       "plugins/harness-builder-codex/skills/codex-init/templates/AGENTS.md.hbs",
       "plugins/harness-builder-codex/skills/codex-init/templates/codex-config.toml.hbs",
       "plugins/harness-builder-codex/skills/codex-init/templates/hooks/agent-policy-hook.mjs",
+      "plugins/harness-builder-codex/skills/codex-init/templates/skills/frontend-dev/SKILL.md.hbs",
+      "plugins/harness-builder-codex/skills/codex-init/templates/skills/backend-dev/SKILL.md.hbs",
+      "plugins/harness-builder-codex/skills/codex-init/templates/skills/orchestrator/SKILL.md.hbs",
       "plugins/harness-floor-codex/skills/agent-all-codex/SKILL.md",
       "plugins/harness-floor-codex/skills/agent-all-codex/lib/gate-plan.mjs",
       "plugins/harness-floor-codex/skills/agent-all-codex/lib/policy/coordinator-audit-validator.mjs",
@@ -322,6 +333,8 @@ const PLATFORM_CONTRACTS = {
         patterns: [
           /Role Routing/i,
           /orchestrator[\s\S]{0,240}HOT-file/i,
+          /Implementation Routing Matrix/i,
+          /frontend-dev[\s\S]{0,240}backend-dev/i,
           /verification-reviewer/i,
           /Orchestration Contract/i,
           /Role Gate Matrix/i,
@@ -331,6 +344,9 @@ const PLATFORM_CONTRACTS = {
       {
         file: "plugins/harness-builder-codex/skills/codex-init/templates/skills/orchestrator/SKILL.md.hbs",
         patterns: [
+          /Implementation Routing Matrix/i,
+          /UI, routes, client state, browser behavior[\s\S]{0,120}frontend-dev/i,
+          /API, services, jobs, persistence[\s\S]{0,120}backend-dev/i,
           /Role Gate Matrix/i,
           /sequential dispatch/i,
           /UI or user-visible flow[\s\S]{0,120}design-reviewer[\s\S]{0,80}qa-reviewer/i,

@@ -19,6 +19,8 @@ export const CONTRACTS = {
     builderRequired: [
       ".claude/hooks/agent-policy-hook.mjs",
       ".claude/agents/orchestrator.md",
+      ".claude/agents/frontend-dev.md",
+      ".claude/agents/backend-dev.md",
       ".claude/agents/integration-dev.md",
       ".claude/agents/verification-reviewer.md",
       ".claude/agents/qa-reviewer.md",
@@ -52,12 +54,17 @@ export const CONTRACTS = {
       {
         profiles: ["builder", "operational"],
         path: "CLAUDE.md",
-        patterns: [/Orchestration Contract/, /Role Gate Matrix/],
+        patterns: [/Orchestration Contract/, /Implementation Routing Matrix/, /Role Gate Matrix/],
       },
       {
         profiles: ["builder", "operational"],
         path: "AGENTS.md",
-        patterns: [/Orchestration Contract/, /Role Gate Matrix/],
+        patterns: [/Orchestration Contract/, /Implementation Routing Matrix/, /Role Gate Matrix/],
+      },
+      {
+        profiles: ["builder", "operational"],
+        path: ".claude/agents/orchestrator.md",
+        patterns: [/Implementation Routing Matrix/, /frontend-dev/, /backend-dev/, /integration-dev/],
       },
       {
         profiles: ["builder", "operational"],
@@ -82,6 +89,8 @@ export const CONTRACTS = {
     ],
     builderRequired: [
       ".codex/skills/orchestrator/SKILL.md",
+      ".codex/skills/frontend-dev/SKILL.md",
+      ".codex/skills/backend-dev/SKILL.md",
       ".codex/skills/integration-dev/SKILL.md",
       ".codex/skills/verification-reviewer/SKILL.md",
       ".codex/skills/qa-reviewer/SKILL.md",
@@ -137,7 +146,12 @@ export const CONTRACTS = {
       {
         profiles: ["builder", "operational"],
         path: "AGENTS.md",
-        patterns: [/Orchestration Contract/, /Role Gate Matrix/],
+        patterns: [/Orchestration Contract/, /Implementation Routing Matrix/, /Role Gate Matrix/, /frontend-dev[\s\S]{0,160}backend-dev/],
+      },
+      {
+        profiles: ["builder", "operational"],
+        path: ".codex/skills/orchestrator/SKILL.md",
+        patterns: [/Implementation Routing Matrix/, /frontend-dev/, /backend-dev/, /integration-dev/],
       },
       {
         profiles: ["builder", "operational"],

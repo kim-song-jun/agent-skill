@@ -143,7 +143,7 @@ If the count is below 5 (the recommended Claude Code set: builder + floor + thri
 
 ### `/agent-init` — set up the project
 
-Run once per project. Operational mode creates task ledger files, local folder guides, Claude/Codex policy hooks, and reviewer personas. Existing `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md` are updated by an `agent-skill:operational` sentinel section instead of overwritten.
+Run once per project. Operational mode creates task ledger files, local folder guides, Claude/Codex policy hooks, stack-specific implementer personas, and reviewer personas. Existing `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md` are updated by an `agent-skill:operational` sentinel section instead of overwritten.
 
 ```
 /agent-init                       # default: operational/heavy scaffold

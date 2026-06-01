@@ -9,6 +9,10 @@
    - `## Context`, `## Goals`, `## Non-goals`.
    - `## Task list` with `### Task N: <title>` headings.
    - Each task lists `Files to create/modify`, `role:`, `Verification steps`.
+   - Select `role:` from the installed Codex skills. Prefer
+     `frontend-dev` for UI/client work, `backend-dev` for API/server/data
+     work, `integration-dev` for cross-stack contract work, and `dev` only
+     for generic or ambiguous implementation.
 
 2. Stash `plan = {path, title}` in state. If no plan file produced: abort
    with `plan drafting failed`.

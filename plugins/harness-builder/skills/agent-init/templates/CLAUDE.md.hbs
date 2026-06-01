@@ -85,6 +85,16 @@ Use reviewer personas based on changed files:
 
 Keep each active task's Progress Snapshot current with owner, files, validation, blockers, and next action.
 
+## Implementation Routing Matrix
+
+| Work type | Primary implementer | Required verification |
+|-----------|---------------------|-----------------------|
+| UI, routes, client state, browser behavior | `frontend-dev` | component/browser/a11y checks + `design-reviewer` when user-visible |
+| API, services, jobs, persistence | `backend-dev` | unit/contract tests + `verification-reviewer` |
+| Frontend plus backend/API contract | `integration-dev` with `frontend-dev` and `backend-dev` serialized on shared files | contract/e2e check + `verification-reviewer` |
+| Generic implementation or small fix | `dev` | task-specific test/lint/typecheck + `verification-reviewer` |
+| Docs or release guidance only | `doc-writer` or `dev` | docs contract or snapshot test when available |
+
 ## Orchestration Contract
 
 - Main thread/orchestrator owns task docs, user decisions, HOT-file serialization, final diff review, and pathspec commits.

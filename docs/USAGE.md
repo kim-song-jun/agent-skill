@@ -15,7 +15,7 @@ mkdir my-app && cd my-app && git init
 
 Produces:
 - `CLAUDE.md` with operating principles + agent index + Floor Theme section
-- `.claude/agents/*.md` — base size roster plus operational roles: orchestrator, integration-dev, verification-reviewer, qa-reviewer, design-reviewer, security-reviewer, data-reviewer
+- `.claude/agents/*.md` — base size roster plus operational roles: orchestrator, frontend-dev, backend-dev, integration-dev, verification-reviewer, qa-reviewer, design-reviewer, security-reviewer, data-reviewer
 - `.claude/hooks/*.mjs` — context-mode-router, session-summary, cache-heal, and operational policy hook
 - `.claude/settings.local.json` — registers the core hooks and policy hook
 - `.visual-qa.json` + `.agent-all.json` — Floor configs

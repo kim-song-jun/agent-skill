@@ -51,6 +51,8 @@ const BASE_AGENTS = [
 
 const OPERATIONAL_AGENTS = [
   { name: "orchestrator",          when: "wave ownership and shared-tree safety" },
+  { name: "frontend-dev",          when: "frontend UI, client logic, styling" },
+  { name: "backend-dev",           when: "backend APIs, services, migrations" },
   { name: "verification-reviewer", when: "tests, typecheck, lint, diff scope" },
   { name: "qa-reviewer",           when: "user-flow and persona validation" },
   { name: "design-reviewer",       when: "UI hierarchy and design tokens" },
@@ -59,7 +61,7 @@ const OPERATIONAL_AGENTS = [
   { name: "integration-dev",        when: "cross-stack wiring and API contracts" },
 ];
 
-const OPERATIONAL_SKILL_RE = /^skills\/(orchestrator|verification-reviewer|qa-reviewer|design-reviewer|security-reviewer|data-reviewer|integration-dev)\//;
+const OPERATIONAL_SKILL_RE = /^skills\/(orchestrator|frontend-dev|backend-dev|verification-reviewer|qa-reviewer|design-reviewer|security-reviewer|data-reviewer|integration-dev)\//;
 
 const LANGUAGE_VALUES = new Set(["en", "ko", "auto"]);
 const USAGE = "Usage: init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--lite|--theme=lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations]";

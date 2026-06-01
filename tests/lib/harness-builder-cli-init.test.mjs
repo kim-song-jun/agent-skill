@@ -36,6 +36,8 @@ const PLUGINS = {
       ".codex/skills/dev/SKILL.md",
       ".codex/skills/reviewer/SKILL.md",
       ".codex/skills/orchestrator/SKILL.md",
+      ".codex/skills/frontend-dev/SKILL.md",
+      ".codex/skills/backend-dev/SKILL.md",
       ".codex/skills/integration-dev/SKILL.md",
       ".codex/skills/verification-reviewer/SKILL.md",
       ".codex/skills/qa-reviewer/SKILL.md",
@@ -135,6 +137,8 @@ test("harness-builder-claude: shell init writes operational scaffold and runs do
       ".claude/agents/dev.md",
       ".claude/agents/reviewer.md",
       ".claude/agents/orchestrator.md",
+      ".claude/agents/frontend-dev.md",
+      ".claude/agents/backend-dev.md",
       ".claude/agents/integration-dev.md",
       ".claude/agents/verification-reviewer.md",
       ".claude/agents/qa-reviewer.md",
@@ -212,6 +216,8 @@ test("harness-builder-claude: --lite skips operational ledger, personas, and pol
     for (const rel of [
       ".claude/hooks/agent-policy-hook.mjs",
       ".claude/agents/orchestrator.md",
+      ".claude/agents/frontend-dev.md",
+      ".claude/agents/backend-dev.md",
       ".claude/agents/qa-reviewer.md",
       "docs/tasks/index.md",
       ".visual-qa.json",
@@ -316,9 +322,11 @@ test("harness-builder-codex: SKILL.md documents explicit foundation update flag"
   assert.match(body, /Does not patch global CLI config|Do not claim that global config was patched/i);
 });
 
-test("harness-builder-codex: SKILL.md operational roster includes integration developer", () => {
+test("harness-builder-codex: SKILL.md operational roster includes stack-specific implementers", () => {
   const body = readFileSync(CODEX_INIT_SKILL, "utf-8");
 
+  assert.match(body, /frontend-dev/);
+  assert.match(body, /backend-dev/);
   assert.match(body, /integration-dev/);
   assert.match(body, /cross-stack wiring and API contracts/);
 });
@@ -370,7 +378,9 @@ test("harness-builder-codex: AGENTS.md documents operational profile", () => {
     assert.match(body, /Role Routing/i);
     assert.match(body, /orchestrator[\s\S]{0,240}HOT-file/i);
     assert.match(body, /planner[\s\S]{0,240}Decision Matrix/i);
-    assert.match(body, /dev[\s\S]{0,240}implementation/i);
+    assert.match(body, /frontend-dev[\s\S]{0,240}backend-dev/i);
+    assert.match(body, /dev[\s\S]{0,240}generic implementation fallback/i);
+    assert.match(body, /Implementation Routing Matrix/i);
     assert.match(body, /integration-dev[\s\S]{0,240}cross-stack/i);
     assert.match(body, /design-reviewer[\s\S]{0,260}qa-reviewer/i);
     assert.match(body, /security-reviewer[\s\S]{0,260}data-reviewer/i);
@@ -689,6 +699,8 @@ test("harness-builder-codex: --lite skips ledger and hooks", () => {
 
     for (const rel of [
       ".codex/skills/orchestrator/SKILL.md",
+      ".codex/skills/frontend-dev/SKILL.md",
+      ".codex/skills/backend-dev/SKILL.md",
       ".codex/skills/integration-dev/SKILL.md",
       ".codex/skills/verification-reviewer/SKILL.md",
       ".codex/skills/qa-reviewer/SKILL.md",
@@ -758,6 +770,8 @@ test("harness-builder-codex: generated role skills embed foundation and shared-t
     const roleSkills = {
       planner: ["brainstorming", "writing-plans", "dispatching-parallel-agents"],
       dev: ["test-driven-development", "verification-before-completion"],
+      "frontend-dev": ["brainstorming", "test-driven-development", "verification-before-completion"],
+      "backend-dev": ["test-driven-development", "verification-before-completion"],
       reviewer: ["requesting-code-review", "verification-before-completion"],
       orchestrator: [
         "dispatching-parallel-agents",
@@ -784,6 +798,9 @@ test("harness-builder-codex: generated role skills embed foundation and shared-t
     }
 
     const orchestrator = readFileSync(resolve(target, ".codex/skills/orchestrator/SKILL.md"), "utf-8");
+    assert.match(orchestrator, /## Implementation Routing Matrix/);
+    assert.match(orchestrator, /UI, routes, client state, browser behavior \| `frontend-dev`/);
+    assert.match(orchestrator, /API, services, jobs, persistence \| `backend-dev`/);
     assert.match(orchestrator, /## Role Gate Matrix/);
     assert.match(orchestrator, /sequential dispatch/i);
     assert.match(orchestrator, /UI or user-visible flow \| `design-reviewer` \+ `qa-reviewer`/);
