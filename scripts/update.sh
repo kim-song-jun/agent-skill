@@ -79,6 +79,14 @@ echo "  - no global CLI config files are patched by this script"
 
 if [ "$DRY_RUN" = "1" ]; then
   echo "Dry run requested; no git pull, marketplace update, uninstall, or install command will run."
+  if [ -f "$REPO_ROOT/scripts/lib/plugin-groups.sh" ]; then
+    MARKETPLACE="agent-skill"
+    . "$REPO_ROOT/scripts/lib/plugin-groups.sh"
+    select_plugins_for_mode "$MODE"
+    echo
+    echo "Selected plugin install dry-run:"
+    print_plugin_install_dry_run "${PLUGINS[@]}"
+  fi
   exit 0
 fi
 
@@ -108,33 +116,8 @@ claude plugin marketplace update agent-skill 2>&1 | tail -1 || true
 # must uninstall first, then install. Skip uninstall for plugins that
 # weren't already installed (treat update as install).
 MARKETPLACE="agent-skill"
-CLAUDE_CODE_NATIVE=(
-  "harness-builder"
-  "harness-floor"
-  "harness-thrift"
-  "harness-explore"
-  "harness-debug"
-)
-CLI_PORTS_CODEX=("harness-builder-codex" "harness-floor-codex" "harness-thrift-codex")
-CLI_PORTS_COPILOT=("harness-builder-copilot" "harness-floor-copilot" "harness-thrift-copilot")
-CLI_PORTS_GEMINI=("harness-builder-gemini" "harness-floor-gemini" "harness-thrift-gemini")
-CLI_PORTS_CURSOR=("harness-builder-cursor" "harness-floor-cursor" "harness-thrift-cursor")
-ALL_PLUGINS=(
-  "${CLAUDE_CODE_NATIVE[@]}"
-  "${CLI_PORTS_CODEX[@]}"
-  "${CLI_PORTS_COPILOT[@]}"
-  "${CLI_PORTS_GEMINI[@]}"
-  "${CLI_PORTS_CURSOR[@]}"
-)
-
-case "$MODE" in
-  claude-code) PLUGINS=("${CLAUDE_CODE_NATIVE[@]}") ;;
-  cli-codex)   PLUGINS=("${CLI_PORTS_CODEX[@]}") ;;
-  cli-copilot) PLUGINS=("${CLI_PORTS_COPILOT[@]}") ;;
-  cli-gemini)  PLUGINS=("${CLI_PORTS_GEMINI[@]}") ;;
-  cli-cursor)  PLUGINS=("${CLI_PORTS_CURSOR[@]}") ;;
-  all)         PLUGINS=("${ALL_PLUGINS[@]}") ;;
-esac
+. "$REPO_ROOT/scripts/lib/plugin-groups.sh"
+select_plugins_for_mode "$MODE"
 
 INSTALLED_JSON="$HOME/.claude/plugins/installed_plugins.json"
 echo "→ force-updating already-installed selected agent-skill plugins (uninstall + install)…"

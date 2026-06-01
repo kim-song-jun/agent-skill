@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const scriptPath = "scripts/update.sh";
+const pluginGroupsPath = "scripts/lib/plugin-groups.sh";
 const script = readFileSync(scriptPath, "utf-8");
 
 function indexOfRequired(text) {
@@ -90,9 +91,11 @@ test("no-argument update delegates to install-all with no passthrough args", () 
   const argsFile = join(fakeRepo, "install-args.txt");
 
   mkdirSync(scriptsDir);
+  mkdirSync(join(scriptsDir, "lib"));
   mkdirSync(binDir);
   mkdirSync(join(fakeRepo, ".git"));
   copyFileSync(scriptPath, join(scriptsDir, "update.sh"));
+  copyFileSync(pluginGroupsPath, join(scriptsDir, "lib", "plugin-groups.sh"));
 
   writeExecutable(
     join(binDir, "git"),
@@ -153,10 +156,12 @@ test("codex update force-refreshes installed Codex plugins before install-all de
   const installedDir = join(fakeRepo, ".claude/plugins");
 
   mkdirSync(scriptsDir, { recursive: true });
+  mkdirSync(join(scriptsDir, "lib"), { recursive: true });
   mkdirSync(binDir, { recursive: true });
   mkdirSync(installedDir, { recursive: true });
   mkdirSync(join(fakeRepo, ".git"));
   copyFileSync(scriptPath, join(scriptsDir, "update.sh"));
+  copyFileSync(pluginGroupsPath, join(scriptsDir, "lib", "plugin-groups.sh"));
   writeFileSync(
     join(installedDir, "installed_plugins.json"),
     JSON.stringify({

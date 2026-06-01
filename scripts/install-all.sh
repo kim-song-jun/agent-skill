@@ -17,30 +17,11 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 MARKETPLACE="agent-skill"
 MODE="claude-code"
 DRY_RUN=0
-
-CLAUDE_CODE_NATIVE=(
-  "harness-builder"
-  "harness-floor"
-  "harness-thrift"
-  "harness-explore"
-  "harness-debug"
-)
-
-CLI_PORTS_CODEX=("harness-builder-codex" "harness-floor-codex" "harness-thrift-codex")
-CLI_PORTS_COPILOT=("harness-builder-copilot" "harness-floor-copilot" "harness-thrift-copilot")
-CLI_PORTS_GEMINI=("harness-builder-gemini" "harness-floor-gemini" "harness-thrift-gemini")
-CLI_PORTS_CURSOR=("harness-builder-cursor" "harness-floor-cursor" "harness-thrift-cursor")
-
-ALL_PLUGINS=(
-  "${CLAUDE_CODE_NATIVE[@]}"
-  "${CLI_PORTS_CODEX[@]}"
-  "${CLI_PORTS_COPILOT[@]}"
-  "${CLI_PORTS_GEMINI[@]}"
-  "${CLI_PORTS_CURSOR[@]}"
-)
+. "$SCRIPT_DIR/lib/plugin-groups.sh"
 
 for arg in "$@"; do
   case "$arg" in
@@ -63,14 +44,7 @@ for arg in "$@"; do
   esac
 done
 
-case "$MODE" in
-  claude-code) PLUGINS=("${CLAUDE_CODE_NATIVE[@]}") ;;
-  cli-codex)   PLUGINS=("${CLI_PORTS_CODEX[@]}") ;;
-  cli-copilot) PLUGINS=("${CLI_PORTS_COPILOT[@]}") ;;
-  cli-gemini)  PLUGINS=("${CLI_PORTS_GEMINI[@]}") ;;
-  cli-cursor)  PLUGINS=("${CLI_PORTS_CURSOR[@]}") ;;
-  all)         PLUGINS=("${ALL_PLUGINS[@]}") ;;
-esac
+select_plugins_for_mode "$MODE"
 
 echo "Installing ${#PLUGINS[@]} plugins from ${MARKETPLACE}:"
 for p in "${PLUGINS[@]}"; do
@@ -79,9 +53,7 @@ done
 echo
 
 if [ "$DRY_RUN" = "1" ]; then
-  for p in "${PLUGINS[@]}"; do
-    echo "DRY-RUN: claude plugin install ${p}@${MARKETPLACE}"
-  done
+  print_plugin_install_dry_run "${PLUGINS[@]}"
   echo
   echo "Dry run complete. Re-run without --dry-run to actually install."
   exit 0
