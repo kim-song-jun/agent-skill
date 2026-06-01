@@ -11,6 +11,7 @@ const PLATFORM_CONTRACTS = {
     label: "Claude",
     marketplacePlugins: ["harness-builder", "harness-floor", "harness-thrift", "harness-explore", "harness-debug"],
     requiredFiles: [
+      "scripts/install-platform.sh",
       "plugins/harness-builder/plugin.json",
       "plugins/harness-builder/bin/clean.mjs",
       "plugins/harness-builder/bin/doctor.mjs",
@@ -96,12 +97,24 @@ const PLATFORM_CONTRACTS = {
         file: "plugins/harness-floor/skills/agent-all/phases/4-gate.md",
         patterns: [/classifyChangedFiles\(files\)/, /QA_AUDIT/, /VERIFICATION_AUDIT/, /3 retry cycles/],
       },
+      {
+        file: "scripts/install-platform.sh",
+        patterns: [
+          /claude[\s\S]{0,140}Claude Code project files/,
+          /--update-foundations[\s\S]{0,260}--platform=claude or --platform=codex/,
+          /--uninstall[\s\S]{0,220}--platform=claude or --platform=codex/,
+          /Claude project bootstrap supports --theme=all, --theme=builder, or --lite/,
+          /run_init "harness-builder" "init\.mjs"/,
+          /args\+=\(--no-doctor\)/,
+        ],
+      },
     ],
   },
   codex: {
     label: "Codex",
     marketplacePlugins: ["harness-builder-codex", "harness-floor-codex", "harness-thrift-codex"],
     requiredFiles: [
+      "scripts/install-platform.sh",
       "plugins/harness-builder-codex/.claude-plugin/plugin.json",
       "plugins/harness-builder-codex/bin/clean.mjs",
       "plugins/harness-builder-codex/bin/doctor.mjs",
@@ -194,6 +207,19 @@ const PLATFORM_CONTRACTS = {
       {
         file: "plugins/harness-floor-codex/skills/agent-all-codex/phases/4-gate.md",
         patterns: [/classifyChangedFiles\(files\)/, /QA_AUDIT/, /VERIFICATION_AUDIT/, /unsupported legacy agent hook/],
+      },
+      {
+        file: "scripts/install-platform.sh",
+        patterns: [
+          /codex[\s\S]{0,140}OpenAI Codex CLI/,
+          /codex-init so it writes AGENTS\.md \+ base skills only/,
+          /run_init "harness-builder-\$EMIT_PLATFORM" "init\.mjs" --lite/,
+          /run_init "harness-thrift-\$EMIT_PLATFORM" "install\.mjs" --no-instrument/,
+          /run_post_install_doctor/,
+          /"--platform=codex" "--profile=\$profile"/,
+          /--update-foundations[\s\S]{0,260}--platform=claude or --platform=codex/,
+          /--uninstall[\s\S]{0,220}--platform=claude or --platform=codex/,
+        ],
       },
     ],
   },
