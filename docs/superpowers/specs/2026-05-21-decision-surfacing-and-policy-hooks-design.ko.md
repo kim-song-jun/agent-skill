@@ -192,7 +192,7 @@ plugins/harness-floor/skills/agent-all/phases/
 - Cross-plugin isolation: 기존 테스트 그대로 통과해야.
 - Smoke: end-to-end `/agent-all "trivial task" --yes` non-TTY 흐름.
 
-목표: 1692/1692 green 유지. 새 lib/hook surface에는 focused tests 추가.
+목표: 1696/1696 green 유지. 새 lib/hook surface에는 focused tests 추가.
 
 ## 15. Out of scope (v1)
 

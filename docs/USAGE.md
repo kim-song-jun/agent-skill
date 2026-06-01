@@ -175,6 +175,15 @@ For a shell-driven install into a target repo, use the platform renderer:
 
 The default renderer path installs the heavy builder + floor + thrift bundle. `--lang=ko|en|auto` keeps `AGENTS.md` and `.agent-all.json` language aligned across the builder/floor install. The `--lite` path is builder-only and skips floor/thrift files plus global Codex config snippets. `--update-foundations` delegates to `scripts/update.sh --foundations-only`; with `--dry-run`, it prints the approved plan without calling `claude`.
 
+Post-install doctor:
+
+```bash
+node /path/to/agent-skill/scripts/doctor.mjs --target=/path/to/my-project --platform=codex
+node /path/to/agent-skill/scripts/doctor.mjs --target=/path/to/my-project --platform=codex --profile=lite
+```
+
+The doctor validates the project-local Claude/Codex scaffold, auto-detects operational vs lite profile when `--profile=auto`, exits non-zero for missing required artifacts, and warns when `superpowers` or `context-mode` are not installed.
+
 For direct library usage, the core modules are portable Node.js:
 
 ```bash

@@ -1,0 +1,376 @@
+#!/usr/bin/env node
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { scanFoundationState } from "../plugins/harness-builder/skills/agent-init/lib/foundation-check.mjs";
+
+const CONTRACTS = {
+  claude: {
+    label: "Claude",
+    liteRequired: [
+      "CLAUDE.md",
+      "AGENTS.md",
+      ".claude/settings.local.json",
+      ".claude/hooks/context-mode-router.mjs",
+      ".claude/hooks/session-summary.mjs",
+      ".claude/hooks/cache-heal.mjs",
+      ".claude/agents/planner.md",
+      ".claude/agents/dev.md",
+      ".claude/agents/reviewer.md",
+    ],
+    operationalRequired: [
+      ".claude/hooks/agent-policy-hook.mjs",
+      ".claude/agents/orchestrator.md",
+      ".claude/agents/integration-dev.md",
+      ".claude/agents/verification-reviewer.md",
+      ".claude/agents/qa-reviewer.md",
+      ".claude/agents/design-reviewer.md",
+      ".claude/agents/security-reviewer.md",
+      ".claude/agents/data-reviewer.md",
+      "docs/tasks/index.md",
+      "docs/tasks/_template.md",
+      "docs/tasks/_handoff-template.md",
+      "scripts/agent-task-ledger-check.mjs",
+      ".visual-qa.json",
+      ".agent-all.json",
+    ],
+    jsonFiles: [
+      ".claude/settings.local.json",
+      ".visual-qa.json",
+      ".agent-all.json",
+    ],
+    operationalMarkers: [
+      ".claude/hooks/agent-policy-hook.mjs",
+      ".claude/agents/orchestrator.md",
+      "docs/tasks/index.md",
+      ".agent-all.json",
+      ".visual-qa.json",
+    ],
+  },
+  codex: {
+    label: "Codex",
+    liteRequired: [
+      "AGENTS.md",
+      ".codex/skills/planner/SKILL.md",
+      ".codex/skills/dev/SKILL.md",
+      ".codex/skills/reviewer/SKILL.md",
+    ],
+    operationalRequired: [
+      ".codex/skills/orchestrator/SKILL.md",
+      ".codex/skills/integration-dev/SKILL.md",
+      ".codex/skills/verification-reviewer/SKILL.md",
+      ".codex/skills/qa-reviewer/SKILL.md",
+      ".codex/skills/design-reviewer/SKILL.md",
+      ".codex/skills/security-reviewer/SKILL.md",
+      ".codex/skills/data-reviewer/SKILL.md",
+      ".codex/skills/agent-all-codex/SKILL.md",
+      ".codex/skills/agent-all-codex/lib/sequential-dispatch.mjs",
+      ".codex/skills/visual-qa-codex/SKILL.md",
+      ".codex/skills/visual-qa-codex/lib/sequential-dispatch.mjs",
+      ".codex/skills/visual-qa-page/SKILL.md",
+      ".codex/hooks/agent-policy-hook.mjs",
+      "docs/tasks/index.md",
+      ".visual-qa.json",
+      ".agent-all.json",
+      ".thrift.json",
+    ],
+    jsonFiles: [
+      ".visual-qa.json",
+      ".agent-all.json",
+      ".thrift.json",
+    ],
+    operationalMarkers: [
+      ".codex/hooks/agent-policy-hook.mjs",
+      ".codex/skills/orchestrator/SKILL.md",
+      ".codex/skills/agent-all-codex/SKILL.md",
+      ".agent-all.json",
+      ".visual-qa.json",
+      ".thrift.json",
+    ],
+  },
+};
+
+const USAGE = `Usage: node scripts/doctor.mjs [--target=<dir>] [--platform=auto|claude|codex] [--profile=auto|operational|lite] [--json] [--strict-foundations]
+
+Checks a project-local agent-skill scaffold after install.
+
+Examples:
+  node scripts/doctor.mjs --target=. --platform=codex
+  node scripts/doctor.mjs --target=. --platform=claude --profile=operational
+  node scripts/doctor.mjs --target=. --json`;
+
+export function runDoctor({
+  target = process.cwd(),
+  platform = "auto",
+  profile = "auto",
+  homeDir = process.env.HOME || process.env.USERPROFILE || "",
+  strictFoundations = false,
+} = {}) {
+  const targetAbs = resolve(target);
+  const failures = [];
+  const warnings = [];
+  const checks = [];
+
+  if (!existsSync(targetAbs)) {
+    failures.push({
+      type: "target",
+      path: targetAbs,
+      message: `target directory does not exist: ${targetAbs}`,
+    });
+    return buildResult({ targetAbs, platform, profile, failures, warnings, checks, foundationState: null });
+  }
+
+  const resolvedPlatform = resolvePlatform(targetAbs, platform, failures);
+  if (!resolvedPlatform) {
+    return buildResult({ targetAbs, platform, profile, failures, warnings, checks, foundationState: null });
+  }
+
+  const contract = CONTRACTS[resolvedPlatform];
+  const resolvedProfile = resolveProfile(targetAbs, contract, profile, failures);
+  if (!resolvedProfile) {
+    return buildResult({
+      targetAbs,
+      platform: resolvedPlatform,
+      profile,
+      failures,
+      warnings,
+      checks,
+      foundationState: null,
+    });
+  }
+
+  const requiredFiles = [
+    ...contract.liteRequired,
+    ...(resolvedProfile === "operational" ? contract.operationalRequired : []),
+  ];
+
+  for (const rel of requiredFiles) {
+    const ok = existsSync(resolve(targetAbs, rel));
+    checks.push({
+      ok,
+      type: "file",
+      path: rel,
+      message: ok ? "present" : `missing required file: ${rel}`,
+    });
+    if (!ok) {
+      failures.push({ type: "missing", path: rel, message: `missing required file: ${rel}` });
+    }
+  }
+
+  for (const rel of contract.jsonFiles.filter((file) => requiredFiles.includes(file))) {
+    const abs = resolve(targetAbs, rel);
+    if (!existsSync(abs)) continue;
+    const parse = parseJson(abs, rel);
+    checks.push(parse);
+    if (!parse.ok) failures.push(parse);
+  }
+
+  const foundationState = scanFoundationState({
+    installedPluginIds: loadInstalledPluginIds(homeDir),
+  });
+  if (foundationState.degraded) {
+    const warning = {
+      type: "foundations",
+      message: `foundations missing: ${foundationState.missing.join(", ")}`,
+      fix: foundationState.updateCommand,
+      instructions: foundationState.instructions,
+    };
+    warnings.push(warning);
+    if (strictFoundations) {
+      failures.push({
+        type: "foundations",
+        path: "~/.claude/plugins/installed_plugins.json",
+        message: warning.message,
+        fix: warning.fix,
+      });
+    }
+  }
+
+  return buildResult({
+    targetAbs,
+    platform: resolvedPlatform,
+    profile: resolvedProfile,
+    failures,
+    warnings,
+    checks,
+    foundationState,
+  });
+}
+
+function buildResult({ targetAbs, platform, profile, failures, warnings, checks, foundationState }) {
+  const passed = checks.filter((check) => check.ok).length;
+  const result = {
+    ok: failures.length === 0,
+    target: targetAbs,
+    platform,
+    profile,
+    summary: {
+      passed,
+      total: checks.length,
+    },
+    failures,
+    warnings,
+    foundationState,
+    checks,
+  };
+  return result;
+}
+
+function resolvePlatform(targetAbs, platform, failures) {
+  if (platform !== "auto") {
+    if (!CONTRACTS[platform]) {
+      failures.push({
+        type: "usage",
+        path: "--platform",
+        message: `unknown platform: ${platform}`,
+      });
+      return null;
+    }
+    return platform;
+  }
+
+  if (existsSync(resolve(targetAbs, ".codex")) || existsSync(resolve(targetAbs, ".codex/skills"))) {
+    return "codex";
+  }
+  if (existsSync(resolve(targetAbs, ".claude")) || existsSync(resolve(targetAbs, "CLAUDE.md"))) {
+    return "claude";
+  }
+  failures.push({
+    type: "detect",
+    path: targetAbs,
+    message: "unable to auto-detect platform; pass --platform=claude or --platform=codex",
+  });
+  return null;
+}
+
+function resolveProfile(targetAbs, contract, profile, failures) {
+  if (profile !== "auto") {
+    if (profile === "operational" || profile === "lite") return profile;
+    failures.push({
+      type: "usage",
+      path: "--profile",
+      message: `unknown profile: ${profile}`,
+    });
+    return null;
+  }
+  return contract.operationalMarkers.some((rel) => existsSync(resolve(targetAbs, rel)))
+    ? "operational"
+    : "lite";
+}
+
+function parseJson(abs, rel) {
+  try {
+    JSON.parse(readFileSync(abs, "utf-8"));
+    return {
+      ok: true,
+      type: "json",
+      path: rel,
+      message: "valid JSON",
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      type: "json",
+      path: rel,
+      message: `${rel} is not valid JSON: ${error.message}`,
+    };
+  }
+}
+
+function loadInstalledPluginIds(homeDir) {
+  if (!homeDir) return [];
+  const installedPath = resolve(homeDir, ".claude/plugins/installed_plugins.json");
+  if (!existsSync(installedPath)) return [];
+  try {
+    const parsed = JSON.parse(readFileSync(installedPath, "utf-8"));
+    const plugins = parsed && typeof parsed.plugins === "object" ? parsed.plugins : parsed;
+    return plugins && typeof plugins === "object" ? Object.keys(plugins) : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseArgs(argv) {
+  const args = {
+    target: process.cwd(),
+    platform: "auto",
+    profile: "auto",
+    json: false,
+    strictFoundations: false,
+    help: false,
+  };
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--help" || arg === "-h") args.help = true;
+    else if (arg === "--json") args.json = true;
+    else if (arg === "--strict-foundations") args.strictFoundations = true;
+    else if (arg.startsWith("--target=")) args.target = arg.slice("--target=".length);
+    else if (arg === "--target") args.target = argv[++i];
+    else if (arg.startsWith("--platform=")) args.platform = arg.slice("--platform=".length);
+    else if (arg === "--platform") args.platform = argv[++i];
+    else if (arg.startsWith("--profile=")) args.profile = arg.slice("--profile=".length);
+    else if (arg === "--profile") args.profile = argv[++i];
+    else if (arg.startsWith("-")) {
+      throw new Error(`unknown argument: ${arg}`);
+    } else {
+      args.target = arg;
+    }
+  }
+  return args;
+}
+
+function printHuman(result) {
+  const label = CONTRACTS[result.platform]?.label || result.platform;
+  console.log(`harness doctor: ${result.ok ? "ok" : "failed"}`);
+  console.log(`target: ${result.target}`);
+  console.log(`platform: ${label}`);
+  console.log(`profile: ${result.profile}`);
+  console.log(`checks: ${result.summary.passed}/${result.summary.total}`);
+  if (result.failures.length > 0) {
+    console.log("");
+    console.log("Failures:");
+    for (const failure of result.failures) {
+      console.log(`  - ${failure.message}`);
+      if (failure.fix) console.log(`    fix: ${failure.fix}`);
+    }
+  }
+  if (result.warnings.length > 0) {
+    console.log("");
+    console.log("Warnings:");
+    for (const warning of result.warnings) {
+      console.log(`  - ${warning.message}`);
+      if (warning.fix) console.log(`    fix: ${warning.fix}`);
+    }
+  }
+}
+
+function main() {
+  let args;
+  try {
+    args = parseArgs(process.argv.slice(2));
+  } catch (error) {
+    console.error(error.message);
+    console.error(USAGE);
+    process.exit(2);
+  }
+  if (args.help) {
+    console.log(USAGE);
+    return;
+  }
+  const result = runDoctor({
+    target: args.target,
+    platform: args.platform,
+    profile: args.profile,
+    strictFoundations: args.strictFoundations,
+  });
+  if (args.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    printHuman(result);
+  }
+  process.exit(result.ok ? 0 : 1);
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
+}
