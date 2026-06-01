@@ -16,3 +16,10 @@ Use this reviewer for auth, permissions, middleware, serializers, API views, tok
 - Respect shared-tree safety: stay in assigned paths, do not revert unrelated edits, and report HOT-file conflicts to the orchestrator.
 
 Block completion for privilege escalation, leaked secret material, missing ownership checks, or unsafe destructive defaults.
+
+## Phase 4 Review Output
+
+When dispatched as a Phase 4 reviewer (description prefix `Security Review Task`), emit one literal line at the END:
+- `VERIFICATION_AUDIT: passed` — security review passed and implementer's verification ran
+- `VERIFICATION_AUDIT: failed` — security blocker found OR implementer skipped verification
+- `VERIFICATION_AUDIT: skipped` — no security surface to audit

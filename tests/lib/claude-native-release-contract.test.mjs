@@ -160,3 +160,23 @@ test("Claude native role templates embed foundation and shared-tree discipline",
     assert.match(body, /shared-tree|unrelated edits|HOT-file/i, `${role} must preserve shared workspace safety`);
   }
 });
+
+test("Claude native persona reviewers emit the Phase 4 verification audit token expected by floor-policy", () => {
+  const personaReviewers = [
+    "data-reviewer",
+    "design-reviewer",
+    "integration-dev",
+    "security-reviewer",
+  ];
+
+  for (const role of personaReviewers) {
+    const body = read(`plugins/harness-builder/skills/agent-init/templates/agents/${role}.md.hbs`);
+    assert.match(body, /Phase 4 reviewer|Review Task/i, `${role} must scope the machine token to review dispatches`);
+    assert.match(body, /VERIFICATION_AUDIT: passed/, `${role} must document the pass token`);
+    assert.match(body, /VERIFICATION_AUDIT: failed/, `${role} must document the fail token`);
+    assert.match(body, /VERIFICATION_AUDIT: skipped/, `${role} must document the skipped token`);
+  }
+
+  const phase4 = read("plugins/harness-floor/skills/agent-all/phases/4-gate.md");
+  assert.match(phase4, /Other personas[\s\S]{0,260}VERIFICATION_AUDIT: passed\|failed\|skipped/);
+});

@@ -37,7 +37,8 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
    - `qa-reviewer` audits **user-side flow only** — completeness of scenarios, persona-perspective edge cases, would-this-confuse-the-user concerns. NOT tech-stack verification.
    - QA audit token: `qa-reviewer` must emit `QA_AUDIT: passed|failed|skipped`. The `QA ` description prefix routes the `floor-policy` hook to the user-side directive + `QA_AUDIT` token validation.
    - Verification audit token: `verification-reviewer` must emit `VERIFICATION_AUDIT: passed|failed|skipped`.
-   - Persona-specific reviewers should emit their existing reviewer verdict format and issue severities.
+   - Other personas dispatched with `<Persona> Review Task` descriptions must also emit `VERIFICATION_AUDIT: passed|failed|skipped`, because the `floor-policy` hook routes those review tasks through the same technical review audit validator.
+   - Persona-specific reviewers should emit their existing reviewer verdict format and issue severities before the audit token.
 
 4. Collect verdicts. Bucket issues by severity (`critical | major | minor`).
 
