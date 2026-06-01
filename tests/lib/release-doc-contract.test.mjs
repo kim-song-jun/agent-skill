@@ -401,6 +401,10 @@ test("manual release checklist is mapped to automated gates and Claude/Codex liv
   assert.match(body, /\/agent-init --lite/);
   assert.match(body, /\/codex-init --lite/);
   assert.match(body, /run \/agent-all for "smoke task"/);
+  assert.match(body, /run \/visual-qa for the configured project/);
+  assert.match(body, /^run \/thrift$/m);
+  assert.match(body, /run \/thrift summarise/);
+  assert.match(body, /run \/thrift audit/);
   assert.doesNotMatch(body, /\/agent-all-codex "smoke task"|codex exec "smoke task"|codex skill run/i);
   assert.match(body, /codex exec[\s\S]{0,240}positional/i);
   assert.doesNotMatch(body, /^- \[ \]/m);
@@ -417,4 +421,10 @@ test("CLI runtime checklist points at the release readiness audit gate", () => {
   assert.match(body, /release-fixture-smoke\.mjs/);
   assert.match(body, /release readiness audit/i);
   assert.match(body, /release-smoke\.sh --fast --with-live-cli/);
+  assert.match(body, /run \/agent-all for "smoke task"/);
+  assert.match(body, /run \/visual-qa for the configured project/);
+  assert.match(body, /Run `run \/thrift`, `run \/thrift summarise`, and `run \/thrift audit`/);
+  assert.match(body, /run \/thrift summarise/);
+  assert.match(body, /run \/thrift audit/);
+  assert.doesNotMatch(body, /\/agent-all-codex "smoke task"|\/visual-qa-codex|\/thrift-codex|codex skill run/i);
 });

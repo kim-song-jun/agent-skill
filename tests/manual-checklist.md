@@ -55,7 +55,18 @@ fresh fixture. The automated gate already checks the command metadata; here,
 confirm Codex accepts both slash-command invocations, accepts the interactive
 prompts, and reaches the summary screen without host-runtime errors.
 
-In an operational Codex fixture, run `run /agent-all for "smoke task"` and
-confirm the host accepts the documented post-install workflow entrypoint, starts
-the prompt-level harness flow, and reaches its summary without host-runtime
+In an operational Codex fixture, run the documented post-install workflow
+entrypoints:
+
+```
+run /agent-all for "smoke task"
+run /visual-qa for the configured project
+run /thrift
+run /thrift summarise
+run /thrift audit
+```
+
+For visual QA, use a fixture with a reachable local dev server and Playwright
+MCP configured. Confirm the host accepts each public prompt-level entrypoint,
+starts the expected harness flow, and reaches its summary without host-runtime
 errors.

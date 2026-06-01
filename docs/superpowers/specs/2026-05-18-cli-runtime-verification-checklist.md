@@ -61,8 +61,11 @@ Only interactive Codex shell UX remains manual:
 
 1. Start Codex CLI in a fresh repo that has passed the automated Codex operational fixture gate.
 2. Run `run /agent-all for "smoke task"`.
-3. Confirm the shell routes through sequential role skill prompts and reaches
-   its summary without host-runtime errors.
+3. With the fixture dev server and Playwright MCP available, run
+   `run /visual-qa for the configured project`.
+4. Run `run /thrift`, `run /thrift summarise`, and `run /thrift audit`.
+5. Confirm the shell routes through the expected prompt-level workflows and
+   reaches each summary without host-runtime errors.
 
 Everything else above is already covered by automated contract tests.
 
