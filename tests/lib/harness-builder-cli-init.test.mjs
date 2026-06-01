@@ -170,6 +170,15 @@ test("harness-builder-codex: AGENTS.md documents operational profile", () => {
     assert.match(body, /pathspec/);
     assert.match(body, /operational harness/i);
     assert.match(body, /reviewer personas/i);
+    assert.match(body, /Role Routing/i);
+    assert.match(body, /orchestrator[\s\S]{0,240}HOT-file/i);
+    assert.match(body, /planner[\s\S]{0,240}Decision Matrix/i);
+    assert.match(body, /dev[\s\S]{0,240}implementation/i);
+    assert.match(body, /integration-dev[\s\S]{0,240}cross-stack/i);
+    assert.match(body, /design-reviewer[\s\S]{0,260}qa-reviewer/i);
+    assert.match(body, /security-reviewer[\s\S]{0,260}data-reviewer/i);
+    assert.match(body, /verification-reviewer[\s\S]{0,260}(tests|typecheck|lint|evidence)/i);
+    assert.match(body, /3 (?:failed cycles|repeated failures|attempts)/i);
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

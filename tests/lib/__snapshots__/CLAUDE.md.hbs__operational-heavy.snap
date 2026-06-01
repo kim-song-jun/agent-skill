@@ -49,6 +49,18 @@ Use reviewer personas based on changed files:
 - tests, CI, build config: `verification-reviewer`
 - cross-stack frontend and backend changes: `integration-dev`, `verification-reviewer`
 
+## Role Routing
+
+- `orchestrator`: wave ownership, HOT-file detection, shared-tree safety, pathspec commits, and escalation after 3 failed cycles.
+- `planner`: ambiguity control, Decision Matrix updates, task slicing, and plan files before implementation.
+- `frontend-dev` / `backend-dev`: stack-specific implementation after the task doc and ownership boundaries are clear.
+- `integration-dev`: cross-stack wiring, API contracts, and frontend/backend coordination points.
+- `design-reviewer` + `qa-reviewer`: UI hierarchy, visual state, accessibility, and user-flow validation.
+- `security-reviewer` + `data-reviewer`: authz, secrets, destructive actions, migrations, seeds, fixtures, and backfills.
+- `verification-reviewer`: tests, typecheck, lint, diff scope, and completion evidence.
+
+Keep each active task's Progress Snapshot current with owner, files, validation, blockers, and next action.
+
 
 
 

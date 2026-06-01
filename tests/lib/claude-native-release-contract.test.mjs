@@ -106,6 +106,25 @@ test("Claude native /agent-init phase docs cover parallel agent fan-out and fina
   assert.match(phase5, /commit[\s\S]{0,260}explicit pathspecs/i);
 });
 
+test("Claude native root guidance exposes role routing and escalation contracts", () => {
+  for (const rel of [
+    "plugins/harness-builder/skills/agent-init/templates/CLAUDE.md.hbs",
+    "plugins/harness-builder/skills/agent-init/templates/AGENTS.md.hbs",
+  ]) {
+    const body = read(rel);
+    assert.match(body, /Role Routing/i, `${rel} must have a role routing section`);
+    assert.match(body, /orchestrator[\s\S]{0,240}HOT-file/i, `${rel} must route HOT-file ownership to orchestrator`);
+    assert.match(body, /planner[\s\S]{0,240}Decision Matrix/i, `${rel} must route ambiguity to planner`);
+    assert.match(body, /frontend-dev[\s\S]{0,240}backend-dev/i, `${rel} must route stack-specific implementation roles`);
+    assert.match(body, /integration-dev[\s\S]{0,240}cross-stack/i, `${rel} must route cross-stack work`);
+    assert.match(body, /design-reviewer[\s\S]{0,260}qa-reviewer/i, `${rel} must route UI/QA review`);
+    assert.match(body, /security-reviewer[\s\S]{0,260}data-reviewer/i, `${rel} must route security/data review`);
+    assert.match(body, /verification-reviewer[\s\S]{0,260}(tests|typecheck|lint|evidence)/i, `${rel} must route verification review`);
+    assert.match(body, /3 (?:failed cycles|repeated failures|attempts)/i, `${rel} must define the 3-failure escalation rule`);
+    assert.match(body, /Progress Snapshot/i, `${rel} must keep task ledger progress current`);
+  }
+});
+
 test("Claude native role templates embed foundation and shared-tree discipline", () => {
   const roleSkills = {
     "backend-dev": ["test-driven-development", "verification-before-completion"],
