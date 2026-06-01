@@ -100,6 +100,41 @@ test("install-platform codex --dry-run reports selected scripts without writing 
   }
 });
 
+test("install-platform vscode-copilot installs only VS Code instructions", () => {
+  const target = tmp("agent-skill-release-vscode-copilot-target-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=vscode-copilot",
+      `--target=${target}`,
+      "--theme=all",
+    ], {
+      encoding: "utf-8",
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.ok(existsSync(resolve(target, ".github/copilot-instructions.md")), "missing VS Code instructions");
+    for (const rel of [
+      "AGENTS.md",
+      ".github/instructions/planner.instructions.md",
+      ".github/hooks/preToolUse.json",
+      ".github/hooks/postToolUse.json",
+      ".github/hooks/agentStop.json",
+      ".visual-qa.json",
+      ".agent-all.json",
+      ".thrift.json",
+    ]) {
+      assert.ok(!existsSync(resolve(target, rel)), `unexpected VS Code Copilot artifact ${rel}`);
+    }
+
+    assert.match(res.stdout, /VS Code Copilot/i);
+    assert.match(res.stdout, /instructions-only/i);
+    assert.doesNotMatch(res.stdout, /\.github\/hooks|\.agent-all\.json|\.thrift\.json/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
 test("install-platform codex all succeeds in a fresh project without patching global Codex config", () => {
   const target = tmp("agent-skill-release-codex-target-");
   const home = tmp("agent-skill-release-codex-home-");

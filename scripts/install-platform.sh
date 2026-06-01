@@ -139,8 +139,9 @@ fi
 
 # Normalize vscode-copilot → copilot (same emitter; VS Code reads .github/copilot-instructions.md)
 EMIT_PLATFORM="$PLATFORM"
+VS_CODE_COPILOT=0
 case "$PLATFORM" in
-  vscode-copilot) EMIT_PLATFORM="copilot" ;;
+  vscode-copilot) EMIT_PLATFORM="copilot"; VS_CODE_COPILOT=1 ;;
   cursor|copilot|codex|gemini) ;;
   *)
     echo "Error: unknown platform '$PLATFORM'." >&2
@@ -192,6 +193,11 @@ fi
 
 if [ "$LITE" = "1" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ]; }; then
   echo "Error: --lite can only be used with --theme=all or --theme=builder." >&2
+  exit 1
+fi
+
+if [ "$VS_CODE_COPILOT" = "1" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ]; }; then
+  echo "Error: vscode-copilot supports only the builder instructions surface." >&2
   exit 1
 fi
 
@@ -254,6 +260,10 @@ run_init() {
 }
 
 run_builder_init() {
+  if [ "$VS_CODE_COPILOT" = "1" ]; then
+    run_init "harness-builder-$EMIT_PLATFORM" "init.mjs" --vscode-only
+    return 0
+  fi
   if [ "$LITE" = "1" ] && [ "$EMIT_PLATFORM" = "codex" ]; then
     if [ "$HAS_LANG" = "1" ]; then
       run_init "harness-builder-$EMIT_PLATFORM" "init.mjs" --lite --lang="$INIT_LANG"
@@ -273,7 +283,7 @@ run_builder_init() {
 case "$THEME" in
   all)
     run_builder_init
-    if [ "$LITE" != "1" ]; then
+    if [ "$LITE" != "1" ] && [ "$VS_CODE_COPILOT" != "1" ]; then
       run_init "harness-floor-$EMIT_PLATFORM" "init.mjs"
       if [ "$EMIT_PLATFORM" = "codex" ]; then
         run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs" --no-instrument
@@ -314,6 +324,9 @@ print_install_summary() {
         echo "  - AGENTS.md, .codex/skills/{planner,dev,reviewer}/ (builder-only lite scaffold)"
         echo "  - Note: lite mode skips floor/thrift files and global Codex config snippets"
         ;;
+      vscode-copilot)
+        echo "  - .github/copilot-instructions.md (VS Code instructions-only scaffold)"
+        ;;
       gemini)
         echo "  - GEMINI.md, .gemini/skills/ (builder-only lite scaffold)"
         ;;
@@ -345,6 +358,9 @@ print_install_summary() {
       ;;
     copilot:thrift)
       echo "  - .thrift.json, .github/hooks/"
+      ;;
+    vscode-copilot:all|vscode-copilot:builder)
+      echo "  - .github/copilot-instructions.md (VS Code instructions-only scaffold)"
       ;;
     codex:all)
       echo "  - AGENTS.md, .codex/skills/, .codex/hooks/, .visual-qa.json, .agent-all.json, .thrift.json"
@@ -386,7 +402,7 @@ if [ "$DRY_RUN" = "1" ]; then
 else
   echo "Done. Inspect the target project for the new files:"
 fi
-print_install_summary "$EMIT_PLATFORM" "$THEME" "$LITE"
+print_install_summary "$PLATFORM" "$THEME" "$LITE"
 if [ "$DRY_RUN" = "1" ]; then
   exit 0
 fi
@@ -397,5 +413,5 @@ fi
 if [ "$PLATFORM" = "vscode-copilot" ]; then
   echo
   echo "VS Code Copilot reads .github/copilot-instructions.md natively."
-  echo "Hooks under .github/hooks/ are for the gh copilot CLI; ignored by the editor."
+  echo "Installed instructions-only; Copilot CLI hooks, floor configs, and thrift configs were skipped."
 fi
