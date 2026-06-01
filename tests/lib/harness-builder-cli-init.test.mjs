@@ -479,6 +479,31 @@ test("harness-builder-codex: generated QA reviewer emits the Phase 4 QA audit to
   }
 });
 
+test("harness-builder-codex: generated QA artifacts preserve configured QA personas", () => {
+  const target = mkTarget("codex-qa-personas");
+  try {
+    const ctxPath = join(target, "_ctx.json");
+    writeFileSync(ctxPath, JSON.stringify({
+      purpose: "QA persona routing",
+      size: "medium",
+      qa_personas: ["auth", "payments"],
+      deploy_targets: "",
+      constraints: "",
+    }));
+
+    const res = runInit(PLUGINS.codex.bin, [target, "--ctx", ctxPath]);
+    assert.equal(res.status, 0, res.stderr);
+
+    const root = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+    assert.match(root, /QA personas[\s\S]{0,120}auth[\s\S]{0,120}payments/i);
+
+    const qa = readFileSync(resolve(target, ".codex/skills/qa-reviewer/SKILL.md"), "utf-8");
+    assert.match(qa, /Configured QA personas[\s\S]{0,120}auth[\s\S]{0,120}payments/i);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
 test("harness-builder-codex: invalid --lang value fails before writing files", () => {
   const target = mkTarget("codex-lang-invalid");
   try {

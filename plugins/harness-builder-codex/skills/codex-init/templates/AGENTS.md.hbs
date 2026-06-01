@@ -52,6 +52,12 @@ This is the heavy operational harness profile.
 - `verification-reviewer`: tests, typecheck, lint, diff scope, and completion evidence.
 
 Keep each active task's Progress Snapshot current with owner, files, validation, blockers, and next action.
+
+## QA Personas
+
+The `qa-reviewer` should evaluate user-flow risk through these configured perspectives:
+{{#each qa_personas}}- {{this}}
+{{/each}}
 {{/if}}
 
 {{#if degradedFoundations}}
