@@ -1,7 +1,7 @@
 # Operational Agent Init + Agent-All Hardening Design
 
 **Date:** 2026-06-01  
-**Status:** Design approved in brainstorming; pending written-spec review  
+**Status:** Implemented and release-audited
 **Scope:** Claude Code + Codex hard enforcement, Gemini soft rules  
 **Driver:** POSCO `posco/posco-mds` operating lessons: task ledger, pathspec commits, handoff discipline, role-specific review gates, context-mode, and superpowers integration.
 
