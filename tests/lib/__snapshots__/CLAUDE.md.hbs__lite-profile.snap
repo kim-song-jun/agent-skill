@@ -23,6 +23,28 @@ These apply to the main agent and to every role in `.claude/agents/`:
 6. **Protect shared worktrees.** Never use `git add -A`, `git commit -a`, `git reset --hard`, `git checkout --`, or force push unless the user explicitly approves the exact command.
 7. **Commit with pathspecs.** Use `git commit -m "message" -- path/one path/two`.
 
+## Execution Discipline
+
+1. **No scope retreat.** If the user asks for an exhaustive pass, all files, all pages, or a fixed `N` items, establish the count up front, process every item, and report `processed M/N` before handoff. Stop only for a real blocker, an explicit user scope change, or a documented ambiguity.
+2. **Plan vs execute.** If the request is to fix, build, change, or verify something, finish the file edits and verification. Do not stop at a proposal unless the user asked only for analysis.
+3. **Self-Audit before handoff.** For multi-file changes, long-running task docs, or all-item sweeps, include a concise `Self-Audit` covering requested scope, processed count, unprocessed items, unverified gates, any shortcuts, and next action.
+4. **Tech-Debt Grep.** Before completion, check touched code paths for `TODO`, `FIXME`, `HACK`, and `XXX`. Resolve in-scope debt in the same change; if it is out of scope, state why.
+5. **Decision Matrix.** When two or more reasonable choices remain, or multiple user decisions are needed, present a `Decision Matrix` with option, impact, recommendation, and whether confirmation is required.
+
+
+## Subagent Dispatch Contract
+
+Every delegated role prompt must include:
+
+- Working directory.
+- Owned files or line ranges.
+- Forbidden files or areas owned by other active agents.
+- A `DO NOT` list covering destructive commands, unrelated edits, broad staging, and self-commit behavior.
+- Expected output format with a concise `Self-Audit`.
+- Reusable references, files, functions, commands, or task-doc sections.
+
+Do not self-commit from a delegated subagent unless the orchestrator explicitly asks for that. Report changed files and verification evidence back to the orchestrator for pathspec commit review.
+
 
 
 

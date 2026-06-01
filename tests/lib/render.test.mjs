@@ -127,6 +127,8 @@ const LITE_FORBIDDEN_PATTERNS = [
   /docs\/tasks\//,
   /scripts\/agent-task-ledger-check\.mjs/,
   /operational policy checks/,
+  /task[- ]ledger/i,
+  /hard[- ]policy/i,
 ];
 
 function listTemplates(dir, base = "") {

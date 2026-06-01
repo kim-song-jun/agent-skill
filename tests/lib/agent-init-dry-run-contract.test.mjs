@@ -223,3 +223,21 @@ test("agent-init degraded foundation guidance points at the approved updater", (
   assert.match(claudeTemplate, /foundationUpdateCommand/);
   assert.match(claudeTemplate, /Manual fallback/);
 });
+
+test("agent-init root guidance carries domain-neutral execution discipline", () => {
+  for (const templateName of ["CLAUDE.md.hbs", "AGENTS.md.hbs"]) {
+    const body = readTemplate(templateName);
+
+    assert.match(body, /## Execution Discipline/);
+    assert.match(body, /No scope retreat/i);
+    assert.match(body, /Self-Audit/);
+    assert.match(body, /Tech-Debt Grep/);
+    assert.match(body, /Decision Matrix/);
+    assert.match(body, /## Subagent Dispatch Contract/);
+    assert.match(body, /working directory/i);
+    assert.match(body, /owned files/i);
+    assert.match(body, /forbidden files/i);
+    assert.match(body, /Do not self-commit/i);
+    assert.doesNotMatch(body, /POSCO|LIMS|MDS|Lot 번호|Outline DB|xlsx SSOT/);
+  }
+});

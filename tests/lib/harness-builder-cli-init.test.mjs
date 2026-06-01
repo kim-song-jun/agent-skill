@@ -184,6 +184,29 @@ test("harness-builder-codex: AGENTS.md documents operational profile", () => {
   }
 });
 
+test("harness-builder-codex: AGENTS.md renders execution discipline and dispatch contract", () => {
+  const target = mkTarget("codex-execution-discipline");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target]);
+    assert.equal(res.status, 0, res.stderr);
+    const body = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+
+    assert.match(body, /## Execution Discipline/);
+    assert.match(body, /No scope retreat/i);
+    assert.match(body, /Self-Audit/);
+    assert.match(body, /Tech-Debt Grep/);
+    assert.match(body, /Decision Matrix/);
+    assert.match(body, /## Subagent Dispatch Contract/);
+    assert.match(body, /working directory/i);
+    assert.match(body, /owned files/i);
+    assert.match(body, /forbidden files/i);
+    assert.match(body, /Do not self-commit/i);
+    assert.doesNotMatch(body, /POSCO|LIMS|MDS|Lot 번호|Outline DB|xlsx SSOT/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
 test("harness-builder-codex: default AGENTS.md records degraded foundation status", () => {
   const target = mkTarget("codex-foundations-missing");
   const home = mkTarget("codex-foundations-home-missing");
@@ -379,6 +402,8 @@ test("harness-builder-codex: --lite skips ledger and hooks", () => {
 
     const body = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
     assert.match(body, /lite mode/i);
+    assert.doesNotMatch(body, /task[- ]ledger/i);
+    assert.doesNotMatch(body, /hard[- ]policy/i);
     assert.doesNotMatch(body, /hard policy hook artifacts are active/i);
 
     assert.doesNotMatch(res.stdout, /\[hooks\]/);

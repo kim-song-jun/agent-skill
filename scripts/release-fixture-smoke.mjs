@@ -324,7 +324,8 @@ function checkClaudeLite(root) {
     const settingsText = JSON.stringify(settings.value || {});
     const textChecks = [
       ["CLAUDE.md includes lite harness guidance", /Lite Harness/.test(claude)],
-      ["AGENTS.md includes lite skip guidance", /Task-ledger and hard-policy artifacts are intentionally skipped/.test(agents)],
+      ["AGENTS.md includes minimal lite harness guidance", /Lite mode keeps only root guidance and the minimal role roster/.test(agents)],
+      ["AGENTS.md omits operational lite skip guidance", !/task[- ]ledger|hard[- ]policy/i.test(agents)],
       ["settings keeps context-mode router", settingsText.includes("context-mode-router.mjs")],
       ["settings omits policy hook", !settingsText.includes("agent-policy-hook.mjs")],
       ["lite docs omit task ledger paths", !/docs\/tasks\//.test(renderedText)],
