@@ -467,6 +467,9 @@ function checkClaudePlatformInstall(root) {
     const agentAll = parseJsonFile(resolve(target, ".agent-all.json"), ".agent-all.json");
     const homeSettings = resolve(home, ".claude/settings.local.json");
     const claude = readIfExists(resolve(target, "CLAUDE.md"));
+    const orchestrator = readIfExists(resolve(target, ".claude/agents/orchestrator.md"));
+    const frontendDev = readIfExists(resolve(target, ".claude/agents/frontend-dev.md"));
+    const backendDev = readIfExists(resolve(target, ".claude/agents/backend-dev.md"));
     const settingsText = JSON.stringify(settings.value || {});
     const stdoutChecks = [
       ["reports Claude platform install", /Installing for claude/i.test(res.stdout)],
@@ -474,6 +477,9 @@ function checkClaudePlatformInstall(root) {
       ["post-install doctor passes", /harness doctor: ok/i.test(res.stdout)],
       ["CLAUDE.md includes role gate matrix", /Role Gate Matrix/.test(claude)],
       ...implementationRoutingChecks("CLAUDE.md", claude),
+      ...implementationRoutingChecks(".claude platform orchestrator", orchestrator),
+      [".claude platform frontend-dev embeds frontend discipline", /frontend layer[\s\S]{0,120}UI components[\s\S]{0,80}client-side logic[\s\S]{0,80}styles/.test(frontendDev)],
+      [".claude platform backend-dev embeds backend discipline", /backend layer[\s\S]{0,120}APIs[\s\S]{0,80}business logic[\s\S]{0,80}migrations/.test(backendDev)],
       ["CLAUDE.md includes configured QA persona", /Configured QA Personas[\s\S]{0,120}auth/.test(claude)],
       ["settings registers policy hook", settingsText.includes("agent-policy-hook.mjs")],
       ["agent-all language is aligned", agentAll.value?.language === "en"],
@@ -585,7 +591,7 @@ function checkCodexOperational(root) {
     initGit(target);
     const res = runInstallPlatform(root, target, home, ["--theme=all"]);
     const missing = missingFiles(target, CODEX_OPERATIONAL_PRESENT);
-    const agentAllRuntime = checkCodexAgentAllSequentialRuntime(target);
+    const agentAllRuntime = checkCodexAgentAllSequentialRuntime(target, { expectStackRoles: true });
     const visualQaRuntime = checkCodexVisualQaSequentialRuntime(target);
     const homeConfig = resolve(home, ".codex/config.toml");
     const agents = readIfExists(resolve(target, "AGENTS.md"));
@@ -624,13 +630,13 @@ function checkCodexOperational(root) {
       ok,
       summary: `Codex operational fixture: ${ok ? "ok" : "failed"} (${CODEX_OPERATIONAL_PRESENT.length - missing.length}/${CODEX_OPERATIONAL_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh git fixture received operational builder, role gate matrix, QA personas, floor, thrift, debug, hooks, configs, post-install operational doctor coverage, and sequential agent-all-codex prompt helper runs from the installed fixture; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
+        ? "fresh git fixture received operational builder, role gate matrix, QA personas, floor, thrift, debug, hooks, configs, post-install operational doctor coverage, and sequential agent-all-codex prompt helper runs from the installed fixture with stack-specific frontend/backend role dispatch; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
         : compactFailure(res, [...missing, ...failedStdout, agentAllRuntime.ok ? null : agentAllRuntime.details, visualQaRuntime.ok ? null : visualQaRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
 }
 
-function checkCodexAgentAllSequentialRuntime(target) {
+function checkCodexAgentAllSequentialRuntime(target, { expectStackRoles = false } = {}) {
   const helperRel = ".codex/skills/agent-all-codex/lib/sequential-dispatch.mjs";
   const helperPath = resolve(target, helperRel);
   if (!existsSync(helperPath)) {
@@ -646,8 +652,10 @@ const helperPath = resolve("${helperRel}");
 if (!existsSync(helperPath)) {
   throw new Error("missing installed sequential helper");
 }
+const expectStackRoles = ${JSON.stringify(expectStackRoles)};
 
 const {
+  dispatchSequential,
   buildSequentialInvocation,
   buildReviewPrompt,
   buildSequentialShellCommand,
@@ -737,6 +745,72 @@ if (invocation.argv.includes("--prompt") || invocation.argv.includes("--skill"))
 requireIncludes("sequential invocation prompt", invocation.argv[2], "## Dispatch Contract");
 requireIncludes("sequential invocation prompt", invocation.argv[2], "\\"changedFiles\\"");
 
+if (expectStackRoles) {
+const frontendDispatch = await dispatchSequential({
+  task: {
+    id: "release-smoke-frontend",
+    title: "Release smoke frontend role",
+    role: "frontend-dev",
+    files: ["src/App.tsx"],
+  },
+  plan: { path: "docs/tasks/001-release-smoke.md" },
+  codexBin: "codex",
+  projectRoot: process.cwd(),
+  assertSkillFrontmatter: true,
+}, async (command) => {
+  requireIncludes("frontend-dev sequential command", command, ".codex/skills/frontend-dev/SKILL.md");
+  requireIncludes("frontend-dev sequential command", command, "Implement UI components, routes, styles, client state");
+  requireIncludes("frontend-dev sequential command", command, "'codex' 'exec'");
+  requireOmits("frontend-dev sequential command", command, "--prompt");
+  requireOmits("frontend-dev sequential command", command, "--skill");
+  return {
+    status: 0,
+    stdout: JSON.stringify({
+      status: "completed",
+      changedFiles: ["src/App.tsx"],
+      verification: "npm test passed",
+      errors: [],
+    }),
+    stderr: "",
+  };
+});
+if (frontendDispatch.status !== "completed" || frontendDispatch.changedFiles[0] !== "src/App.tsx") {
+  throw new Error("frontend-dev sequential dispatch result mismatch");
+}
+
+const backendDispatch = await dispatchSequential({
+  task: {
+    id: "release-smoke-backend",
+    title: "Release smoke backend role",
+    role: "backend-dev",
+    files: ["src/server/api.ts"],
+  },
+  plan: { path: "docs/tasks/001-release-smoke.md" },
+  codexBin: "codex",
+  projectRoot: process.cwd(),
+  assertSkillFrontmatter: true,
+}, async (command) => {
+  requireIncludes("backend-dev sequential command", command, ".codex/skills/backend-dev/SKILL.md");
+  requireIncludes("backend-dev sequential command", command, "Implement APIs, services, jobs, migrations, persistence");
+  requireIncludes("backend-dev sequential command", command, "'codex' 'exec'");
+  requireOmits("backend-dev sequential command", command, "--prompt");
+  requireOmits("backend-dev sequential command", command, "--skill");
+  return {
+    status: 0,
+    stdout: JSON.stringify({
+      status: "completed",
+      changedFiles: ["src/server/api.ts"],
+      verification: "node --test passed",
+      errors: [],
+    }),
+    stderr: "",
+  };
+});
+if (backendDispatch.status !== "completed" || backendDispatch.changedFiles[0] !== "src/server/api.ts") {
+  throw new Error("backend-dev sequential dispatch result mismatch");
+}
+}
+
 const parsed = parseSkillResult([
   "log noise",
   JSON.stringify({
@@ -768,7 +842,9 @@ if (parsed.commits.length !== 0) {
   return {
     ok: res.status === 0,
     details: res.status === 0
-      ? "sequential agent-all-codex prompt helper runs from the installed fixture"
+      ? expectStackRoles
+        ? "sequential agent-all-codex prompt helper runs from the installed fixture and inlines frontend-dev/backend-dev role skills"
+        : "sequential agent-all-codex prompt helper runs from the installed fixture"
       : compactFailure(res, [`${helperRel} runtime probe failed`]),
   };
 }

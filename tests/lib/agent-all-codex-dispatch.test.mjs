@@ -486,6 +486,19 @@ test("sequential-dispatch: buildSequentialInvocation honours custom role", () =>
   assert.match(inv.skillPath, /\/reviewer\/SKILL\.md$/);
 });
 
+test("sequential-dispatch: buildSequentialInvocation resolves stack-specific implementer roles", () => {
+  for (const role of ["frontend-dev", "backend-dev"]) {
+    const inv = buildSequentialInvocation({
+      task: { id: `t-${role}`, title: "x", role },
+      projectRoot: "/repo",
+    });
+    assert.equal(inv.skillPath, `/repo/.codex/skills/${role}/SKILL.md`);
+    assert.match(inv.prompt, new RegExp(`Role skill: /repo/\\.codex/skills/${role}/SKILL\\.md`));
+    assert.equal(inv.argv.includes("--skill"), false);
+    assert.equal(inv.argv.includes("--prompt"), false);
+  }
+});
+
 test("sequential-dispatch: buildSequentialShellCommand shell-quotes", () => {
   const { command, skillPath } = buildSequentialShellCommand({
     task: { id: "t1", title: "X", role: "dev" },
