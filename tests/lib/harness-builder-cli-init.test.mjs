@@ -119,6 +119,13 @@ test("harness-builder-codex: SKILL.md documents operational workspace outputs", 
   assert.match(body, /scripts\/agent-task-ledger-check\.mjs/);
 });
 
+test("harness-builder-codex: SKILL.md operational roster includes integration developer", () => {
+  const body = readFileSync(CODEX_INIT_SKILL, "utf-8");
+
+  assert.match(body, /integration-dev/);
+  assert.match(body, /cross-stack wiring and API contracts/);
+});
+
 test("harness-builder-codex: config template is operational-only hook snippet", () => {
   const body = readFileSync(CODEX_CONFIG_TEMPLATE, "utf-8");
 
