@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { runReleaseAudit } from "../../scripts/release-audit.mjs";
@@ -18,10 +18,13 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.ok, true);
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
-  assert.equal(result.platforms.claude.checks.length, 37);
-  assert.equal(result.platforms.codex.checks.length, 44);
-  assert.match(result.platforms.claude.summary, /Claude: ok \(37\/37 checks\)/);
-  assert.match(result.platforms.codex.summary, /Codex: ok \(44\/44 checks\)/);
+  assert.equal(result.platforms.claude.checks.length, 38);
+  assert.equal(result.platforms.codex.checks.length, 45);
+  assert.match(result.platforms.claude.summary, /Claude: ok \(38\/38 checks\)/);
+  assert.match(result.platforms.codex.summary, /Codex: ok \(45\/45 checks\)/);
+  assert.ok(
+    result.platforms.claude.checks.some((check) => check.name === "public CLI scripts are executable with shebangs"),
+  );
   assert.ok(result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh exists"));
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "scripts/release-smoke.sh matches release contract"),
@@ -34,6 +37,9 @@ test("release audit reports Claude and Codex as independently ready", () => {
   );
   assert.ok(result.platforms.codex.checks.some((check) => check.name === "scripts/install-platform.sh exists"));
   assert.ok(
+    result.platforms.codex.checks.some((check) => check.name === "public CLI scripts are executable with shebangs"),
+  );
+  assert.ok(
     result.platforms.codex.checks.some((check) => check.name === "scripts/release-smoke.sh matches release contract"),
   );
   assert.ok(
@@ -42,6 +48,53 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.ok(
     result.platforms.codex.checks.some((check) => check.name === "scripts/release-fixture-smoke.mjs matches release contract"),
   );
+});
+
+test("release audit fails public CLI scripts without executable bits", () => {
+  const root = mkdtempSync(resolve(tmpdir(), "release-audit-executable-scripts-"));
+  writeRel(
+    root,
+    ".claude-plugin/marketplace.json",
+    JSON.stringify({
+      plugins: [
+        { name: "harness-builder" },
+        { name: "harness-floor" },
+        { name: "harness-thrift" },
+        { name: "harness-explore" },
+        { name: "harness-debug" },
+      ],
+    }),
+  );
+
+  for (const path of [
+    "scripts/doctor.mjs",
+    "scripts/harness-clean.mjs",
+    "scripts/release-audit.mjs",
+    "scripts/release-fixture-smoke.mjs",
+    "scripts/sync-lib.mjs",
+  ]) {
+    writeRel(root, path, "#!/usr/bin/env node\n");
+    chmodSync(resolve(root, path), 0o755);
+  }
+  for (const path of [
+    "scripts/install-all.sh",
+    "scripts/install-platform.sh",
+    "scripts/release-smoke.sh",
+    "scripts/update.sh",
+  ]) {
+    writeRel(root, path, "#!/usr/bin/env bash\n");
+    chmodSync(resolve(root, path), 0o755);
+  }
+  chmodSync(resolve(root, "scripts/release-smoke.sh"), 0o644);
+
+  const result = runReleaseAudit({ root, platforms: ["claude"] });
+
+  assert.equal(result.ok, false);
+  const failed = result.platforms.claude.checks.find(
+    (check) => !check.ok && check.name === "public CLI scripts are executable with shebangs",
+  );
+  assert.ok(failed, JSON.stringify(result.platforms.claude.checks, null, 2));
+  assert.match(failed.details, /non-executable: scripts\/release-smoke\.sh/);
 });
 
 test("release audit CLI emits machine-readable JSON", () => {

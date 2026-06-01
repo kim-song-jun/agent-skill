@@ -1,10 +1,22 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_PLATFORMS = ["claude", "codex"];
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+const PUBLIC_CLI_SCRIPTS = [
+  "scripts/doctor.mjs",
+  "scripts/harness-clean.mjs",
+  "scripts/install-all.sh",
+  "scripts/install-platform.sh",
+  "scripts/release-audit.mjs",
+  "scripts/release-fixture-smoke.mjs",
+  "scripts/release-smoke.sh",
+  "scripts/sync-lib.mjs",
+  "scripts/update.sh",
+];
 
 const RELEASE_SMOKE_CONTRACT = {
   file: "scripts/release-smoke.sh",
@@ -486,6 +498,7 @@ export function runReleaseAudit({ root = ROOT, platforms = DEFAULT_PLATFORMS } =
     const checks = [];
 
     checks.push(checkMarketplace(marketplace, contract.marketplacePlugins));
+    checks.push(checkExecutableScripts(root, PUBLIC_CLI_SCRIPTS));
     for (const file of contract.requiredFiles) {
       checks.push(checkExists(root, file));
     }
@@ -524,6 +537,38 @@ function checkMarketplace(marketplace, expectedPlugins) {
     ok: missing.length === 0,
     name: `marketplace lists ${expectedPlugins.join(", ")}`,
     details: missing.length === 0 ? "all present" : `missing: ${missing.join(", ")}`,
+  };
+}
+
+function checkExecutableScripts(root, files) {
+  const missing = [];
+  const nonExecutable = [];
+  const missingShebang = [];
+
+  for (const file of files) {
+    const path = resolve(root, file);
+    if (!existsSync(path)) {
+      missing.push(file);
+      continue;
+    }
+    const stat = statSync(path);
+    if ((stat.mode & 0o111) === 0) {
+      nonExecutable.push(file);
+    }
+    const firstLine = readFileSync(path, "utf-8").split(/\r?\n/, 1)[0];
+    if (!firstLine.startsWith("#!")) {
+      missingShebang.push(file);
+    }
+  }
+
+  return {
+    ok: missing.length === 0 && nonExecutable.length === 0 && missingShebang.length === 0,
+    name: "public CLI scripts are executable with shebangs",
+    details: [
+      missing.length > 0 ? `missing: ${missing.join(", ")}` : null,
+      nonExecutable.length > 0 ? `non-executable: ${nonExecutable.join(", ")}` : null,
+      missingShebang.length > 0 ? `missing shebang: ${missingShebang.join(", ")}` : null,
+    ].filter(Boolean).join("; ") || "matched",
   };
 }
 
