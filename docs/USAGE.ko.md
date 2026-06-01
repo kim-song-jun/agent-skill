@@ -176,7 +176,7 @@ run /agent-all for "Hard refactor that needs second-opinion"
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --theme=debug
 ```
 
-기본 renderer 경로는 operational scaffold를 설치합니다. Claude가 아닌 플랫폼은 기본으로 무거운 builder + floor + thrift 번들을 설치하며, Codex `all`은 debug skill도 함께 설치합니다. `--theme=debug`는 `run /debug "<failing command>"`용 `.codex/skills/debug-codex/`, `.debug-artifacts/`, `docs/debug/`만 설치합니다. `--lang=ko|en|auto`는 생성된 루트 지침과 `.agent-all.json` language 값을 builder/floor 설치 전체에서 맞춥니다. `--lite`는 builder-only 경로이며 floor/thrift/debug 파일과 전역 Codex config 스니펫을 건너뜁니다. `--update-foundations`는 `scripts/update.sh --foundations-only`로 위임하고, `--dry-run`과 함께 쓰면 `claude` 호출 없이 승인된 계획만 출력합니다. Claude와 Codex `all`, `builder`, `--lite` 설치는 post-install doctor를 자동 실행하며, 검증을 의도적으로 미룰 때만 `--no-doctor`를 넘기세요.
+기본 renderer 경로는 operational scaffold를 설치합니다. Claude가 아닌 플랫폼은 기본으로 무거운 builder + floor + thrift 번들을 설치하며, Codex `all`은 debug skill도 함께 설치합니다. `--theme=debug`는 `run /debug "<failing command>"`용 `.codex/skills/debug-codex/`, `.debug-artifacts/`, `docs/debug/`만 설치합니다. `--lang=ko|en|auto`는 생성된 루트 지침과 `.agent-all.json` language 값을 builder/floor 설치 전체에서 맞춥니다. `--lite`는 builder-only 경로이며 floor/thrift/debug 파일과 전역 Codex config 스니펫을 건너뜁니다. `--update-foundations`는 `scripts/update.sh --foundations-only`로 위임하고, `--dry-run`과 함께 쓰면 `claude` 호출 없이 승인된 계획만 출력합니다. Claude와 Codex `all`, `builder`, `--lite`, 그리고 Codex `--theme=debug` 설치는 post-install doctor를 자동 실행하며, 검증을 의도적으로 미룰 때만 `--no-doctor`를 넘기세요.
 
 수동 doctor 재실행:
 
@@ -185,9 +185,10 @@ node /path/to/harness-builder/bin/doctor.mjs --target=/path/to/my-project --plat
 node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex
 node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=builder
 node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=lite
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=debug
 ```
 
-source checkout에서 실행할 때는 `node /path/to/agent-skill/scripts/doctor.mjs ...` compatibility wrapper가 같은 검사를 수행합니다. doctor는 project-local Claude/Codex scaffold를 검증하고, `--profile=auto`일 때 operational/builder/lite profile을 자동 감지하며, 필수 artifact 누락은 non-zero exit로 보고하고 `superpowers` 또는 `context-mode`가 없으면 경고합니다.
+source checkout에서 실행할 때는 `node /path/to/agent-skill/scripts/doctor.mjs ...` compatibility wrapper가 같은 검사를 수행합니다. doctor는 project-local Claude/Codex scaffold를 검증하고, `--profile=auto`일 때 operational/builder/lite 또는 Codex debug profile을 자동 감지하며, 필수 artifact 누락은 non-zero exit로 보고하고 `superpowers` 또는 `context-mode`가 없으면 경고합니다.
 
 Claude/Codex uninstall과 cleanup:
 

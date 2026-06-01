@@ -93,6 +93,8 @@ test("doctor validates an installed Codex operational scaffold", () => {
     assert.equal(data.platform, "codex");
     assert.equal(data.profile, "operational");
     assert.ok(data.summary.passed >= 20, "expected a broad Codex operational check set");
+    assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug-codex/SKILL.md"), "operational doctor must validate debug skill");
+    assert.ok(data.checks.some((check) => check.path === "docs/debug/index.md"), "operational doctor must validate debug docs");
     assert.deepEqual(data.failures, []);
     assert.ok(data.warnings.some((warning) => /foundations missing: superpowers, context-mode/.test(warning.message)));
   } finally {
@@ -135,6 +137,83 @@ test("doctor accepts Codex lite but fails the same target when operational is re
 
     assert.notEqual(operational.status, 0, "lite scaffold must not satisfy operational checks");
     assert.match(`${operational.stdout}\n${operational.stderr}`, /\.codex\/skills\/agent-all-codex\/SKILL\.md|\.agent-all\.json/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("doctor validates a Codex debug-only scaffold without requiring builder files", () => {
+  const target = tmp("agent-skill-doctor-codex-debug-");
+  const home = tmp("agent-skill-doctor-codex-debug-home-");
+  try {
+    const install = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=debug",
+      "--no-doctor",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(install.status, 0, `stdout:\n${install.stdout}\nstderr:\n${install.stderr}`);
+
+    const auto = spawnSync(process.execPath, [
+      DOCTOR,
+      "--platform=codex",
+      `--target=${target}`,
+      "--json",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(auto.status, 0, `stdout:\n${auto.stdout}\nstderr:\n${auto.stderr}`);
+    const data = JSON.parse(auto.stdout);
+    assert.equal(data.ok, true);
+    assert.equal(data.profile, "debug");
+    assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug-codex/SKILL.md"));
+    assert.ok(!data.checks.some((check) => check.path === "AGENTS.md"), "debug profile must not require builder root guidance");
+
+    rmSync(resolve(target, ".codex/skills/debug-codex"), { recursive: true, force: true });
+    const broken = spawnSync(process.execPath, [
+      DOCTOR,
+      "--platform=codex",
+      "--profile=debug",
+      `--target=${target}`,
+      "--json",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.notEqual(broken.status, 0, "missing debug skill must fail debug doctor");
+    const brokenData = JSON.parse(broken.stdout);
+    assert.ok(brokenData.failures.some((failure) => failure.path === ".codex/skills/debug-codex/SKILL.md"));
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("doctor rejects the debug profile for Claude project scaffolds", () => {
+  const target = tmp("agent-skill-doctor-claude-debug-profile-");
+  try {
+    writeRel(target, "CLAUDE.md", "Claude project\n");
+
+    const res = spawnSync(process.execPath, [
+      DOCTOR,
+      "--platform=claude",
+      "--profile=debug",
+      `--target=${target}`,
+      "--json",
+    ], { encoding: "utf-8" });
+
+    assert.notEqual(res.status, 0, "Claude debug project bootstrap is not a doctor profile");
+    const data = JSON.parse(res.stdout);
+    assert.equal(data.ok, false);
+    assert.ok(data.failures.some((failure) => failure.path === "--profile" && /unknown profile: debug/.test(failure.message)));
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

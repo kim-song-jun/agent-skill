@@ -382,7 +382,7 @@ should_run_post_install_doctor() {
   if [ "$LITE" = "1" ]; then
     return 0
   fi
-  [ "$THEME" = "all" ] || [ "$THEME" = "builder" ]
+  [ "$THEME" = "all" ] || [ "$THEME" = "builder" ] || [ "$THEME" = "debug" ]
 }
 
 run_post_install_doctor() {
@@ -393,6 +393,8 @@ run_post_install_doctor() {
     profile="lite"
   elif [ "$THEME" = "builder" ]; then
     profile="builder"
+  elif [ "$THEME" = "debug" ]; then
+    profile="debug"
   fi
 
   echo

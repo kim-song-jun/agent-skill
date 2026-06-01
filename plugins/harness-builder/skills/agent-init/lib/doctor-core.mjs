@@ -104,6 +104,14 @@ export const CONTRACTS = {
       ".agent-all.json",
       ".thrift.json",
     ],
+    debugRequired: [
+      ".codex/skills/debug-codex/SKILL.md",
+      ".codex/skills/debug-codex/lib/error-parser.mjs",
+      ".codex/skills/debug-codex/lib/state-checkpoint.mjs",
+      ".codex/skills/debug-codex/phases/1-reproduce.md",
+      ".debug-artifacts",
+      "docs/debug/index.md",
+    ],
     jsonFiles: [
       ".visual-qa.json",
       ".agent-all.json",
@@ -114,6 +122,10 @@ export const CONTRACTS = {
       ".agent-all.json",
       ".visual-qa.json",
       ".thrift.json",
+    ],
+    debugMarkers: [
+      ".codex/skills/debug-codex/SKILL.md",
+      "docs/debug/index.md",
     ],
     builderMarkers: [
       ".codex/hooks/agent-policy-hook.mjs",
@@ -131,6 +143,11 @@ export const CONTRACTS = {
         path: ".codex/skills/qa-reviewer/SKILL.md",
         patterns: [/QA_AUDIT: passed/, /QA_AUDIT: failed/, /QA_AUDIT: skipped/],
       },
+      {
+        profiles: ["debug", "operational"],
+        path: ".codex/skills/debug-codex/SKILL.md",
+        patterns: [/^---\nname: debug-codex\n/m, /run \/debug/, /Debug complete/],
+      },
     ],
     qaPersonaPropagation: {
       rootPath: "AGENTS.md",
@@ -141,13 +158,14 @@ export const CONTRACTS = {
   },
 };
 
-export const USAGE = `Usage: doctor.mjs [--target=<dir>] [--platform=auto|claude|codex] [--profile=auto|operational|builder|lite] [--json] [--strict-foundations]
+export const USAGE = `Usage: doctor.mjs [--target=<dir>] [--platform=auto|claude|codex] [--profile=auto|operational|builder|lite|debug] [--json] [--strict-foundations]
 
 Checks a project-local agent-skill scaffold after install.
 
 Examples:
   node plugins/harness-builder/bin/doctor.mjs --target=. --platform=claude
   node plugins/harness-builder-codex/bin/doctor.mjs --target=. --platform=codex --profile=builder
+  node plugins/harness-builder-codex/bin/doctor.mjs --target=. --platform=codex --profile=debug
   node scripts/doctor.mjs --target=. --json`;
 
 export function runDoctor({
@@ -191,9 +209,10 @@ export function runDoctor({
   }
 
   const requiredFiles = [
-    ...contract.liteRequired,
+    ...(resolvedProfile === "debug" ? [] : contract.liteRequired),
     ...(["builder", "operational"].includes(resolvedProfile) ? contract.builderRequired : []),
     ...(resolvedProfile === "operational" ? contract.operationalRequired : []),
+    ...(["debug", "operational"].includes(resolvedProfile) ? (contract.debugRequired ?? []) : []),
   ];
 
   for (const rel of requiredFiles) {
@@ -312,7 +331,9 @@ function resolvePlatform(targetAbs, platform, failures) {
 
 function resolveProfile(targetAbs, contract, profile, failures) {
   if (profile !== "auto") {
-    if (profile === "operational" || profile === "builder" || profile === "lite") return profile;
+    const allowed = new Set(["operational", "builder", "lite"]);
+    if ((contract.debugRequired ?? []).length > 0) allowed.add("debug");
+    if (allowed.has(profile)) return profile;
     failures.push({
       type: "usage",
       path: "--profile",
@@ -325,6 +346,9 @@ function resolveProfile(targetAbs, contract, profile, failures) {
   }
   if (contract.builderMarkers.some((rel) => existsSync(resolve(targetAbs, rel)))) {
     return "builder";
+  }
+  if ((contract.debugMarkers ?? []).some((rel) => existsSync(resolve(targetAbs, rel)))) {
+    return "debug";
   }
   return "lite";
 }

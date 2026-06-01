@@ -1011,6 +1011,9 @@ test("install-platform codex debug theme installs only debug artifacts and repor
     assert.match(res.stdout, /theme: debug/);
     assert.match(res.stdout, /\.codex\/skills\/debug-codex/);
     assert.match(res.stdout, /run \/debug/);
+    assert.match(res.stdout, /Post-install doctor/i);
+    assert.match(res.stdout, /harness doctor: ok/i);
+    assert.match(res.stdout, /profile: debug/i);
     assert.doesNotMatch(res.stdout, /AGENTS\.md|\.visual-qa\.json|\.agent-all\.json|\.thrift\.json|instrument:\s+no/);
     assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "debug theme must not patch global Codex config");
   } finally {

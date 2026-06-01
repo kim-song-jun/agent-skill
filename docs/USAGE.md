@@ -176,7 +176,7 @@ For a shell-driven install into a target repo, use the platform renderer. Claude
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --theme=debug
 ```
 
-The default renderer path installs the operational scaffold. Non-Claude platforms install the heavy builder + floor + thrift bundle by default, and Codex `all` also installs the debug skill. `--theme=debug` installs only `.codex/skills/debug-codex/`, `.debug-artifacts/`, and `docs/debug/` for `run /debug "<failing command>"`. `--lang=ko|en|auto` keeps generated root guidance and `.agent-all.json` language aligned across the builder/floor install. The `--lite` path is builder-only and skips floor/thrift/debug files plus global Codex config snippets. `--update-foundations` delegates to `scripts/update.sh --foundations-only`; with `--dry-run`, it prints the approved plan without calling `claude`. Claude and Codex `all`, `builder`, and `--lite` installs run the post-install doctor automatically; pass `--no-doctor` only when intentionally deferring validation.
+The default renderer path installs the operational scaffold. Non-Claude platforms install the heavy builder + floor + thrift bundle by default, and Codex `all` also installs the debug skill. `--theme=debug` installs only `.codex/skills/debug-codex/`, `.debug-artifacts/`, and `docs/debug/` for `run /debug "<failing command>"`. `--lang=ko|en|auto` keeps generated root guidance and `.agent-all.json` language aligned across the builder/floor install. The `--lite` path is builder-only and skips floor/thrift/debug files plus global Codex config snippets. `--update-foundations` delegates to `scripts/update.sh --foundations-only`; with `--dry-run`, it prints the approved plan without calling `claude`. Claude and Codex `all`, `builder`, `--lite`, and Codex `--theme=debug` installs run the post-install doctor automatically; pass `--no-doctor` only when intentionally deferring validation.
 
 Manual doctor re-run:
 
@@ -185,9 +185,10 @@ node /path/to/harness-builder/bin/doctor.mjs --target=/path/to/my-project --plat
 node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex
 node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=builder
 node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=lite
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=debug
 ```
 
-From a source checkout, `node /path/to/agent-skill/scripts/doctor.mjs ...` is the equivalent compatibility wrapper. The doctor validates the project-local Claude/Codex scaffold, auto-detects operational, builder, or lite profile when `--profile=auto`, exits non-zero for missing required artifacts, and warns when `superpowers` or `context-mode` are not installed.
+From a source checkout, `node /path/to/agent-skill/scripts/doctor.mjs ...` is the equivalent compatibility wrapper. The doctor validates the project-local Claude/Codex scaffold, auto-detects operational, builder, lite, or Codex debug profile when `--profile=auto`, exits non-zero for missing required artifacts, and warns when `superpowers` or `context-mode` are not installed.
 
 Claude/Codex uninstall and cleanup:
 
