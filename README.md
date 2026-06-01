@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-stable--cli--verification--pending-blue) ![tests](https://img.shields.io/badge/tests-1552%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-stable--cli--verification--pending-blue) ![tests](https://img.shields.io/badge/tests-1554%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..." --loop --qa` per feature; the agent brainstorms → plans → writes → tests → **visually QAs every page** → opens the PR — and keeps iterating until tests AND the UI both pass — without you babysitting every turn.
 
@@ -35,7 +35,7 @@ That's it. The rest of this README is reference material — skim the parts you 
 - **git** — required by `/agent-init`, `/agent-all`, and `/explore` (HEAD-keyed cache)
 - **gh CLI** (optional) — for `/agent-all` Phase 5 PR creation; without it, `/agent-all` falls back to `--no-pr` mode
 - **For Claude Code**: marketplace plugin support (any recent build)
-- **For per-platform install**: target CLI installed (Cursor, gh copilot, codex, gemini) AND its config dir writable
+- **For per-platform project renderers**: writable target project directory. Target CLIs are only needed when you run the generated workflows; `install-platform.sh` does not patch global CLI config files.
 
 Strongly recommended (the harness composes on top of these — degrades gracefully if missing):
 
@@ -102,7 +102,7 @@ That single command updates everything **already installed** from this marketpla
 bash <(curl -fsSL https://raw.githubusercontent.com/kim-song-jun/agent-skill/main/scripts/update.sh)
 ```
 
-Self-locates the repo (or clones into a temp dir), pulls latest, verifies vendored libs (`sync-lib.mjs --check`), and re-runs `install-all.sh`. Pass `--all` for all 17 plugins or `--cli=cursor|copilot|codex|gemini` for one platform set.
+`scripts/update.sh` self-locates the repo (or clones into a temp dir), pulls latest, verifies vendored libs (`sync-lib.mjs --check`), force-updates already-installed selected plugins by uninstalling/reinstalling them, then re-runs `install-all.sh` for anything missing. Pass `--all` for all 17 plugins or `--cli=cursor|copilot|codex|gemini` for one platform set. It does not patch global CLI config files.
 
 For other CLIs without a marketplace, see [Updating on other tools](#updating-on-other-tools).
 
@@ -466,7 +466,7 @@ cd /tmp/agent-skill
 ./scripts/install-platform.sh --platform=gemini --target=/path/to/my-project
 ```
 
-Default installs all three themes (builder + floor + thrift). Use `--theme=floor` or `--theme=thrift` to install just one.
+Default installs all three themes (builder + floor + thrift). Use `--theme=floor` or `--theme=thrift` to install just one. `install-platform.sh` writes project-local files and prints any global config snippets to stdout; it does not patch global CLI config files.
 
 ### What each platform receives
 
@@ -685,7 +685,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 | Layer | Status | Note |
 |---|---|---|
-| Unit/integration tests | ✅ **1552/1552 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, and visual-qa regressions |
+| Unit/integration tests | ✅ **1554/1554 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, and visual-qa regressions |
 | Install renderers (5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
 | Marketplace registration | ✅ 17 plugins listed | sync between local + origin |
 | Claude Code skills | ✅ ship today | core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug` |
@@ -728,7 +728,7 @@ MIT License. PRs welcome — open an issue first for design discussion on anythi
 
 Before submitting:
 ```bash
-node --test                              # 1552/1552 must pass
+node --test                              # 1554/1554 must pass
 node scripts/sync-lib.mjs --check        # vendored render.mjs copies in sync
 ```
 

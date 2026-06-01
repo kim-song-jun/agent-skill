@@ -144,6 +144,94 @@ fi
   assert.equal(readFileSync(argsFile, "utf-8"), "");
 });
 
+test("codex update force-refreshes installed Codex plugins before install-all delegation", () => {
+  const fakeRepo = mkdtempSync(join(tmpdir(), "agent-skill-update-codex-"));
+  const scriptsDir = join(fakeRepo, "scripts");
+  const binDir = join(fakeRepo, "bin");
+  const claudeLog = join(fakeRepo, "claude.log");
+  const argsFile = join(fakeRepo, "install-args.txt");
+  const installedDir = join(fakeRepo, ".claude/plugins");
+
+  mkdirSync(scriptsDir, { recursive: true });
+  mkdirSync(binDir, { recursive: true });
+  mkdirSync(installedDir, { recursive: true });
+  mkdirSync(join(fakeRepo, ".git"));
+  copyFileSync(scriptPath, join(scriptsDir, "update.sh"));
+  writeFileSync(
+    join(installedDir, "installed_plugins.json"),
+    JSON.stringify({
+      "harness-builder-codex@agent-skill": {},
+      "harness-floor-codex@agent-skill": {},
+      "harness-thrift-codex@agent-skill": {},
+      "harness-builder@agent-skill": {},
+    }),
+  );
+
+  writeExecutable(
+    join(binDir, "git"),
+    `#!/usr/bin/env bash
+set -euo pipefail
+if [ "\${1:-}" = "-C" ]; then
+  shift 2
+fi
+case "\${1:-}" in
+  pull)
+    exit 0
+    ;;
+  rev-parse)
+    echo main
+    exit 0
+    ;;
+esac
+exit 0
+`,
+  );
+  writeExecutable(join(binDir, "node"), "#!/usr/bin/env bash\nexit 0\n");
+  writeExecutable(
+    join(binDir, "claude"),
+    `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${claudeLog}"
+exit 0
+`,
+  );
+  writeExecutable(
+    join(scriptsDir, "install-all.sh"),
+    `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$@" > "${argsFile}"
+`,
+  );
+
+  const result = spawnSync("bash", [join(scriptsDir, "update.sh"), "--cli=codex"], {
+    cwd: fakeRepo,
+    env: {
+      ...process.env,
+      PATH: `${binDir}:${process.env.PATH}`,
+      HOME: fakeRepo,
+    },
+    encoding: "utf-8",
+  });
+
+  assert.equal(
+    result.status,
+    0,
+    `update.sh should exit 0\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+  );
+  assert.equal(readFileSync(argsFile, "utf-8"), "--cli=codex\n");
+
+  const log = readFileSync(claudeLog, "utf-8");
+  for (const plugin of [
+    "harness-builder-codex@agent-skill",
+    "harness-floor-codex@agent-skill",
+    "harness-thrift-codex@agent-skill",
+  ]) {
+    assert.match(log, new RegExp(`plugin uninstall ${plugin}`));
+    assert.match(log, new RegExp(`plugin install ${plugin}`));
+  }
+  assert.doesNotMatch(log, /plugin uninstall harness-builder@agent-skill/);
+});
+
 function writeExecutable(path, content) {
   writeFileSync(path, content);
   chmodSync(path, 0o755);

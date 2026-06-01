@@ -20,12 +20,27 @@ test("usage docs present --lite as canonical and retire Codex agent-hook hard-en
 test("readme files describe the current Codex config surface and current test count", () => {
   for (const path of ["README.md", "README.ko.md"]) {
     const body = read(path);
-    assert.match(body, /1552\/1552/);
+    assert.match(body, /1554\/1554/);
     assert.doesNotMatch(body, /1279\/1279|1279\+|1279%20passing/);
+    assert.doesNotMatch(body, /1552\/1552|1552%20passing/);
     assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
     assert.match(body, /\[\[hooks\.PreToolUse\]\]|\[mcp_servers\.playwright\]/);
     assert.match(body, /Codex CLI[\s\S]{0,320}(prompt-level|sequential|프롬프트|순차)/i);
   }
+});
+
+test("readme files describe release-safe update and per-platform install paths", () => {
+  const english = read("README.md");
+  assert.match(english, /scripts\/update\.sh[\s\S]{0,420}force-updates already-installed selected plugins/i);
+  assert.match(english, /--cli=cursor\|copilot\|codex\|gemini/);
+  assert.match(english, /install-platform\.sh[\s\S]{0,420}does not patch global CLI config files/i);
+  assert.doesNotMatch(english, /target CLI installed.*config dir writable/i);
+
+  const korean = read("README.ko.md");
+  assert.match(korean, /scripts\/update\.sh[\s\S]{0,520}이미 설치된 선택 플러그인을 강제 업데이트/i);
+  assert.match(korean, /--cli=cursor\|copilot\|codex\|gemini/);
+  assert.match(korean, /install-platform\.sh[\s\S]{0,520}전역 CLI config 파일을 패치하지 않음/i);
+  assert.doesNotMatch(korean, /config dir writable/i);
 });
 
 test("Codex plugin READMEs match the implemented operational and sequential floor ports", () => {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Update agent-skill in place — pulls latest from origin, syncs vendored
-# libs, and re-runs install-all.sh so all your installed plugins move to
+# libs, and re-runs install-all.sh so selected installed plugins move to
 # the newest commit on the active branch.
 #
 # Usage (from anywhere — script self-locates the repo root):
@@ -17,6 +17,7 @@
 set -euo pipefail
 
 DRY_RUN=0
+MODE="claude-code"
 PASSTHROUGH=()
 for arg in "$@"; do
   case "$arg" in
@@ -24,7 +25,28 @@ for arg in "$@"; do
       DRY_RUN=1
       PASSTHROUGH+=("$arg")
       ;;
-    --all|--cli=codex|--cli=copilot|--cli=gemini|--cli=cursor|--claude-code)
+    --all)
+      MODE="all"
+      PASSTHROUGH+=("$arg")
+      ;;
+    --claude-code)
+      MODE="claude-code"
+      PASSTHROUGH+=("$arg")
+      ;;
+    --cli=codex)
+      MODE="cli-codex"
+      PASSTHROUGH+=("$arg")
+      ;;
+    --cli=copilot)
+      MODE="cli-copilot"
+      PASSTHROUGH+=("$arg")
+      ;;
+    --cli=gemini)
+      MODE="cli-gemini"
+      PASSTHROUGH+=("$arg")
+      ;;
+    --cli=cursor)
+      MODE="cli-cursor"
       PASSTHROUGH+=("$arg")
       ;;
     *)
@@ -46,7 +68,7 @@ else
 fi
 echo "  - verify vendored libs match canonical sources"
 echo "  - refresh agent-skill marketplace cache"
-echo "  - force-update already-installed Claude Code foundation plugins"
+echo "  - force-update already-installed selected plugins"
 echo "  - install any missing selected platform plugins through install-all.sh"
 if [ "${#PASSTHROUGH[@]}" -gt 0 ]; then
   echo "  - forward install/platform flags: ${PASSTHROUGH[*]}"
@@ -86,10 +108,36 @@ claude plugin marketplace update agent-skill 2>&1 | tail -1 || true
 # must uninstall first, then install. Skip uninstall for plugins that
 # weren't already installed (treat update as install).
 MARKETPLACE="agent-skill"
-PLUGINS=(harness-builder harness-floor harness-thrift harness-explore harness-debug)
+CLAUDE_CODE_NATIVE=(
+  "harness-builder"
+  "harness-floor"
+  "harness-thrift"
+  "harness-explore"
+  "harness-debug"
+)
+CLI_PORTS_CODEX=("harness-builder-codex" "harness-floor-codex" "harness-thrift-codex")
+CLI_PORTS_COPILOT=("harness-builder-copilot" "harness-floor-copilot" "harness-thrift-copilot")
+CLI_PORTS_GEMINI=("harness-builder-gemini" "harness-floor-gemini" "harness-thrift-gemini")
+CLI_PORTS_CURSOR=("harness-builder-cursor" "harness-floor-cursor" "harness-thrift-cursor")
+ALL_PLUGINS=(
+  "${CLAUDE_CODE_NATIVE[@]}"
+  "${CLI_PORTS_CODEX[@]}"
+  "${CLI_PORTS_COPILOT[@]}"
+  "${CLI_PORTS_GEMINI[@]}"
+  "${CLI_PORTS_CURSOR[@]}"
+)
+
+case "$MODE" in
+  claude-code) PLUGINS=("${CLAUDE_CODE_NATIVE[@]}") ;;
+  cli-codex)   PLUGINS=("${CLI_PORTS_CODEX[@]}") ;;
+  cli-copilot) PLUGINS=("${CLI_PORTS_COPILOT[@]}") ;;
+  cli-gemini)  PLUGINS=("${CLI_PORTS_GEMINI[@]}") ;;
+  cli-cursor)  PLUGINS=("${CLI_PORTS_CURSOR[@]}") ;;
+  all)         PLUGINS=("${ALL_PLUGINS[@]}") ;;
+esac
 
 INSTALLED_JSON="$HOME/.claude/plugins/installed_plugins.json"
-echo "→ force-updating already-installed agent-skill plugins (uninstall + install)…"
+echo "→ force-updating already-installed selected agent-skill plugins (uninstall + install)…"
 for p in "${PLUGINS[@]}"; do
   key="${p}@${MARKETPLACE}"
   if [ -f "$INSTALLED_JSON" ] && grep -q "\"${key}\"" "$INSTALLED_JSON" 2>/dev/null; then
