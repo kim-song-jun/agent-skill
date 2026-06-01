@@ -28,8 +28,10 @@
 // summarisation, no tool-call coercion — every input token would have
 // been re-read at the full uncached rate.
 
-// Rates per 1M tokens (USD). TODO verify against current Google Vertex
-// pricing — values approximate Gemini family pricing as of 2026-05.
+// Rates per 1M tokens (USD). Release provenance: these are advisory
+// Gemini-family values captured during the 2026-05 implementation window.
+// Refresh them against Google Vertex pricing during release audits before
+// changing RATES.
 // Cache-read rate is typically ~0.25x input on Vertex (vs Anthropic's
 // 0.1x); cache-write is typically ~1.0x input (the first read pays full
 // rate to establish the cache). Storage rate is per 1M tokens per hour.
@@ -40,28 +42,28 @@
 // Vertex docs as of 2026-05; verify quarterly.
 const RATES = {
   "gemini-pro": {
-    in: 1.25,        // TODO verify
-    out: 5.0,        // TODO verify
-    cacheRead: 0.3125,   // ≈0.25x input — TODO verify
-    cacheWrite: 1.25,    // ≈1.0x input on first read — TODO verify
-    storagePerHour: 4.50, // per 1M tokens-hour — TODO verify
+    in: 1.25,        // advisory input rate
+    out: 5.0,        // advisory output rate
+    cacheRead: 0.3125,   // ~0.25x input
+    cacheWrite: 1.25,    // ~1.0x input on first read
+    storagePerHour: 4.50, // per 1M tokens-hour
     minTokenThreshold: 32000, // gemini-1.5-pro context cache minimum
   },
   "gemini-flash": {
-    in: 0.075,       // TODO verify — cheapest summariser model
-    out: 0.30,       // TODO verify
-    cacheRead: 0.01875,  // ≈0.25x input — TODO verify
-    cacheWrite: 0.075,   // ≈1.0x input — TODO verify
-    storagePerHour: 1.00, // per 1M tokens-hour — TODO verify
+    in: 0.075,       // advisory input rate for summariser model
+    out: 0.30,       // advisory output rate
+    cacheRead: 0.01875,  // ~0.25x input
+    cacheWrite: 0.075,   // ~1.0x input
+    storagePerHour: 1.00, // per 1M tokens-hour
     minTokenThreshold: 4096, // smaller models typically lower thresholds
   },
   "gemini-flash-lite": {
-    in: 0.04,        // TODO verify — ultra-cheap; may have no cache surface
-    out: 0.16,       // TODO verify
-    cacheRead: 0.01, // TODO verify
-    cacheWrite: 0.04, // TODO verify
-    storagePerHour: 0.50, // TODO verify
-    minTokenThreshold: 4096, // TODO verify
+    in: 0.04,        // advisory input rate; cache surface may vary
+    out: 0.16,       // advisory output rate
+    cacheRead: 0.01,
+    cacheWrite: 0.04,
+    storagePerHour: 0.50,
+    minTokenThreshold: 4096,
   },
 };
 

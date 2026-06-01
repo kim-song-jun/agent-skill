@@ -314,7 +314,7 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.doesNotMatch(spec, /pending written-spec review/i);
 });
 
-test("plugin READMEs describe release surfaces without MVP/deferred wording", () => {
+test("plugin release docs describe release surfaces without MVP/deferred wording", () => {
   const checks = [
     {
       path: "plugins/harness-thrift/README.md",
@@ -347,6 +347,20 @@ test("plugin READMEs describe release surfaces without MVP/deferred wording", ()
       body,
       /MVP scope|this iteration|Live .*verification deferred|decomposition spec deferred|scaffolded per|TODO verify|scaffold-only|TBD|placeholder/i,
       `${path} has stale release wording`,
+    );
+  }
+
+  for (const path of [
+    "plugins/harness-thrift-gemini/skills/thrift-gemini/lib/cost-estimator.mjs",
+    "plugins/harness-thrift-gemini/skills/thrift-gemini/phases/3-summariser.md",
+    "plugins/harness-thrift-gemini/skills/thrift-gemini/phases/4-cache-prime.md",
+    "plugins/harness-thrift-gemini/skills/thrift-gemini/references/porting-notes.md",
+  ]) {
+    const body = read(path);
+    assert.doesNotMatch(
+      body,
+      /TODO verify|currently marked/i,
+      `${path} must use release-audit provenance wording instead of TODO markers`,
     );
   }
 });

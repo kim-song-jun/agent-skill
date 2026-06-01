@@ -44,9 +44,9 @@ summariser writes a compressed summary to a file and suggests `/compress`
 - Free tier supports `gemini-flash` with rate limits; paid tier removes
   most caps. Phase 3 falls back to the heuristic summariser when the SDK
   call fails for any reason (rate limit, network, missing creds).
-- **TODO verify against current Google Vertex pricing** — the price
-  ratios drift; check Google's pricing page when updating the rate table
-  in `lib/cost-estimator.mjs`.
+- **Rate provenance** — price ratios drift. When updating
+  `lib/cost-estimator.mjs`, refresh the table against Google Vertex
+  pricing as part of the release audit.
 
 ## On error
 

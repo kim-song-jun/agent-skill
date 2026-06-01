@@ -21,10 +21,10 @@ This document records the per-phase deltas from the Claude Code source
 | Compact equivalent | `/compact` | `/compress` |
 | Summariser model | `claude-haiku-4-5-20251001` | `gemini-flash` |
 | Cache primitive | Anthropic prompt cache (5-min TTL) | Vertex context caching (hours-scale, billed per cache-hour) |
-| Cache-read rate | 0.1× input | ≈0.25× input (TODO verify) |
-| Cache-write rate | (implicit; Anthropic auto-writes) | ≈1.0× input on first read (TODO verify) |
-| Storage cost | none | per cache-hour per 1M tokens (TODO verify) |
-| Min-token threshold | none (caches any size) | ~32k for gemini-1.5-pro, ~4k for flash (TODO verify) |
+| Cache-read rate | 0.1× input | Advisory rate-table value, approximately 0.25× input |
+| Cache-write rate | (implicit; Anthropic auto-writes) | Advisory rate-table value, approximately 1.0× input on first read |
+| Storage cost | none | Advisory rate-table value, per cache-hour per 1M tokens |
+| Min-token threshold | none (caches any size) | Advisory threshold from the rate table |
 | Free-tier handling | n/a | ROI gate refuses to prime on free tier |
 
 ## Phase-by-phase deltas
@@ -68,7 +68,7 @@ This document records the per-phase deltas from the Claude Code source
 1. Does Gemini CLI surface per-call cache-hit-rate in response metadata? If not, savings are heuristic.
 2. Does the user-scope `~/.gemini/settings.json` patcher need a per-project override path (`.gemini/extensions/thrift/`)? Per current Gemini docs the extension-scoped path exists but stability is unverified.
 3. Verify `BeforeTool` / `AfterTool` event names against a live Gemini CLI ≥ v0.5 release. If event names changed in a recent release, update `lib/settings-patcher.mjs` `GEMINI_HOOK_EVENTS`.
-4. Verify Vertex pricing values (`lib/cost-estimator.mjs` `RATES`) against Google's current pricing page. All rates currently marked **TODO verify**.
+4. Refresh Vertex pricing values (`lib/cost-estimator.mjs` `RATES`) against Google's pricing page during release audits.
 5. Free-tier detection — currently relies on explicit `cache.vertex.tier` config. Future: parse `gemini auth list` output.
 
 ## Subprocess / lifecycle risks

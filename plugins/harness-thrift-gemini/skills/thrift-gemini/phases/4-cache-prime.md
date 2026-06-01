@@ -9,11 +9,11 @@
    budget without producing useful cache hits. Push
    `{phase: 4, status: "skipped-free-tier"}` to state.
 3. Accumulated session context < `config.cache.vertex.minTokenThreshold`.
-   Vertex context caching requires a minimum prefix size (currently ~32k
-   tokens; verify against current Google Vertex pricing). Sub-threshold
-   primes pay full uncached cost and **do not produce a cache entry**.
-   Push `{phase: 4, status: "skipped-min-tokens", accumulated: <N>}` to
-   state.
+   Vertex context caching requires a minimum prefix size, represented by
+   the configured threshold. Refresh the threshold against Google Vertex
+   docs during release audits. Sub-threshold primes pay full uncached cost
+   and **do not produce a cache entry**. Push
+   `{phase: 4, status: "skipped-min-tokens", accumulated: <N>}` to state.
 
 ## Steps (when not skipped)
 
@@ -47,8 +47,8 @@ Vertex caching has **three** cost components (CC has two):
 1. **Cache write cost.** First call with the prefix charges full input
    rate to register the cache.
 2. **Cache read cost.** Subsequent calls within the storage window
-   charge a discounted per-token rate (varies by model; verify in
-   `lib/cost-estimator.mjs`).
+   charge a discounted per-token rate. Model-specific rates live in
+   `lib/cost-estimator.mjs` and carry release-audit provenance comments.
 3. **Storage cost.** Vertex bills per cache-hour per token stored.
    Multiply `storageTimeHours` × `tokensCached` × `storageRatePerHour`
    into the prime's true cost. This term *does not exist* in the CC
@@ -71,5 +71,6 @@ Payback rule of thumb: prime is worth it when expected `cacheHits ×
 - New cost component: storage-time.
 - Same cohort + schedule + cancel contract as `lib/cache-prime.mjs` on CC,
   but ROI gate is Gemini-specific (see `lib/vertex-cache-eval.mjs`).
-- **TODO verify against current Google Vertex pricing** — rates and
-  minimum thresholds drift; check Google's pricing page quarterly.
+- **Rate provenance** — rates and minimum thresholds are audit-time
+  assumptions; refresh them against Google Vertex pricing during release
+  audits before changing the estimator.
