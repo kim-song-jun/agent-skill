@@ -277,7 +277,7 @@ print_install_summary() {
       ;;
     codex:floor)
       echo "  - .visual-qa.json, .agent-all.json, .codex/skills/{agent-all-codex,visual-qa-codex,visual-qa-page}/"
-      echo "  - Note: Playwright MCP and Codex floor snippets were printed to stdout for manual merge"
+      echo "  - Note: Playwright MCP snippet and Codex floor guidance were printed to stdout for manual merge"
       ;;
     codex:thrift)
       echo "  - .thrift.json, .codex/hooks/thrift-*.toml"

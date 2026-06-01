@@ -295,6 +295,54 @@ test("install-platform codex thrift theme installs only thrift artifacts and rep
   }
 });
 
+test("install-platform codex floor theme installs only floor artifacts and reports them", () => {
+  const target = tmp("agent-skill-release-codex-floor-target-");
+  const home = tmp("agent-skill-release-codex-floor-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=floor",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    for (const rel of [
+      ".visual-qa.json",
+      ".agent-all.json",
+      ".codex/skills/agent-all-codex/SKILL.md",
+      ".codex/skills/visual-qa-codex/SKILL.md",
+      ".codex/skills/visual-qa-page/SKILL.md",
+    ]) {
+      assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
+    }
+    for (const rel of [
+      "AGENTS.md",
+      "docs/tasks/index.md",
+      ".thrift.json",
+      ".codex/skills/planner/SKILL.md",
+      ".codex/skills/orchestrator/SKILL.md",
+      ".codex/hooks/agent-policy-hook.mjs",
+      ".codex/hooks/thrift-pretool-bash-telemetry.toml",
+    ]) {
+      assert.ok(!existsSync(resolve(target, rel)), `unexpected floor artifact ${rel}`);
+    }
+
+    assert.match(res.stdout, /theme: floor/);
+    assert.match(res.stdout, /\[mcp_servers\.playwright\]/);
+    assert.match(res.stdout, /No hook snippet is emitted for agent-all-codex/i);
+    assert.match(res.stdout, /Playwright MCP snippet and Codex floor guidance were printed to stdout for manual merge/);
+    assert.doesNotMatch(res.stdout, /AGENTS\.md|docs\/tasks|\.thrift\.json|instrument:\s+no/);
+    assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "floor theme must not patch global Codex config via install-platform");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test("install-platform codex all emits only dispatchable floor skill roles", () => {
   const target = tmp("agent-skill-release-codex-graph-target-");
   const home = tmp("agent-skill-release-codex-graph-home-");
