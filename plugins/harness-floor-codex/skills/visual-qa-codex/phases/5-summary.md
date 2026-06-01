@@ -10,4 +10,7 @@
    Report: <slug-dir>/report.md
    ```
 2. Push `{phase: 5, completedAt}` to state.
-3. Exit code: 0 if no critical, 1 otherwise.
+3. Exit code branches by mode:
+   - **Comprehensive mode:** exit 0 when `state.verdict.pass` is true,
+     otherwise exit 1. Print `Verdict: <pass|fail> — <state.verdict.reason>`.
+   - **Declared mode:** exit 0 if no critical issues, otherwise exit 1.
