@@ -142,6 +142,7 @@ export function runReleaseFixtureSmoke({ root = ROOT } = {}) {
     claudeMarketplace: checkClaudeMarketplace(root),
     claudeRendered: checkClaudeRendered(root),
     claudeLite: checkClaudeLite(root),
+    claudePlatform: checkClaudePlatformInstall(root),
     codexOperational: checkCodexOperational(root),
     codexLite: checkCodexLite(root),
     codexDebug: checkCodexDebug(root),
@@ -294,6 +295,58 @@ function checkClaudeLite(root) {
       details: ok
         ? "fresh Claude init produced lite root memory, minimal agents, post-install doctor, and non-policy hooks only"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failed]),
+    };
+  });
+}
+
+function checkClaudePlatformInstall(root) {
+  return withFixture("agent-skill-release-claude-platform-", ({ target, home }) => {
+    initGit(target);
+    const ctx = {
+      purpose: "Release platform wrapper app",
+      deploy_targets: "vercel",
+      constraints: "",
+      language: "en",
+      qa_personas: ["auth"],
+      baseUrl: "http://localhost:3000",
+      model: "claude-sonnet-4-6",
+      maxIter: 10,
+      maxCostUSD: 500,
+      waveSize: "large",
+      breakCondition: "npm test",
+    };
+    writeFile(target, "_ctx.json", `${JSON.stringify(ctx, null, 2)}\n`);
+    const res = runInstallPlatform(root, target, home, ["--ctx", resolve(target, "_ctx.json")], "claude");
+
+    const missing = missingFiles(target, CLAUDE_RENDER_PRESENT);
+    const settings = parseJsonFile(resolve(target, ".claude/settings.local.json"), "settings.local.json");
+    const agentAll = parseJsonFile(resolve(target, ".agent-all.json"), ".agent-all.json");
+    const homeSettings = resolve(home, ".claude/settings.local.json");
+    const claude = readIfExists(resolve(target, "CLAUDE.md"));
+    const settingsText = JSON.stringify(settings.value || {});
+    const stdoutChecks = [
+      ["reports Claude platform install", /Installing for claude/i.test(res.stdout)],
+      ["runs operational-profile doctor", /profile:\s+operational/i.test(res.stdout)],
+      ["post-install doctor passes", /harness doctor: ok/i.test(res.stdout)],
+      ["CLAUDE.md includes role gate matrix", /Role Gate Matrix/.test(claude)],
+      ["CLAUDE.md includes configured QA persona", /Configured QA Personas[\s\S]{0,120}auth/.test(claude)],
+      ["settings registers policy hook", settingsText.includes("agent-policy-hook.mjs")],
+      ["agent-all language is aligned", agentAll.value?.language === "en"],
+    ];
+    const failed = [
+      ...settings.errors,
+      ...agentAll.errors,
+      ...stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name),
+      existsSync(homeSettings) ? "unexpected ~/.claude/settings.local.json" : null,
+    ].filter(Boolean);
+    const ok = res.status === 0 && missing.length === 0 && failed.length === 0;
+
+    return {
+      ok,
+      summary: `Claude platform fixture: ${ok ? "ok" : "failed"} (${CLAUDE_RENDER_PRESENT.length - missing.length}/${CLAUDE_RENDER_PRESENT.length} artifacts)`,
+      details: ok
+        ? "fresh terminal install-platform Claude fixture produced operational scaffold, post-install Claude platform doctor coverage, role gate matrix, QA persona propagation, and no HOME patching"
+        : compactFailure(res, [...missing, ...failed]),
     };
   });
 }
@@ -695,10 +748,10 @@ function initGit(target) {
   }
 }
 
-function runInstallPlatform(root, target, home, extraArgs) {
+function runInstallPlatform(root, target, home, extraArgs, platform = "codex") {
   return spawnSync("/bin/bash", [
     resolve(root, "scripts/install-platform.sh"),
-    "--platform=codex",
+    `--platform=${platform}`,
     `--target=${target}`,
     "--no-update-foundations",
     ...extraArgs,

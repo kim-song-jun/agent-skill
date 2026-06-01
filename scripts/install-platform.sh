@@ -459,7 +459,11 @@ run_builder_init() {
     if [ "$NO_DOCTOR" = "1" ]; then
       args+=(--no-doctor)
     fi
-    run_init "harness-builder" "init.mjs" "${args[@]}"
+    if [ "${#args[@]}" -gt 0 ]; then
+      run_init "harness-builder" "init.mjs" "${args[@]}"
+    else
+      run_init "harness-builder" "init.mjs"
+    fi
     return 0
   fi
   if [ "$VS_CODE_COPILOT" = "1" ]; then

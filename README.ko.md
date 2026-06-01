@@ -711,7 +711,7 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 | Project install 렌더러 (Claude + 5개 플랫폼) | ✅ end-to-end 검증 | `install-all.sh` + `install-platform.sh` |
 | 마켓플레이스 등록 | ✅ 18 플러그인 등록 | local + origin 동기화 |
 | Claude/Codex skills | ✅ 오늘 출시 | Claude core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug`; Codex는 `harness-debug-codex` 추가 |
-| Claude/Codex CLI 런타임 | ✅ live smoke probe 가능 | `./scripts/release-smoke.sh --fast --with-live-cli`이 설치된 `claude`/`codex` 버전과 Codex `exec [PROMPT]` 지원을 probe함; release fixture smoke도 설치된 Codex `agent-all-codex` 및 `visual-qa-codex` sequential helper를 import하고 Codex debug-only fixture를 검증 |
+| Claude/Codex CLI 런타임 | ✅ live smoke probe 가능 | `./scripts/release-smoke.sh --fast --with-live-cli`이 설치된 `claude`/`codex` 버전과 Codex `exec [PROMPT]` 지원을 probe함; release fixture smoke도 Claude 터미널 `install-platform.sh --platform=claude` 경로를 검증하고, 설치된 Codex `agent-all-codex` 및 `visual-qa-codex` sequential helper를 import하며 Codex debug-only fixture를 검증 |
 | 기타 CLI 런타임 | ⚠️ 수동 검증 유지 | Cursor/Copilot/Gemini 런타임 체크는 `docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md` 체크리스트에 유지 |
 | `/thrift` v2 programmatic compact | ⏳ 연기 | Claude Code의 programmatic compact API 대기 |
 | Anthropic/OpenAI/Vertex SDK 연결 | ⏳ 연기 | 현재 mock toolCaller; 프로덕션 연결은 peer dep 필요 |

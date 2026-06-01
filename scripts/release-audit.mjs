@@ -168,6 +168,18 @@ const PLATFORM_CONTRACTS = {
           /args\+=\(--no-doctor\)/,
         ],
       },
+      {
+        file: "scripts/release-fixture-smoke.mjs",
+        patterns: [
+          /checkClaudePlatformInstall/,
+          /--platform=\$\{platform\}/,
+          /reports Claude platform install/,
+          /profile:\\s\+operational/,
+          /harness doctor: ok/,
+          /post-install Claude platform doctor coverage/,
+          /no HOME patching/,
+        ],
+      },
     ],
   },
   codex: {
