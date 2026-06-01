@@ -2,11 +2,11 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1716%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1718%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-18-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..." --loop --qa` per feature; the agent brainstorms → plans → writes → tests → **visually QAs every page** → opens the PR — and keeps iterating until tests AND the UI both pass — without you babysitting every turn.
 
-Works on Claude Code today, with cross-platform ports for **Cursor, GitHub Copilot CLI, VS Code Copilot, Codex CLI, and Gemini CLI**. 17 plugins, 5 slash commands, one marketplace.
+Works on Claude Code today, with cross-platform ports for **Cursor, GitHub Copilot CLI, VS Code Copilot, Codex CLI, and Gemini CLI**. 18 plugins, 5 slash commands, one marketplace.
 
 ```
 /agent-init                                  # bootstrap any git repo (Phase A — once per project)
@@ -62,7 +62,7 @@ git clone https://github.com/kim-song-jun/agent-skill /tmp/agent-skill
 bash /tmp/agent-skill/scripts/install-all.sh --foundations
 ```
 
-Installs all 5 Claude Code essentials plus the approved foundations (`superpowers@claude-plugins-official`, `context-mode@context-mode`) at once via the `claude` CLI. Run `--all` for all 17 plugins (CLI-platform siblings too), `--cli=codex|copilot|gemini|cursor` for a single platform set, or `--foundations-only` to bootstrap just the foundations. Add `--dry-run` to print the exact plan without calling `claude`.
+Installs all 5 Claude Code essentials plus the approved foundations (`superpowers@claude-plugins-official`, `context-mode@context-mode`) at once via the `claude` CLI. Run `--all` for all 18 plugins (CLI-platform siblings too), `--cli=codex|copilot|gemini|cursor` for a single platform set, or `--foundations-only` to bootstrap just the foundations. Add `--dry-run` to print the exact plan without calling `claude`.
 
 ### Option B: paste into Claude Code
 
@@ -110,7 +110,7 @@ That single command updates everything **already installed** from this marketpla
 bash <(curl -fsSL https://raw.githubusercontent.com/kim-song-jun/agent-skill/main/scripts/update.sh)
 ```
 
-`scripts/update.sh` self-locates the repo (or clones into a temp dir), pulls latest, verifies vendored libs (`sync-lib.mjs --check`), force-updates already-installed selected plugins by uninstalling/reinstalling them, then re-runs `install-all.sh` for anything missing. Pass `--all` for all 17 plugins or `--cli=cursor|copilot|codex|gemini` for one platform set. It does not patch global CLI config files.
+`scripts/update.sh` self-locates the repo (or clones into a temp dir), pulls latest, verifies vendored libs (`sync-lib.mjs --check`), force-updates already-installed selected plugins by uninstalling/reinstalling them, then re-runs `install-all.sh` for anything missing. Pass `--all` for all 18 plugins or `--cli=cursor|copilot|codex|gemini` for one platform set. It does not patch global CLI config files.
 
 Use `scripts/update.sh --foundations` when you also want to refresh the approved foundation plugins: `superpowers@claude-plugins-official` and `context-mode@context-mode`. Use `scripts/update.sh --foundations-only` to update/install only the approved foundation plugins without touching agent-skill plugin selections.
 
@@ -118,13 +118,14 @@ For other CLIs without a marketplace, see [Updating on other tools](#updating-on
 
 ### Install newly added plugins
 
-Important: `/plugin update` only updates plugins you've already installed. The marketplace can grow over time (we added 6 new plugins on 2026-05-18 alone — `harness-thrift`, `harness-explore`, `harness-debug`, plus 3 thrift CLI ports). To pick those up:
+Important: `/plugin update` only updates plugins you've already installed. The marketplace can grow over time (for example, `harness-debug-codex` was added after the first Claude-native debug release). To pick those up:
 
 ```
 /plugin marketplace update agent-skill        # refresh the listing
 /plugin install harness-thrift@agent-skill    # install each new plugin you want
 /plugin install harness-explore@agent-skill
 /plugin install harness-debug@agent-skill
+/plugin install harness-debug-codex@agent-skill
 /reload-plugins                               # apply
 ```
 
@@ -515,7 +516,7 @@ Each tool invokes skills its own way. The harness is the same; the entry point d
 | **Codex CLI** | `codex` → it loads `AGENTS.md` and `.codex/skills/`; type `run /agent-all for ...` |
 | **Gemini CLI** | `gemini` → loads `GEMINI.md` and `.gemini/skills/`; type the workflow request |
 
-`/explore` and `/debug` ship for Claude Code only today — per-platform ports are deferred (specs at `docs/superpowers/specs/2026-05-18-harness-thrift-per-platform-decomposition.md` describe the work).
+`/explore` ships for Claude Code today. `/debug` ships for Claude Code and Codex CLI; Cursor/Copilot/Gemini debug ports remain on the porting roadmap.
 
 ---
 
@@ -611,7 +612,7 @@ agent-skill is a **higher-layer composition** on top of two foundational Claude 
                           │
         ┌──────────────────────────────────────────┐
         │  agent-skill (this repo)                 │
-        │  17 plugins, 5 themes (A/B/C/D/E)        │
+        │  18 plugins, 5 themes (A/B/C/D/E)        │
         └──────────────────────────────────────────┘
                 ▲                          ▲
                 │ wraps                    │ uses
@@ -699,8 +700,8 @@ Neither is **auto-invoked** by the harness, but both compose with it directly. S
 If you want the technical details, design specs, or are porting to a new platform:
 
 - **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for design docs per plugin.
-- **All 17 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
-- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1716 tests, all green.
+- **All 18 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
+- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1718 tests, all green.
 - **Per-platform porting** — see specs ending in `-impl-spec.md` or `-decomposition.md` under `docs/superpowers/specs/`.
 - **Cross-platform support matrix** — see [docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md](docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md).
 - **Hook precedence (if you're mixing plugins that all register hooks)** — see [docs/superpowers/specs/2026-05-18-hook-precedence-integration.md](docs/superpowers/specs/2026-05-18-hook-precedence-integration.md).
@@ -711,10 +712,10 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 | Layer | Status | Note |
 |---|---|---|
-| Unit/integration tests | ✅ **1716/1716 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-fixture-smoke, command-surface, doctor, cleanup, and visual-qa regressions |
+| Unit/integration tests | ✅ **1718/1718 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-fixture-smoke, command-surface, doctor, cleanup, and visual-qa regressions |
 | Project install renderers (Claude + 5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
-| Marketplace registration | ✅ 17 plugins listed | sync between local + origin |
-| Claude Code skills | ✅ ship today | core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug` |
+| Marketplace registration | ✅ 18 plugins listed | sync between local + origin |
+| Claude/Codex skills | ✅ ship today | Claude core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug`; Codex adds `harness-debug-codex` |
 | Claude/Codex CLI runtime | ✅ live smoke probe available | `./scripts/release-smoke.sh --fast --with-live-cli` probes installed `claude`/`codex` versions and verifies Codex `exec [PROMPT]` support; release fixture smoke also imports the installed Codex `agent-all-codex` and `visual-qa-codex` sequential helpers |
 | Other CLI runtimes | ⚠️ manual verification remains | Cursor/Copilot/Gemini runtime checks stay on the checklist in `docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md` |
 | `/thrift` v2 programmatic compact | ⏳ deferred | Waits on Claude Code's programmatic compact API |
@@ -745,7 +746,7 @@ Decision-surfacing prompts and panels are localized. Set `.agent-all.json` `lang
 - Cursor/Copilot/Gemini live runtime verification (follow the runtime checklist)
 - `/thrift` v2 summariser using Claude Code's programmatic compact API
 - Real Anthropic/OpenAI/Vertex SDK hookups (replace mock toolCallers)
-- `/explore` and `/debug` per-platform ports (Cursor/Copilot/Codex/Gemini)
+- `/explore` per-platform ports and `/debug` ports for Cursor/Copilot/Gemini
 - Subagent transcript-listener bridge for Cursor's `is_background: true` awaiter
 - Telemetry opt-in for thrift audit (which coercions actually fired, real-world cost savings)
 
@@ -759,7 +760,7 @@ Before submitting:
 ./scripts/release-smoke.sh --fast --with-live-cli  # also probe installed Claude/Codex CLIs
 node scripts/release-audit.mjs           # Claude/Codex release readiness matrix
 node scripts/release-fixture-smoke.mjs   # fresh Claude/Codex release fixtures
-node --test                              # 1716/1716 must pass
+node --test                              # 1718/1718 must pass
 node scripts/sync-lib.mjs --check        # vendored shared libs in sync
 ```
 

@@ -26,6 +26,7 @@ const PLUGINS = [
   "harness-thrift-cursor",
   "harness-thrift-copilot",
   "harness-thrift-codex",
+  "harness-debug-codex",
   "harness-thrift-gemini",
   "harness-explore",
   "harness-debug",

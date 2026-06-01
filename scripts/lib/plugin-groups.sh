@@ -11,7 +11,7 @@ CLAUDE_CODE_NATIVE=(
   "harness-debug"
 )
 
-CLI_PORTS_CODEX=("harness-builder-codex" "harness-floor-codex" "harness-thrift-codex")
+CLI_PORTS_CODEX=("harness-builder-codex" "harness-floor-codex" "harness-thrift-codex" "harness-debug-codex")
 CLI_PORTS_COPILOT=("harness-builder-copilot" "harness-floor-copilot" "harness-thrift-copilot")
 CLI_PORTS_GEMINI=("harness-builder-gemini" "harness-floor-gemini" "harness-thrift-gemini")
 CLI_PORTS_CURSOR=("harness-builder-cursor" "harness-floor-cursor" "harness-thrift-cursor")

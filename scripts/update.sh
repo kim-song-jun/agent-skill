@@ -7,7 +7,7 @@
 #   bash <(curl -fsSL https://raw.githubusercontent.com/kim-song-jun/agent-skill/main/scripts/update.sh)
 # Or, if you already cloned:
 #   bash scripts/update.sh                 # update all 5 Claude Code essentials
-#   bash scripts/update.sh --all           # all 17 plugins (CLI siblings included)
+#   bash scripts/update.sh --all           # all 18 plugins (CLI siblings included)
 #   bash scripts/update.sh --cli=codex     # one platform's full plugin set
 #   bash scripts/update.sh --cli=cursor    # one platform's full plugin set
 #   bash scripts/update.sh --foundations    # also refresh superpowers/context-mode
@@ -24,7 +24,7 @@ Usage: bash scripts/update.sh [options]
 
 Options:
   --dry-run       Print the update/install plan and selected plugins; change nothing.
-  --all           Update/install all 17 agent-skill plugins.
+  --all           Update/install all 18 agent-skill plugins.
   --claude-code   Update/install the Claude Code essentials (default).
   --cli=codex     Update/install the Codex plugin set.
   --cli=copilot   Update/install the GitHub Copilot plugin set.

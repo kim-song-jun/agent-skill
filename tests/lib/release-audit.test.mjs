@@ -19,9 +19,9 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
   assert.equal(result.platforms.claude.checks.length, 24);
-  assert.equal(result.platforms.codex.checks.length, 23);
+  assert.equal(result.platforms.codex.checks.length, 33);
   assert.match(result.platforms.claude.summary, /Claude: ok \(24\/24 checks\)/);
-  assert.match(result.platforms.codex.summary, /Codex: ok \(23\/23 checks\)/);
+  assert.match(result.platforms.codex.summary, /Codex: ok \(33\/33 checks\)/);
   assert.ok(result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh exists"));
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh matches release contract"),
@@ -98,6 +98,7 @@ test("release audit fails incomplete shared Claude/Codex project installer contr
         { name: "harness-builder-codex" },
         { name: "harness-floor-codex" },
         { name: "harness-thrift-codex" },
+        { name: "harness-debug-codex" },
       ],
     }),
   );
@@ -242,6 +243,7 @@ test("release audit fails incomplete Codex slash-command skill surfaces", () => 
         { name: "harness-builder-codex" },
         { name: "harness-floor-codex" },
         { name: "harness-thrift-codex" },
+        { name: "harness-debug-codex" },
       ],
     }),
   );
@@ -334,6 +336,40 @@ test("release audit fails incomplete Codex slash-command skill surfaces", () => 
       "",
     ].join("\n"),
   );
+  writeRel(root, "plugins/harness-debug-codex/.claude-plugin/plugin.json", '{"name":"harness-debug-codex"}');
+  writeRel(root, "plugins/harness-debug-codex/bin/install.mjs", "");
+  writeRel(root, "plugins/harness-debug-codex/skills/debug-codex/lib/error-parser.mjs", "");
+  writeRel(root, "plugins/harness-debug-codex/skills/debug-codex/lib/state-checkpoint.mjs", "");
+  writeRel(root, "plugins/harness-debug-codex/skills/debug-codex/phases/1-reproduce.md", "");
+  writeRel(root, "plugins/harness-debug-codex/skills/debug-codex/phases/3-hypothesize.md", "");
+  writeRel(
+    root,
+    "plugins/harness-debug-codex/README.md",
+    [
+      "# harness-debug-codex",
+      "",
+      "Codex CLI debug flow with run /debug, debug-codex, Release surface, structured error parsing, and .debug-state.json.",
+      "",
+    ].join("\n"),
+  );
+  writeRel(
+    root,
+    "plugins/harness-debug-codex/skills/debug-codex/SKILL.md",
+    [
+      "---",
+      "name: debug-codex",
+      "---",
+      "",
+      "# /debug-codex",
+      "",
+      "Public entrypoint: run /debug --resume.",
+      ".debug-state.json structured error parsing superpowers:systematic-debugging Codex primitive map.",
+      "When done, print Debug complete.",
+      "Stale entrypoint: codex skill run /debug-codex",
+      "Stale entrypoint: codex exec \"debug\"",
+      "",
+    ].join("\n"),
+  );
 
   const result = runReleaseAudit({ root, platforms: ["codex"] });
 
@@ -368,4 +404,14 @@ test("release audit fails incomplete Codex slash-command skill surfaces", () => 
   assert.match(staleThriftEntrypoint.details, /forbidden/);
   assert.match(staleThriftEntrypoint.details, /codex skill run/);
   assert.match(staleThriftEntrypoint.details, /codex exec/);
+
+  const staleDebugEntrypoint = result.platforms.codex.checks.find(
+    (check) => !check.ok && check.name.includes("debug-codex/SKILL.md"),
+  );
+  assert.ok(staleDebugEntrypoint, JSON.stringify(result.platforms.codex.checks, null, 2));
+  assert.match(staleDebugEntrypoint.details, /missing/);
+  assert.match(staleDebugEntrypoint.details, new RegExp(String.raw`run \\/debug`));
+  assert.match(staleDebugEntrypoint.details, /forbidden/);
+  assert.match(staleDebugEntrypoint.details, /codex skill run/);
+  assert.match(staleDebugEntrypoint.details, /codex exec/);
 });

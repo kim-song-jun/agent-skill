@@ -1,0 +1,65 @@
+# Debug log — {{slug}}
+
+- **Date:** {{date}}
+- **Resolution:** {{resolution.rootCause}}
+- **Debug-state:** `.debug-state.json` (preserved)
+- **Raw log:** `{{failure.rawOutputRef}}`
+
+## Failure
+
+- **Description:** {{failure.description}}
+- **Command:** `{{failure.command}}`
+- **Last exit code:** {{failure.lastExitCode}}
+- **Last run at:** {{failure.lastRunAt}}
+
+### Parsed error
+
+- **Kind:** `{{failure.errorParsed.kind}}`
+{{#if failure.errorParsed.rootException}}
+- **Root exception:** `{{failure.errorParsed.rootException.type}}: {{failure.errorParsed.rootException.value}}`
+{{/if}}
+
+#### Frames
+
+{{#each failure.errorParsed.frames}}
+- `{{file}}:{{line}}` — {{function}}{{test}}{{message}}{{code}}
+{{/each}}
+
+## Hypotheses
+
+{{#each hypotheses}}
+### H{{id}} — {{status}}
+
+> {{text}}
+
+{{#if experiment}}
+- **Experiment:** {{experiment}}
+{{/if}}
+{{#if result}}
+- **Result:** {{result}}
+{{/if}}
+{{#if decidedAt}}
+- **Decided at:** {{decidedAt}}
+{{/if}}
+
+{{/each}}
+
+## Checkpoints
+
+{{#each checkpoints}}
+- `{{at}}` — phase {{phase}} — {{stateHashBefore}}
+  - actions: {{#each actionsTaken}}`{{this}}` {{/each}}
+{{/each}}
+
+## Supervisor
+
+{{#if supervisor}}
+- **Wrapped skill:** `{{supervisor.wrappedSkill}}`
+- **Last invoked:** {{supervisor.lastInvokedAt}}
+- **Prompt digest:** `{{supervisor.promptDigest}}`
+{{/if}}
+
+## Notes for future bug-hunters
+
+Search `docs/debug/` for related root-cause keywords before spinning
+up Phase 1. This log is the durable retro artifact.

@@ -77,6 +77,11 @@
       "description": "Theme B port for Codex CLI — TOML-aware ~/.codex/config.toml patcher + OpenAI rate table"
     },
     {
+      "name": "harness-debug-codex",
+      "source": "./plugins/harness-debug-codex",
+      "description": "Theme E port for Codex CLI — prompt-level systematic debugging with structured error parsing, .debug-state.json persistence, and git/input bisection"
+    },
+    {
       "name": "harness-thrift-gemini",
       "source": "./plugins/harness-thrift-gemini",
       "description": "Theme B port for Gemini CLI — Vertex AI rate table with min-token + storage-hour terms"

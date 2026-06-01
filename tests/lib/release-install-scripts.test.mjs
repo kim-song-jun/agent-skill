@@ -94,7 +94,7 @@ exit 0
 
     assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
     assert.match(res.stdout, /Installing approved foundation plugins/);
-    assert.match(res.stdout, /Installing 3 plugins from agent-skill/);
+    assert.match(res.stdout, /Installing 4 plugins from agent-skill/);
 
     const log = readFileSync(claudeLog, "utf-8");
     const foundationIndex = log.indexOf("plugin install superpowers@claude-plugins-official");
@@ -106,6 +106,7 @@ exit 0
     assert.match(log, /plugin install context-mode@context-mode/);
     assert.match(log, /plugin install harness-floor-codex@agent-skill/);
     assert.match(log, /plugin install harness-thrift-codex@agent-skill/);
+    assert.match(log, /plugin install harness-debug-codex@agent-skill/);
     assert.doesNotMatch(log, /plugin install harness-builder@agent-skill/);
   } finally {
     rmSync(home, { recursive: true, force: true });
@@ -120,6 +121,7 @@ test("install-all --dry-run labels Codex plugin bundles without presenting them 
 
   assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
   assert.match(res.stdout, /DRY-RUN: install harness-builder-codex@agent-skill for Codex CLI/);
+  assert.match(res.stdout, /DRY-RUN: install harness-debug-codex@agent-skill for Codex CLI/);
   assert.match(res.stdout, /marketplace command: claude plugin install harness-builder-codex@agent-skill/);
   assert.doesNotMatch(res.stdout, /DRY-RUN: claude plugin install harness-builder-codex@agent-skill/);
   assert.doesNotMatch(res.stderr, /claude' binary not found/);
@@ -1117,6 +1119,7 @@ test("update --dry-run exposes the exact selected install set without requiring 
   assert.equal(codex.status, 0, `stdout:\n${codex.stdout}\nstderr:\n${codex.stderr}`);
   assert.deepEqual(dryRunPluginNames(codex.stdout), [
     "harness-builder-codex",
+    "harness-debug-codex",
     "harness-floor-codex",
     "harness-thrift-codex",
   ]);

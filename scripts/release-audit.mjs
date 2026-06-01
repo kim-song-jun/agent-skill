@@ -112,7 +112,7 @@ const PLATFORM_CONTRACTS = {
   },
   codex: {
     label: "Codex",
-    marketplacePlugins: ["harness-builder-codex", "harness-floor-codex", "harness-thrift-codex"],
+    marketplacePlugins: ["harness-builder-codex", "harness-floor-codex", "harness-thrift-codex", "harness-debug-codex"],
     requiredFiles: [
       "scripts/install-platform.sh",
       "plugins/harness-builder-codex/.claude-plugin/plugin.json",
@@ -128,6 +128,14 @@ const PLATFORM_CONTRACTS = {
       "plugins/harness-floor-codex/skills/agent-all-codex/SKILL.md",
       "plugins/harness-floor-codex/skills/visual-qa-codex/SKILL.md",
       "plugins/harness-thrift-codex/skills/thrift-codex/SKILL.md",
+      "plugins/harness-debug-codex/.claude-plugin/plugin.json",
+      "plugins/harness-debug-codex/README.md",
+      "plugins/harness-debug-codex/bin/install.mjs",
+      "plugins/harness-debug-codex/skills/debug-codex/SKILL.md",
+      "plugins/harness-debug-codex/skills/debug-codex/lib/error-parser.mjs",
+      "plugins/harness-debug-codex/skills/debug-codex/lib/state-checkpoint.mjs",
+      "plugins/harness-debug-codex/skills/debug-codex/phases/1-reproduce.md",
+      "plugins/harness-debug-codex/skills/debug-codex/phases/3-hypothesize.md",
     ],
     textChecks: [
       {
@@ -187,6 +195,41 @@ const PLATFORM_CONTRACTS = {
           /When done/i,
         ],
         forbidden: [/codex skill run/i, /codex exec\s+["'][^"']+["']/i],
+      },
+      {
+        file: "plugins/harness-debug-codex/skills/debug-codex/SKILL.md",
+        patterns: [
+          /^---\nname: debug-codex\n/m,
+          /^# \/debug-codex$/m,
+          /^run \/debug "(?:<failing command>|[^"]+)"$/m,
+          /run \/debug --resume/,
+          /\.debug-state\.json/,
+          /structured error parsing/i,
+          /superpowers:systematic-debugging/,
+          /context-mode[\s\S]{0,220}shell_command/,
+          /Codex primitive map/,
+          /When done[\s\S]{0,220}Debug complete/i,
+        ],
+        forbidden: [
+          /codex skill run/i,
+          /codex exec\s+["'][^"']+["']/i,
+          /ToolSearch/i,
+          /call the `Skill` tool/i,
+          /Otherwise use `Bash`/i,
+        ],
+      },
+      {
+        file: "plugins/harness-debug-codex/README.md",
+        patterns: [
+          /^# harness-debug-codex$/m,
+          /Codex CLI/i,
+          /run \/debug/,
+          /debug-codex/,
+          /Release surface/,
+          /structured error parsing/i,
+          /\.debug-state\.json/,
+        ],
+        forbidden: [/Claude Code debug surface/i, /scaffold-only|TBD|placeholder/i],
       },
       {
         file: "plugins/harness-builder-codex/skills/codex-init/templates/AGENTS.md.hbs",

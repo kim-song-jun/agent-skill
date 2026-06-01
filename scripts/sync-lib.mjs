@@ -43,6 +43,7 @@ const VENDORED_RENDER_ONLY = [
   "plugins/harness-thrift-gemini/bin/lib",
   "plugins/harness-explore/bin/lib",
   "plugins/harness-debug/bin/lib",
+  "plugins/harness-debug-codex/bin/lib",
 ].map((p) => resolve(repoRoot, p));
 
 const FILES = ["render.mjs", "detect-stack.mjs", "sentinel-merge.mjs", "folder-guides.mjs"];

@@ -4,9 +4,9 @@
 #
 # Usage:
 #   ./scripts/install-all.sh                  # install Claude Code essentials (5 plugins)
-#   ./scripts/install-all.sh --all            # install all 17 plugins (incl. CLI-platform siblings)
+#   ./scripts/install-all.sh --all            # install all 18 plugins (incl. CLI-platform siblings)
 #   ./scripts/install-all.sh --claude-code    # explicit: just the 5 native ones (default)
-#   ./scripts/install-all.sh --cli=codex      # builder + floor + thrift, all for Codex CLI
+#   ./scripts/install-all.sh --cli=codex      # builder + floor + thrift + debug, all for Codex CLI
 #   ./scripts/install-all.sh --cli=copilot    # ... for Copilot CLI
 #   ./scripts/install-all.sh --cli=gemini     # ... for Gemini CLI
 #   ./scripts/install-all.sh --cli=cursor     # ... for Cursor
@@ -43,9 +43,9 @@ install-all.sh — bulk install every plugin in this marketplace via the
 
 Usage:
   ./scripts/install-all.sh                  # install Claude Code essentials (5 plugins)
-  ./scripts/install-all.sh --all            # install all 17 plugins (incl. CLI-platform siblings)
+  ./scripts/install-all.sh --all            # install all 18 plugins (incl. CLI-platform siblings)
   ./scripts/install-all.sh --claude-code    # explicit: just the 5 native ones (default)
-  ./scripts/install-all.sh --cli=codex      # builder + floor + thrift, all for Codex CLI
+  ./scripts/install-all.sh --cli=codex      # builder + floor + thrift + debug, all for Codex CLI
   ./scripts/install-all.sh --cli=copilot    # ... for Copilot CLI
   ./scripts/install-all.sh --cli=gemini     # ... for Gemini CLI
   ./scripts/install-all.sh --cli=cursor     # ... for Cursor

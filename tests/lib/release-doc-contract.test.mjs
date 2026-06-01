@@ -62,7 +62,7 @@ test("usage docs describe agent-init language persistence", () => {
 test("readme files describe the current Codex config surface and current test count", () => {
   for (const path of ["README.md", "README.ko.md"]) {
     const body = read(path);
-    assert.match(body, /1716\/1716/);
+    assert.match(body, /1718\/1718/);
     assert.doesNotMatch(body, /1279\/1279|1279\+|1279%20passing|1547\+/);
     assert.doesNotMatch(
       body,
@@ -210,6 +210,14 @@ test("platform plugin READMEs match implemented builder and floor ports", () => 
   assert.match(thrift, /run \/thrift audit/);
   assert.doesNotMatch(thrift, /^\/thrift-codex\s+#/m);
   assert.doesNotMatch(thrift, /MVP scope|follow-up plan|scaffold-only|TBD|placeholder/i);
+
+  const debug = read("plugins/harness-debug-codex/README.md");
+  assert.match(debug, /Codex CLI/i);
+  assert.match(debug, /run \/debug/);
+  assert.match(debug, /debug-codex/);
+  assert.match(debug, /\.debug-state\.json/);
+  assert.match(debug, /structured error parsing/i);
+  assert.doesNotMatch(debug, /Claude Code debug surface|scaffold-only|TBD|placeholder/i);
 });
 
 test("non-Claude floor plugin READMEs match the implemented install and workflow surfaces", () => {
@@ -335,8 +343,8 @@ test("Codex runtime specs describe the current sequential surface instead of sta
   ]) {
     const body = read(path);
     assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
-    assert.doesNotMatch(body, /1246\/1246|1279\/1279|1645\/1645|1646\/1646|1647\/1647|1648\/1648|1649\/1649|1650\/1650|1651\/1651|1652\/1652|1654\/1654|1656\/1656|1657\/1657|1659\/1659|1660\/1660|1661\/1661|1662\/1662|1663\/1663|1664\/1664|1665\/1665|1666\/1666|1667\/1667|1668\/1668|1669\/1669|1670\/1670|1671\/1671|1672\/1672|1673\/1673|1674\/1674|1675\/1675|1676\/1676|1681\/1681|1684\/1684|1685\/1685|1687\/1687|1688\/1688|1692\/1692|1696\/1696|1697\/1697|1698\/1698|1703\/1703|1704\/1704|1705\/1705|1706\/1706|1711\/1711|1715\/1715/);
-    assert.match(body, /1716\/1716/);
+    assert.doesNotMatch(body, /1246\/1246|1279\/1279|1645\/1645|1646\/1646|1647\/1647|1648\/1648|1649\/1649|1650\/1650|1651\/1651|1652\/1652|1654\/1654|1656\/1656|1657\/1657|1659\/1659|1660\/1660|1661\/1661|1662\/1662|1663\/1663|1664\/1664|1665\/1665|1666\/1666|1667\/1667|1668\/1668|1669\/1669|1670\/1670|1671\/1671|1672\/1672|1673\/1673|1674\/1674|1675\/1675|1676\/1676|1681\/1681|1684\/1684|1685\/1685|1687\/1687|1688\/1688|1692\/1692|1696\/1696|1697\/1697|1698\/1698|1703\/1703|1704\/1704|1705\/1705|1706\/1706|1711\/1711|1715\/1715|1716\/1716/);
+    assert.match(body, /1718\/1718/);
     assert.match(body, /Codex CLI[\s\S]{0,260}(PreToolUse|prompt-level|sequential|프롬프트|순차)/i);
   }
 });
@@ -346,8 +354,8 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /## Implementation Status/i);
   assert.match(plan, /Implemented through Task 12/i);
   assert.match(plan, /root role routing/i);
-  assert.match(plan, /node --test[\s\S]{0,120}1716\/1716/);
-  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}363\/363/);
+  assert.match(plan, /node --test[\s\S]{0,120}1718\/1718/);
+  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}364\/364/);
   assert.match(plan, /release-audit\.mjs/);
   assert.match(plan, /release-fixture-smoke\.mjs/);
   assert.match(plan, /historical TDD checklist/i);

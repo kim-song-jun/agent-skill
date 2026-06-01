@@ -6,6 +6,8 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+- Added `harness-debug-codex`, a Codex CLI port of `/debug` with the `debug-codex` skill contract, `run /debug` public entrypoint, structured error parsing, hypothesis state persistence, and superpowers fallback.
+- Registered the Codex debug port in the marketplace, Codex plugin install group, release audit, release smoke, and public verification docs. Current suite: 1718/1718 passing; fast release smoke: 364/364 passing.
 - Changed `/agent-init` default to operational/heavy scaffold with `/agent-init --lite` as the minimal path.
 - Added task ledger scaffolding, sentinel merge policy, Claude hard policy artifacts, Codex command-policy artifacts, Gemini soft rules, and changed-file reviewer classifier.
 - Added foundation detection/update guidance for superpowers and context-mode.
