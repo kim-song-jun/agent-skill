@@ -17,6 +17,7 @@
 - 무거운 Claude/Codex 운영 scaffold에 stack-specific 구현 persona를 승격: 기본 프로젝트 설치가 `frontend-dev`, `backend-dev`를 포함하고, Codex sequential dispatch가 `.codex/skills/<role>/SKILL.md`로 직접 타겟팅할 수 있으며, root/orchestrator guidance가 implementation routing matrix를 포함하도록 doctor와 release fixture로 고정.
 - Fresh Claude/Codex 설치가 implementation routing matrix를 root/orchestrator guidance에 렌더링하고 실제 `frontend-dev`/`backend-dev` persona 본문을 포함함을 release fixture가 증명하도록 강화했으며, 이 fixture 계약을 release audit에도 고정.
 - Codex operational release fixture를 확장해 sequential `agent-all-codex` dispatch가 설치된 `frontend-dev`/`backend-dev` role skill을 읽어 prompt에 inline해야 통과하도록 하고, Claude 터미널 설치 fixture도 root guidance뿐 아니라 orchestrator 및 stack-specific persona 본문을 검증하도록 강화.
+- `scripts/release-smoke.sh` 자체를 Claude/Codex release readiness audit에 추가해, 최종 gate 계약이 live CLI probe, fresh fixture, marketplace dry-run, focused release contract, vendored-lib sync, full-suite mode 연결을 release claim 전에 증명하도록 고정.
 - Codex debug 포트를 마켓플레이스, Codex 설치 그룹, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, 공개 검증 문서에 등록. 현재 suite: 1756/1756 통과; fast release smoke: 425/425 통과.
 - Claude/Codex 터미널 operational bootstrap이 `claude` 사용 가능 시 승인된 foundation(`superpowers`, `context-mode`)만 자동 갱신하도록 변경. `--update-foundations` strict 모드와 `--no-update-foundations` opt-out 포함.
 - 기본 foundation auto-refresh에서 승인된 갱신이 실패해도 Claude/Codex bootstrap은 degraded foundation mode로 계속 진행하도록 강화. strict 실패는 `--update-foundations`에서만 유지.

@@ -6,6 +6,22 @@ import { fileURLToPath } from "node:url";
 const DEFAULT_PLATFORMS = ["claude", "codex"];
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
+const RELEASE_SMOKE_CONTRACT = {
+  file: "scripts/release-smoke.sh",
+  patterns: [
+    /release gate for the Claude Code native plugins[\s\S]{0,160}Claude\/Codex project renderers/,
+    /--fast --with-live-cli/,
+    /probe_codex_exec_surface/,
+    /release-audit\.mjs/,
+    /release-fixture-smoke\.mjs/,
+    /install-all\.sh" --dry-run --claude-code/,
+    /install-all\.sh" --dry-run --cli=codex/,
+    /node --test[\s\S]{0,900}tests\/lib\/release-audit\.test\.mjs[\s\S]{0,900}tests\/lib\/release-install-scripts\.test\.mjs/,
+    /scripts\/sync-lib\.mjs --check/,
+    /full test suite/,
+  ],
+};
+
 const PLATFORM_CONTRACTS = {
   claude: {
     label: "Claude",
@@ -35,6 +51,7 @@ const PLATFORM_CONTRACTS = {
       "plugins/harness-thrift/skills/thrift/SKILL.md",
     ],
     textChecks: [
+      RELEASE_SMOKE_CONTRACT,
       {
         file: "plugins/harness-builder/skills/agent-init/SKILL.md",
         patterns: [
@@ -240,6 +257,7 @@ const PLATFORM_CONTRACTS = {
       "plugins/harness-debug-codex/skills/debug-codex/phases/3-hypothesize.md",
     ],
     textChecks: [
+      RELEASE_SMOKE_CONTRACT,
       {
         file: "plugins/harness-builder-codex/skills/codex-init/SKILL.md",
         patterns: [

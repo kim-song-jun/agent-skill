@@ -380,6 +380,8 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /## Implementation Status/i);
   assert.match(plan, /Implemented through Task 12/i);
   assert.match(plan, /root role routing/i);
+  assert.match(plan, /release-smoke\.sh` gate contract/i);
+  assert.match(plan, /Claude 37\/37 and Codex 44\/44 readiness checks passing/i);
   assert.match(plan, /node --test[\s\S]{0,120}1756\/1756/);
   assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}425\/425/);
   assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|1755\/1755|412\/412|418\/418|421\/421|424\/424/);
@@ -455,6 +457,7 @@ test("manual release checklist is mapped to automated gates and Claude/Codex liv
   assert.match(body, /Automated release gate/i);
   assert.match(body, /release-audit\.mjs/);
   assert.match(body, /release-fixture-smoke\.mjs/);
+  assert.match(body, /Release smoke gate coverage[\s\S]{0,220}live CLI probes[\s\S]{0,220}focused release contracts/i);
   assert.match(body, /release-command-surface\.test\.mjs/);
   assert.match(body, /agent-init-dry-run-contract\.test\.mjs/);
   assert.match(body, /doctor-script\.test\.mjs/);

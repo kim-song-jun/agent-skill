@@ -24,6 +24,7 @@ The gate covers:
 - Codex floor and visual-qa dispatch contracts, including the verified `codex exec` positional `[PROMPT]` interface.
 - Sentinel merge, dry-run, force, policy-hook, folder-guide, task-ledger, foundation-status, and lite-profile contracts.
 - Release readiness audit coverage for Claude/Codex manifests, required files, hook schema, role routing, and audit tokens.
+- Release smoke gate coverage for live CLI probes, fresh fixtures, Claude/Codex marketplace dry-runs, focused release contracts, vendored-lib sync, and full-suite mode.
 - Fresh release fixture coverage for Claude marketplace dry-run, Claude operational/lite render output, Claude terminal `install-platform.sh --platform=claude` operational/lite installs, Codex operational/lite/builder/floor/thrift/debug installs, and Claude/Codex install→uninstall roundtrips in new git repos.
 - Command-surface coverage for Claude/Codex skill metadata, Codex init help/unknown-flag behavior, and documented post-install entrypoints.
 - Doctor coverage for project-local Claude/Codex operational, lite, and Codex debug-only scaffolds, missing artifact failures, and foundation warnings.

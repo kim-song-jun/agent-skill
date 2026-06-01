@@ -18,11 +18,14 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.ok, true);
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
-  assert.equal(result.platforms.claude.checks.length, 36);
-  assert.equal(result.platforms.codex.checks.length, 43);
-  assert.match(result.platforms.claude.summary, /Claude: ok \(36\/36 checks\)/);
-  assert.match(result.platforms.codex.summary, /Codex: ok \(43\/43 checks\)/);
+  assert.equal(result.platforms.claude.checks.length, 37);
+  assert.equal(result.platforms.codex.checks.length, 44);
+  assert.match(result.platforms.claude.summary, /Claude: ok \(37\/37 checks\)/);
+  assert.match(result.platforms.codex.summary, /Codex: ok \(44\/44 checks\)/);
   assert.ok(result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh exists"));
+  assert.ok(
+    result.platforms.claude.checks.some((check) => check.name === "scripts/release-smoke.sh matches release contract"),
+  );
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh matches release contract"),
   );
@@ -30,6 +33,9 @@ test("release audit reports Claude and Codex as independently ready", () => {
     result.platforms.claude.checks.some((check) => check.name === "scripts/release-fixture-smoke.mjs matches release contract"),
   );
   assert.ok(result.platforms.codex.checks.some((check) => check.name === "scripts/install-platform.sh exists"));
+  assert.ok(
+    result.platforms.codex.checks.some((check) => check.name === "scripts/release-smoke.sh matches release contract"),
+  );
   assert.ok(
     result.platforms.codex.checks.some((check) => check.name === "scripts/install-platform.sh matches release contract"),
   );
