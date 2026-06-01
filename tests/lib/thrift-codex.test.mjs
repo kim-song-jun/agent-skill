@@ -74,13 +74,26 @@ test("templates: config + audit + 5 TOML hook templates exist", () => {
   }
 });
 
-test("porting-notes flags TBD items + decomposition rationale", () => {
+test("porting-notes document release caveats without placeholder language", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "references/porting-notes.md"), "utf-8");
   assert.ok(body.includes("TOML"));
   assert.ok(body.includes("sentinel"));
-  assert.ok(body.includes("Open questions"));
+  assert.ok(body.includes("Release caveats"));
   assert.ok(body.includes("gpt-5-nano"));
   assert.ok(body.includes("exec_command"));
+  assert.doesNotMatch(body, /TBD|placeholder|remaining work/i);
+});
+
+test("thrift-codex release docs describe model default as overrideable, not placeholder", () => {
+  for (const rel of [
+    "README.md",
+    "skills/thrift-codex/phases/1-config.md",
+    "skills/thrift-codex/lib/config-loader.mjs",
+  ]) {
+    const body = readFileSync(resolve(PLUGIN_ROOT, rel), "utf-8");
+    assert.match(body, /gpt-5-nano/);
+    assert.doesNotMatch(body, /TBD|placeholder/i, rel);
+  }
 });
 
 // ---------- config-loader ----------

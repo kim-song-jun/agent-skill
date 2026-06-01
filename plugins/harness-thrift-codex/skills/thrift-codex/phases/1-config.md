@@ -33,10 +33,9 @@ Thrift-codex config: turns=<N>, tokens=<M>, summariser=<model>, cache=<enabled|d
 
 ## Notes — summariser model on Codex
 
-The default `gpt-5-nano` is a **TBD placeholder**. Codex's exposed
-model roster is fluid and the cheapest-summariser slot needs probing
-against the live `codex models list` (or equivalent). Acceptable
-overrides via `summariser.model`:
+The packaged default is `gpt-5-nano`. Codex installs may expose a
+restricted model roster, so treat `summariser.model` as a deployment
+setting rather than a hard platform assumption. Acceptable overrides:
 
 - Any model the user's Codex install lists in its model roster.
 - If the chosen model is not in `cost-estimator.mjs`'s rate table,

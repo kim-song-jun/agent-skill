@@ -51,7 +51,7 @@ The patcher in `lib/settings-patcher.mjs` assumes:
   hook and handler tables and do not require a preceding `[hooks]`
   header.
 
-## Open questions (deferred to live-validation iterations)
+## Release caveats
 
 1. **Stop-event reliability.** Codex currently exposes `Stop` rather
    than a dedicated session-end event. Phase 5 audit may therefore run
@@ -59,13 +59,13 @@ The patcher in `lib/settings-patcher.mjs` assumes:
 2. **Stderr → TUI surface.** Phase 3's summariser advisory leans on
    Codex routing hook stderr to the TUI as system reminders. Verified
    in the agent-builder-codex docs but not load-tested.
-3. **Cheap-summariser model.** `gpt-5-nano` is a placeholder. The
-   actual cheapest model exposed by Codex's session may differ; needs
-   `codex models list` (or equivalent) check.
+3. **Summariser model selection.** `gpt-5-nano` is the packaged default.
+   If a local Codex install exposes a different allowed roster, set
+   `summariser.model` in `.thrift.json`.
 4. **`exec_command` cache reuse.** The Phase 4 cache-prime mechanic
    assumes `exec_command` can re-enter the same session and benefit
    from OpenAI's prompt cache. If Codex spins a fresh session per
-   call, the prime is pure cost. Spike needed before flipping
+   call, the prime is pure cost. Validate locally before flipping
    `cache.enabled = true` to default.
 
 ## Differences from `harness-thrift` (CC source-of-truth)
@@ -76,15 +76,16 @@ The patcher in `lib/settings-patcher.mjs` assumes:
 | Hook config format | JSON object with `hooks: {Event: [...]}` arrays | TOML event tables plus nested command handlers |
 | Hook event names | PascalCase: `PreToolUse`, `SessionEnd`, ... | `PreToolUse`, `PostToolUse`, `SessionStart`, `Stop` |
 | Notification channel | `Notification` hook | stderr + `~/.codex/notifications/*.md` |
-| Summariser model | `claude-haiku-4-5-20251001` | `gpt-5-nano` (TBD) |
+| Summariser model | `claude-haiku-4-5-20251001` | `gpt-5-nano` packaged default; override via `.thrift.json` |
 | Cache-read multiplier | 0.1× input (Anthropic) | 0.5× input (OpenAI, average) |
 | Cache-prime API | Anthropic SDK direct call | `exec_command` session reuse (best-effort) |
 | Cache-hit observability | Response metadata gives counts | Not exposed via Codex; audit savings are heuristic |
 | Patcher contract | JSON parse + mutate + serialize | Text-only append + sentinel-removal |
 
-## Estimated work
+## Validation before relying on runtime hooks
 
-Per the decomposition: **~1.5 weeks** (this scaffold satisfies
-roughly the "TOML patcher + OpenAI rate table + phase docs" subset;
-remaining work is the live spikes listed above + summariser-via-stderr
-load-test on a real Codex install).
+Before treating thrift-codex hooks as enforcement on a specific machine,
+run a small Codex CLI smoke test that exercises `PreToolUse`,
+`PostToolUse`, `SessionStart`, and `Stop` command hooks. The installer
+ships project-local config and TOML snippets; global config patching is
+explicit and sentinel-delimited.
