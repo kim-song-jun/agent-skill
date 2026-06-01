@@ -19,6 +19,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { detectProject } from "../skills/codex-init/lib/detect-stack.mjs";
+import { detectGuideDirs } from "../skills/codex-init/lib/folder-guides.mjs";
 import { render } from "../skills/codex-init/lib/render.mjs";
 import { mergeSentinelSection } from "../skills/codex-init/lib/sentinel-merge.mjs";
 
@@ -28,7 +29,7 @@ const templatesDir = resolve(pluginRoot, "skills/codex-init/templates");
 
 // Templates emitted to stdout (not written to disk) — user merges manually.
 const STDOUT_TEMPLATES = new Set(["codex-config.toml.hbs"]);
-const MERGEABLE_GUIDES = new Set(["AGENTS.md"]);
+const FOLDER_GUIDE_TEMPLATE_REL = "folder-guides/AGENTS.md.hbs";
 
 const BASE_AGENTS = [
   { name: "planner",  when: "all planning" },
@@ -171,11 +172,16 @@ function listTemplates(dir, baseRel = "") {
 }
 
 function shouldSkipTemplate(rel, ctx) {
+  if (rel === FOLDER_GUIDE_TEMPLATE_REL) return true;
   if (!ctx.liteProfile) return false;
   return rel.startsWith("hooks/")
     || rel.startsWith("local-guides/")
     || rel.startsWith("task-ledger/")
     || OPERATIONAL_SKILL_RE.test(rel);
+}
+
+function isMergeableGuide(rel) {
+  return rel === "AGENTS.md" || rel.endsWith("/AGENTS.md");
 }
 
 // Map a template's path (relative to templatesDir) to its target path on disk.
@@ -222,9 +228,20 @@ function main() {
     const outPath = resolve(target, rel);
     plannedWrites.push({ rel, outPath, rendered });
   }
+  if (ctx.operationalProfile) {
+    const folderGuideTemplate = readFileSync(resolve(templatesDir, FOLDER_GUIDE_TEMPLATE_REL), "utf-8");
+    for (const guide of detectGuideDirs(target)) {
+      const rel = `${guide.path}/AGENTS.md`;
+      plannedWrites.push({
+        rel,
+        outPath: resolve(target, rel),
+        rendered: render(folderGuideTemplate, { ...ctx, guide_path: guide.path, guide_reason: guide.reason }),
+      });
+    }
+  }
 
   const finalWrites = plannedWrites.map(({ rel, outPath, rendered }) => {
-    if (MERGEABLE_GUIDES.has(rel) && existsSync(outPath)) {
+    if (isMergeableGuide(rel) && existsSync(outPath)) {
       const merged = mergeSentinelSection(readFileSync(outPath, "utf-8"), rendered);
       return { rel, outPath, rendered: merged.content, action: merged.action, merged: true };
     }

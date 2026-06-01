@@ -200,6 +200,40 @@ test("harness-builder-codex: replaces only prior AGENTS.md sentinel section", ()
   }
 });
 
+test("harness-builder-codex: writes folder-level AGENTS.md guides for detected project areas", () => {
+  const target = mkTarget("codex-folder-guides");
+  try {
+    mkdirSync(resolve(target, "backend"), { recursive: true });
+    mkdirSync(resolve(target, "frontend"), { recursive: true });
+    mkdirSync(resolve(target, "packages/api"), { recursive: true });
+    writeFileSync(resolve(target, "packages/api/package.json"), "{}");
+    writeFileSync(resolve(target, "backend/AGENTS.md"), "# Backend user rules\n\nKeep backend-specific rule.\n");
+
+    const res = runInit(PLUGINS.codex.bin, [target], { env: { PURPOSE: "Folder Guide Project" } });
+    assert.equal(res.status, 0, res.stderr);
+
+    for (const rel of [
+      "backend/AGENTS.md",
+      "frontend/AGENTS.md",
+      "packages/AGENTS.md",
+      "packages/api/AGENTS.md",
+    ]) {
+      assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
+      const body = readFileSync(resolve(target, rel), "utf-8");
+      assert.match(body, /Folder Guide Project/);
+      assert.match(body, /Root `AGENTS.md` remains the operational index/);
+    }
+
+    const backend = readFileSync(resolve(target, "backend/AGENTS.md"), "utf-8");
+    assert.match(backend, /# Backend user rules/);
+    assert.match(backend, /Keep backend-specific rule/);
+    assert.match(backend, /<!-- agent-skill:operational:start -->/);
+    assert.match(backend, /<!-- agent-skill:operational:end -->/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
 test("harness-builder-codex: generated task ledger matches agent-all contract", () => {
   const target = mkTarget("codex-task-ledger-contract");
   try {
