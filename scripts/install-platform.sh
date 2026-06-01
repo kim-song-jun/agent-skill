@@ -7,7 +7,7 @@
 # to the target project.
 #
 # Usage:
-#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx CTX] [--force] [--theme=THEME]
+#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx CTX] [--force] [--theme=THEME] [--lite]
 #
 # --platform:
 #   cursor          — Cursor IDE (.cursor/rules + .cursor/agents)
@@ -21,6 +21,10 @@
 #   builder         — just /agent-init (CLAUDE.md/AGENTS.md/GEMINI.md + agents)
 #   floor           — just /agent-all + /visual-qa (config files)
 #   thrift          — just /thrift (long-session cost optimization)
+#
+# --lite:
+#   builder-only lightweight scaffold. For Codex, passes --lite through to
+#   codex-init so it writes AGENTS.md + base skills only.
 #
 # Examples:
 #   ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-app
@@ -36,6 +40,7 @@ CTX_PATH=""
 HAS_CTX=0
 HAS_FORCE=0
 THEME="all"
+LITE=0
 
 for arg in "$@"; do
   case "$arg" in
@@ -44,6 +49,7 @@ for arg in "$@"; do
     --ctx=*)      CTX_PATH="${arg#*=}"; HAS_CTX=1 ;;
     --force)      HAS_FORCE=1 ;;
     --theme=*)    THEME="${arg#*=}" ;;
+    --lite)       LITE=1 ;;
     -h|--help)
       sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
@@ -83,9 +89,18 @@ case "$THEME" in
     ;;
 esac
 
+if [ "$LITE" = "1" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ]; }; then
+  echo "Error: --lite can only be used with --theme=all or --theme=builder." >&2
+  exit 1
+fi
+
 TARGET_ABS="$(cd "$TARGET" 2>/dev/null && pwd)" || { echo "Error: target dir does not exist: $TARGET" >&2; exit 1; }
 
-echo "Installing for $PLATFORM into $TARGET_ABS (theme: $THEME)"
+if [ "$LITE" = "1" ]; then
+  echo "Installing for $PLATFORM into $TARGET_ABS (theme: builder, profile: lite)"
+else
+  echo "Installing for $PLATFORM into $TARGET_ABS (theme: $THEME, profile: operational)"
+fi
 echo
 
 run_init() {
@@ -116,19 +131,29 @@ run_init() {
   fi
 }
 
+run_builder_init() {
+  if [ "$LITE" = "1" ] && [ "$EMIT_PLATFORM" = "codex" ]; then
+    run_init "harness-builder-$EMIT_PLATFORM" "init.mjs" --lite
+  else
+    run_init "harness-builder-$EMIT_PLATFORM" "init.mjs"
+  fi
+}
+
 # Map theme → plugins to install
 case "$THEME" in
   all)
-    run_init "harness-builder-$EMIT_PLATFORM" "init.mjs"
-    run_init "harness-floor-$EMIT_PLATFORM" "init.mjs"
-    if [ "$EMIT_PLATFORM" = "codex" ]; then
-      run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs" --no-instrument
-    else
-      run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs"
+    run_builder_init
+    if [ "$LITE" != "1" ]; then
+      run_init "harness-floor-$EMIT_PLATFORM" "init.mjs"
+      if [ "$EMIT_PLATFORM" = "codex" ]; then
+        run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs" --no-instrument
+      else
+        run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs"
+      fi
     fi
     ;;
   builder)
-    run_init "harness-builder-$EMIT_PLATFORM" "init.mjs"
+    run_builder_init
     ;;
   floor)
     run_init "harness-floor-$EMIT_PLATFORM" "init.mjs"
@@ -144,6 +169,25 @@ esac
 
 echo
 echo "Done. Inspect the target project for the new files:"
+if [ "$LITE" = "1" ]; then
+  case "$EMIT_PLATFORM" in
+    cursor)
+      echo "  - .cursor/rules/, .cursor/agents/ (builder-only lite scaffold)"
+      ;;
+    copilot)
+      echo "  - .github/copilot-instructions.md, .github/instructions/ (builder-only lite scaffold)"
+      ;;
+    codex)
+      echo "  - AGENTS.md, .codex/skills/{planner,dev,reviewer}/ (builder-only lite scaffold)"
+      echo "  - Note: lite mode skips floor/thrift files and global Codex config snippets"
+      ;;
+    gemini)
+      echo "  - GEMINI.md, .gemini/skills/ (builder-only lite scaffold)"
+      ;;
+  esac
+  exit 0
+fi
+
 case "$EMIT_PLATFORM" in
   cursor)
     echo "  - .cursor/rules/, .cursor/agents/, .visual-qa.json, .agent-all.json, .thrift.json"

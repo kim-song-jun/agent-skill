@@ -74,6 +74,53 @@ test("install-platform codex all succeeds in a fresh project without patching gl
   }
 });
 
+test("install-platform codex --lite installs only the builder lite scaffold", () => {
+  const target = tmp("agent-skill-release-codex-lite-target-");
+  const home = tmp("agent-skill-release-codex-lite-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--lite",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    for (const rel of [
+      "AGENTS.md",
+      ".codex/skills/planner/SKILL.md",
+      ".codex/skills/dev/SKILL.md",
+      ".codex/skills/reviewer/SKILL.md",
+    ]) {
+      assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
+    }
+    for (const rel of [
+      ".codex/skills/orchestrator/SKILL.md",
+      ".codex/hooks/agent-policy-hook.mjs",
+      "docs/tasks/index.md",
+      ".visual-qa.json",
+      ".agent-all.json",
+      ".thrift.json",
+    ]) {
+      assert.ok(!existsSync(resolve(target, rel)), `unexpected lite artifact ${rel}`);
+    }
+
+    const agents = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+    assert.match(agents, /lite mode/i);
+    assert.match(res.stdout, /profile: lite/i);
+    assert.doesNotMatch(res.stdout, /\[\[hooks\.PreToolUse\]\]/);
+    assert.doesNotMatch(res.stdout, /\[mcp_servers\.playwright\]/);
+    assert.doesNotMatch(res.stdout, /instrument:\s+no/);
+    assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "installer must not create or patch global Codex config");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test("install-platform codex all emits only dispatchable floor skill roles", () => {
   const target = tmp("agent-skill-release-codex-graph-target-");
   const home = tmp("agent-skill-release-codex-graph-home-");
