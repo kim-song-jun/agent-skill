@@ -15,7 +15,7 @@ node scripts/sync-lib.mjs --check
 
 The gate covers:
 
-- Claude native release manifests, hook syntax, `/agent-init` release docs, and visual-qa seed config.
+- Claude native release manifests, hook syntax, `/agent-init` release docs, Phase 3 parallel fan-out contract, final summary contract, and visual-qa seed config.
 - Codex install renderers for operational and lite profiles, including `/codex-init --lite` via `install-platform.sh --platform=codex --lite`.
 - Codex floor and visual-qa dispatch contracts, including the verified `codex exec` positional `[PROMPT]` interface.
 - Sentinel merge, dry-run, force, policy-hook, folder-guide, task-ledger, foundation-status, and lite-profile contracts.
@@ -30,9 +30,9 @@ mkdir /tmp/harness-fixture-claude && cd /tmp/harness-fixture-claude && git init
 ```
 
 Inside Claude Code, run `/agent-init`, then `/agent-init --lite` in a second
-fresh fixture. Confirm that brainstorming prompts are shown, Phase 3 launches
-parallel subagents, and the final summary names any missing foundation plugin
-install commands.
+fresh fixture. Confirm that the slash command is discoverable, the host accepts
+the interactive brainstorming prompts, and both sessions reach their summary
+screen without host-runtime errors.
 
 ## Codex CLI live session
 

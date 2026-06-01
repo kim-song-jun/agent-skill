@@ -89,3 +89,19 @@ test("Claude native /agent-init floor seed config matches --qa comprehensive con
   assert.equal(loaded.ok, true, JSON.stringify(loaded.errors));
   assert.equal(loaded.config.mode, "comprehensive");
 });
+
+test("Claude native /agent-init phase docs cover parallel agent fan-out and final summary evidence", () => {
+  const phase3 = read("plugins/harness-builder/skills/agent-init/phases/3-agents.md");
+  assert.match(phase3, /superpowers:dispatching-parallel-agents/);
+  assert.match(phase3, /Each subagent gets one role/);
+  assert.match(phase3, /share no state/);
+  assert.match(phase3, /--dry-run[\s\S]{0,260}without dispatching subagents/);
+  assert.match(phase3, /role\s+→\s+file path\s+→\s+bytes/);
+
+  const phase5 = read("plugins/harness-builder/skills/agent-init/phases/5-wire.md");
+  assert.match(phase5, /missing plugins/i);
+  assert.match(phase5, /\/plugin install \{plugin\}/);
+  assert.match(phase5, /Phases completed: 5 \/ 5/);
+  assert.match(phase5, /N local guides/);
+  assert.match(phase5, /commit[\s\S]{0,260}explicit pathspecs/i);
+});

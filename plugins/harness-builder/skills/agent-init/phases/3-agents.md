@@ -19,8 +19,10 @@ Invoke `Skill` with `superpowers:dispatching-parallel-agents` first. Adopt its d
    - Operational profile must include the orchestrator and reviewer personas produced in Phase 2. Lite profile renders only the minimal role roster and skips operational reviewer personas.
 
 2. If `--dry-run` is set, print the planned agent files without writing:
+   - Dry-run invariant: `--dry-run` runs without dispatching subagents.
    - Agent files: every `.claude/agents/<role-name>.md` target computed above.
    - Template source for each role and whether the file would be created or force-refreshed.
+   - Dry-run must not dispatch subagents.
    - Record the phase plan for the Phase 5 summary, then continue without dispatching subagents, writing files, or updating `.claude/.agent-init-state.json`.
 
 3. **Fan out** the render+write work. Each subagent gets one role:
