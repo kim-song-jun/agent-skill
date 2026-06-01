@@ -9,6 +9,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -17,7 +18,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import {
   REQUIRED_SECTIONS,
   validateTaskDoc,
@@ -96,6 +97,11 @@ function runInit(binPath, args, opts = {}) {
   });
 }
 
+function writeExecutable(path, body) {
+  writeFileSync(path, body);
+  chmodSync(path, 0o755);
+}
+
 test("harness-builder-codex: SKILL.md documents that lite skips config snippet output", () => {
   const body = readFileSync(CODEX_INIT_SKILL, "utf-8");
 
@@ -117,6 +123,14 @@ test("harness-builder-codex: SKILL.md documents operational workspace outputs", 
   assert.match(body, /docs\/tasks\/AGENTS\.md/);
   assert.match(body, /docs\/tasks\/_handoff-template\.md/);
   assert.match(body, /scripts\/agent-task-ledger-check\.mjs/);
+});
+
+test("harness-builder-codex: SKILL.md documents explicit foundation update flag", () => {
+  const body = readFileSync(CODEX_INIT_SKILL, "utf-8");
+
+  assert.match(body, /--update-foundations/);
+  assert.match(body, /approved foundation/i);
+  assert.match(body, /Does not patch global CLI config|Do not claim that global config was patched/i);
 });
 
 test("harness-builder-codex: SKILL.md operational roster includes integration developer", () => {
@@ -247,6 +261,108 @@ test("harness-builder-codex: default AGENTS.md omits foundation warning when ins
 
     assert.doesNotMatch(body, /Foundation Status/);
     assert.doesNotMatch(body, /degraded mode/i);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: --dry-run --update-foundations prints approved foundation plan without mutation", () => {
+  const target = mkTarget("codex-foundations-dry-run");
+  const home = mkTarget("codex-foundations-dry-run-home");
+  const binDir = resolve(home, "bin");
+  try {
+    mkdirSync(binDir, { recursive: true });
+    writeExecutable(
+      resolve(binDir, "claude"),
+      "#!/usr/bin/env bash\necho claude-should-not-run >&2\nexit 99\n",
+    );
+
+    const res = runInit(PLUGINS.codex.bin, [target, "--dry-run", "--update-foundations"], {
+      env: { HOME: home, PATH: `${binDir}:${process.env.PATH}` },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /foundation update plan/i);
+    assert.match(res.stdout, /DRY-RUN: claude plugin marketplace update claude-plugins-official/);
+    assert.match(res.stdout, /DRY-RUN: claude plugin marketplace update context-mode/);
+    assert.match(res.stdout, /DRY-RUN: claude plugin install superpowers@claude-plugins-official/);
+    assert.match(res.stdout, /DRY-RUN: claude plugin install context-mode@context-mode/);
+    assert.doesNotMatch(res.stderr, /claude-should-not-run/);
+    assert.ok(!existsSync(resolve(target, "AGENTS.md")), "dry-run must not write AGENTS.md");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: --update-foundations refreshes approved foundations only", () => {
+  const target = mkTarget("codex-foundations-update");
+  const home = mkTarget("codex-foundations-update-home");
+  const binDir = resolve(home, "bin");
+  const pluginsDir = resolve(home, ".claude/plugins");
+  const claudeLog = resolve(home, "claude.log");
+  try {
+    mkdirSync(binDir, { recursive: true });
+    mkdirSync(pluginsDir, { recursive: true });
+    writeFileSync(
+      resolve(pluginsDir, "installed_plugins.json"),
+      JSON.stringify({
+        plugins: {
+          "superpowers@claude-plugins-official": {},
+          "harness-builder-codex@agent-skill": {},
+        },
+      }),
+    );
+    writeExecutable(
+      resolve(binDir, "claude"),
+      `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${claudeLog}"
+exit 0
+`,
+    );
+
+    const res = runInit(PLUGINS.codex.bin, [target, "--update-foundations"], {
+      env: { HOME: home, PATH: `${binDir}:${process.env.PATH}` },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /foundation update plan/i);
+    assert.match(res.stdout, /no global CLI config files are patched/i);
+    assert.ok(existsSync(resolve(target, "AGENTS.md")), "normal update run should still scaffold AGENTS.md");
+
+    const log = readFileSync(claudeLog, "utf-8");
+    assert.match(log, /plugin marketplace update claude-plugins-official/);
+    assert.match(log, /plugin marketplace update context-mode/);
+    assert.match(log, /plugin uninstall superpowers@claude-plugins-official/);
+    assert.match(log, /plugin install superpowers@claude-plugins-official/);
+    assert.match(log, /plugin install context-mode@context-mode/);
+    assert.doesNotMatch(log, /plugin uninstall context-mode@context-mode/);
+    assert.doesNotMatch(log, /harness-builder-codex@agent-skill/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: --update-foundations without claude prints manual commands", () => {
+  const target = mkTarget("codex-foundations-no-claude");
+  const home = mkTarget("codex-foundations-no-claude-home");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target, "--update-foundations"], {
+      env: { HOME: home, PATH: dirname(process.execPath) },
+    });
+
+    assert.equal(res.status, 1, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /foundation update plan/i);
+    assert.match(res.stdout, /no global CLI config files are patched/i);
+    assert.match(res.stderr, /'claude' binary not found in PATH/);
+    assert.match(res.stderr, /\/plugin marketplace update claude-plugins-official/);
+    assert.match(res.stderr, /\/plugin marketplace update context-mode/);
+    assert.match(res.stderr, /\/plugin install superpowers@claude-plugins-official/);
+    assert.match(res.stderr, /\/plugin install context-mode@context-mode/);
+    assert.doesNotMatch(res.stderr, /harness-builder-codex@agent-skill/);
   } finally {
     rmSync(target, { recursive: true, force: true });
     rmSync(home, { recursive: true, force: true });

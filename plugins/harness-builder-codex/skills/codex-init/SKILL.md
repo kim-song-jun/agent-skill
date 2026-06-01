@@ -15,7 +15,11 @@ hooks, task ledger files, operational reviewer personas, and Codex config
 snippet/global hook patch output. `--dry-run` prints planned writes without
 creating directories or files. `--lang=en|ko|auto` records the selected
 interaction language in `AGENTS.md`; keep `.agent-all.json` `language` aligned
-with that value when the floor bundle is installed.
+with that value when the floor bundle is installed. `--update-foundations`
+prints the approved foundation update plan, then updates/installs only
+`superpowers@claude-plugins-official` and `context-mode@context-mode`;
+`--dry-run --update-foundations` prints the same plan without mutation. This
+does not patch global CLI config files.
 
 ## Phase 1 — Gather
 
@@ -100,6 +104,10 @@ In operational mode, detect whether `superpowers@claude-plugins-official` and
 `context-mode@context-mode` are installed. Missing foundations do not abort the
 scaffold; render the degraded foundation status, approved foundation updater,
 and manual fallback install commands into `AGENTS.md`.
+When `--update-foundations` is explicitly passed, print the approved foundation
+update plan before running any foundation mutation. Refresh only the approved
+foundation marketplaces, reinstall/update only the approved foundation plugins,
+and do not patch global CLI config files.
 
 ## Phase 3 — Summarize
 

@@ -54,6 +54,17 @@ Records the selected interaction language in `AGENTS.md`. Keep `.agent-all.json`
 `language` aligned when installing the floor bundle so downstream workflow
 prompts use the same language.
 
+Foundation updates:
+
+```
+/codex-init --update-foundations
+/codex-init --dry-run --update-foundations
+```
+
+This prints the approved foundation update plan and updates/installs only
+`superpowers@claude-plugins-official` and `context-mode@context-mode` when not
+in dry-run mode. It does not patch global Codex config files.
+
 ## Codex Hook Surface
 
 Codex command hooks are used for shell/policy events only. The floor pipeline's

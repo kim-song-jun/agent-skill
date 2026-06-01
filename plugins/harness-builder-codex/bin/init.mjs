@@ -14,12 +14,17 @@
 // + merge into their existing config rather than blindly overwriting it.
 //
 // Usage:
-//   init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--lite|--theme=lite] [--lang=en|ko|auto] [--dry-run]
+//   init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--lite|--theme=lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations]
+import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { detectProject } from "../skills/codex-init/lib/detect-stack.mjs";
-import { scanFoundationState } from "../skills/codex-init/lib/foundation-check.mjs";
+import {
+  FOUNDATION_MARKETPLACES,
+  FOUNDATION_PLUGINS,
+  scanFoundationState,
+} from "../skills/codex-init/lib/foundation-check.mjs";
 import { detectGuideDirs } from "../skills/codex-init/lib/folder-guides.mjs";
 import { render } from "../skills/codex-init/lib/render.mjs";
 import { mergeSentinelSection } from "../skills/codex-init/lib/sentinel-merge.mjs";
@@ -57,7 +62,7 @@ const OPERATIONAL_AGENTS = [
 const OPERATIONAL_SKILL_RE = /^skills\/(orchestrator|verification-reviewer|qa-reviewer|design-reviewer|security-reviewer|data-reviewer|integration-dev)\//;
 
 const LANGUAGE_VALUES = new Set(["en", "ko", "auto"]);
-const USAGE = "Usage: init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--lite|--theme=lite] [--lang=en|ko|auto] [--dry-run]";
+const USAGE = "Usage: init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--lite|--theme=lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations]";
 
 function printHelp() {
   console.log([
@@ -70,6 +75,7 @@ function printHelp() {
     "  --theme=lite            Legacy alias for --lite.",
     "  --lang=en|ko|auto       Persist interaction language in generated guidance.",
     "  --dry-run               Print planned writes without creating files.",
+    "  --update-foundations    Update/install approved foundation plugins after printing the plan.",
     "  -h, --help              Show this help.",
   ].join("\n"));
 }
@@ -97,7 +103,16 @@ function resolveLanguage(value) {
 }
 
 function parseArgs(argv) {
-  const args = { target: null, ctxPath: null, force: false, lite: false, dryRun: false, lang: null, help: false };
+  const args = {
+    target: null,
+    ctxPath: null,
+    force: false,
+    lite: false,
+    dryRun: false,
+    updateFoundations: false,
+    lang: null,
+    help: false,
+  };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--ctx") args.ctxPath = argv[++i];
     else if (argv[i] === "--force") args.force = true;
@@ -108,6 +123,7 @@ function parseArgs(argv) {
       i++;
     }
     else if (argv[i] === "--dry-run") args.dryRun = true;
+    else if (argv[i] === "--update-foundations") args.updateFoundations = true;
     else if (argv[i].startsWith("--lang=")) args.lang = parseLanguageArg(argv[i].slice("--lang=".length));
     else if (argv[i] === "--lang") args.lang = parseLanguageArg(argv[++i]);
     else if (argv[i] === "-h" || argv[i] === "--help") args.help = true;
@@ -123,6 +139,58 @@ function parseArgs(argv) {
     process.exit(1);
   }
   return args;
+}
+
+function printFoundationUpdatePlan({ dryRun = false } = {}) {
+  console.log("foundation update plan");
+  console.log(`  - refresh approved foundation marketplaces: ${FOUNDATION_MARKETPLACES.join(", ")}`);
+  console.log(`  - update/install approved foundations: ${FOUNDATION_PLUGINS.join(", ")}`);
+  console.log("  - no global CLI config files are patched by this command");
+  if (!dryRun) return;
+  for (const marketplace of FOUNDATION_MARKETPLACES) {
+    console.log(`DRY-RUN: claude plugin marketplace update ${marketplace}`);
+  }
+  for (const plugin of FOUNDATION_PLUGINS) {
+    console.log(`DRY-RUN: claude plugin install ${plugin}`);
+  }
+}
+
+function runClaudePlugin(args, { allowFailure = false } = {}) {
+  const result = spawnSync("claude", ["plugin", ...args], { encoding: "utf-8" });
+  if (result.error?.code === "ENOENT") {
+    console.error("Error: 'claude' binary not found in PATH.");
+    console.error("Install Claude Code first, or run these commands inside Claude Code:");
+    for (const marketplace of FOUNDATION_MARKETPLACES) {
+      console.error(`  /plugin marketplace update ${marketplace}`);
+    }
+    for (const plugin of FOUNDATION_PLUGINS) {
+      console.error(`  /plugin install ${plugin}`);
+    }
+    process.exit(1);
+  }
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  if (!allowFailure && result.status !== 0) {
+    return false;
+  }
+  return true;
+}
+
+function runFoundationUpdates(installedPluginIds = []) {
+  let failed = false;
+  for (const marketplace of FOUNDATION_MARKETPLACES) {
+    failed = !runClaudePlugin(["marketplace", "update", marketplace]) || failed;
+  }
+  for (const plugin of FOUNDATION_PLUGINS) {
+    if (installedPluginIds.includes(plugin)) {
+      runClaudePlugin(["uninstall", plugin], { allowFailure: true });
+    }
+    failed = !runClaudePlugin(["install", plugin]) || failed;
+  }
+  if (failed) {
+    console.error("Error: one or more approved foundation plugin updates failed.");
+    process.exit(1);
+  }
 }
 
 function tomlString(value) {
@@ -235,6 +303,9 @@ function main() {
     process.exit(1);
   }
   const ctx = loadCtx(args.ctxPath, target, { lite: args.lite, lang: args.lang });
+  if (args.updateFoundations) {
+    printFoundationUpdatePlan({ dryRun: args.dryRun });
+  }
   const templates = listTemplates(templatesDir);
   const stdoutChunks = [];
   const plannedWrites = [];
@@ -302,6 +373,9 @@ function main() {
   }
   if (skippedLiteConfig) {
     console.log("lite mode: skipped Codex global config patch output");
+  }
+  if (args.updateFoundations && !args.dryRun) {
+    runFoundationUpdates(loadInstalledPluginIds());
   }
   console.log(`done — detected ${ctx.stack}${ctx.runtime ? ` (on ${ctx.runtime})` : ""}`);
 }
