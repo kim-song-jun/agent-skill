@@ -7,7 +7,7 @@
 # to the target project.
 #
 # Usage:
-#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx CTX] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto]
+#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run]
 #
 # --platform:
 #   cursor          — Cursor IDE (.cursor/rules + .cursor/agents)
@@ -30,12 +30,58 @@
 #   persist the interaction language into generated root guidance and
 #   .agent-all.json where supported. Valid values: en, ko, auto.
 #
+# --dry-run:
+#   print the selected renderer commands without writing files.
+#
 # Examples:
 #   ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-app
 #   ./scripts/install-platform.sh --platform=codex --target=. --theme=floor
 #   ./scripts/install-platform.sh --platform=copilot --target=. --ctx=ctx.json --force
 
 set -euo pipefail
+
+print_usage() {
+  cat <<'USAGE'
+install-platform.sh — bootstrap a target project for a non-Claude-Code
+AI tool (Cursor / GitHub Copilot / Codex CLI / Gemini CLI / VS Code).
+
+These tools don't have Claude Code's marketplace, so we install via
+our own renderer scripts. Each `bin/init.mjs` writes the right files
+to the target project.
+
+Usage:
+  ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run]
+
+--platform:
+  cursor          — Cursor IDE (.cursor/rules + .cursor/agents)
+  copilot         — GitHub Copilot CLI (.github/copilot-instructions.md + hooks)
+  vscode-copilot  — VS Code Copilot extension (.github/copilot-instructions.md only)
+  codex           — OpenAI Codex CLI (AGENTS.md + .codex/skills/)
+  gemini          — Google Gemini CLI / antigravity (GEMINI.md + .gemini/skills/)
+
+--theme:
+  all             — builder + floor + thrift (default)
+  builder         — just /agent-init (CLAUDE.md/AGENTS.md/GEMINI.md + agents)
+  floor           — just /agent-all + /visual-qa (config files)
+  thrift          — just /thrift (long-session cost optimization)
+
+--lite:
+  builder-only lightweight scaffold. For Codex, passes --lite through to
+  codex-init so it writes AGENTS.md + base skills only.
+
+--lang:
+  persist the interaction language into generated root guidance and
+  .agent-all.json where supported. Valid values: en, ko, auto.
+
+--dry-run:
+  print the selected renderer commands without writing files.
+
+Examples:
+  ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-app
+  ./scripts/install-platform.sh --platform=codex --target=. --theme=floor --dry-run
+  ./scripts/install-platform.sh --platform=copilot --target=. --ctx=ctx.json --force
+USAGE
+}
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLATFORM=""
@@ -47,18 +93,33 @@ THEME="all"
 LITE=0
 HAS_LANG=0
 INIT_LANG=""
+DRY_RUN=0
 
-for arg in "$@"; do
+while [ "$#" -gt 0 ]; do
+  arg="$1"
   case "$arg" in
     --platform=*) PLATFORM="${arg#*=}" ;;
     --target=*)   TARGET="${arg#*=}" ;;
     --ctx=*)      CTX_PATH="${arg#*=}"; HAS_CTX=1 ;;
+    --ctx)
+      shift
+      case "${1:-}" in
+        ""|--*)
+          echo "Error: --ctx requires a path." >&2
+          echo "Run with --help for usage." >&2
+          exit 1
+          ;;
+      esac
+      CTX_PATH="$1"
+      HAS_CTX=1
+      ;;
     --force)      HAS_FORCE=1 ;;
     --theme=*)    THEME="${arg#*=}" ;;
     --lite)       LITE=1 ;;
     --lang=*)     INIT_LANG="${arg#*=}"; HAS_LANG=1 ;;
+    --dry-run)    DRY_RUN=1 ;;
     -h|--help)
-      sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
+      print_usage
       exit 0
       ;;
     *)
@@ -67,6 +128,7 @@ for arg in "$@"; do
       exit 1
       ;;
   esac
+  shift
 done
 
 if [ -z "$PLATFORM" ] || [ -z "$TARGET" ]; then
@@ -136,11 +198,24 @@ fi
 TARGET_ABS="$(cd "$TARGET" 2>/dev/null && pwd)" || { echo "Error: target dir does not exist: $TARGET" >&2; exit 1; }
 
 if [ "$LITE" = "1" ]; then
-  echo "Installing for $PLATFORM into $TARGET_ABS (theme: builder, profile: lite)"
+  echo "Installing for $PLATFORM into $TARGET_ABS (theme: builder, profile: lite$([ "$DRY_RUN" = "1" ] && printf ", dry-run"))"
 else
-  echo "Installing for $PLATFORM into $TARGET_ABS (theme: $THEME, profile: operational)"
+  echo "Installing for $PLATFORM into $TARGET_ABS (theme: $THEME, profile: operational$([ "$DRY_RUN" = "1" ] && printf ", dry-run"))"
 fi
 echo
+
+format_cmd() {
+  local rendered=""
+  local part
+  for part in "$@"; do
+    if [ -z "$rendered" ]; then
+      printf -v rendered "%q" "$part"
+    else
+      printf -v rendered "%s %q" "$rendered" "$part"
+    fi
+  done
+  printf "%s\n" "$rendered"
+}
 
 run_init() {
   local plugin="$1"
@@ -152,8 +227,7 @@ run_init() {
     return 0
   fi
   echo "  → $plugin / $script"
-  set +e
-  cmd=(node "$path" "$TARGET_ABS")
+  local cmd=(node "$path" "$TARGET_ABS")
   if [ "$HAS_CTX" = "1" ]; then
     cmd+=(--ctx "$CTX_PATH")
   fi
@@ -161,6 +235,11 @@ run_init() {
     cmd+=(--force)
   fi
   cmd+=("$@")
+  if [ "$DRY_RUN" = "1" ]; then
+    echo "  DRY-RUN: $(format_cmd "${cmd[@]}")"
+    return 0
+  fi
+  set +e
   if [ "$HAS_LANG" = "1" ]; then
     AGENT_INIT_LANG="$INIT_LANG" "${cmd[@]}"
   else
@@ -302,8 +381,15 @@ print_install_summary() {
 }
 
 echo
-echo "Done. Inspect the target project for the new files:"
+if [ "$DRY_RUN" = "1" ]; then
+  echo "DRY-RUN complete. No files were written. Planned artifacts:"
+else
+  echo "Done. Inspect the target project for the new files:"
+fi
 print_install_summary "$EMIT_PLATFORM" "$THEME" "$LITE"
+if [ "$DRY_RUN" = "1" ]; then
+  exit 0
+fi
 if [ "$LITE" = "1" ]; then
   exit 0
 fi

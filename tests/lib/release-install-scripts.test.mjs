@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { QA_AUTOSCAFFOLD_CONFIG as CODEX_QA_AUTOSCAFFOLD_CONFIG } from "../../plugins/harness-floor-codex/skills/agent-all-codex/lib/break-resolver.mjs";
@@ -38,6 +38,66 @@ test("install-all --dry-run labels Codex plugin bundles without presenting them 
   assert.match(res.stdout, /marketplace command: claude plugin install harness-builder-codex@agent-skill/);
   assert.doesNotMatch(res.stdout, /DRY-RUN: claude plugin install harness-builder-codex@agent-skill/);
   assert.doesNotMatch(res.stderr, /claude' binary not found/);
+});
+
+test("install-platform --help documents dry-run and canonical wrapper flags", () => {
+  const res = spawnSync("/bin/bash", [INSTALL_PLATFORM, "--help"], {
+    encoding: "utf-8",
+  });
+
+  assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+  assert.match(res.stdout, /Usage:/);
+  assert.match(res.stdout, /--platform=<NAME>/);
+  assert.match(res.stdout, /--target=<DIR>/);
+  assert.match(res.stdout, /--ctx(?:[ =]|=<)/);
+  assert.match(res.stdout, /--dry-run/);
+  assert.match(res.stdout, /--lang=en\|ko\|auto/);
+  assert.doesNotMatch(res.stderr, /--platform and --target are required/);
+});
+
+test("install-platform codex --dry-run reports selected scripts without writing files", () => {
+  const target = tmp("agent-skill-release-platform-dry-run-target-");
+  const home = tmp("agent-skill-release-platform-dry-run-home-");
+  const ctx = resolve(home, "ctx.json");
+  writeFileSync(ctx, "{}\n");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--ctx",
+      ctx,
+      "--theme=all",
+      "--dry-run",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /DRY-RUN/);
+    assert.match(res.stdout, /harness-builder-codex\/bin\/init\.mjs/);
+    assert.match(res.stdout, /harness-floor-codex\/bin\/init\.mjs/);
+    assert.match(res.stdout, /harness-thrift-codex\/bin\/install\.mjs/);
+    assert.match(res.stdout, /--no-instrument/);
+    assert.ok(res.stdout.includes(target), "dry-run output should include the target path");
+    assert.ok(res.stdout.includes(`--ctx ${ctx}`), "dry-run output should include documented --ctx path form");
+
+    for (const rel of [
+      "AGENTS.md",
+      ".codex/skills/planner/SKILL.md",
+      ".codex/hooks/agent-policy-hook.mjs",
+      ".visual-qa.json",
+      ".agent-all.json",
+      ".thrift.json",
+    ]) {
+      assert.ok(!existsSync(resolve(target, rel)), `dry-run wrote unexpected ${rel}`);
+    }
+    assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "dry-run must not create or patch global Codex config");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
 });
 
 test("install-platform codex all succeeds in a fresh project without patching global Codex config", () => {
