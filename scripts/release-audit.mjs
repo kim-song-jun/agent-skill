@@ -12,7 +12,9 @@ const PLATFORM_CONTRACTS = {
     marketplacePlugins: ["harness-builder", "harness-floor", "harness-thrift", "harness-explore", "harness-debug"],
     requiredFiles: [
       "plugins/harness-builder/plugin.json",
+      "plugins/harness-builder/bin/doctor.mjs",
       "plugins/harness-builder/skills/agent-init/SKILL.md",
+      "plugins/harness-builder/skills/agent-init/lib/doctor-core.mjs",
       "plugins/harness-builder/skills/agent-init/templates/CLAUDE.md.hbs",
       "plugins/harness-builder/skills/agent-init/templates/AGENTS.md.hbs",
       "plugins/harness-builder/skills/agent-init/templates/settings.local.json.hbs",
@@ -91,8 +93,10 @@ const PLATFORM_CONTRACTS = {
     marketplacePlugins: ["harness-builder-codex", "harness-floor-codex", "harness-thrift-codex"],
     requiredFiles: [
       "plugins/harness-builder-codex/.claude-plugin/plugin.json",
+      "plugins/harness-builder-codex/bin/doctor.mjs",
       "plugins/harness-builder-codex/bin/init.mjs",
       "plugins/harness-builder-codex/skills/codex-init/SKILL.md",
+      "plugins/harness-builder-codex/skills/codex-init/lib/doctor-core.mjs",
       "plugins/harness-builder-codex/skills/codex-init/templates/AGENTS.md.hbs",
       "plugins/harness-builder-codex/skills/codex-init/templates/codex-config.toml.hbs",
       "plugins/harness-builder-codex/skills/codex-init/templates/hooks/agent-policy-hook.mjs",

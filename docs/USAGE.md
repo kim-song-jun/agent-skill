@@ -178,12 +178,12 @@ The default renderer path installs the heavy builder + floor + thrift bundle. `-
 Manual doctor re-run:
 
 ```bash
-node /path/to/agent-skill/scripts/doctor.mjs --target=/path/to/my-project --platform=codex
-node /path/to/agent-skill/scripts/doctor.mjs --target=/path/to/my-project --platform=codex --profile=builder
-node /path/to/agent-skill/scripts/doctor.mjs --target=/path/to/my-project --platform=codex --profile=lite
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=builder
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=lite
 ```
 
-The doctor validates the project-local Claude/Codex scaffold, auto-detects operational, builder, or lite profile when `--profile=auto`, exits non-zero for missing required artifacts, and warns when `superpowers` or `context-mode` are not installed.
+From a source checkout, `node /path/to/agent-skill/scripts/doctor.mjs ...` is the equivalent compatibility wrapper. The doctor validates the project-local Claude/Codex scaffold, auto-detects operational, builder, or lite profile when `--profile=auto`, exits non-zero for missing required artifacts, and warns when `superpowers` or `context-mode` are not installed.
 
 For direct library usage, the core modules are portable Node.js:
 

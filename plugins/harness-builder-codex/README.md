@@ -29,6 +29,15 @@ print the exact plan without calling `claude`. Codex `all`, `builder`, and
 `--lite` installs run the post-install doctor automatically; pass
 `--no-doctor` only when intentionally deferring validation.
 
+Manual doctor re-run from the plugin bundle:
+
+```bash
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/project --platform=codex
+```
+
+From a source checkout, `node scripts/doctor.mjs ...` is the equivalent
+compatibility wrapper.
+
 ## Usage
 
 Run `/codex-init` inside Codex CLI. The skill scaffolds:

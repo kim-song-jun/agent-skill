@@ -6,6 +6,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 const DOCTOR = resolve("scripts/doctor.mjs");
+const CLAUDE_PLUGIN_DOCTOR = resolve("plugins/harness-builder/bin/doctor.mjs");
+const CODEX_PLUGIN_DOCTOR = resolve("plugins/harness-builder-codex/bin/doctor.mjs");
 const INSTALL_PLATFORM = resolve("scripts/install-platform.sh");
 
 function tmp(prefix) {
@@ -183,5 +185,91 @@ test("doctor auto-detects platform and exits non-zero for missing required files
     assert.ok(data.failures.some((failure) => failure.path === ".agent-all.json"));
   } finally {
     rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("plugin-local doctor wrappers validate Claude and Codex scaffolds without the repo-level script", () => {
+  const codexTarget = tmp("agent-skill-doctor-plugin-codex-");
+  const claudeTarget = tmp("agent-skill-doctor-plugin-claude-");
+  const home = tmp("agent-skill-doctor-plugin-home-");
+  try {
+    const install = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${codexTarget}`,
+      "--theme=builder",
+      "--no-doctor",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(install.status, 0, `stdout:\n${install.stdout}\nstderr:\n${install.stderr}`);
+
+    const codex = spawnSync(process.execPath, [
+      CODEX_PLUGIN_DOCTOR,
+      "--platform=codex",
+      "--profile=builder",
+      `--target=${codexTarget}`,
+      "--json",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(codex.status, 0, `stdout:\n${codex.stdout}\nstderr:\n${codex.stderr}`);
+    const codexData = JSON.parse(codex.stdout);
+    assert.equal(codexData.ok, true);
+    assert.equal(codexData.platform, "codex");
+    assert.equal(codexData.profile, "builder");
+
+    for (const rel of [
+      "CLAUDE.md",
+      "AGENTS.md",
+      ".claude/settings.local.json",
+      ".claude/hooks/context-mode-router.mjs",
+      ".claude/hooks/session-summary.mjs",
+      ".claude/hooks/cache-heal.mjs",
+      ".claude/hooks/agent-policy-hook.mjs",
+      ".claude/agents/planner.md",
+      ".claude/agents/dev.md",
+      ".claude/agents/reviewer.md",
+      ".claude/agents/orchestrator.md",
+      ".claude/agents/integration-dev.md",
+      ".claude/agents/verification-reviewer.md",
+      ".claude/agents/qa-reviewer.md",
+      ".claude/agents/design-reviewer.md",
+      ".claude/agents/security-reviewer.md",
+      ".claude/agents/data-reviewer.md",
+      "docs/tasks/index.md",
+      "docs/tasks/_template.md",
+      "docs/tasks/_handoff-template.md",
+      "scripts/agent-task-ledger-check.mjs",
+    ]) {
+      writeRel(claudeTarget, rel, rel.endsWith(".json") ? "{}\n" : `${rel}\n`);
+    }
+    writeRel(claudeTarget, ".visual-qa.json", "{}\n");
+    writeRel(claudeTarget, ".agent-all.json", "{}\n");
+
+    const claude = spawnSync(process.execPath, [
+      CLAUDE_PLUGIN_DOCTOR,
+      "--platform=claude",
+      "--profile=operational",
+      `--target=${claudeTarget}`,
+      "--json",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(claude.status, 0, `stdout:\n${claude.stdout}\nstderr:\n${claude.stderr}`);
+    const claudeData = JSON.parse(claude.stdout);
+    assert.equal(claudeData.ok, true);
+    assert.equal(claudeData.platform, "claude");
+    assert.equal(claudeData.profile, "operational");
+  } finally {
+    rmSync(codexTarget, { recursive: true, force: true });
+    rmSync(claudeTarget, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
   }
 });

@@ -23,8 +23,10 @@ does not patch global CLI config files.
 When `/codex-init` is run through `scripts/install-platform.sh`, the wrapper
 runs the post-install doctor automatically for `all`, `builder`, and `--lite`
 profiles. For a manual skill run, re-run the same check with
-`node /path/to/agent-skill/scripts/doctor.mjs --target=. --platform=codex --profile=builder`
-or `--profile=lite`.
+`node <plugin-root>/bin/doctor.mjs --target=. --platform=codex --profile=builder`
+or `--profile=lite`. When running from a source checkout instead of an installed
+plugin bundle, `node /path/to/agent-skill/scripts/doctor.mjs ...` is the
+equivalent compatibility wrapper.
 
 ## Phase 1 — Gather
 

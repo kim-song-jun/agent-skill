@@ -233,7 +233,8 @@ test("agent-init phase 5 runs doctor before committing the scaffold", () => {
   assert.notEqual(doctorIndex, -1, "Phase 5 must run a post-install doctor check");
   assert.notEqual(commitIndex, -1, "Phase 5 must still describe the bootstrap commit");
   assert.ok(doctorIndex < commitIndex, "Phase 5 must validate the scaffold before committing it");
-  assert.match(phase5, /scripts\/doctor\.mjs[\s\S]{0,220}--platform=claude/);
+  assert.match(phase5, /bin\/doctor\.mjs[\s\S]{0,220}--platform=claude/);
+  assert.match(phase5, /scripts\/doctor\.mjs[\s\S]{0,220}(equivalent|compatibility wrapper)/i);
   assert.match(phase5, /--profile=<operational\|builder\|lite>/);
   assert.match(phase5, /non-zero exit[\s\S]{0,180}abort/i);
 });

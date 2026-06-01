@@ -78,6 +78,14 @@ const FOUNDATION_CHECK_TARGETS = [
   "plugins/harness-builder-codex/skills/codex-init/lib/foundation-check.mjs",
 ].map((p) => resolve(repoRoot, p));
 
+const DOCTOR_CORE_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-builder/skills/agent-init/lib/doctor-core.mjs",
+);
+const DOCTOR_CORE_TARGETS = [
+  "plugins/harness-builder-codex/skills/codex-init/lib/doctor-core.mjs",
+].map((p) => resolve(repoRoot, p));
+
 function readOrNull(path) {
   return existsSync(path) ? readFileSync(path, "utf-8") : null;
 }
@@ -149,6 +157,20 @@ function collectDrift() {
       drift.push({ file: "foundation-check.mjs", dest: destPath, reason: "diverged", sourceContent: foundationSrc });
     }
   }
+  // doctor-core.mjs (Claude source → Codex init copy).
+  const doctorCoreSrc = readOrNull(DOCTOR_CORE_SOURCE);
+  if (doctorCoreSrc == null) {
+    console.error(`Source missing: ${DOCTOR_CORE_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of DOCTOR_CORE_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "doctor-core.mjs", dest: destPath, reason: "missing", sourceContent: doctorCoreSrc });
+    } else if (destContent !== doctorCoreSrc) {
+      drift.push({ file: "doctor-core.mjs", dest: destPath, reason: "diverged", sourceContent: doctorCoreSrc });
+    }
+  }
   return drift;
 }
 
@@ -157,7 +179,8 @@ function totalChecked() {
     + RENDER_ONLY_FILES.length * VENDORED_RENDER_ONLY.length
     + CONFIG_LOADER_TARGETS.length
     + CHANGED_FILE_CLASSIFIER_TARGETS.length
-    + FOUNDATION_CHECK_TARGETS.length;
+    + FOUNDATION_CHECK_TARGETS.length
+    + DOCTOR_CORE_TARGETS.length;
 }
 
 function checkMode() {

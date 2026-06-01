@@ -13,7 +13,7 @@
    - missing plugin report from the in-memory `plugin_scan`
    - planned global config patches that require separate approval
    - foundation update plan
-   - post-install doctor plan (`node /path/to/agent-skill/scripts/doctor.mjs --target=. --platform=claude --profile=<operational|builder|lite>`)
+   - post-install doctor plan (`node <plugin-root>/bin/doctor.mjs --target=. --platform=claude --profile=<operational|builder|lite>`; source checkouts may use `node /path/to/agent-skill/scripts/doctor.mjs ...`)
    - commit plan with explicit pathspecs
 
 2. Re-read `plugin_scan` from `.agent-init-state.json`.
@@ -68,9 +68,9 @@
 
 10. **Post-install doctor.** Run the project-local scaffold check before committing:
    ```bash
-   node /path/to/agent-skill/scripts/doctor.mjs --target=. --platform=claude --profile=<operational|builder|lite>
+   node <plugin-root>/bin/doctor.mjs --target=. --platform=claude --profile=<operational|builder|lite>
    ```
-   Use `operational` for the default floor-enabled profile, `builder` for builder-only operational scaffolds, and `lite` for `--lite`. A non-zero exit means the scaffold is incomplete; abort before committing and report the missing artifact(s). Foundation warnings do not abort unless the user explicitly requested strict foundation enforcement.
+   When running from a source checkout instead of an installed plugin bundle, the compatibility wrapper `node /path/to/agent-skill/scripts/doctor.mjs ...` is equivalent. Use `operational` for the default floor-enabled profile, `builder` for builder-only operational scaffolds, and `lite` for `--lite`. A non-zero exit means the scaffold is incomplete; abort before committing and report the missing artifact(s). Foundation warnings do not abort unless the user explicitly requested strict foundation enforcement.
 
 11. Single git commit with explicit pathspecs:
    ```bash
