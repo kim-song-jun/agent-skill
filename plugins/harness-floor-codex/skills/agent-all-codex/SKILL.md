@@ -3,9 +3,8 @@ name: agent-all-codex
 description: >
   Codex CLI port of /agent-all (intent → plan → wave-dispatch → gate → PR).
   Current Codex hooks do not expose the older agent-dispatch surface, so
-  Phase 3 uses sequential `.codex/skills/<role>` invocations. See
-  plugins/harness-floor/skills/agent-all/SKILL.md for the source-of-truth
-  pipeline.
+  Phase 3 uses sequential `.codex/skills/<role>` invocations. The local
+  phase files in this skill are the runnable Codex workflow contract.
 ---
 
 # /agent-all (Codex port)
@@ -97,4 +96,4 @@ Exit 0/1/2/3 per spec.
 ## References
 
 - `references/porting-notes.md` — current Codex hook limitation + sequential rationale
-- `plugins/harness-floor/skills/agent-all/SKILL.md` — source-of-truth pipeline
+- `phases/*.md` — runnable Codex phase contract

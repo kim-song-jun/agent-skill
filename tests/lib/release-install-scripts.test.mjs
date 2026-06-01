@@ -173,6 +173,8 @@ test("install-platform codex floor installs runnable workflow skill directories"
     const visualQa = readFileSync(resolve(target, ".codex/skills/visual-qa-codex/SKILL.md"), "utf-8");
     assert.match(agentAll, /^---\nname: agent-all-codex/m);
     assert.match(visualQa, /^---\nname: visual-qa-codex/m);
+    assert.doesNotMatch(agentAll, /plugins\/harness-floor/);
+    assert.doesNotMatch(visualQa, /plugins\/harness-floor/);
   } finally {
     rmSync(target, { recursive: true, force: true });
     rmSync(home, { recursive: true, force: true });

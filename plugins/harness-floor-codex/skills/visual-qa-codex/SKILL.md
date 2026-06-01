@@ -5,8 +5,8 @@ description: >
   analysis + diff vs prior run. Supports `declared` and `comprehensive` modes
   (crawl + DOM walk auto-discovery, shallow click, baseline-relative verdict).
   Phase 3 uses sequential `.codex/skills/visual-qa-page` dispatch because
-  current Codex hooks do not expose the older agent-dispatch surface. See
-  plugins/harness-floor/skills/visual-qa/SKILL.md for source-of-truth.
+  current Codex hooks do not expose the older agent-dispatch surface. The
+  local phase files in this skill are the runnable Codex workflow contract.
 ---
 
 # /visual-qa (Codex port)
@@ -83,4 +83,4 @@ Exit 0 if no critical, 1 otherwise.
 ## References
 
 - `references/porting-notes.md` — graduation, research questions
-- `plugins/harness-floor/skills/visual-qa/SKILL.md` — source-of-truth
+- `phases/*.md` — runnable Codex phase contract
