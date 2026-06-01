@@ -15,6 +15,7 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.equal(result.checks.claudePlatformBuilder.ok, true);
   assert.equal(result.checks.claudePlatformLite.ok, true);
   assert.equal(result.checks.claudeUninstall.ok, true);
+  assert.equal(result.checks.claudeForceRootClean.ok, true);
   assert.equal(result.checks.codexOperational.ok, true);
   assert.equal(result.checks.codexLite.ok, true);
   assert.equal(result.checks.codexBuilder.ok, true);
@@ -22,6 +23,7 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.equal(result.checks.codexThrift.ok, true);
   assert.equal(result.checks.codexDebug.ok, true);
   assert.equal(result.checks.codexUninstall.ok, true);
+  assert.equal(result.checks.codexForceRootClean.ok, true);
   assert.match(result.checks.claudeMarketplace.summary, /Claude marketplace dry-run: ok/);
   assert.match(result.checks.claudeRendered.summary, /Claude rendered fixture: ok/);
   assert.match(result.checks.claudeRendered.details, /QA and base\/specialized reviewer audit tokens/);
@@ -43,6 +45,8 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.claudeUninstall.summary, /Claude uninstall fixture: ok \(13\/13 removals\)/);
   assert.match(result.checks.claudeUninstall.details, /uninstall roundtrip removed generated agents, hooks, task ledger, and floor configs/);
   assert.match(result.checks.claudeUninstall.details, /preserving root guidance/);
+  assert.match(result.checks.claudeForceRootClean.summary, /Claude force-root uninstall fixture: ok \(15\/15 removals\)/);
+  assert.match(result.checks.claudeForceRootClean.details, /--uninstall --force-root-clean removed generated agents, hooks, task ledger, floor configs, and generated-looking root guidance/);
   assert.match(result.checks.codexOperational.summary, /Codex operational fixture: ok \(26\/26 artifacts\)/);
   assert.match(result.checks.codexOperational.details, /executable hooks\/task checker/);
   assert.match(result.checks.codexOperational.details, /role gate matrix, QA personas/);
@@ -75,6 +79,8 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.codexUninstall.summary, /Codex uninstall fixture: ok \(15\/15 removals\)/);
   assert.match(result.checks.codexUninstall.details, /uninstall roundtrip removed generated skills, hooks, task ledger, and floor\/thrift configs/);
   assert.match(result.checks.codexUninstall.details, /preserving root guidance, debug evidence, and global config/);
+  assert.match(result.checks.codexForceRootClean.summary, /Codex force-root uninstall fixture: ok \(16\/16 removals\)/);
+  assert.match(result.checks.codexForceRootClean.details, /--uninstall --force-root-clean removed generated skills, hooks, task ledger, floor\/thrift configs, and generated-looking root guidance/);
 });
 
 test("release fixture smoke CLI emits human-readable summaries", () => {
@@ -92,6 +98,7 @@ test("release fixture smoke CLI emits human-readable summaries", () => {
   assert.match(output, /Claude platform builder fixture: ok/);
   assert.match(output, /Claude platform lite fixture: ok/);
   assert.match(output, /Claude uninstall fixture: ok/);
+  assert.match(output, /Claude force-root uninstall fixture: ok/);
   assert.match(output, /Codex operational fixture: ok/);
   assert.match(output, /Codex lite fixture: ok/);
   assert.match(output, /Codex builder fixture: ok/);
@@ -99,6 +106,7 @@ test("release fixture smoke CLI emits human-readable summaries", () => {
   assert.match(output, /Codex thrift fixture: ok/);
   assert.match(output, /Codex debug fixture: ok/);
   assert.match(output, /Codex uninstall fixture: ok/);
+  assert.match(output, /Codex force-root uninstall fixture: ok/);
 });
 
 test("release fixture smoke CLI emits JSON", () => {
@@ -116,6 +124,7 @@ test("release fixture smoke CLI emits JSON", () => {
   assert.equal(data.checks.claudePlatformBuilder.ok, true);
   assert.equal(data.checks.claudePlatformLite.ok, true);
   assert.equal(data.checks.claudeUninstall.ok, true);
+  assert.equal(data.checks.claudeForceRootClean.ok, true);
   assert.equal(data.checks.codexOperational.ok, true);
   assert.equal(data.checks.codexLite.ok, true);
   assert.equal(data.checks.codexBuilder.ok, true);
@@ -123,4 +132,5 @@ test("release fixture smoke CLI emits JSON", () => {
   assert.equal(data.checks.codexThrift.ok, true);
   assert.equal(data.checks.codexDebug.ok, true);
   assert.equal(data.checks.codexUninstall.ok, true);
+  assert.equal(data.checks.codexForceRootClean.ok, true);
 });

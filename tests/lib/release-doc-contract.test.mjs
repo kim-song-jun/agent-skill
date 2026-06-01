@@ -396,6 +396,7 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /foundation auto-update/i);
   assert.match(plan, /install-platform\.sh --platform=codex --theme=all\|debug/);
   assert.match(plan, /Claude\/Codex `install-platform\.sh --uninstall` release-fixture roundtrips/i);
+  assert.match(plan, /--force-root-clean[\s\S]{0,120}release-fixture coverage/i);
   assert.match(plan, /install-platform\.sh --platform=claude` operational\/builder\/lite project bootstrap release-fixture coverage/i);
   assert.match(plan, /Codex operational\/default-heavy, builder, and lite post-install doctor evidence/i);
   assert.match(plan, /Codex floor\/thrift single-theme release fixtures/i);
