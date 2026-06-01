@@ -69,6 +69,9 @@ if [ "$WITH_LIVE_CLI" -eq 1 ]; then
   '
 fi
 
+run_step "release readiness audit" \
+  node "$REPO_ROOT/scripts/release-audit.mjs"
+
 run_step "Claude marketplace dry-run" \
   bash "$REPO_ROOT/scripts/install-all.sh" --dry-run --claude-code
 

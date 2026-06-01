@@ -21,6 +21,9 @@ test("release-smoke --fast runs Claude and Codex release gates without live CLIs
 
   const output = `${res.stdout}\n${res.stderr}`;
   assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+  assert.match(output, /release smoke: release readiness audit/);
+  assert.match(output, /Claude: ok/);
+  assert.match(output, /Codex: ok/);
   assert.match(output, /release smoke: Claude marketplace dry-run/);
   assert.match(output, /DRY-RUN: claude plugin install harness-builder@agent-skill/);
   assert.match(output, /release smoke: Codex marketplace dry-run/);

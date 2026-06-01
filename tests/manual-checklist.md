@@ -7,6 +7,7 @@ the automated gate, and only runtime UX observations stay manual.
 ## Automated release gate
 
 ```bash
+node scripts/release-audit.mjs
 ./scripts/release-smoke.sh --fast --with-live-cli
 node --test tests/lib/claude-native-release-contract.test.mjs tests/lib/release-install-scripts.test.mjs tests/lib/release-doc-contract.test.mjs
 node --test
@@ -19,6 +20,7 @@ The gate covers:
 - Codex install renderers for operational and lite profiles, including `/codex-init --lite` via `install-platform.sh --platform=codex --lite`.
 - Codex floor and visual-qa dispatch contracts, including the verified `codex exec` positional `[PROMPT]` interface.
 - Sentinel merge, dry-run, force, policy-hook, folder-guide, task-ledger, foundation-status, and lite-profile contracts.
+- Release readiness audit coverage for Claude/Codex manifests, required files, hook schema, role routing, and audit tokens.
 
 ## Claude Code live session
 

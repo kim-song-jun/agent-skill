@@ -19,12 +19,13 @@ Implemented through Task 12 as of 2026-06-01. The detailed TDD task list below i
 Completed scope:
 
 - Tasks 1-12 are implemented in repo artifacts: sentinel merge, folder guides, foundation checks, task ledger, pathspec policy, Claude/Codex/Gemini operational init surfaces, agent-all handoff runtime, changed-file reviewer routing, foundation update planning, docs, and release audit.
-- Latest hardening addition: root role routing for Claude and Codex guidance, including orchestrator HOT-file ownership, planner Decision Matrix routing, reviewer persona routing, and 3-failed-cycle escalation.
+- Latest hardening addition: `scripts/release-audit.mjs`, a Claude/Codex release readiness matrix covering marketplace manifests, required init/floor/thrift files, hook schema expectations, reviewer routing, audit tokens, and root role routing.
 - Current release-doc contract pins stale test-count regressions so future changes must update public verification evidence.
 
 Verification evidence:
 
-- `node --test`: 1634/1634 passing.
+- `node scripts/release-audit.mjs`: Claude/Codex readiness checks passing.
+- `node --test`: 1638/1638 passing.
 - `./scripts/release-smoke.sh --fast --with-live-cli`: 282/282 passing with Claude Code and Codex CLI live probes.
 - `node scripts/sync-lib.mjs --check`: 31 vendored files match source.
 
