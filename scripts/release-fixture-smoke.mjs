@@ -30,7 +30,10 @@ const CLAUDE_RENDER_PRESENT = [
   ".claude/agents/orchestrator.md",
   ".claude/agents/integration-dev.md",
   ".claude/agents/verification-reviewer.md",
+  ".claude/agents/qa-reviewer.md",
+  ".claude/agents/design-reviewer.md",
   ".claude/agents/security-reviewer.md",
+  ".claude/agents/data-reviewer.md",
   "docs/tasks/index.md",
   "docs/tasks/_template.md",
   "docs/tasks/_handoff-template.md",
@@ -90,8 +93,15 @@ const CLAUDE_LITE_ABSENT = [
 const CODEX_OPERATIONAL_PRESENT = [
   "AGENTS.md",
   ".codex/skills/planner/SKILL.md",
+  ".codex/skills/dev/SKILL.md",
+  ".codex/skills/reviewer/SKILL.md",
   ".codex/skills/orchestrator/SKILL.md",
+  ".codex/skills/integration-dev/SKILL.md",
   ".codex/skills/verification-reviewer/SKILL.md",
+  ".codex/skills/qa-reviewer/SKILL.md",
+  ".codex/skills/design-reviewer/SKILL.md",
+  ".codex/skills/security-reviewer/SKILL.md",
+  ".codex/skills/data-reviewer/SKILL.md",
   ".codex/skills/agent-all-codex/SKILL.md",
   ".codex/skills/agent-all-codex/lib/sequential-dispatch.mjs",
   ".codex/skills/visual-qa-codex/SKILL.md",
@@ -177,6 +187,7 @@ function checkClaudeRendered(root) {
       liteProfile: false,
       floorTheme: true,
       degradedFoundations: false,
+      qa_personas: ["auth", "payments"],
       agents: CLAUDE_OPERATIONAL_AGENTS,
       persona: "release",
       title: "Release Fixture Task",
@@ -238,6 +249,11 @@ function checkClaudeRendered(root) {
     const textChecks = [
       ["CLAUDE.md includes operational lite guidance", /\/agent-init --lite/.test(readIfExists(resolve(target, "CLAUDE.md")))],
       ["CLAUDE.md includes role routing", /Role Routing/.test(readIfExists(resolve(target, "CLAUDE.md")))],
+      ["CLAUDE.md includes orchestration contract", /Orchestration Contract/.test(readIfExists(resolve(target, "CLAUDE.md")))],
+      ["CLAUDE.md includes role gate matrix", /Role Gate Matrix/.test(readIfExists(resolve(target, "CLAUDE.md")))],
+      ["CLAUDE.md includes configured QA personas", /Configured QA Personas[\s\S]{0,120}auth[\s\S]{0,120}payments/.test(readIfExists(resolve(target, "CLAUDE.md")))],
+      [".claude qa-reviewer includes configured QA personas", /Configured QA Personas[\s\S]{0,120}auth[\s\S]{0,120}payments/.test(readIfExists(resolve(target, ".claude/agents/qa-reviewer.md")))],
+      [".claude qa-reviewer includes QA audit tokens", /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/.test(readIfExists(resolve(target, ".claude/agents/qa-reviewer.md")))],
       ["settings registers policy hook", JSON.stringify(settings.value || {}).includes("agent-policy-hook.mjs")],
       ["visual-qa is comprehensive", visualQa.value?.mode === "comprehensive"],
       ["agent-all language is aligned", agentAll.value?.language === "en"],
@@ -361,11 +377,18 @@ function checkCodexOperational(root) {
     const agentAllRuntime = checkCodexAgentAllSequentialRuntime(target);
     const visualQaRuntime = checkCodexVisualQaSequentialRuntime(target);
     const homeConfig = resolve(home, ".codex/config.toml");
+    const agents = readIfExists(resolve(target, "AGENTS.md"));
+    const qaReviewer = readIfExists(resolve(target, ".codex/skills/qa-reviewer/SKILL.md"));
     const stdoutChecks = [
       ["prints current PreToolUse hook snippet", /\[\[hooks\.PreToolUse\]\]/.test(res.stdout)],
       ["prints Playwright MCP snippet", /\[mcp_servers\.playwright\]/.test(res.stdout)],
       ["uses codex thrift no-instrument path", /instrument:\s+no/.test(res.stdout)],
       ["does not emit legacy agent hook snippet", !/\[\[hooks\.agent\]\]/.test(res.stdout)],
+      ["AGENTS.md includes orchestration contract", /Orchestration Contract/.test(agents)],
+      ["AGENTS.md includes role gate matrix", /Role Gate Matrix/.test(agents)],
+      ["AGENTS.md includes QA personas", /QA Personas[\s\S]{0,120}general/.test(agents)],
+      ["qa-reviewer skill includes configured QA personas", /Configured QA Personas[\s\S]{0,120}general/.test(qaReviewer)],
+      ["qa-reviewer skill includes QA audit tokens", /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/.test(qaReviewer)],
     ];
     const failedStdout = stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name);
     const ok = res.status === 0
@@ -379,7 +402,7 @@ function checkCodexOperational(root) {
       ok,
       summary: `Codex operational fixture: ${ok ? "ok" : "failed"} (${CODEX_OPERATIONAL_PRESENT.length - missing.length}/${CODEX_OPERATIONAL_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh git fixture received operational builder, floor, thrift, hooks, configs, and sequential agent-all-codex prompt helper runs from the installed fixture; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
+        ? "fresh git fixture received operational builder, role gate matrix, QA personas, floor, thrift, hooks, configs, and sequential agent-all-codex prompt helper runs from the installed fixture; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
         : compactFailure(res, [...missing, ...failedStdout, agentAllRuntime.ok ? null : agentAllRuntime.details, visualQaRuntime.ok ? null : visualQaRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });

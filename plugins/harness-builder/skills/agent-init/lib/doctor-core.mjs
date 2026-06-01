@@ -48,6 +48,29 @@ export const CONTRACTS = {
       ".claude/agents/orchestrator.md",
       "docs/tasks/index.md",
     ],
+    textChecks: [
+      {
+        profiles: ["builder", "operational"],
+        path: "CLAUDE.md",
+        patterns: [/Orchestration Contract/, /Role Gate Matrix/],
+      },
+      {
+        profiles: ["builder", "operational"],
+        path: "AGENTS.md",
+        patterns: [/Orchestration Contract/, /Role Gate Matrix/],
+      },
+      {
+        profiles: ["builder", "operational"],
+        path: ".claude/agents/qa-reviewer.md",
+        patterns: [/QA_AUDIT: passed/, /QA_AUDIT: failed/, /QA_AUDIT: skipped/],
+      },
+    ],
+    qaPersonaPropagation: {
+      rootPath: "CLAUDE.md",
+      reviewerPath: ".claude/agents/qa-reviewer.md",
+      rootHeader: /^## Configured QA Personas$/i,
+      reviewerHeader: /^## Configured QA Personas$/i,
+    },
   },
   codex: {
     label: "Codex",
@@ -97,6 +120,24 @@ export const CONTRACTS = {
       ".codex/skills/orchestrator/SKILL.md",
       "docs/tasks/index.md",
     ],
+    textChecks: [
+      {
+        profiles: ["builder", "operational"],
+        path: "AGENTS.md",
+        patterns: [/Orchestration Contract/, /Role Gate Matrix/],
+      },
+      {
+        profiles: ["builder", "operational"],
+        path: ".codex/skills/qa-reviewer/SKILL.md",
+        patterns: [/QA_AUDIT: passed/, /QA_AUDIT: failed/, /QA_AUDIT: skipped/],
+      },
+    ],
+    qaPersonaPropagation: {
+      rootPath: "AGENTS.md",
+      reviewerPath: ".codex/skills/qa-reviewer/SKILL.md",
+      rootHeader: /^## QA Personas$/i,
+      reviewerHeader: /^## Configured QA Personas$/i,
+    },
   },
 };
 
@@ -174,6 +215,21 @@ export function runDoctor({
     const parse = parseJson(abs, rel);
     checks.push(parse);
     if (!parse.ok) failures.push(parse);
+  }
+
+  for (const check of contract.textChecks ?? []) {
+    if (!check.profiles.includes(resolvedProfile)) continue;
+    const result = checkTextPatterns(targetAbs, check);
+    checks.push(result);
+    if (!result.ok) failures.push(result);
+  }
+
+  if (["builder", "operational"].includes(resolvedProfile) && contract.qaPersonaPropagation) {
+    const result = checkQaPersonaPropagation(targetAbs, contract.qaPersonaPropagation);
+    if (result) {
+      checks.push(result);
+      if (!result.ok) failures.push(result);
+    }
   }
 
   const foundationState = scanFoundationState({
@@ -290,6 +346,63 @@ function parseJson(abs, rel) {
       message: `${rel} is not valid JSON: ${error.message}`,
     };
   }
+}
+
+function checkTextPatterns(targetAbs, { path, patterns }) {
+  const abs = resolve(targetAbs, path);
+  if (!existsSync(abs)) {
+    return {
+      ok: false,
+      type: "text",
+      path,
+      message: `missing required text file: ${path}`,
+    };
+  }
+  const text = readFileSync(abs, "utf-8");
+  const missing = patterns.filter((pattern) => !pattern.test(text)).map(String);
+  return {
+    ok: missing.length === 0,
+    type: "text",
+    path,
+    message: missing.length === 0
+      ? "required operational guidance present"
+      : `${path} missing required operational guidance: ${missing.join(", ")}`,
+  };
+}
+
+function checkQaPersonaPropagation(targetAbs, { rootPath, reviewerPath, rootHeader, reviewerHeader }) {
+  const rootAbs = resolve(targetAbs, rootPath);
+  const reviewerAbs = resolve(targetAbs, reviewerPath);
+  if (!existsSync(rootAbs) || !existsSync(reviewerAbs)) return null;
+
+  const rootPersonas = extractSectionBullets(readFileSync(rootAbs, "utf-8"), rootHeader);
+  if (rootPersonas.length === 0) return null;
+
+  const reviewerPersonas = new Set(extractSectionBullets(readFileSync(reviewerAbs, "utf-8"), reviewerHeader));
+  const missing = rootPersonas.filter((persona) => !reviewerPersonas.has(persona));
+  const path = `${rootPath} -> ${reviewerPath}`;
+  return {
+    ok: missing.length === 0,
+    type: "persona",
+    path,
+    message: missing.length === 0
+      ? "configured QA personas propagated to QA reviewer"
+      : `configured QA personas missing from QA reviewer: ${missing.join(", ")}`,
+  };
+}
+
+function extractSectionBullets(text, headerPattern) {
+  const lines = text.split(/\r?\n/);
+  const start = lines.findIndex((line) => headerPattern.test(line.trim()));
+  if (start === -1) return [];
+  const personas = [];
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index].trim();
+    if (/^##\s+/.test(line)) break;
+    const match = /^-\s+(.+?)\s*$/.exec(line);
+    if (match) personas.push(match[1]);
+  }
+  return personas;
 }
 
 function loadInstalledPluginIds(homeDir) {

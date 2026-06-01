@@ -20,6 +20,48 @@ function writeRel(root, rel, content = "") {
   writeFileSync(abs, content);
 }
 
+function claudeDoctorFixtureContent(rel) {
+  if (rel === "CLAUDE.md" || rel === "AGENTS.md") {
+    return [
+      "# Doctor Fixture",
+      "",
+      "## Role Routing",
+      "",
+      "- `orchestrator`: wave ownership and HOT-file detection.",
+      "",
+      "## Orchestration Contract",
+      "",
+      "- Main thread/orchestrator owns task docs and pathspec commits.",
+      "",
+      "## Role Gate Matrix",
+      "",
+      "| Trigger | Required gate | Evidence |",
+      "|---------|---------------|----------|",
+      "| UI or user-visible flow | `design-reviewer` + `qa-reviewer` | UX findings plus `QA_AUDIT` |",
+      "",
+      "## Configured QA Personas",
+      "",
+      "- auth",
+      "- payments",
+      "",
+    ].join("\n");
+  }
+  if (rel === ".claude/agents/qa-reviewer.md") {
+    return [
+      "# QA Reviewer",
+      "",
+      "## Configured QA Personas",
+      "",
+      "- auth",
+      "- payments",
+      "",
+      "Return `QA_AUDIT: passed`, `QA_AUDIT: failed`, or `QA_AUDIT: skipped`.",
+      "",
+    ].join("\n");
+  }
+  return rel.endsWith(".json") ? "{}\n" : `${rel}\n`;
+}
+
 test("doctor validates an installed Codex operational scaffold", () => {
   const target = tmp("agent-skill-doctor-codex-operational-");
   const home = tmp("agent-skill-doctor-codex-home-");
@@ -125,7 +167,7 @@ test("doctor validates a Claude operational scaffold and detects foundations whe
       "docs/tasks/_handoff-template.md",
       "scripts/agent-task-ledger-check.mjs",
     ]) {
-      writeRel(target, rel, rel.endsWith(".json") ? "{}\n" : `${rel}\n`);
+      writeRel(target, rel, claudeDoctorFixtureContent(rel));
     }
     writeRel(target, ".visual-qa.json", '{"mode":"comprehensive"}\n');
     writeRel(target, ".agent-all.json", '{"language":"en"}\n');
@@ -188,6 +230,61 @@ test("doctor auto-detects platform and exits non-zero for missing required files
   }
 });
 
+test("doctor rejects operational scaffolds missing orchestration guidance and QA persona propagation", () => {
+  const target = tmp("agent-skill-doctor-stale-codex-");
+  const home = tmp("agent-skill-doctor-stale-home-");
+  try {
+    const install = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=builder",
+      "--no-doctor",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(install.status, 0, `stdout:\n${install.stdout}\nstderr:\n${install.stderr}`);
+    writeRel(target, "AGENTS.md", [
+      "# Stale Codex Guidance",
+      "",
+      "## Role Routing",
+      "",
+      "## QA Personas",
+      "",
+      "- auth",
+      "",
+    ].join("\n"));
+    writeRel(target, ".codex/skills/qa-reviewer/SKILL.md", [
+      "# QA Reviewer",
+      "",
+      "Return `QA_AUDIT: passed`, `QA_AUDIT: failed`, or `QA_AUDIT: skipped`.",
+      "",
+    ].join("\n"));
+
+    const res = spawnSync(process.execPath, [
+      DOCTOR,
+      "--platform=codex",
+      "--profile=builder",
+      `--target=${target}`,
+      "--json",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.notEqual(res.status, 0, "stale operational guidance must fail doctor");
+    const data = JSON.parse(res.stdout);
+    assert.equal(data.ok, false);
+    assert.ok(data.failures.some((failure) => failure.path === "AGENTS.md" && /Orchestration Contract/.test(failure.message)));
+    assert.ok(data.failures.some((failure) => failure.type === "persona" && /auth/.test(failure.message)));
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test("plugin-local doctor wrappers validate Claude and Codex scaffolds without the repo-level script", () => {
   const codexTarget = tmp("agent-skill-doctor-plugin-codex-");
   const claudeTarget = tmp("agent-skill-doctor-plugin-claude-");
@@ -246,7 +343,7 @@ test("plugin-local doctor wrappers validate Claude and Codex scaffolds without t
       "docs/tasks/_handoff-template.md",
       "scripts/agent-task-ledger-check.mjs",
     ]) {
-      writeRel(claudeTarget, rel, rel.endsWith(".json") ? "{}\n" : `${rel}\n`);
+      writeRel(claudeTarget, rel, claudeDoctorFixtureContent(rel));
     }
     writeRel(claudeTarget, ".visual-qa.json", "{}\n");
     writeRel(claudeTarget, ".agent-all.json", "{}\n");
