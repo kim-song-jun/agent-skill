@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { classifyChangedFiles as classifyClaudeChangedFiles } from "../../plugins/harness-floor/skills/agent-all/lib/changed-file-classifier.mjs";
+import { classifyChangedFiles as classifyCodexChangedFiles } from "../../plugins/harness-floor-codex/skills/agent-all-codex/lib/changed-file-classifier.mjs";
 
 const SKILL_ROOT = "plugins/harness-floor-codex/skills/agent-all-codex";
 
@@ -57,6 +59,39 @@ test("agent-all-codex: phase 0 detects dispatch strategy", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "phases/0-preflight.md"), "utf-8");
   assert.ok(body.includes("Detect dispatch strategy"));
   assert.ok(body.includes("current Codex hooks"));
+});
+
+test("agent-all-codex: phase 4 uses changed-file classifier persona gates", () => {
+  const body = readFileSync(resolve(SKILL_ROOT, "phases/4-gate.md"), "utf-8");
+
+  assert.match(body, /changed-file-classifier\.mjs/);
+  assert.match(body, /classifyChangedFiles\(files\)/);
+  assert.match(body, /\.codex\/skills\/<persona>\/SKILL\.md/);
+  assert.match(body, /verification-reviewer/);
+  assert.match(body, /qa-reviewer/);
+  assert.match(body, /design-reviewer/);
+  assert.match(body, /security-reviewer/);
+  assert.match(body, /data-reviewer/);
+  assert.match(body, /integration-dev/);
+  assert.match(body, /QA_AUDIT: passed\|failed\|skipped/);
+  assert.match(body, /VERIFICATION_AUDIT: passed\|failed\|skipped/);
+  assert.match(body, /Tech success ≠ user-flow success|Tech success != user-flow success/);
+});
+
+test("agent-all-codex: changed-file classifier matches Claude source of truth", () => {
+  const cases = [
+    ["frontend/src/LoginForm.tsx", "backend/api/views.py", "backend/db/migrations/001.sql"],
+    ["docs/README.md"],
+    ["server/auth/session.ts", "fixtures/users.json"],
+  ];
+
+  for (const files of cases) {
+    assert.deepEqual(
+      classifyCodexChangedFiles(files),
+      classifyClaudeChangedFiles(files),
+      `classifier mismatch for ${files.join(", ")}`,
+    );
+  }
 });
 
 test("agent-all-codex: all template files exist", () => {

@@ -50,9 +50,10 @@ const OPERATIONAL_AGENTS = [
   { name: "design-reviewer",       when: "UI hierarchy and design tokens" },
   { name: "security-reviewer",     when: "authz, secrets, destructive actions" },
   { name: "data-reviewer",         when: "migrations, seeds, fixtures, backfills" },
+  { name: "integration-dev",        when: "cross-stack wiring and API contracts" },
 ];
 
-const OPERATIONAL_SKILL_RE = /^skills\/(orchestrator|verification-reviewer|qa-reviewer|design-reviewer|security-reviewer|data-reviewer)\//;
+const OPERATIONAL_SKILL_RE = /^skills\/(orchestrator|verification-reviewer|qa-reviewer|design-reviewer|security-reviewer|data-reviewer|integration-dev)\//;
 
 function parseArgs(argv) {
   const args = { target: null, ctxPath: null, force: false, lite: false, dryRun: false };

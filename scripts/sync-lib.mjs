@@ -60,6 +60,16 @@ const CONFIG_LOADER_TARGETS = [
   "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/config-loader.mjs",
 ].map((p) => resolve(repoRoot, p));
 
+// Codex keeps its own agent-all-codex skill path, but the changed-file
+// classifier should remain line-for-line compatible with Claude agent-all.
+const CHANGED_FILE_CLASSIFIER_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/changed-file-classifier.mjs",
+);
+const CHANGED_FILE_CLASSIFIER_TARGETS = [
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/changed-file-classifier.mjs",
+].map((p) => resolve(repoRoot, p));
+
 function readOrNull(path) {
   return existsSync(path) ? readFileSync(path, "utf-8") : null;
 }
@@ -103,13 +113,28 @@ function collectDrift() {
       drift.push({ file: "config-loader.mjs", dest: destPath, reason: "diverged", sourceContent: cfgSrc });
     }
   }
+  // agent-all changed-file-classifier.mjs (Claude source → Codex vendored copy).
+  const classifierSrc = readOrNull(CHANGED_FILE_CLASSIFIER_SOURCE);
+  if (classifierSrc == null) {
+    console.error(`Source missing: ${CHANGED_FILE_CLASSIFIER_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of CHANGED_FILE_CLASSIFIER_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "changed-file-classifier.mjs", dest: destPath, reason: "missing", sourceContent: classifierSrc });
+    } else if (destContent !== classifierSrc) {
+      drift.push({ file: "changed-file-classifier.mjs", dest: destPath, reason: "diverged", sourceContent: classifierSrc });
+    }
+  }
   return drift;
 }
 
 function totalChecked() {
   return FILES.length * VENDORED_LIBS.length
     + RENDER_ONLY_FILES.length * VENDORED_RENDER_ONLY.length
-    + CONFIG_LOADER_TARGETS.length;
+    + CONFIG_LOADER_TARGETS.length
+    + CHANGED_FILE_CLASSIFIER_TARGETS.length;
 }
 
 function checkMode() {

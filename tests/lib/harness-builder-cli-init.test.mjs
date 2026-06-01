@@ -34,6 +34,7 @@ const PLUGINS = {
       ".codex/skills/dev/SKILL.md",
       ".codex/skills/reviewer/SKILL.md",
       ".codex/skills/orchestrator/SKILL.md",
+      ".codex/skills/integration-dev/SKILL.md",
       ".codex/skills/verification-reviewer/SKILL.md",
       ".codex/skills/qa-reviewer/SKILL.md",
       ".codex/skills/design-reviewer/SKILL.md",
@@ -304,6 +305,7 @@ test("harness-builder-codex: --lite skips ledger and hooks", () => {
 
     for (const rel of [
       ".codex/skills/orchestrator/SKILL.md",
+      ".codex/skills/integration-dev/SKILL.md",
       ".codex/skills/verification-reviewer/SKILL.md",
       ".codex/skills/qa-reviewer/SKILL.md",
       ".codex/skills/design-reviewer/SKILL.md",
