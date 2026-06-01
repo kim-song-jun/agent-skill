@@ -25,7 +25,9 @@ Emits:
 Use `--force` when intentionally replacing generated artifacts in an existing
 project. `--update-foundations` refreshes only the approved foundation plugins
 through `scripts/update.sh --foundations-only`; combine it with `--dry-run` to
-print the exact plan without calling `claude`.
+print the exact plan without calling `claude`. Codex `all`, `builder`, and
+`--lite` installs run the post-install doctor automatically; pass
+`--no-doctor` only when intentionally deferring validation.
 
 ## Usage
 

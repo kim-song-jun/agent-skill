@@ -138,6 +138,7 @@ test("install-platform --help documents dry-run and canonical wrapper flags", ()
   assert.match(res.stdout, /--dry-run/);
   assert.match(res.stdout, /--lang=en\|ko\|auto/);
   assert.match(res.stdout, /--update-foundations/);
+  assert.match(res.stdout, /--no-doctor/);
   assert.doesNotMatch(res.stderr, /--platform and --target are required/);
 });
 
@@ -166,6 +167,7 @@ test("install-platform codex --dry-run reports selected scripts without writing 
     assert.match(res.stdout, /harness-floor-codex\/bin\/init\.mjs/);
     assert.match(res.stdout, /harness-thrift-codex\/bin\/install\.mjs/);
     assert.match(res.stdout, /--no-instrument/);
+    assert.match(res.stdout, /DRY-RUN: node .*scripts\/doctor\.mjs .*--platform=codex/);
     assert.ok(res.stdout.includes(target), "dry-run output should include the target path");
     assert.ok(res.stdout.includes(`--ctx ${ctx}`), "dry-run output should include documented --ctx path form");
 
@@ -340,6 +342,8 @@ test("install-platform vscode-copilot installs only VS Code instructions", () =>
 test("install-platform codex all succeeds in a fresh project without patching global Codex config", () => {
   const target = tmp("agent-skill-release-codex-target-");
   const home = tmp("agent-skill-release-codex-home-");
+  const skipDoctorTarget = tmp("agent-skill-release-codex-no-doctor-target-");
+  const skipDoctorHome = tmp("agent-skill-release-codex-no-doctor-home-");
   try {
     const res = spawnSync("/bin/bash", [
       INSTALL_PLATFORM,
@@ -374,13 +378,34 @@ test("install-platform codex all succeeds in a fresh project without patching gl
     assert.match(res.stdout, /\[\[hooks\.PreToolUse\]\]/);
     assert.match(res.stdout, /\[mcp_servers\.playwright\]/);
     assert.match(res.stdout, /instrument:\s+no/);
+    assert.match(res.stdout, /Post-install doctor/i);
+    assert.match(res.stdout, /harness doctor: ok/i);
+    assert.match(res.stdout, /platform: Codex/i);
+    assert.match(res.stdout, /profile: operational/i);
     assert.doesNotMatch(res.stdout, /\[\[hooks\.agent\]\]/);
     assert.doesNotMatch(res.stdout, /MVP scope|follow-up plan/i);
     assert.doesNotMatch(res.stderr, /Cannot patch/);
     assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "installer must not create or patch global Codex config");
+
+    const skipped = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${skipDoctorTarget}`,
+      "--theme=all",
+      "--no-doctor",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: skipDoctorHome },
+    });
+
+    assert.equal(skipped.status, 0, `stdout:\n${skipped.stdout}\nstderr:\n${skipped.stderr}`);
+    assert.ok(existsSync(resolve(skipDoctorTarget, "AGENTS.md")), "skip-doctor run should still scaffold the project");
+    assert.doesNotMatch(skipped.stdout, /Post-install doctor|harness doctor/i);
   } finally {
     rmSync(target, { recursive: true, force: true });
     rmSync(home, { recursive: true, force: true });
+    rmSync(skipDoctorTarget, { recursive: true, force: true });
+    rmSync(skipDoctorHome, { recursive: true, force: true });
   }
 });
 
@@ -562,6 +587,8 @@ test("install-platform codex --lite installs only the builder lite scaffold", ()
     const agents = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
     assert.match(agents, /lite mode/i);
     assert.match(res.stdout, /profile: lite/i);
+    assert.match(res.stdout, /Post-install doctor/i);
+    assert.match(res.stdout, /harness doctor: ok/i);
     assert.doesNotMatch(res.stdout, /\[\[hooks\.PreToolUse\]\]/);
     assert.doesNotMatch(res.stdout, /\[mcp_servers\.playwright\]/);
     assert.doesNotMatch(res.stdout, /instrument:\s+no/);
@@ -608,6 +635,8 @@ test("install-platform codex builder theme installs only builder artifacts and r
     }
 
     assert.match(res.stdout, /theme: builder/);
+    assert.match(res.stdout, /Post-install doctor/i);
+    assert.match(res.stdout, /profile: builder/i);
     assert.doesNotMatch(res.stdout, /\.visual-qa\.json|\.agent-all\.json|\.thrift\.json/);
     assert.doesNotMatch(res.stdout, /\[mcp_servers\.playwright\]|instrument:\s+no/);
   } finally {

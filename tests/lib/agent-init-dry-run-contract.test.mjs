@@ -69,6 +69,7 @@ test("phase 5 dry-run summary covers all planned write and wiring categories", (
     "platform wiring",
     "planned global config patches",
     "foundation update plan",
+    "post-install doctor plan",
     "commit plan",
   ]) {
     assert.match(dryRunSection, new RegExp(phrase), `Phase 5 dry-run summary must include ${phrase}`);
@@ -222,6 +223,19 @@ test("agent-init degraded foundation guidance points at the approved updater", (
   assert.match(phase2, /foundationUpdateCommand/);
   assert.match(claudeTemplate, /foundationUpdateCommand/);
   assert.match(claudeTemplate, /Manual fallback/);
+});
+
+test("agent-init phase 5 runs doctor before committing the scaffold", () => {
+  const phase5 = readPhase("5-wire.md");
+  const doctorIndex = phase5.indexOf("Post-install doctor");
+  const commitIndex = phase5.indexOf("Single git commit");
+
+  assert.notEqual(doctorIndex, -1, "Phase 5 must run a post-install doctor check");
+  assert.notEqual(commitIndex, -1, "Phase 5 must still describe the bootstrap commit");
+  assert.ok(doctorIndex < commitIndex, "Phase 5 must validate the scaffold before committing it");
+  assert.match(phase5, /scripts\/doctor\.mjs[\s\S]{0,220}--platform=claude/);
+  assert.match(phase5, /--profile=<operational\|builder\|lite>/);
+  assert.match(phase5, /non-zero exit[\s\S]{0,180}abort/i);
 });
 
 test("agent-init root guidance carries domain-neutral execution discipline", () => {

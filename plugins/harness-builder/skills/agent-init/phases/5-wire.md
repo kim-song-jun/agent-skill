@@ -13,6 +13,7 @@
    - missing plugin report from the in-memory `plugin_scan`
    - planned global config patches that require separate approval
    - foundation update plan
+   - post-install doctor plan (`node /path/to/agent-skill/scripts/doctor.mjs --target=. --platform=claude --profile=<operational|builder|lite>`)
    - commit plan with explicit pathspecs
 
 2. Re-read `plugin_scan` from `.agent-init-state.json`.
@@ -65,19 +66,26 @@
 
 9. If `--update-foundations` is set, print the foundation update plan before running `scripts/update.sh`. Global CLI config patching still requires a separate explicit approval.
 
-10. Single git commit with explicit pathspecs:
+10. **Post-install doctor.** Run the project-local scaffold check before committing:
+   ```bash
+   node /path/to/agent-skill/scripts/doctor.mjs --target=. --platform=claude --profile=<operational|builder|lite>
+   ```
+   Use `operational` for the default floor-enabled profile, `builder` for builder-only operational scaffolds, and `lite` for `--lite`. A non-zero exit means the scaffold is incomplete; abort before committing and report the missing artifact(s). Foundation warnings do not abort unless the user explicitly requested strict foundation enforcement.
+
+11. Single git commit with explicit pathspecs:
    ```bash
    git add -- CLAUDE.md AGENTS.md .claude/ .gitignore docs/ scripts/ .visual-qa.json .agent-all.json <generated-local-guide-paths>
    git commit -m "chore: bootstrap harness via /agent-init" -- CLAUDE.md AGENTS.md .claude/ .gitignore docs/ scripts/ .visual-qa.json .agent-all.json <generated-local-guide-paths>
    ```
    Omit any path that was skipped by lite mode, legacy mode, or platform selection. Replace `<generated-local-guide-paths>` with the exact folder-level guidance files rendered in Phase 2; do not substitute broad top-level directory pathspecs.
 
-11. Set top-level `commit` to the new SHA and push `{ "phase": 5, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`. Write to disk (this update happens AFTER the commit in step 10, and `.agent-init-state.json` is `.gitignored` from step 5 so it stays out of git).
+12. Set top-level `commit` to the new SHA and push `{ "phase": 5, "completedAt": "<iso>" }` onto `phases` in `.agent-init-state.json`. Write to disk (this update happens AFTER the commit in step 11, and `.agent-init-state.json` is `.gitignored` from step 5 so it stays out of git).
 
 ## Output to user
 
 Print the success summary:
 - Phases completed: 5 / 5
 - CLAUDE.md, AGENTS.md, N local guides, N agents, hooks installed, task ledger status
+- Doctor status and any foundation warnings
 - Missing plugins (if any) — with the exact install commands
 - Next step suggestion: "Try `/agent-init --dry-run` or invoke planner with `/plan <goal>`."

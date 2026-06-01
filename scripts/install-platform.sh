@@ -7,7 +7,7 @@
 # to the target project.
 #
 # Usage:
-#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations]
+#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations] [--no-doctor]
 #
 # --platform:
 #   cursor          — Cursor IDE (.cursor/rules + .cursor/agents)
@@ -37,6 +37,9 @@
 #   for Codex installs, also update/install approved foundation plugins
 #   (superpowers + context-mode) through scripts/update.sh --foundations-only.
 #
+# --no-doctor:
+#   skip the automatic Codex post-install doctor check.
+#
 # Examples:
 #   ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-app
 #   ./scripts/install-platform.sh --platform=codex --target=. --theme=floor
@@ -54,7 +57,7 @@ our own renderer scripts. Each `bin/init.mjs` writes the right files
 to the target project.
 
 Usage:
-  ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations]
+  ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations] [--no-doctor]
 
 --platform:
   cursor          — Cursor IDE (.cursor/rules + .cursor/agents)
@@ -84,6 +87,9 @@ Usage:
   for Codex installs, also update/install approved foundation plugins
   (superpowers + context-mode) through scripts/update.sh --foundations-only.
 
+--no-doctor:
+  skip the automatic Codex post-install doctor check.
+
 Examples:
   ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-app
   ./scripts/install-platform.sh --platform=codex --target=. --theme=floor --dry-run
@@ -104,6 +110,7 @@ HAS_LANG=0
 INIT_LANG=""
 DRY_RUN=0
 UPDATE_FOUNDATIONS=0
+NO_DOCTOR=0
 
 while [ "$#" -gt 0 ]; do
   arg="$1"
@@ -129,6 +136,7 @@ while [ "$#" -gt 0 ]; do
     --lang=*)     INIT_LANG="${arg#*=}"; HAS_LANG=1 ;;
     --dry-run)    DRY_RUN=1 ;;
     --update-foundations) UPDATE_FOUNDATIONS=1 ;;
+    --no-doctor)  NO_DOCTOR=1 ;;
     -h|--help)
       print_usage
       exit 0
@@ -287,6 +295,39 @@ run_foundation_update() {
   bash "$REPO_ROOT/scripts/update.sh" --foundations-only
 }
 
+should_run_post_install_doctor() {
+  if [ "$NO_DOCTOR" = "1" ]; then
+    return 1
+  fi
+  if [ "$PLATFORM" != "codex" ]; then
+    return 1
+  fi
+  if [ "$LITE" = "1" ]; then
+    return 0
+  fi
+  [ "$THEME" = "all" ] || [ "$THEME" = "builder" ]
+}
+
+run_post_install_doctor() {
+  should_run_post_install_doctor || return 0
+
+  local profile="operational"
+  if [ "$LITE" = "1" ]; then
+    profile="lite"
+  elif [ "$THEME" = "builder" ]; then
+    profile="builder"
+  fi
+
+  echo
+  echo "  → Post-install doctor"
+  local cmd=(node "$REPO_ROOT/scripts/doctor.mjs" "--target=$TARGET_ABS" "--platform=codex" "--profile=$profile")
+  if [ "$DRY_RUN" = "1" ]; then
+    echo "  DRY-RUN: $(format_cmd "${cmd[@]}")"
+    return 0
+  fi
+  "${cmd[@]}"
+}
+
 run_builder_init() {
   if [ "$VS_CODE_COPILOT" = "1" ]; then
     run_init "harness-builder-$EMIT_PLATFORM" "init.mjs" --vscode-only
@@ -342,6 +383,8 @@ esac
 if [ "$UPDATE_FOUNDATIONS" = "1" ]; then
   run_foundation_update
 fi
+
+run_post_install_doctor
 
 print_install_summary() {
   local platform="$1"

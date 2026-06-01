@@ -18,7 +18,7 @@ const CONTRACTS = {
       ".claude/agents/dev.md",
       ".claude/agents/reviewer.md",
     ],
-    operationalRequired: [
+    builderRequired: [
       ".claude/hooks/agent-policy-hook.mjs",
       ".claude/agents/orchestrator.md",
       ".claude/agents/integration-dev.md",
@@ -31,6 +31,8 @@ const CONTRACTS = {
       "docs/tasks/_template.md",
       "docs/tasks/_handoff-template.md",
       "scripts/agent-task-ledger-check.mjs",
+    ],
+    operationalRequired: [
       ".visual-qa.json",
       ".agent-all.json",
     ],
@@ -40,11 +42,13 @@ const CONTRACTS = {
       ".agent-all.json",
     ],
     operationalMarkers: [
+      ".agent-all.json",
+      ".visual-qa.json",
+    ],
+    builderMarkers: [
       ".claude/hooks/agent-policy-hook.mjs",
       ".claude/agents/orchestrator.md",
       "docs/tasks/index.md",
-      ".agent-all.json",
-      ".visual-qa.json",
     ],
   },
   codex: {
@@ -55,7 +59,7 @@ const CONTRACTS = {
       ".codex/skills/dev/SKILL.md",
       ".codex/skills/reviewer/SKILL.md",
     ],
-    operationalRequired: [
+    builderRequired: [
       ".codex/skills/orchestrator/SKILL.md",
       ".codex/skills/integration-dev/SKILL.md",
       ".codex/skills/verification-reviewer/SKILL.md",
@@ -63,13 +67,18 @@ const CONTRACTS = {
       ".codex/skills/design-reviewer/SKILL.md",
       ".codex/skills/security-reviewer/SKILL.md",
       ".codex/skills/data-reviewer/SKILL.md",
+      ".codex/hooks/agent-policy-hook.mjs",
+      "docs/tasks/index.md",
+      "docs/tasks/_template.md",
+      "docs/tasks/_handoff-template.md",
+      "scripts/agent-task-ledger-check.mjs",
+    ],
+    operationalRequired: [
       ".codex/skills/agent-all-codex/SKILL.md",
       ".codex/skills/agent-all-codex/lib/sequential-dispatch.mjs",
       ".codex/skills/visual-qa-codex/SKILL.md",
       ".codex/skills/visual-qa-codex/lib/sequential-dispatch.mjs",
       ".codex/skills/visual-qa-page/SKILL.md",
-      ".codex/hooks/agent-policy-hook.mjs",
-      "docs/tasks/index.md",
       ".visual-qa.json",
       ".agent-all.json",
       ".thrift.json",
@@ -80,17 +89,20 @@ const CONTRACTS = {
       ".thrift.json",
     ],
     operationalMarkers: [
-      ".codex/hooks/agent-policy-hook.mjs",
-      ".codex/skills/orchestrator/SKILL.md",
       ".codex/skills/agent-all-codex/SKILL.md",
       ".agent-all.json",
       ".visual-qa.json",
       ".thrift.json",
     ],
+    builderMarkers: [
+      ".codex/hooks/agent-policy-hook.mjs",
+      ".codex/skills/orchestrator/SKILL.md",
+      "docs/tasks/index.md",
+    ],
   },
 };
 
-const USAGE = `Usage: node scripts/doctor.mjs [--target=<dir>] [--platform=auto|claude|codex] [--profile=auto|operational|lite] [--json] [--strict-foundations]
+const USAGE = `Usage: node scripts/doctor.mjs [--target=<dir>] [--platform=auto|claude|codex] [--profile=auto|operational|builder|lite] [--json] [--strict-foundations]
 
 Checks a project-local agent-skill scaffold after install.
 
@@ -141,6 +153,7 @@ export function runDoctor({
 
   const requiredFiles = [
     ...contract.liteRequired,
+    ...(["builder", "operational"].includes(resolvedProfile) ? contract.builderRequired : []),
     ...(resolvedProfile === "operational" ? contract.operationalRequired : []),
   ];
 
@@ -245,7 +258,7 @@ function resolvePlatform(targetAbs, platform, failures) {
 
 function resolveProfile(targetAbs, contract, profile, failures) {
   if (profile !== "auto") {
-    if (profile === "operational" || profile === "lite") return profile;
+    if (profile === "operational" || profile === "builder" || profile === "lite") return profile;
     failures.push({
       type: "usage",
       path: "--profile",
@@ -253,9 +266,13 @@ function resolveProfile(targetAbs, contract, profile, failures) {
     });
     return null;
   }
-  return contract.operationalMarkers.some((rel) => existsSync(resolve(targetAbs, rel)))
-    ? "operational"
-    : "lite";
+  if (contract.operationalMarkers.some((rel) => existsSync(resolve(targetAbs, rel)))) {
+    return "operational";
+  }
+  if (contract.builderMarkers.some((rel) => existsSync(resolve(targetAbs, rel)))) {
+    return "builder";
+  }
+  return "lite";
 }
 
 function parseJson(abs, rel) {

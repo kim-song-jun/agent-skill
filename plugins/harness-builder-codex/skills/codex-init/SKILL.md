@@ -20,6 +20,11 @@ prints the approved foundation update plan, then updates/installs only
 `superpowers@claude-plugins-official` and `context-mode@context-mode`;
 `--dry-run --update-foundations` prints the same plan without mutation. This
 does not patch global CLI config files.
+When `/codex-init` is run through `scripts/install-platform.sh`, the wrapper
+runs the post-install doctor automatically for `all`, `builder`, and `--lite`
+profiles. For a manual skill run, re-run the same check with
+`node /path/to/agent-skill/scripts/doctor.mjs --target=. --platform=codex --profile=builder`
+or `--profile=lite`.
 
 ## Phase 1 — Gather
 
@@ -165,4 +170,6 @@ output.
 
 Print the detected stack, runtime, profile, roles scaffolded, and in the
 operational/default profile, the Codex config snippet for manual merge. Do not
-claim that global config was patched automatically.
+claim that global config was patched automatically. Include the post-install
+doctor command that matches the profile (`builder` for `/codex-init`, `lite`
+for `--lite`) so the user can re-run validation.

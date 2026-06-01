@@ -173,16 +173,17 @@ run /agent-all for "Hard refactor that needs second-opinion"
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --update-foundations
 ```
 
-기본 renderer 경로는 무거운 builder + floor + thrift 번들을 설치합니다. `--lang=ko|en|auto`는 builder/floor 설치 전체에서 `AGENTS.md`와 `.agent-all.json` language 값을 맞춥니다. `--lite`는 builder-only 경로이며 floor/thrift 파일과 전역 Codex config 스니펫을 건너뜁니다. `--update-foundations`는 `scripts/update.sh --foundations-only`로 위임하고, `--dry-run`과 함께 쓰면 `claude` 호출 없이 승인된 계획만 출력합니다.
+기본 renderer 경로는 무거운 builder + floor + thrift 번들을 설치합니다. `--lang=ko|en|auto`는 builder/floor 설치 전체에서 `AGENTS.md`와 `.agent-all.json` language 값을 맞춥니다. `--lite`는 builder-only 경로이며 floor/thrift 파일과 전역 Codex config 스니펫을 건너뜁니다. `--update-foundations`는 `scripts/update.sh --foundations-only`로 위임하고, `--dry-run`과 함께 쓰면 `claude` 호출 없이 승인된 계획만 출력합니다. Codex `all`, `builder`, `--lite` 설치는 post-install doctor를 자동 실행하며, 검증을 의도적으로 미룰 때만 `--no-doctor`를 넘기세요.
 
-설치 후 doctor:
+수동 doctor 재실행:
 
 ```bash
 node /path/to/agent-skill/scripts/doctor.mjs --target=/path/to/my-project --platform=codex
+node /path/to/agent-skill/scripts/doctor.mjs --target=/path/to/my-project --platform=codex --profile=builder
 node /path/to/agent-skill/scripts/doctor.mjs --target=/path/to/my-project --platform=codex --profile=lite
 ```
 
-doctor는 project-local Claude/Codex scaffold를 검증하고, `--profile=auto`일 때 operational/lite profile을 자동 감지하며, 필수 artifact 누락은 non-zero exit로 보고하고 `superpowers` 또는 `context-mode`가 없으면 경고합니다.
+doctor는 project-local Claude/Codex scaffold를 검증하고, `--profile=auto`일 때 operational/builder/lite profile을 자동 감지하며, 필수 artifact 누락은 non-zero exit로 보고하고 `superpowers` 또는 `context-mode`가 없으면 경고합니다.
 
 직접 라이브러리로 사용할 때, 핵심 모듈은 이식 가능한 Node.js입니다:
 

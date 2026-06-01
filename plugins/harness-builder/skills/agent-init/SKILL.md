@@ -13,6 +13,8 @@ Default (no theme flag) is operational/heavy. It renders the task ledger,
 local folder guides, reviewer personas, policy hooks, foundation checks, and
 the floor bundle (`.visual-qa.json` + `.agent-all.json`). Use `--lite` only
 when a project needs a minimal root memory and minimal role roster.
+Phase 5 runs the post-install doctor before committing so incomplete scaffolds
+fail fast.
 
 ## Flags
 

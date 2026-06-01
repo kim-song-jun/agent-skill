@@ -10,7 +10,7 @@ the automated gate, and only runtime UX observations stay manual.
 node scripts/release-audit.mjs
 node scripts/release-fixture-smoke.mjs
 ./scripts/release-smoke.sh --fast --with-live-cli
-node --test tests/lib/claude-native-release-contract.test.mjs tests/lib/doctor-script.test.mjs tests/lib/release-command-surface.test.mjs tests/lib/release-install-scripts.test.mjs tests/lib/release-doc-contract.test.mjs
+node --test tests/lib/agent-init-dry-run-contract.test.mjs tests/lib/claude-native-release-contract.test.mjs tests/lib/doctor-script.test.mjs tests/lib/release-command-surface.test.mjs tests/lib/release-install-scripts.test.mjs tests/lib/release-doc-contract.test.mjs
 node --test
 node scripts/sync-lib.mjs --check
 ```
@@ -27,6 +27,7 @@ The gate covers:
 - Fresh release fixture coverage for Claude marketplace dry-run, Claude operational/lite render output, and Codex operational/lite installs in new git repos.
 - Command-surface coverage for Claude/Codex skill metadata, Codex init help/unknown-flag behavior, and documented post-install entrypoints.
 - Doctor coverage for project-local Claude/Codex operational and lite scaffolds, missing artifact failures, and foundation warnings.
+- `/agent-init` dry-run and Phase 5 post-install doctor ordering before the bootstrap commit.
 
 ## Claude Code live session
 

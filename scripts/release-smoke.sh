@@ -83,6 +83,7 @@ run_step "Codex marketplace dry-run" \
 
 run_step "focused release contracts" \
   node --test \
+    tests/lib/agent-init-dry-run-contract.test.mjs \
     tests/lib/claude-native-release-contract.test.mjs \
     tests/lib/doctor-script.test.mjs \
     tests/lib/release-command-surface.test.mjs \

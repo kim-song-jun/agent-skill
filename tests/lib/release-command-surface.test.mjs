@@ -45,7 +45,9 @@ test("Claude and Codex init skill docs expose the heavy default and lite opt-out
   assert.match(claude, /Default \(no theme flag\) is operational\/heavy/);
   assert.match(claude, /`--lite`[\s\S]{0,220}canonical lightweight mode/);
   assert.match(claude, /`--theme=lite`[\s\S]{0,160}legacy alias for `--lite`/);
+  assert.match(claude, /post-install doctor/i);
   assert.match(codex, /default[\s\S]{0,80}operational and heavy/i);
   assert.match(codex, /`--lite`[\s\S]{0,240}AGENTS and base skills only/);
   assert.match(codex, /`--theme=lite`[\s\S]{0,180}write root\s+AGENTS and base skills only/);
+  assert.match(codex, /post-install doctor/i);
 });
