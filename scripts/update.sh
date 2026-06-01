@@ -10,6 +10,8 @@
 #   bash scripts/update.sh --all           # all 17 plugins (CLI siblings included)
 #   bash scripts/update.sh --cli=codex     # one platform's full plugin set
 #   bash scripts/update.sh --cli=cursor    # one platform's full plugin set
+#   bash scripts/update.sh --foundations    # also refresh superpowers/context-mode
+#   bash scripts/update.sh --foundations-only
 #   bash scripts/update.sh --dry-run       # print the plan; change nothing
 #
 # Idempotent — re-runnable any time. Exit 0 = success.
@@ -28,13 +30,27 @@ Options:
   --cli=copilot   Update/install the GitHub Copilot plugin set.
   --cli=gemini    Update/install the Gemini plugin set.
   --cli=cursor    Update/install the Cursor plugin set.
+  --foundations   Also update/install approved foundation plugins.
+  --foundations-only
+                  Update/install only approved foundation plugins.
   -h, --help      Show this help and exit.
 EOF
 }
 
 DRY_RUN=0
 MODE="claude-code"
+UPDATE_FOUNDATIONS=0
+FOUNDATIONS_ONLY=0
 PASSTHROUGH=()
+FOUNDATION_PLUGINS=(
+  "superpowers@claude-plugins-official"
+  "context-mode@context-mode"
+)
+FOUNDATION_MARKETPLACES=(
+  "claude-plugins-official"
+  "context-mode"
+)
+
 for arg in "$@"; do
   case "$arg" in
     -h|--help)
@@ -68,6 +84,13 @@ for arg in "$@"; do
     --cli=cursor)
       MODE="cli-cursor"
       PASSTHROUGH+=("$arg")
+      ;;
+    --foundations)
+      UPDATE_FOUNDATIONS=1
+      ;;
+    --foundations-only)
+      UPDATE_FOUNDATIONS=1
+      FOUNDATIONS_ONLY=1
       ;;
     *)
       echo "Error: unknown argument: $arg" >&2
@@ -106,17 +129,40 @@ resolve_plugin_groups_for_dry_run() {
   trap cleanup_dry_run_metadata_clone EXIT
 }
 
+print_foundation_dry_run() {
+  local marketplace key
+  echo "Selected foundation update dry-run:"
+  for marketplace in "${FOUNDATION_MARKETPLACES[@]}"; do
+    echo "DRY-RUN: claude plugin marketplace" "update ${marketplace}"
+  done
+  for key in "${FOUNDATION_PLUGINS[@]}"; do
+    echo "DRY-RUN: claude plugin" "install ${key}"
+  done
+}
+
 echo "→ foundation update plan"
-if [ -d "$REPO_ROOT/.git" ]; then
+if [ "$FOUNDATIONS_ONLY" = "1" ]; then
+  echo "  - skip agent-skill repo update and selected plugin install"
+elif [ -d "$REPO_ROOT/.git" ]; then
   echo "  - update local clone at $REPO_ROOT with git pull --ff-only"
 else
   echo "  - clone agent-skill into a temporary directory"
 fi
-echo "  - verify vendored libs match canonical sources"
-echo "  - refresh agent-skill marketplace cache"
-echo "  - force-update already-installed selected plugins"
-echo "  - install any missing selected platform plugins through install-all.sh"
-if [ "${#PASSTHROUGH[@]}" -gt 0 ]; then
+if [ "$FOUNDATIONS_ONLY" != "1" ]; then
+  echo "  - verify vendored libs match canonical sources"
+  echo "  - refresh agent-skill marketplace cache"
+  echo "  - force-update already-installed selected plugins"
+  echo "  - install any missing selected platform plugins through install-all.sh"
+fi
+if [ "$UPDATE_FOUNDATIONS" = "1" ]; then
+  echo "  - refresh approved foundation marketplaces"
+  echo "  - force-update/install superpowers@claude-plugins-official and context-mode@context-mode"
+else
+  echo "  - approved foundation plugins are not mutated (pass --foundations to include them)"
+fi
+if [ "$FOUNDATIONS_ONLY" = "1" ]; then
+  echo "  - forward install/platform flags: (not applicable)"
+elif [ "${#PASSTHROUGH[@]}" -gt 0 ]; then
   echo "  - forward install/platform flags: ${PASSTHROUGH[*]}"
 else
   echo "  - forward install/platform flags: (none)"
@@ -125,6 +171,13 @@ echo "  - no global CLI config files are patched by this script"
 
 if [ "$DRY_RUN" = "1" ]; then
   echo "Dry run requested; no git pull, marketplace update, uninstall, or install command will run."
+  if [ "$UPDATE_FOUNDATIONS" = "1" ]; then
+    echo
+    print_foundation_dry_run
+  fi
+  if [ "$FOUNDATIONS_ONLY" = "1" ]; then
+    exit 0
+  fi
   resolve_plugin_groups_for_dry_run
   MARKETPLACE="agent-skill"
   . "$REPO_ROOT/scripts/lib/plugin-groups.sh"
@@ -132,6 +185,50 @@ if [ "$DRY_RUN" = "1" ]; then
   echo
   echo "Selected plugin install dry-run:"
   print_plugin_install_dry_run "${PLUGINS[@]}"
+  exit 0
+fi
+
+INSTALLED_JSON="$HOME/.claude/plugins/installed_plugins.json"
+
+run_foundation_updates() {
+  if ! command -v claude >/dev/null 2>&1; then
+    echo "Error: 'claude' binary not found in PATH." >&2
+    echo "Install Claude Code first, or paste these commands into Claude Code:" >&2
+    echo "  /plugin marketplace update claude-plugins-official"
+    echo "  /plugin marketplace update context-mode"
+    for key in "${FOUNDATION_PLUGINS[@]}"; do
+      echo "  /plugin install ${key}"
+    done
+    exit 1
+  fi
+
+  echo "→ refreshing approved foundation marketplaces …"
+  claude plugin marketplace update claude-plugins-official 2>&1 | tail -1 || true
+  claude plugin marketplace update context-mode 2>&1 | tail -1 || true
+
+  local failed key name
+  failed=0
+  echo "→ force-updating/installing approved foundation plugins …"
+  for key in "${FOUNDATION_PLUGINS[@]}"; do
+    name="${key%@*}"
+    if [ -f "$INSTALLED_JSON" ] && grep -q "\"${key}\"" "$INSTALLED_JSON" 2>/dev/null; then
+      claude plugin uninstall "$key" >/dev/null 2>&1 || true
+    fi
+    if claude plugin install "$key" >/dev/null 2>&1; then
+      echo "  ✓ $name"
+    else
+      echo "  ✗ $name (install failed — check 'claude plugin install ${key}' output)"
+      failed=1
+    fi
+  done
+  if [ "$failed" = "1" ]; then
+    echo "Error: one or more approved foundation plugin installs failed." >&2
+    return 1
+  fi
+}
+
+if [ "$FOUNDATIONS_ONLY" = "1" ]; then
+  run_foundation_updates
   exit 0
 fi
 
@@ -153,6 +250,10 @@ fi
 echo "→ verifying vendored libs match canonical sources …"
 node "$REPO_ROOT/scripts/sync-lib.mjs" --check
 
+if [ "$UPDATE_FOUNDATIONS" = "1" ]; then
+  run_foundation_updates
+fi
+
 echo "→ refreshing claude marketplace cache for agent-skill …"
 claude plugin marketplace update agent-skill 2>&1 | tail -1 || true
 
@@ -164,7 +265,6 @@ MARKETPLACE="agent-skill"
 . "$REPO_ROOT/scripts/lib/plugin-groups.sh"
 select_plugins_for_mode "$MODE"
 
-INSTALLED_JSON="$HOME/.claude/plugins/installed_plugins.json"
 echo "→ force-updating already-installed selected agent-skill plugins (uninstall + install)…"
 for p in "${PLUGINS[@]}"; do
   key="${p}@${MARKETPLACE}"

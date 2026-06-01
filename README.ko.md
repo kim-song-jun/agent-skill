@@ -104,6 +104,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/kim-song-jun/agent-skill/mai
 
 `scripts/update.sh`가 레포를 자동 위치 파악 (또는 temp dir에 clone), 최신 pull, vendored lib 검증 (`sync-lib.mjs --check`) 후, 이미 설치된 선택 플러그인을 강제 업데이트(언인스톨 후 재설치)하고 누락분은 `install-all.sh`로 설치합니다. `--all`로 17개 모두, `--cli=cursor|copilot|codex|gemini`로 한 플랫폼. 전역 CLI config 파일은 패치하지 않음.
 
+`scripts/update.sh --foundations`를 쓰면 승인된 foundation 플러그인인 `superpowers@claude-plugins-official`와 `context-mode@context-mode`도 함께 갱신합니다. `scripts/update.sh --foundations-only`는 agent-skill 선택 플러그인은 건드리지 않고 approved foundation plugins만 업데이트/설치합니다.
+
 마켓플레이스 없는 다른 CLI는 [다른 도구에서 업데이트](#다른-도구에서-업데이트) 참조.
 
 ### 신규 추가된 플러그인 설치

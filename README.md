@@ -104,6 +104,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/kim-song-jun/agent-skill/mai
 
 `scripts/update.sh` self-locates the repo (or clones into a temp dir), pulls latest, verifies vendored libs (`sync-lib.mjs --check`), force-updates already-installed selected plugins by uninstalling/reinstalling them, then re-runs `install-all.sh` for anything missing. Pass `--all` for all 17 plugins or `--cli=cursor|copilot|codex|gemini` for one platform set. It does not patch global CLI config files.
 
+Use `scripts/update.sh --foundations` when you also want to refresh the approved foundation plugins: `superpowers@claude-plugins-official` and `context-mode@context-mode`. Use `scripts/update.sh --foundations-only` to update/install only the approved foundation plugins without touching agent-skill plugin selections.
+
 For other CLIs without a marketplace, see [Updating on other tools](#updating-on-other-tools).
 
 ### Install newly added plugins

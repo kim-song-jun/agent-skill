@@ -25,6 +25,8 @@ function indexOfRequired(text) {
 test("update script supports dry-run, codex platform selection, and install-all delegation", () => {
   assert.match(script, /--dry-run/);
   assert.match(script, /--cli=codex/);
+  assert.match(script, /--foundations/);
+  assert.match(script, /--foundations-only/);
   assert.match(script, /exec bash "\$REPO_ROOT\/scripts\/install-all\.sh"/);
 });
 
@@ -32,6 +34,8 @@ test("update script describes the foundation update plan before changing state",
   const planIndex = indexOfRequired("foundation update plan");
   for (const mutation of [
     "git -C \"$REPO_ROOT\" pull",
+    "claude plugin marketplace update claude-plugins-official",
+    "claude plugin marketplace update context-mode",
     "claude plugin marketplace update",
     "claude plugin uninstall",
     "claude plugin install",
@@ -223,6 +227,7 @@ test("codex update force-refreshes installed Codex plugins before install-all de
       "harness-floor-codex@agent-skill": {},
       "harness-thrift-codex@agent-skill": {},
       "harness-builder@agent-skill": {},
+      "superpowers@claude-plugins-official": {},
     }),
   );
 
@@ -262,7 +267,7 @@ printf '%s\\n' "$@" > "${argsFile}"
 `,
   );
 
-  const result = spawnSync("bash", [join(scriptsDir, "update.sh"), "--cli=codex"], {
+  const result = spawnSync("bash", [join(scriptsDir, "update.sh"), "--foundations", "--cli=codex"], {
     cwd: fakeRepo,
     env: {
       ...process.env,
@@ -280,6 +285,12 @@ printf '%s\\n' "$@" > "${argsFile}"
   assert.equal(readFileSync(argsFile, "utf-8"), "--cli=codex\n");
 
   const log = readFileSync(claudeLog, "utf-8");
+  assert.match(log, /plugin marketplace update claude-plugins-official/);
+  assert.match(log, /plugin marketplace update context-mode/);
+  assert.match(log, /plugin uninstall superpowers@claude-plugins-official/);
+  assert.match(log, /plugin install superpowers@claude-plugins-official/);
+  assert.match(log, /plugin install context-mode@context-mode/);
+  assert.doesNotMatch(log, /plugin uninstall context-mode@context-mode/);
   for (const plugin of [
     "harness-builder-codex@agent-skill",
     "harness-floor-codex@agent-skill",
@@ -289,6 +300,35 @@ printf '%s\\n' "$@" > "${argsFile}"
     assert.match(log, new RegExp(`plugin install ${plugin}`));
   }
   assert.doesNotMatch(log, /plugin uninstall harness-builder@agent-skill/);
+
+  writeExecutable(
+    join(binDir, "claude"),
+    `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${claudeLog}"
+if [ "$*" = "plugin install context-mode@context-mode" ]; then
+  exit 42
+fi
+exit 0
+`,
+  );
+
+  const foundationFailure = spawnSync("bash", [join(scriptsDir, "update.sh"), "--foundations-only"], {
+    cwd: fakeRepo,
+    env: {
+      ...process.env,
+      PATH: `${binDir}:${process.env.PATH}`,
+      HOME: fakeRepo,
+    },
+    encoding: "utf-8",
+  });
+
+  assert.notEqual(
+    foundationFailure.status,
+    0,
+    `foundation install failures should fail the update command\nstdout:\n${foundationFailure.stdout}\nstderr:\n${foundationFailure.stderr}`,
+  );
+  assert.match(foundationFailure.stdout, /context-mode \(install failed/);
 });
 
 test("dry-run from a script-only invocation resolves plugin metadata before printing selected Codex set", () => {
@@ -336,6 +376,30 @@ exit 1
   assert.match(result.stdout, /DRY-RUN: install harness-builder-codex@agent-skill for Codex CLI/);
   assert.doesNotMatch(result.stderr, /claude' binary not found|codex' binary not found/i);
   assert.match(readFileSync(gitLog, "utf-8"), /clone --depth 1 https:\/\/github\.com\/kim-song-jun\/agent-skill/);
+
+  writeFileSync(gitLog, "");
+
+  const foundationsOnly = spawnSync("bash", [join(scriptsDir, "update.sh"), "--dry-run", "--foundations-only"], {
+    cwd: fakeRepo,
+    env: {
+      ...process.env,
+      PATH: `${binDir}:${process.env.PATH}`,
+      HOME: fakeRepo,
+    },
+    encoding: "utf-8",
+  });
+
+  assert.equal(
+    foundationsOnly.status,
+    0,
+    `update.sh --foundations-only should exit 0\nstdout:\n${foundationsOnly.stdout}\nstderr:\n${foundationsOnly.stderr}`,
+  );
+  assert.match(foundationsOnly.stdout, /Selected foundation update dry-run/);
+  assert.match(foundationsOnly.stdout, /forward install\/platform flags: \(not applicable\)/);
+  assert.match(foundationsOnly.stdout, /DRY-RUN: claude plugin install superpowers@claude-plugins-official/);
+  assert.match(foundationsOnly.stdout, /DRY-RUN: claude plugin install context-mode@context-mode/);
+  assert.doesNotMatch(foundationsOnly.stdout, /Selected plugin install dry-run/);
+  assert.equal(readFileSync(gitLog, "utf-8"), "", "--foundations-only dry-run must not clone plugin metadata");
 });
 
 function writeExecutable(path, content) {

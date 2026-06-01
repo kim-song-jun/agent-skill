@@ -80,6 +80,8 @@ test("readme files describe the current Codex config surface and current test co
 test("readme files describe release-safe update and per-platform install paths", () => {
   const english = read("README.md");
   assert.match(english, /scripts\/update\.sh[\s\S]{0,420}force-updates already-installed selected plugins/i);
+  assert.match(english, /scripts\/update\.sh --foundations[\s\S]{0,360}superpowers[\s\S]{0,180}context-mode/i);
+  assert.match(english, /scripts\/update\.sh --foundations-only[\s\S]{0,260}approved foundation plugins/i);
   assert.match(english, /--cli=cursor\|copilot\|codex\|gemini/);
   assert.match(english, /install-platform\.sh[\s\S]{0,420}does not patch global CLI config files/i);
   assert.match(english, /Copilot CLI[\s\S]{0,360}(prompt-level|optional hook helper|manual hook review)/i);
@@ -88,6 +90,8 @@ test("readme files describe release-safe update and per-platform install paths",
 
   const korean = read("README.ko.md");
   assert.match(korean, /scripts\/update\.sh[\s\S]{0,520}이미 설치된 선택 플러그인을 강제 업데이트/i);
+  assert.match(korean, /scripts\/update\.sh --foundations[\s\S]{0,460}superpowers[\s\S]{0,220}context-mode/i);
+  assert.match(korean, /scripts\/update\.sh --foundations-only[\s\S]{0,320}approved foundation plugins|승인된 foundation 플러그인/i);
   assert.match(korean, /--cli=cursor\|copilot\|codex\|gemini/);
   assert.match(korean, /install-platform\.sh[\s\S]{0,520}전역 CLI config 파일을 패치하지 않음/i);
   assert.match(korean, /Copilot CLI[\s\S]{0,420}(프롬프트|선택적 hook helper|수동 hook 검토)/i);
