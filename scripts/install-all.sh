@@ -72,6 +72,21 @@ case "$MODE" in
   all)         PLUGINS=("${ALL_PLUGINS[@]}") ;;
 esac
 
+echo "Installing ${#PLUGINS[@]} plugins from ${MARKETPLACE}:"
+for p in "${PLUGINS[@]}"; do
+  echo "  - ${p}"
+done
+echo
+
+if [ "$DRY_RUN" = "1" ]; then
+  for p in "${PLUGINS[@]}"; do
+    echo "DRY-RUN: claude plugin install ${p}@${MARKETPLACE}"
+  done
+  echo
+  echo "Dry run complete. Re-run without --dry-run to actually install."
+  exit 0
+fi
+
 if ! command -v claude >/dev/null 2>&1; then
   echo "Error: 'claude' binary not found in PATH." >&2
   echo "Install Claude Code first, or copy/paste the slash commands below into Claude Code:" >&2
@@ -82,21 +97,11 @@ if ! command -v claude >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "Installing ${#PLUGINS[@]} plugins from ${MARKETPLACE}:"
-for p in "${PLUGINS[@]}"; do
-  echo "  - ${p}"
-done
-echo
-
 failed=()
 installed=()
 skipped=()
 
 for p in "${PLUGINS[@]}"; do
-  if [ "$DRY_RUN" = "1" ]; then
-    echo "DRY-RUN: claude plugin install ${p}@${MARKETPLACE}"
-    continue
-  fi
   set +e
   output=$(claude plugin install "${p}@${MARKETPLACE}" 2>&1)
   status=$?
@@ -115,12 +120,6 @@ for p in "${PLUGINS[@]}"; do
     installed+=("$p")
   fi
 done
-
-if [ "$DRY_RUN" = "1" ]; then
-  echo
-  echo "Dry run complete. Re-run without --dry-run to actually install."
-  exit 0
-fi
 
 echo
 echo "Summary:"

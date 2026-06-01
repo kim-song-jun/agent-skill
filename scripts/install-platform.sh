@@ -32,16 +32,17 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLATFORM=""
 TARGET=""
-CTX=""
-FORCE=""
+CTX_PATH=""
+HAS_CTX=0
+HAS_FORCE=0
 THEME="all"
 
 for arg in "$@"; do
   case "$arg" in
     --platform=*) PLATFORM="${arg#*=}" ;;
     --target=*)   TARGET="${arg#*=}" ;;
-    --ctx=*)      CTX="--ctx ${arg#*=}" ;;
-    --force)      FORCE="--force" ;;
+    --ctx=*)      CTX_PATH="${arg#*=}"; HAS_CTX=1 ;;
+    --force)      HAS_FORCE=1 ;;
     --theme=*)    THEME="${arg#*=}" ;;
     -h|--help)
       sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
@@ -90,6 +91,7 @@ echo
 run_init() {
   local plugin="$1"
   local script="$2"
+  shift 2
   local path="$REPO_ROOT/plugins/$plugin/bin/$script"
   if [ ! -f "$path" ]; then
     echo "  ⊙ skip $plugin (no $script available yet)"
@@ -97,7 +99,15 @@ run_init() {
   fi
   echo "  → $plugin / $script"
   set +e
-  node "$path" "$TARGET_ABS" $CTX $FORCE
+  cmd=(node "$path" "$TARGET_ABS")
+  if [ "$HAS_CTX" = "1" ]; then
+    cmd+=(--ctx "$CTX_PATH")
+  fi
+  if [ "$HAS_FORCE" = "1" ]; then
+    cmd+=(--force)
+  fi
+  cmd+=("$@")
+  "${cmd[@]}"
   local status=$?
   set -e
   if [ $status -ne 0 ]; then
@@ -111,7 +121,11 @@ case "$THEME" in
   all)
     run_init "harness-builder-$EMIT_PLATFORM" "init.mjs"
     run_init "harness-floor-$EMIT_PLATFORM" "init.mjs"
-    run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs"
+    if [ "$EMIT_PLATFORM" = "codex" ]; then
+      run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs" --no-instrument
+    else
+      run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs"
+    fi
     ;;
   builder)
     run_init "harness-builder-$EMIT_PLATFORM" "init.mjs"
@@ -120,7 +134,11 @@ case "$THEME" in
     run_init "harness-floor-$EMIT_PLATFORM" "init.mjs"
     ;;
   thrift)
-    run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs"
+    if [ "$EMIT_PLATFORM" = "codex" ]; then
+      run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs" --no-instrument
+    else
+      run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs"
+    fi
     ;;
 esac
 

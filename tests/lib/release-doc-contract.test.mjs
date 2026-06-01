@@ -20,7 +20,7 @@ test("usage docs present --lite as canonical and retire Codex agent-hook hard-en
 test("readme files describe the current Codex config surface and current test count", () => {
   for (const path of ["README.md", "README.ko.md"]) {
     const body = read(path);
-    assert.match(body, /1547\/1547/);
+    assert.match(body, /1552\/1552/);
     assert.doesNotMatch(body, /1279\/1279|1279\+|1279%20passing/);
     assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
     assert.match(body, /\[\[hooks\.PreToolUse\]\]|\[mcp_servers\.playwright\]/);
@@ -41,4 +41,10 @@ test("Codex plugin READMEs match the implemented operational and sequential floo
   assert.match(floor, /agent-all-codex/);
   assert.match(floor, /visual-qa-codex/);
   assert.doesNotMatch(floor, /\[\[hooks\.agent\]\]|scaffold-only|future per-platform spec/i);
+
+  const thrift = read("plugins/harness-thrift-codex/README.md");
+  assert.match(thrift, /Codex CLI/i);
+  assert.match(thrift, /~\/\.codex\/config\.toml/);
+  assert.match(thrift, /--no-instrument/);
+  assert.doesNotMatch(thrift, /MVP scope|follow-up plan|scaffold-only/i);
 });

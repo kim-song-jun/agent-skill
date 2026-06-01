@@ -32,10 +32,17 @@ codex plugins install harness-thrift-codex
 Then in your project:
 
 ```
-/thrift-codex                 # one-time setup: seeds .thrift.json + patches ~/.codex/config.toml
+/thrift-codex                 # one-time setup: seeds .thrift.json + emits Codex TOML snippets
 /thrift-codex summarise       # manual summariser trigger
 /thrift-codex audit           # ad-hoc audit report (otherwise auto on Codex Stop)
 ```
+
+For non-interactive release installs, `scripts/install-platform.sh --platform=codex --theme=all`
+runs thrift with `--no-instrument`: it writes `.thrift.json` and `.codex/hooks/*.toml`
+inside the target project, but does not create or patch `~/.codex/config.toml`.
+Patch a Codex config only after explicit approval, either by passing `--config <path>`
+to the installer or by re-running thrift without `--no-instrument` after Codex has
+seeded the global config file.
 
 ## Configuration
 
@@ -64,19 +71,19 @@ Then in your project:
 }
 ```
 
-## MVP scope
+## Release surface
 
 - [x] thrift-core (config-loader, cost-estimator with OpenAI rates)
 - [x] thrift-instrument (hook TOML templates + minimal TOML patcher)
 - [x] phase docs (all six)
-- [x] install.mjs (renders `.thrift.json` + writes Codex hook TOML snippet)
+- [x] install.mjs (renders `.thrift.json` + writes Codex hook TOML snippets)
+- [x] release-safe `--no-instrument` install path for fresh Codex environments
 
 ## Status
 
-v0.1 — scaffold of phase docs, TOML patcher, OpenAI rate table.
-Live Codex CLI verification deferred (sandbox lacks running Codex CLI;
-session-cache semantics for OpenAI through Codex are unconfirmed —
-see `skills/thrift-codex/references/porting-notes.md`).
+v0.1 — phase docs, TOML patcher, OpenAI rate table, and project-local
+install artifacts. Runtime hook firing should still be smoke-tested in
+the local Codex CLI before treating command hooks as enforcement.
 
 ## Known limitations
 
