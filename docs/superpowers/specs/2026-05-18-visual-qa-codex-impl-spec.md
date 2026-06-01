@@ -88,11 +88,17 @@ Key assertions:
 - The generated visual-QA seed config matches the comprehensive-mode contract.
 - Live release smoke probes `codex exec [OPTIONS] [PROMPT]`.
 
-## Manual Runtime Observation
+## Automated Runtime Evidence
+
+Automated contracts cover the source sequential dispatcher, generated Codex
+visual-QA artifacts, release install renderers, and the live `codex exec
+[OPTIONS] [PROMPT]` surface.
+
+## Manual Host UX Observation
 
 Only host UX remains manual:
 
-1. Install into a fresh repo with `install-platform.sh --platform=codex`.
+1. Start Codex CLI in a fresh repo that has passed the automated Codex operational fixture gate.
 2. Ensure Playwright MCP is available to the Codex session.
 3. Start a small dev server.
 4. Run the generated visual-QA workflow from Codex CLI.

@@ -93,6 +93,7 @@ const CODEX_OPERATIONAL_PRESENT = [
   ".codex/skills/orchestrator/SKILL.md",
   ".codex/skills/verification-reviewer/SKILL.md",
   ".codex/skills/agent-all-codex/SKILL.md",
+  ".codex/skills/agent-all-codex/lib/sequential-dispatch.mjs",
   ".codex/skills/visual-qa-codex/SKILL.md",
   ".codex/skills/visual-qa-page/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
@@ -356,6 +357,7 @@ function checkCodexOperational(root) {
     initGit(target);
     const res = runInstallPlatform(root, target, home, ["--theme=all"]);
     const missing = missingFiles(target, CODEX_OPERATIONAL_PRESENT);
+    const sequentialRuntime = checkCodexSequentialRuntime(target);
     const homeConfig = resolve(home, ".codex/config.toml");
     const stdoutChecks = [
       ["prints current PreToolUse hook snippet", /\[\[hooks\.PreToolUse\]\]/.test(res.stdout)],
@@ -364,16 +366,163 @@ function checkCodexOperational(root) {
       ["does not emit legacy agent hook snippet", !/\[\[hooks\.agent\]\]/.test(res.stdout)],
     ];
     const failedStdout = stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name);
-    const ok = res.status === 0 && missing.length === 0 && failedStdout.length === 0 && !existsSync(homeConfig);
+    const ok = res.status === 0
+      && missing.length === 0
+      && failedStdout.length === 0
+      && sequentialRuntime.ok
+      && !existsSync(homeConfig);
 
     return {
       ok,
       summary: `Codex operational fixture: ${ok ? "ok" : "failed"} (${CODEX_OPERATIONAL_PRESENT.length - missing.length}/${CODEX_OPERATIONAL_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh git fixture received operational builder, floor, thrift, hooks, and configs without patching HOME"
-        : compactFailure(res, [...missing, ...failedStdout, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
+        ? "fresh git fixture received operational builder, floor, thrift, hooks, configs, and sequential agent-all-codex prompt helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
+        : compactFailure(res, [...missing, ...failedStdout, sequentialRuntime.ok ? null : sequentialRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
+}
+
+function checkCodexSequentialRuntime(target) {
+  const helperRel = ".codex/skills/agent-all-codex/lib/sequential-dispatch.mjs";
+  const helperPath = resolve(target, helperRel);
+  if (!existsSync(helperPath)) {
+    return { ok: false, details: `missing ${helperRel}` };
+  }
+
+  const script = `
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+
+const helperPath = resolve("${helperRel}");
+if (!existsSync(helperPath)) {
+  throw new Error("missing installed sequential helper");
+}
+
+const {
+  buildSequentialInvocation,
+  buildReviewPrompt,
+  buildSequentialShellCommand,
+  buildSkillPrompt,
+  parseSkillResult,
+} = await import(pathToFileURL(helperPath).href);
+
+function requireIncludes(label, body, needle) {
+  if (!body.includes(needle)) {
+    throw new Error(label + " missing " + needle);
+  }
+}
+
+function requireOmits(label, body, needle) {
+  if (body.includes(needle)) {
+    throw new Error(label + " unexpectedly included " + needle);
+  }
+}
+
+const implementer = buildSkillPrompt({
+  task: {
+    id: "release-smoke-1",
+    title: "Release smoke implementation",
+    files: ["src/app.js"],
+    forbiddenFiles: ["src/other.js"],
+    body: "Implement the release smoke fixture.",
+  },
+  plan: { path: "docs/tasks/001-release-smoke.md" },
+  skillPath: ".codex/skills/dev/SKILL.md",
+  workingDirectory: process.cwd(),
+});
+requireIncludes("implementer prompt", implementer, "## Dispatch Contract");
+requireIncludes("implementer prompt", implementer, "\\"changedFiles\\"");
+requireOmits("implementer prompt", implementer, "\\"commits\\"");
+
+const reviewer = buildReviewPrompt({
+  review: {
+    id: "release-smoke-review",
+    title: "Review release smoke implementation",
+    persona: "verification-reviewer",
+    changedFiles: ["src/app.js"],
+    diffRange: "HEAD~1..HEAD",
+  },
+  plan: { path: "docs/tasks/001-release-smoke.md", section: "Task 1" },
+  skillPath: ".codex/skills/verification-reviewer/SKILL.md",
+  workingDirectory: process.cwd(),
+});
+requireIncludes("reviewer prompt", reviewer, "verdict, issues by severity, audit token");
+requireOmits("reviewer prompt", reviewer, "\\"commits\\"");
+
+const shell = buildSequentialShellCommand({
+  task: {
+    id: "release-smoke-1",
+    title: "Release smoke implementation",
+    role: "dev",
+    files: ["src/app.js"],
+  },
+  plan: { path: "docs/tasks/001-release-smoke.md" },
+  codexBin: "codex",
+  projectRoot: process.cwd(),
+});
+requireIncludes("sequential command", shell.command, "'codex' 'exec'");
+requireIncludes("sequential command", shell.skillPath, ".codex/skills/dev/SKILL.md");
+requireOmits("sequential command", shell.command, "--prompt");
+requireOmits("sequential command", shell.command, "--skill");
+
+const invocation = buildSequentialInvocation({
+  task: {
+    id: "release-smoke-1",
+    title: "Release smoke implementation",
+    role: "dev",
+    files: ["src/app.js"],
+  },
+  plan: { path: "docs/tasks/001-release-smoke.md" },
+  codexBin: "codex",
+  projectRoot: process.cwd(),
+});
+if (invocation.argv.length !== 3) {
+  throw new Error("sequential invocation argv length mismatch");
+}
+if (invocation.argv[0] !== "codex" || invocation.argv[1] !== "exec") {
+  throw new Error("sequential invocation must use codex exec");
+}
+if (invocation.argv.includes("--prompt") || invocation.argv.includes("--skill")) {
+  throw new Error("sequential invocation used unsupported prompt or skill flags");
+}
+requireIncludes("sequential invocation prompt", invocation.argv[2], "## Dispatch Contract");
+requireIncludes("sequential invocation prompt", invocation.argv[2], "\\"changedFiles\\"");
+
+const parsed = parseSkillResult([
+  "log noise",
+  JSON.stringify({
+    status: "completed",
+    changedFiles: ["src/app.js"],
+    verification: "node --test passed",
+    errors: [],
+  }),
+].join("\\n"));
+if (parsed.status !== "completed") {
+  throw new Error("parsed status mismatch");
+}
+if (parsed.changedFiles[0] !== "src/app.js") {
+  throw new Error("parsed changedFiles mismatch");
+}
+if (parsed.verification !== "node --test passed") {
+  throw new Error("parsed verification mismatch");
+}
+if (parsed.commits.length !== 0) {
+  throw new Error("parser should not synthesize commits");
+}
+`;
+
+  const res = spawnSync(process.execPath, ["--input-type=module", "--eval", script], {
+    cwd: target,
+    encoding: "utf-8",
+  });
+
+  return {
+    ok: res.status === 0,
+    details: res.status === 0
+      ? "sequential agent-all-codex prompt helper runs from the installed fixture"
+      : compactFailure(res, [`${helperRel} runtime probe failed`]),
+  };
 }
 
 function checkCodexLite(root) {

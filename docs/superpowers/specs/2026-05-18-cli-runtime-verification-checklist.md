@@ -1,7 +1,7 @@
 # CLI runtime verification checklist
 
 **Date:** 2026-05-18
-**Last refreshed:** 2026-06-01 for the release-smoke verified Codex surface and Claude/Codex command-surface audit
+**Last refreshed:** 2026-06-01 for the release-smoke verified Codex surface, Codex release fixture runtime probe, and Claude/Codex command-surface audit
 **Status:** Current release handoff. Deterministic assertions belong in tests; this checklist keeps only host-runtime observations.
 
 ## Automated Gate First
@@ -25,6 +25,7 @@ The fast smoke gate verifies:
 - Claude native release contracts.
 - Codex install renderers for operational and lite profiles.
 - Codex floor and visual-qa sequential dispatch contracts.
+- Release fixture smoke imports the installed fixture's sequential agent-all-codex prompt helper and validates implementer/reviewer prompt contracts plus changedFiles/verification parsing.
 - Codex CLI live probe for the positional prompt interface: `codex exec [OPTIONS] [PROMPT]`.
 - Vendored lib sync.
 
@@ -53,24 +54,14 @@ Current constraints:
 - Sequential execution is driven through the current positional prompt interface: `codex exec [OPTIONS] [PROMPT]`.
 - Global Codex config snippets are printed for manual merge; project renderers do not patch global config files.
 
-Runtime observations that remain manual:
+## Manual Host UX Observation
 
-```bash
-mkdir /tmp/agent-skill-runtime-codex
-cd /tmp/agent-skill-runtime-codex
-git init
+Only interactive Codex shell UX remains manual:
 
-/path/to/agent-skill/scripts/install-platform.sh --platform=codex --target="$PWD"
-/path/to/agent-skill/scripts/install-platform.sh --platform=codex --target="$PWD-lite" --lite
-codex exec --help
-```
-
-Expected observations:
-
-- `codex exec --help` includes positional `[PROMPT]` usage.
-- The operational install prints a current `~/.codex/config.toml` command-hook snippet.
-- The lite install skips hook and global config snippet output.
-- Inside Codex CLI, `run /agent-all for "smoke task"` routes through sequential skill prompts.
+1. Start Codex CLI in a fresh repo that has passed the automated Codex operational fixture gate.
+2. Run `run /agent-all for "smoke task"`.
+3. Confirm the shell routes through sequential role skill prompts and reaches
+   its summary without host-runtime errors.
 
 Everything else above is already covered by automated contract tests.
 

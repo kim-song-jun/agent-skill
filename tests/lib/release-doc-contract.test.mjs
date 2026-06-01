@@ -273,9 +273,12 @@ test("Codex floor runtime comments reflect the verified CLI surface", () => {
 test("Codex runtime specs describe the current sequential surface instead of stale agent hooks", () => {
   const runtimeChecklist = read("docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md");
   assert.match(runtimeChecklist, /release-smoke\.sh --fast --with-live-cli/);
+  assert.match(runtimeChecklist, /release fixture smoke[\s\S]{0,260}installed fixture[\s\S]{0,260}sequential agent-all-codex prompt helper/i);
   assert.match(runtimeChecklist, /codex exec[\s\S]{0,180}\[PROMPT\]/);
+  assert.match(runtimeChecklist, /Manual Host UX Observation/i);
   assert.match(runtimeChecklist, /prompt-level|sequential/i);
   assert.doesNotMatch(runtimeChecklist, /codex skill run codex-init/i);
+  assert.doesNotMatch(runtimeChecklist, /install-platform\.sh --platform=codex --target="\$PWD"/);
   assert.doesNotMatch(runtimeChecklist, /cat \.codex\/config\.toml/i);
   assert.doesNotMatch(runtimeChecklist, /\[\[hooks\.agent\]\]|codex agent (?:wait|dispatch)/i);
 
@@ -287,8 +290,12 @@ test("Codex runtime specs describe the current sequential surface instead of sta
     assert.match(body, /Codex CLI 0\.135\.0/);
     assert.match(body, /positional \[PROMPT\]/);
     assert.match(body, /sequential/i);
+    assert.doesNotMatch(body, /## Manual Runtime Observation/i);
     assert.doesNotMatch(body, /\[\[hooks\.agent\]\]|codex agent (?:wait|dispatch)|agent-hook E2E|pending spike|post-spike/i);
   }
+
+  const agentAllSpec = read("docs/superpowers/specs/2026-05-18-agent-all-codex-impl-spec.md");
+  assert.match(agentAllSpec, /release fixture smoke[\s\S]{0,260}installed fixture[\s\S]{0,260}sequential agent-all-codex prompt helper/i);
 
   for (const path of [
     "docs/superpowers/specs/2026-05-21-decision-surfacing-and-policy-hooks-design.md",

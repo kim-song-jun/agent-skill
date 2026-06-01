@@ -75,6 +75,7 @@ Current automated coverage lives in:
 - `tests/lib/agent-all-codex.test.mjs`
 - `tests/lib/agent-all-codex-dispatch.test.mjs`
 - `tests/lib/release-install-scripts.test.mjs`
+- `tests/lib/release-fixture-smoke.test.mjs`
 - `tests/lib/release-doc-contract.test.mjs`
 - `tests/lib/codex-current-hook-schema.test.mjs`
 - `tests/lib/harness-builder-cli-init.test.mjs`
@@ -86,16 +87,23 @@ Key assertions:
 - Codex changed-file classification matches the Claude source of truth.
 - Current hook snippets do not emit the unsupported legacy agent hook shape.
 - Sequential command generation uses `codex exec`.
+- Release fixture smoke imports the installed fixture's sequential agent-all-codex prompt helper and validates implementer/reviewer prompt contracts plus changedFiles/verification parsing.
 - Live release smoke probes `codex exec [OPTIONS] [PROMPT]`.
 
-## Manual Runtime Observation
+## Automated Runtime Evidence
+
+The release fixture smoke gate installs into a fresh Codex operational fixture,
+imports the installed fixture's sequential agent-all-codex prompt helper, and
+validates the implementer prompt contract, reviewer prompt contract,
+`changedFiles` parsing, verification parsing, and no synthetic commit output.
+
+## Manual Host UX Observation
 
 Only host UX remains manual:
 
-1. Install into a fresh repo with `install-platform.sh --platform=codex`.
-2. Start Codex CLI in that repo.
-3. Run `run /agent-all for "smoke task"`.
-4. Confirm the workflow routes through sequential role skill prompts and reaches
+1. Start Codex CLI in a fresh repo that has passed the automated Codex operational fixture gate.
+2. Run `run /agent-all for "smoke task"`.
+3. Confirm the workflow routes through sequential role skill prompts and reaches
    its summary without host-runtime errors.
 
 Any deterministic failure found during that session should become a contract in
