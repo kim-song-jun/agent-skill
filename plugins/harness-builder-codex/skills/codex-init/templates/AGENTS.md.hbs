@@ -6,6 +6,11 @@
 
 {{stack}}{{#if runtime}} (on {{runtime}}{{#if services_str}}: {{services_str}}{{/if}}){{/if}}{{#if deploy_targets}} - deploys to {{deploy_targets}}{{/if}}
 
+## Language
+
+- Interaction language: `{{language}}`
+- Downstream workflow config should keep `.agent-all.json` `language` aligned with this value.
+
 ## Operating Principles
 
 These rules apply to the main Codex agent and every role in `.codex/skills/`:

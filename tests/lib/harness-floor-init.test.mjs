@@ -99,14 +99,16 @@ test("harness-floor-cursor: --ctx supplies template variables", () => {
       baseUrl: "https://staging.example.com",
       maxIter: 25,
       breakCondition: "pytest -q",
+      language: "ko",
     }));
     const res = runInit("cursor", [target, "--ctx", ctxPath]);
     assert.equal(res.status, 0, res.stderr);
     const vqa = readFileSync(resolve(target, ".visual-qa.json"), "utf-8");
     assert.ok(vqa.includes("https://staging.example.com"));
-    const aa = readFileSync(resolve(target, ".agent-all.json"), "utf-8");
-    assert.ok(aa.includes("\"maxIter\": 25"));
-    assert.ok(aa.includes("pytest -q"));
+    const aa = JSON.parse(readFileSync(resolve(target, ".agent-all.json"), "utf-8"));
+    assert.equal(aa.defaults.maxIter, 25);
+    assert.equal(aa.loop.breakCondition, "pytest -q");
+    assert.equal(aa.language, "ko");
   } finally {
     rmSync(target, { recursive: true, force: true });
     try { rmSync(ctxPath); } catch {}
@@ -148,6 +150,22 @@ for (const plugin of ["copilot", "codex", "gemini"]) {
       assert.ok(!existsSync(resolve(target, ".visual-qa.json")));
     } finally {
       rmSync(target, { recursive: true, force: true });
+    }
+  });
+
+  test(`harness-floor-${plugin}: --ctx language persists to .agent-all.json`, () => {
+    const target = makeTmp();
+    const ctxPath = join(target, "..", `${plugin}-ctx-lang.json`);
+    try {
+      writeFileSync(ctxPath, JSON.stringify({ language: "ko" }));
+      const res = runInit(plugin, [target, "--only=agent-all", "--ctx", ctxPath]);
+      assert.equal(res.status, 0, res.stderr);
+
+      const agentAll = JSON.parse(readFileSync(resolve(target, ".agent-all.json"), "utf-8"));
+      assert.equal(agentAll.language, "ko");
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+      try { rmSync(ctxPath); } catch {}
     }
   });
 }

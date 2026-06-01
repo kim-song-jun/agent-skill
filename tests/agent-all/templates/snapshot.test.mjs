@@ -41,7 +41,7 @@ for (const tplName of listTemplates(TEMPLATES_DIR)) {
   const fixtures = tplName.startsWith("agent-all.config") ? CONFIG_FIXTURES : PR_FIXTURES;
   for (const fx of fixtures) {
     test(`snapshot: ${tplName} × ${fx.tag}`, () => {
-      const out = render(tpl, fx.ctx);
+      const out = render(tpl, { language: "auto", ...fx.ctx });
       snapshot(`${tplName}__${fx.tag}`, out);
     });
   }

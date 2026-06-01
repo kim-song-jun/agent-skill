@@ -4,7 +4,7 @@
 
 - `discovery` from Phase 1 (`purpose`, `stack`, `deploy_targets`, `constraints`)
 - `size`, `qa_personas` (drives the `agents` array passed to the template)
-- `operationalProfile`, `liteProfile`, `theme`, `floorTheme`, `degradedFoundations`, and `local_guides` from Phase 1
+- `operationalProfile`, `liteProfile`, `theme`, `floorTheme`, `interactionLang`, `degradedFoundations`, and `local_guides` from Phase 1
 
 ## Steps
 
@@ -27,8 +27,8 @@
    | doc-writer | "produce user-facing or API documentation" |
 
 2. If `operationalProfile` is true, add the operational roles required for task-ledger work and review gates (`orchestrator`, `integration-dev`, `verification-reviewer`, `qa-reviewer`, `design-reviewer`, `security-reviewer`, `data-reviewer`) unless already present. Lite mode keeps only the size/persona roster above.
-3. Read `templates/CLAUDE.md.hbs`, `templates/AGENTS.md.hbs`, `templates/local-guides/CLAUDE.md.hbs`, and `templates/local-guides/AGENTS.md.hbs`.
-4. Render root `CLAUDE.md` and `AGENTS.md` with `render(tpl, { ...discovery, agents, operationalProfile: !liteProfile, liteProfile, theme, floorTheme, degradedFoundations })`. `CLAUDE.md` is the Claude Code primary guide; `AGENTS.md` is a companion index for agents and CLIs that read that filename.
+3. With `interactionLang` in the render context, read `templates/CLAUDE.md.hbs`, `templates/AGENTS.md.hbs`, `templates/local-guides/CLAUDE.md.hbs`, and `templates/local-guides/AGENTS.md.hbs`.
+4. Render root `CLAUDE.md` and `AGENTS.md` with `render(tpl, { ...discovery, agents, interactionLang, operationalProfile: !liteProfile, liteProfile, theme, floorTheme, degradedFoundations })`. `CLAUDE.md` is the Claude Code primary guide; `AGENTS.md` is a companion index for agents and CLIs that read that filename.
 5. If `--dry-run` is set, print the planned root files and local guide files for this phase without writing:
    - Root files: `CLAUDE.md`, `AGENTS.md`.
    - Local guide files: every operational `local_guides[]` target that would receive `CLAUDE.md` and `AGENTS.md`.

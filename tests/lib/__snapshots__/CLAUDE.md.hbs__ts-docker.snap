@@ -6,6 +6,11 @@
 
 typescript (on docker: postgres, redis) - deploys to fly.io
 
+## Language
+
+- Interaction language: `en`
+- Downstream `/agent-all` config keeps `.agent-all.json` `language` aligned with this value.
+
 ## Operating Principles
 
 These apply to the main agent and to every role in `.claude/agents/`:

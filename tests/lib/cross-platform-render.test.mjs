@@ -11,6 +11,7 @@ const CTX = {
   services_str: "postgres, redis",
   deploy_targets: "fly.io",
   constraints: "",
+  language: "auto",
   agents: [
     { name: "planner",  when: "all planning" },
     { name: "dev",      when: "implementation" },

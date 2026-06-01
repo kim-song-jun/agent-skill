@@ -13,7 +13,9 @@ profile is operational and heavy. `--lite` and `--theme=lite` write root
 AGENTS and base skills only: planner, dev, and reviewer. `--lite` skips repo
 hooks, task ledger files, operational reviewer personas, and Codex config
 snippet/global hook patch output. `--dry-run` prints planned writes without
-creating directories or files.
+creating directories or files. `--lang=en|ko|auto` records the selected
+interaction language in `AGENTS.md`; keep `.agent-all.json` `language` aligned
+with that value when the floor bundle is installed.
 
 ## Phase 1 — Gather
 
@@ -49,6 +51,7 @@ const ctx = {
   deploy_targets,
   constraints,
   ...detected,
+  language,
   services_str: detected.services.join(", "),
   operationalProfile: !lite,
   liteProfile: lite,

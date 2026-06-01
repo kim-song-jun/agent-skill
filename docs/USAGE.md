@@ -28,6 +28,15 @@ Produces:
 
 Skips task ledger files, policy hooks, `.visual-qa.json`, `.agent-all.json`, and the Floor section in CLAUDE.md.
 
+### Persistent language
+
+```
+/agent-init --lang=ko
+```
+
+Records the selected interaction language in `CLAUDE.md` and keeps
+`.agent-all.json` `language` aligned so downstream `/agent-all` prompts inherit it.
+
 ### Existing project (preserve existing CLAUDE.md)
 
 ```
@@ -143,10 +152,13 @@ For Codex CLI projects, use the Codex-specific builder and floor ports:
 ```
 /codex-init
 /codex-init --lite
+/codex-init --lang=ko
 run /agent-all for "Hard refactor that needs second-opinion"
 ```
 
 `/codex-init` writes `AGENTS.md`, `.codex/skills/*`, `.codex/hooks/agent-policy-hook.mjs`, and prints a current `~/.codex/config.toml` snippet using Codex command hooks such as `[[hooks.PreToolUse]]`. `/codex-init --lite` writes only the root `AGENTS.md` plus planner/dev/reviewer skills. Codex floor workflows run prompt-level/sequential dispatch because current Codex command hooks do not expose the Task-style subagent dispatch surface used by Claude Code.
+
+`/codex-init --lang=ko` records Korean as the Codex interaction language in `AGENTS.md`; keep `.agent-all.json` `language` aligned when the floor bundle is installed.
 
 For a shell-driven install into a target repo, use the platform renderer:
 

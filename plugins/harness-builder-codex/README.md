@@ -44,6 +44,16 @@ Lite mode:
 Lite mode keeps root guidance and the minimal skill roster, and skips task
 ledger, policy hooks, and config patch prompts.
 
+Language:
+
+```
+/codex-init --lang=ko
+```
+
+Records the selected interaction language in `AGENTS.md`. Keep `.agent-all.json`
+`language` aligned when installing the floor bundle so downstream workflow
+prompts use the same language.
+
 ## Codex Hook Surface
 
 Codex command hooks are used for shell/policy events only. The floor pipeline's

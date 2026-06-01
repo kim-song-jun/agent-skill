@@ -14,7 +14,7 @@
 // + merge into their existing config rather than blindly overwriting it.
 //
 // Usage:
-//   init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--lite|--theme=lite] [--dry-run]
+//   init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--lite|--theme=lite] [--lang=en|ko|auto] [--dry-run]
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -56,8 +56,32 @@ const OPERATIONAL_AGENTS = [
 
 const OPERATIONAL_SKILL_RE = /^skills\/(orchestrator|verification-reviewer|qa-reviewer|design-reviewer|security-reviewer|data-reviewer|integration-dev)\//;
 
+const LANGUAGE_VALUES = new Set(["en", "ko", "auto"]);
+
+function parseLanguageArg(value) {
+  if (!LANGUAGE_VALUES.has(value)) {
+    console.error("--lang must be one of: en, ko, auto");
+    process.exit(1);
+  }
+  return value;
+}
+
+function detectLanguageFromEnv() {
+  const explicit = process.env.AGENT_INIT_LANG;
+  if (explicit && LANGUAGE_VALUES.has(explicit)) return explicit;
+  const locale = [process.env.LANG, process.env.LC_ALL, process.env.LC_MESSAGES]
+    .filter(Boolean)
+    .join(" ");
+  return /(^|[_.-])ko([_.-]|$)|Korean/i.test(locale) ? "ko" : "en";
+}
+
+function resolveLanguage(value) {
+  if (!value || value === "auto") return detectLanguageFromEnv();
+  return parseLanguageArg(value);
+}
+
 function parseArgs(argv) {
-  const args = { target: null, ctxPath: null, force: false, lite: false, dryRun: false };
+  const args = { target: null, ctxPath: null, force: false, lite: false, dryRun: false, lang: null };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--ctx") args.ctxPath = argv[++i];
     else if (argv[i] === "--force") args.force = true;
@@ -68,10 +92,12 @@ function parseArgs(argv) {
       i++;
     }
     else if (argv[i] === "--dry-run") args.dryRun = true;
+    else if (argv[i].startsWith("--lang=")) args.lang = parseLanguageArg(argv[i].slice("--lang=".length));
+    else if (argv[i] === "--lang") args.lang = parseLanguageArg(argv[++i]);
     else if (!args.target) args.target = argv[i];
   }
   if (!args.target) {
-    console.error("Usage: init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--lite|--theme=lite] [--dry-run]");
+    console.error("Usage: init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--lite|--theme=lite] [--lang=en|ko|auto] [--dry-run]");
     process.exit(1);
   }
   return args;
@@ -109,6 +135,7 @@ function loadCtx(ctxPath, target, options = {}) {
   }
   const detected = detectProject(target);
   const lite = Boolean(options.lite);
+  const language = resolveLanguage(options.lang ?? ctx.language ?? "auto");
   const foundationState = scanFoundationState({
     installedPluginIds: loadInstalledPluginIds(),
   });
@@ -116,6 +143,7 @@ function loadCtx(ctxPath, target, options = {}) {
     ...ctx,
     ...detected,
     target_path: target,
+    language,
     operationalProfile: !lite,
     liteProfile: lite,
     degradedFoundations: !lite && foundationState.degraded,
@@ -179,7 +207,7 @@ function main() {
     console.error(`Error: target directory does not exist: ${target}`);
     process.exit(1);
   }
-  const ctx = loadCtx(args.ctxPath, target, { lite: args.lite });
+  const ctx = loadCtx(args.ctxPath, target, { lite: args.lite, lang: args.lang });
   const templates = listTemplates(templatesDir);
   const stdoutChunks = [];
   const plannedWrites = [];

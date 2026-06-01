@@ -379,6 +379,33 @@ test("harness-builder-codex: --lite skips ledger and hooks", () => {
   }
 });
 
+test("harness-builder-codex: --lang=ko records the selected language in AGENTS.md", () => {
+  const target = mkTarget("codex-lang-ko");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target, "--lang=ko"]);
+    assert.equal(res.status, 0, res.stderr);
+
+    const body = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+    assert.match(body, /^## Language$/m);
+    assert.match(body, /- Interaction language: `ko`/);
+    assert.match(body, /- Downstream workflow config should keep `\.agent-all\.json` `language` aligned with this value\./);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-codex: invalid --lang value fails before writing files", () => {
+  const target = mkTarget("codex-lang-invalid");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target, "--lang=fr"]);
+    assert.equal(res.status, 1);
+    assert.match(res.stderr, /--lang must be one of: en, ko, auto/);
+    assert.ok(!existsSync(resolve(target, "AGENTS.md")));
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
 test("harness-builder-codex: default config snippet includes sentinel markers", () => {
   const target = mkTarget("codex-config-sentinel");
   try {

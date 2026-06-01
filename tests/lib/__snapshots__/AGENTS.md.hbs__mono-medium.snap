@@ -6,6 +6,11 @@
 
 javascript - deploys to cloudflare
 
+## Language
+
+- Interaction language: `en`
+- Downstream `/agent-all` config keeps `.agent-all.json` `language` aligned with this value.
+
 ## Operating Principles
 
 These rules mirror the Claude Code harness so non-Claude agents can participate safely:

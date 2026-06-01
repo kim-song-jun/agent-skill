@@ -199,12 +199,12 @@ test("lite rendered outputs omit operational hooks and task ledger guidance", ()
 
   for (const tplRel of LITE_PROFILE_TEMPLATES) {
     const tpl = readFileSync(resolve(TEMPLATES_DIR, tplRel), "utf-8");
-    const out = render(tpl, { title: "Rendered Task", guidePath: "src", ...fx.ctx, persona: "auth" });
+    const out = render(tpl, { title: "Rendered Task", guidePath: "src", interactionLang: "en", ...fx.ctx, persona: "auth" });
     assertLiteOutputClean(tplRel, out);
   }
 
   const claudeTpl = readFileSync(resolve(TEMPLATES_DIR, "CLAUDE.md.hbs"), "utf-8");
-  const out = render(claudeTpl, { title: "Rendered Task", guidePath: "src", ...fx.ctx, persona: "auth" });
+  const out = render(claudeTpl, { title: "Rendered Task", guidePath: "src", interactionLang: "en", ...fx.ctx, persona: "auth" });
 
   assert.doesNotMatch(out, /^## Hooks$/m);
   assert.doesNotMatch(out, /policy hooks/);
@@ -369,7 +369,7 @@ for (const tplRel of listTemplates(TEMPLATES_DIR)) {
   const tpl = readFileSync(resolve(TEMPLATES_DIR, tplRel), "utf-8");
   for (const fx of fixturesForTemplate(tplRel)) {
     test(`snapshot: ${tplRel} × ${fx.tag}`, () => {
-      const out = render(tpl, { title: "Rendered Task", guidePath: "src", ...fx.ctx, persona: "auth" });
+      const out = render(tpl, { title: "Rendered Task", guidePath: "src", interactionLang: "en", ...fx.ctx, persona: "auth" });
       if (fx.tag === "lite-profile") assertLiteOutputClean(tplRel, out);
       snapshot(snapshotFileName(tplRel, fx.tag).replace(/\.snap$/, ""), out);
     });

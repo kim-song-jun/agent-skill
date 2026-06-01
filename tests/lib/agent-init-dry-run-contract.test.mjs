@@ -14,6 +14,13 @@ function readSkill() {
   return readFileSync(resolve("plugins/harness-builder/skills/agent-init/SKILL.md"), "utf-8");
 }
 
+function readTemplate(name) {
+  return readFileSync(
+    resolve("plugins/harness-builder/skills/agent-init/templates", name),
+    "utf-8",
+  );
+}
+
 function assertDryRunGuardBeforeMutation({ phaseFile, mutationPattern }) {
   const text = readPhase(phaseFile);
   const guardIndex = text.indexOf("If `--dry-run` is set");
@@ -182,4 +189,24 @@ test("agent-init skill presents operational default and rejects unsupported them
   assert.match(phase1, /Unsupported `--theme=` value/);
   assert.match(phase1, /Use `\/thrift` after `\/agent-init`/);
   assert.doesNotMatch(phase1, /--theme=thrift/i);
+});
+
+test("agent-init --lang contract persists into root guidance and agent-all config", () => {
+  const skill = readSkill();
+  const phase1 = readPhase("1-discover.md");
+  const phase2 = readPhase("2-claude-md.md");
+  const phase5 = readPhase("5-wire.md");
+  const claudeTemplate = readTemplate("CLAUDE.md.hbs");
+  const agentAllTemplate = readFileSync(
+    resolve("plugins/harness-floor/skills/agent-all/templates/agent-all.config.json.hbs"),
+    "utf-8",
+  );
+
+  assert.match(skill, /--lang=ko\|en[\s\S]{0,220}downstream commands/);
+  assert.match(phase1, /ctx\.interactionLang/);
+  assert.match(phase2, /interactionLang[\s\S]{0,160}templates\/CLAUDE\.md\.hbs/);
+  assert.match(phase5, /language:\s*ctx\.interactionLang/);
+  assert.match(claudeTemplate, /^## Language$/m);
+  assert.match(claudeTemplate, /{{interactionLang}}/);
+  assert.match(agentAllTemplate, /"language": "{{language}}"/);
 });
