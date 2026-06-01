@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { QA_AUTOSCAFFOLD_CONFIG as CODEX_QA_AUTOSCAFFOLD_CONFIG } from "../../plugins/harness-floor-codex/skills/agent-all-codex/lib/break-resolver.mjs";
 
 const REPO = resolve(".");
 const INSTALL_ALL = resolve(REPO, "scripts/install-all.sh");
@@ -100,6 +101,33 @@ test("install-platform codex all emits only dispatchable floor skill roles", () 
     assert.match(visualQaPage, /^---\nname: visual-qa-page/m);
     assert.match(visualQaPage, /OUTPUT_DIR/);
     assert.match(visualQaPage, /End with one JSON line/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("install-platform codex all seeds visual-qa in comprehensive mode", () => {
+  const target = tmp("agent-skill-release-codex-vqa-target-");
+  const home = tmp("agent-skill-release-codex-vqa-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=all",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    const visualQa = JSON.parse(readFileSync(resolve(target, ".visual-qa.json"), "utf-8"));
+    assert.equal(visualQa.mode, "comprehensive");
+    assert.deepEqual(visualQa.comprehensive.scope, CODEX_QA_AUTOSCAFFOLD_CONFIG.comprehensive.scope);
+    assert.deepEqual(visualQa.comprehensive.interactions, CODEX_QA_AUTOSCAFFOLD_CONFIG.comprehensive.interactions);
+    assert.deepEqual(visualQa.comprehensive.cache, CODEX_QA_AUTOSCAFFOLD_CONFIG.comprehensive.cache);
+    assert.deepEqual(visualQa.comprehensive.verdict, CODEX_QA_AUTOSCAFFOLD_CONFIG.comprehensive.verdict);
   } finally {
     rmSync(target, { recursive: true, force: true });
     rmSync(home, { recursive: true, force: true });
