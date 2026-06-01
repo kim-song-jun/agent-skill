@@ -106,6 +106,28 @@ if [ "$HAS_LANG" = "1" ]; then
   esac
 fi
 
+detect_language_from_env() {
+  case "${AGENT_INIT_LANG:-}" in
+    en|ko)
+      printf "%s\n" "$AGENT_INIT_LANG"
+      return 0
+      ;;
+  esac
+  local locale="${LANG:-} ${LC_ALL:-} ${LC_MESSAGES:-}"
+  case "$locale" in
+    *ko*|*KO*|*Korean*|*korean*)
+      printf "ko\n"
+      ;;
+    *)
+      printf "en\n"
+      ;;
+  esac
+}
+
+if [ "$HAS_LANG" = "1" ] && [ "$INIT_LANG" = "auto" ]; then
+  INIT_LANG="$(detect_language_from_env)"
+fi
+
 if [ "$LITE" = "1" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ]; }; then
   echo "Error: --lite can only be used with --theme=all or --theme=builder." >&2
   exit 1

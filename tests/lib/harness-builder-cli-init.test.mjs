@@ -394,6 +394,27 @@ test("harness-builder-codex: --lang=ko records the selected language in AGENTS.m
   }
 });
 
+test("harness-builder-codex: --lang=auto resolves Korean locale before writing AGENTS.md", () => {
+  const target = mkTarget("codex-lang-auto-ko");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target, "--lang=auto"], {
+      env: {
+        AGENT_INIT_LANG: "auto",
+        LANG: "ko_KR.UTF-8",
+        LC_ALL: "",
+        LC_MESSAGES: "",
+      },
+    });
+    assert.equal(res.status, 0, res.stderr);
+
+    const body = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+    assert.match(body, /- Interaction language: `ko`/);
+    assert.doesNotMatch(body, /- Interaction language: `auto`/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
 test("harness-builder-codex: invalid --lang value fails before writing files", () => {
   const target = mkTarget("codex-lang-invalid");
   try {

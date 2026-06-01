@@ -68,7 +68,7 @@ function parseLanguageArg(value) {
 
 function detectLanguageFromEnv() {
   const explicit = process.env.AGENT_INIT_LANG;
-  if (explicit && LANGUAGE_VALUES.has(explicit)) return explicit;
+  if (explicit === "en" || explicit === "ko") return explicit;
   const locale = [process.env.LANG, process.env.LC_ALL, process.env.LC_MESSAGES]
     .filter(Boolean)
     .join(" ");

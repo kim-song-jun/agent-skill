@@ -101,6 +101,41 @@ test("install-platform codex --lang=ko persists language into builder and floor 
   }
 });
 
+test("install-platform codex --lang=auto resolves locale before persisting language", () => {
+  const target = tmp("agent-skill-release-codex-auto-lang-target-");
+  const home = tmp("agent-skill-release-codex-auto-lang-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=all",
+      "--lang=auto",
+    ], {
+      encoding: "utf-8",
+      env: {
+        ...process.env,
+        HOME: home,
+        AGENT_INIT_LANG: "auto",
+        LANG: "ko_KR.UTF-8",
+        LC_ALL: "",
+        LC_MESSAGES: "",
+      },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    const agents = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+    const agentAll = JSON.parse(readFileSync(resolve(target, ".agent-all.json"), "utf-8"));
+
+    assert.match(agents, /Interaction language:\s+`?ko`?/);
+    assert.equal(agentAll.language, "ko");
+    assert.notEqual(agentAll.language, "auto");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test("install-platform rejects invalid --lang before writing scaffold files", () => {
   const target = tmp("agent-skill-release-codex-invalid-lang-target-");
   const home = tmp("agent-skill-release-codex-invalid-lang-home-");
