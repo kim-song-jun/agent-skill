@@ -12,6 +12,7 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.equal(result.checks.claudeRendered.ok, true);
   assert.equal(result.checks.claudeLite.ok, true);
   assert.equal(result.checks.claudePlatform.ok, true);
+  assert.equal(result.checks.claudePlatformLite.ok, true);
   assert.equal(result.checks.codexOperational.ok, true);
   assert.equal(result.checks.codexLite.ok, true);
   assert.equal(result.checks.codexDebug.ok, true);
@@ -21,6 +22,9 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.claudePlatform.summary, /Claude platform fixture: ok \(23\/23 artifacts\)/);
   assert.match(result.checks.claudePlatform.details, /post-install Claude platform doctor coverage/);
   assert.match(result.checks.claudePlatform.details, /no HOME patching/);
+  assert.match(result.checks.claudePlatformLite.summary, /Claude platform lite fixture: ok \(23\/23 file checks\)/);
+  assert.match(result.checks.claudePlatformLite.details, /post-install Claude platform lite doctor coverage/);
+  assert.match(result.checks.claudePlatformLite.details, /only lite scaffold files/);
   assert.match(result.checks.codexOperational.summary, /Codex operational fixture: ok \(24\/24 artifacts\)/);
   assert.match(result.checks.codexOperational.details, /role gate matrix, QA personas/);
   assert.match(result.checks.codexOperational.details, /floor, thrift, debug, hooks, configs/);
@@ -47,6 +51,7 @@ test("release fixture smoke CLI emits human-readable summaries", () => {
   assert.match(output, /Claude rendered fixture: ok/);
   assert.match(output, /Claude lite fixture: ok/);
   assert.match(output, /Claude platform fixture: ok/);
+  assert.match(output, /Claude platform lite fixture: ok/);
   assert.match(output, /Codex operational fixture: ok/);
   assert.match(output, /Codex lite fixture: ok/);
   assert.match(output, /Codex debug fixture: ok/);
@@ -64,6 +69,7 @@ test("release fixture smoke CLI emits JSON", () => {
   assert.equal(data.checks.claudeRendered.ok, true);
   assert.equal(data.checks.claudeLite.ok, true);
   assert.equal(data.checks.claudePlatform.ok, true);
+  assert.equal(data.checks.claudePlatformLite.ok, true);
   assert.equal(data.checks.codexOperational.ok, true);
   assert.equal(data.checks.codexLite.ok, true);
   assert.equal(data.checks.codexDebug.ok, true);

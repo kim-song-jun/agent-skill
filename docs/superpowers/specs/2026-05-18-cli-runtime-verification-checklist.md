@@ -1,7 +1,7 @@
 # CLI runtime verification checklist
 
 **Date:** 2026-05-18
-**Last refreshed:** 2026-06-02 for the release-smoke verified Codex surface, Claude terminal install-platform fixture coverage, Codex agent-all/visual-qa/debug release fixture runtime probes, and Claude/Codex command-surface audit
+**Last refreshed:** 2026-06-02 for the release-smoke verified Codex surface, Claude terminal install-platform operational/lite fixture coverage, Codex agent-all/visual-qa/debug release fixture runtime probes, and Claude/Codex command-surface audit
 **Status:** Current release handoff. Deterministic assertions belong in tests; this checklist keeps only host-runtime observations.
 
 ## Automated Gate First
@@ -21,7 +21,7 @@ The fast smoke gate verifies:
 - Claude marketplace dry-run install coverage.
 - Codex marketplace dry-run install coverage.
 - Claude/Codex release readiness audit for required manifests, files, hooks, role routing, audit tokens, and slash-command metadata.
-- Fresh Claude marketplace, Claude terminal `install-platform.sh --platform=claude`, Claude/Codex operational/lite, and Codex debug-only git fixtures through the release fixture smoke gate.
+- Fresh Claude marketplace, Claude terminal `install-platform.sh --platform=claude` operational/lite, Claude/Codex direct operational/lite, and Codex debug-only git fixtures through the release fixture smoke gate.
 - Claude native release contracts.
 - Codex install renderers for operational, lite, and debug profiles.
 - Codex floor and visual-qa sequential dispatch contracts.

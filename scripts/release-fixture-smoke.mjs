@@ -143,6 +143,7 @@ export function runReleaseFixtureSmoke({ root = ROOT } = {}) {
     claudeRendered: checkClaudeRendered(root),
     claudeLite: checkClaudeLite(root),
     claudePlatform: checkClaudePlatformInstall(root),
+    claudePlatformLite: checkClaudePlatformLiteInstall(root),
     codexOperational: checkCodexOperational(root),
     codexLite: checkCodexLite(root),
     codexDebug: checkCodexDebug(root),
@@ -347,6 +348,48 @@ function checkClaudePlatformInstall(root) {
       details: ok
         ? "fresh terminal install-platform Claude fixture produced operational scaffold, post-install Claude platform doctor coverage, role gate matrix, QA persona propagation, and no HOME patching"
         : compactFailure(res, [...missing, ...failed]),
+    };
+  });
+}
+
+function checkClaudePlatformLiteInstall(root) {
+  return withFixture("agent-skill-release-claude-platform-lite-", ({ target, home }) => {
+    initGit(target);
+    const res = runInstallPlatform(root, target, home, ["--lite"], "claude");
+
+    const missing = missingFiles(target, CLAUDE_LITE_PRESENT);
+    const unexpected = existingFiles(target, CLAUDE_LITE_ABSENT);
+    const settings = parseJsonFile(resolve(target, ".claude/settings.local.json"), "settings.local.json");
+    const homeSettings = resolve(home, ".claude/settings.local.json");
+    const claude = readIfExists(resolve(target, "CLAUDE.md"));
+    const agents = readIfExists(resolve(target, "AGENTS.md"));
+    const settingsText = JSON.stringify(settings.value || {});
+    const stdoutChecks = [
+      ["reports Claude platform lite install", /Installing for claude[\s\S]{0,160}profile:\s+lite/i.test(res.stdout)],
+      ["runs lite-profile doctor", /profile:\s+lite/i.test(res.stdout)],
+      ["post-install doctor passes", /harness doctor: ok/i.test(res.stdout)],
+      ["CLAUDE.md includes lite harness guidance", /Lite Harness/.test(claude)],
+      ["AGENTS.md includes minimal lite harness guidance", /Lite mode keeps only root guidance and the minimal role roster/.test(agents)],
+      ["settings keeps context-mode router", settingsText.includes("context-mode-router.mjs")],
+      ["settings omits policy hook", !settingsText.includes("agent-policy-hook.mjs")],
+    ];
+    const failed = [
+      ...settings.errors,
+      ...stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name),
+      existsSync(homeSettings) ? "unexpected ~/.claude/settings.local.json" : null,
+    ].filter(Boolean);
+    const ok = res.status === 0
+      && missing.length === 0
+      && unexpected.length === 0
+      && failed.length === 0;
+    const total = CLAUDE_LITE_PRESENT.length + CLAUDE_LITE_ABSENT.length;
+
+    return {
+      ok,
+      summary: `Claude platform lite fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
+      details: ok
+        ? "fresh terminal install-platform Claude lite fixture produced only lite scaffold files, post-install Claude platform lite doctor coverage, and no HOME patching"
+        : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failed]),
     };
   });
 }
