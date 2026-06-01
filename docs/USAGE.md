@@ -142,10 +142,20 @@ For Codex CLI projects, use the Codex-specific builder and floor ports:
 
 ```
 /codex-init
+/codex-init --lite
 run /agent-all for "Hard refactor that needs second-opinion"
 ```
 
-`/codex-init` writes `AGENTS.md`, `.codex/skills/*`, `.codex/hooks/agent-policy-hook.mjs`, and prints a current `~/.codex/config.toml` snippet using Codex command hooks such as `[[hooks.PreToolUse]]`. Codex floor workflows run prompt-level/sequential dispatch because current Codex command hooks do not expose the Task-style subagent dispatch surface used by Claude Code.
+`/codex-init` writes `AGENTS.md`, `.codex/skills/*`, `.codex/hooks/agent-policy-hook.mjs`, and prints a current `~/.codex/config.toml` snippet using Codex command hooks such as `[[hooks.PreToolUse]]`. `/codex-init --lite` writes only the root `AGENTS.md` plus planner/dev/reviewer skills. Codex floor workflows run prompt-level/sequential dispatch because current Codex command hooks do not expose the Task-style subagent dispatch surface used by Claude Code.
+
+For a shell-driven install into a target repo, use the platform renderer:
+
+```bash
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lite
+```
+
+The default renderer path installs the heavy builder + floor + thrift bundle. The `--lite` path is builder-only and skips floor/thrift files plus global Codex config snippets.
 
 For direct library usage, the core modules are portable Node.js:
 
