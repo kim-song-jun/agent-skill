@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1660%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1661%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..." --loop --qa` per feature; the agent brainstorms → plans → writes → tests → **visually QAs every page** → opens the PR — and keeps iterating until tests AND the UI both pass — without you babysitting every turn.
 
@@ -444,7 +444,7 @@ cargo new mycli && cd mycli && git init && git add -A && git commit -m "init"
 
 ## Use it on other AI tools
 
-Claude Code has a native marketplace (`/plugin install`). The other AI tools — Cursor, GitHub Copilot, Codex CLI, Gemini CLI, VS Code — **don't have a comparable plugin marketplace for AI workflows**, so we ship renderer scripts that write the right files into your project. Each per-platform plugin emits the config + hook + skill files in that tool's expected layout.
+Claude Code has a native marketplace (`/plugin install`). The other AI tools — Cursor, GitHub Copilot, Codex CLI, Gemini CLI, VS Code — **don't have a comparable plugin marketplace for AI workflows**, so we ship renderer scripts that write the right files into your project. CLI platforms receive their config, hook, and skill files in that tool's expected layout; VS Code Copilot receives editor instructions only.
 
 ### One-command install per platform
 
@@ -458,8 +458,8 @@ cd /tmp/agent-skill
 # GitHub Copilot CLI
 ./scripts/install-platform.sh --platform=copilot --target=/path/to/my-project
 
-# VS Code with Copilot extension (same emitter as Copilot CLI)
-./scripts/install-platform.sh --platform=vscode-copilot --target=/path/to/my-project
+# VS Code with Copilot extension (instructions-only)
+./scripts/install-platform.sh --platform=vscode-copilot --target=/path/to/my-project  # instructions-only
 
 # OpenAI Codex CLI
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project
@@ -472,7 +472,7 @@ cd /tmp/agent-skill
 ./scripts/install-platform.sh --platform=gemini --target=/path/to/my-project
 ```
 
-Default installs all three themes (builder + floor + thrift). Use `--theme=floor` or `--theme=thrift` to install just one. Use `--lite` for a builder-only lightweight scaffold; for Codex this passes through to `codex-init --lite` and skips floor/thrift files plus global config snippets. Use `--lang=ko|en|auto` to keep generated root guidance and `.agent-all.json` language aligned across builder/floor artifacts. `install-platform.sh` writes project-local files and prints any global config snippets to stdout; it does not patch global CLI config files.
+Default installs all three themes (builder + floor + thrift). Use `--theme=floor` or `--theme=thrift` to install just one. Use `--lite` for a builder-only lightweight scaffold; for Codex this passes through to `codex-init --lite` and skips floor/thrift files plus global config snippets. VS Code Copilot is instructions-only and does not accept floor/thrift theme installs. Use `--lang=ko|en|auto` to keep generated root guidance and `.agent-all.json` language aligned across builder/floor artifacts. `install-platform.sh` writes project-local files and prints any global config snippets to stdout; it does not patch global CLI config files.
 
 ### What each platform receives
 
@@ -480,7 +480,7 @@ Default installs all three themes (builder + floor + thrift). Use `--theme=floor
 |---|---|---|
 | **Cursor** | `.cursor/rules/*.mdc`, `.cursor/agents/*.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | All native. `is_background: true` on parallel subagents. |
 | **Copilot CLI** | `.github/copilot-instructions.md`, `.github/hooks/*.json`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | Hooks integrate with `gh copilot`. |
-| **VS Code Copilot** | `.github/copilot-instructions.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | VS Code Copilot extension reads `.github/copilot-instructions.md` automatically. Hooks dir written but unused by the editor. |
+| **VS Code Copilot** | `.github/copilot-instructions.md` | VS Code Copilot extension reads this automatically. Floor, visual-qa, thrift, and Copilot CLI automation files are not installed for this editor-only path. |
 | **Codex CLI** | `AGENTS.md`, `.codex/skills/<role>/SKILL.md`, `.codex/hooks/agent-policy-hook.mjs`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | A `[mcp_servers.playwright]` snippet and current command-hook snippets such as `[[hooks.PreToolUse]]` are printed to stdout. Floor workflows use prompt-level/sequential dispatch because Codex command hooks do not expose Claude Code's Task-style subagent surface. |
 | **Gemini CLI** | `GEMINI.md`, `.gemini/skills/<role>/SKILL.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | A `mcpServers` snippet is printed to stdout — **merge manually** into `~/.gemini/settings.json`. |
 
@@ -534,7 +534,8 @@ node plugins/harness-thrift-cursor/bin/install.mjs /path/to/project --uninstall
 # - .github/copilot-instructions.md + .github/hooks/ (Copilot)
 # - AGENTS.md + .codex/ (Codex)
 # - GEMINI.md + .gemini/ (Gemini)
-# - .visual-qa.json + .agent-all.json + .thrift.json (all platforms)
+# - .visual-qa.json + .agent-all.json + .thrift.json (Cursor/Copilot CLI/Codex/Gemini)
+# - .github/copilot-instructions.md only (VS Code Copilot)
 ```
 
 A future `install-platform.sh --uninstall` flag is planned; for now uninstall is per-plugin via each plugin's bin script.
@@ -680,7 +681,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 - **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for design docs per plugin.
 - **All 17 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
-- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1660 tests, all green.
+- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1661 tests, all green.
 - **Per-platform porting** — see specs ending in `-impl-spec.md` or `-decomposition.md` under `docs/superpowers/specs/`.
 - **Cross-platform support matrix** — see [docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md](docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md).
 - **Hook precedence (if you're mixing plugins that all register hooks)** — see [docs/superpowers/specs/2026-05-18-hook-precedence-integration.md](docs/superpowers/specs/2026-05-18-hook-precedence-integration.md).
@@ -691,7 +692,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 | Layer | Status | Note |
 |---|---|---|
-| Unit/integration tests | ✅ **1660/1660 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-fixture-smoke, command-surface, and visual-qa regressions |
+| Unit/integration tests | ✅ **1661/1661 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-fixture-smoke, command-surface, and visual-qa regressions |
 | Install renderers (5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
 | Marketplace registration | ✅ 17 plugins listed | sync between local + origin |
 | Claude Code skills | ✅ ship today | core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug` |
@@ -739,7 +740,7 @@ Before submitting:
 ./scripts/release-smoke.sh --fast --with-live-cli  # also probe installed Claude/Codex CLIs
 node scripts/release-audit.mjs           # Claude/Codex release readiness matrix
 node scripts/release-fixture-smoke.mjs   # fresh Claude/Codex release fixtures
-node --test                              # 1660/1660 must pass
+node --test                              # 1661/1661 must pass
 node scripts/sync-lib.mjs --check        # vendored shared libs in sync
 ```
 
