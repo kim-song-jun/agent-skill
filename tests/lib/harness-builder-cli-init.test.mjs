@@ -462,6 +462,23 @@ test("harness-builder-codex: generated role skills embed foundation and shared-t
   }
 });
 
+test("harness-builder-codex: generated QA reviewer emits the Phase 4 QA audit token", () => {
+  const target = mkTarget("codex-qa-audit-token");
+  try {
+    const res = runInit(PLUGINS.codex.bin, [target]);
+    assert.equal(res.status, 0, res.stderr);
+
+    const body = readFileSync(resolve(target, ".codex/skills/qa-reviewer/SKILL.md"), "utf-8");
+    assert.match(body, /Phase 4 QA reviewer|QA Review Task/i);
+    assert.match(body, /QA_AUDIT: passed/);
+    assert.match(body, /QA_AUDIT: failed/);
+    assert.match(body, /QA_AUDIT: skipped/);
+    assert.match(body, /literal line at the END/i);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
 test("harness-builder-codex: invalid --lang value fails before writing files", () => {
   const target = mkTarget("codex-lang-invalid");
   try {
