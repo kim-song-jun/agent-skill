@@ -14,6 +14,7 @@ const PLATFORM_CONTRACTS = {
       "plugins/harness-builder/plugin.json",
       "plugins/harness-builder/bin/clean.mjs",
       "plugins/harness-builder/bin/doctor.mjs",
+      "plugins/harness-builder/bin/init.mjs",
       "plugins/harness-builder/skills/agent-init/SKILL.md",
       "plugins/harness-builder/skills/agent-init/lib/doctor-core.mjs",
       "plugins/harness-builder/skills/agent-init/lib/harness-cleaner.mjs",

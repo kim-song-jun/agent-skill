@@ -25,6 +25,7 @@ import {
 } from "../../plugins/harness-floor/skills/agent-all/lib/task-ledger.mjs";
 
 const REPO = resolve(".");
+const CLAUDE_INIT = resolve(REPO, "plugins/harness-builder/bin/init.mjs");
 
 const PLUGINS = {
   codex: {
@@ -101,6 +102,172 @@ function writeExecutable(path, body) {
   writeFileSync(path, body);
   chmodSync(path, 0o755);
 }
+
+test("harness-builder-claude: bin/init.mjs help documents operational flags", () => {
+  const res = runInit(CLAUDE_INIT, ["--help"]);
+
+  assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+  assert.match(res.stdout, /Usage: init\.mjs <target-project-dir>/);
+  assert.match(res.stdout, /--lite/);
+  assert.match(res.stdout, /--theme=lite/);
+  assert.match(res.stdout, /--lang=en\|ko\|auto/);
+  assert.match(res.stdout, /--dry-run/);
+  assert.match(res.stdout, /--update-foundations/);
+  assert.match(res.stdout, /--no-doctor/);
+});
+
+test("harness-builder-claude: shell init writes operational scaffold and runs doctor", () => {
+  const target = mkTarget("claude-operational");
+  const home = mkTarget("claude-operational-home");
+  try {
+    const res = runInit(CLAUDE_INIT, [target, "--lang=ko"], { env: { HOME: home } });
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+
+    for (const rel of [
+      "CLAUDE.md",
+      "AGENTS.md",
+      ".claude/settings.local.json",
+      ".claude/hooks/context-mode-router.mjs",
+      ".claude/hooks/session-summary.mjs",
+      ".claude/hooks/cache-heal.mjs",
+      ".claude/hooks/agent-policy-hook.mjs",
+      ".claude/agents/planner.md",
+      ".claude/agents/dev.md",
+      ".claude/agents/reviewer.md",
+      ".claude/agents/orchestrator.md",
+      ".claude/agents/integration-dev.md",
+      ".claude/agents/verification-reviewer.md",
+      ".claude/agents/qa-reviewer.md",
+      ".claude/agents/design-reviewer.md",
+      ".claude/agents/security-reviewer.md",
+      ".claude/agents/data-reviewer.md",
+      "docs/tasks/index.md",
+      "docs/tasks/_template.md",
+      "docs/tasks/_handoff-template.md",
+      "scripts/agent-task-ledger-check.mjs",
+      ".visual-qa.json",
+      ".agent-all.json",
+    ]) {
+      assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
+    }
+
+    const claude = readFileSync(resolve(target, "CLAUDE.md"), "utf-8");
+    const qa = readFileSync(resolve(target, ".claude/agents/qa-reviewer.md"), "utf-8");
+    const settings = JSON.parse(readFileSync(resolve(target, ".claude/settings.local.json"), "utf-8"));
+    const agentAll = JSON.parse(readFileSync(resolve(target, ".agent-all.json"), "utf-8"));
+
+    assert.match(claude, /Orchestration Contract/);
+    assert.match(claude, /Role Gate Matrix/);
+    assert.match(claude, /- Interaction language: `ko`/);
+    assert.match(qa, /Configured QA Personas[\s\S]{0,120}general/);
+    assert.match(qa, /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/);
+    assert.equal(agentAll.language, "ko");
+    assert.ok(JSON.stringify(settings).includes("agent-policy-hook.mjs"));
+    assert.match(res.stdout, /Post-install doctor/);
+    assert.match(res.stdout, /harness doctor: ok/);
+    assert.match(res.stdout, /platform: Claude/);
+    assert.match(res.stdout, /profile: operational/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-claude: --lite skips operational ledger, personas, and policy hook", () => {
+  const target = mkTarget("claude-lite");
+  const home = mkTarget("claude-lite-home");
+  try {
+    const res = runInit(CLAUDE_INIT, [target, "--lite"], { env: { HOME: home } });
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+
+    for (const rel of [
+      "CLAUDE.md",
+      "AGENTS.md",
+      ".claude/settings.local.json",
+      ".claude/hooks/context-mode-router.mjs",
+      ".claude/hooks/session-summary.mjs",
+      ".claude/hooks/cache-heal.mjs",
+      ".claude/agents/planner.md",
+      ".claude/agents/dev.md",
+      ".claude/agents/reviewer.md",
+    ]) {
+      assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
+    }
+    for (const rel of [
+      ".claude/hooks/agent-policy-hook.mjs",
+      ".claude/agents/orchestrator.md",
+      ".claude/agents/qa-reviewer.md",
+      "docs/tasks/index.md",
+      ".visual-qa.json",
+      ".agent-all.json",
+    ]) {
+      assert.ok(!existsSync(resolve(target, rel)), `unexpected lite artifact ${rel}`);
+    }
+    const settings = JSON.stringify(JSON.parse(readFileSync(resolve(target, ".claude/settings.local.json"), "utf-8")));
+    assert.match(settings, /context-mode-router\.mjs/);
+    assert.doesNotMatch(settings, /agent-policy-hook\.mjs/);
+    assert.match(res.stdout, /profile: lite/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-claude: preserves user guidance and merges existing settings", () => {
+  const target = mkTarget("claude-merge");
+  try {
+    writeFileSync(resolve(target, "CLAUDE.md"), "# User Claude Rules\n\nKeep this.\n");
+    writeFileSync(resolve(target, "AGENTS.md"), "# User Agent Rules\n\nKeep this too.\n");
+    mkdirSync(resolve(target, ".claude"), { recursive: true });
+    writeFileSync(
+      resolve(target, ".claude/settings.local.json"),
+      JSON.stringify({
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: "Bash",
+              hooks: [{ type: "command", command: "echo user-hook" }],
+            },
+          ],
+        },
+      }),
+    );
+
+    const res = runInit(CLAUDE_INIT, [target, "--no-doctor"], { env: { PURPOSE: "Merged Claude Project" } });
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+
+    const claude = readFileSync(resolve(target, "CLAUDE.md"), "utf-8");
+    const agents = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
+    const settings = JSON.stringify(JSON.parse(readFileSync(resolve(target, ".claude/settings.local.json"), "utf-8")));
+
+    assert.match(claude, /# User Claude Rules/);
+    assert.match(claude, /Keep this/);
+    assert.match(claude, /Merged Claude Project/);
+    assert.equal((claude.match(/agent-skill:operational:start/g) || []).length, 1);
+    assert.equal((claude.match(/agent-skill:operational:end/g) || []).length, 1);
+    assert.match(agents, /# User Agent Rules/);
+    assert.match(agents, /Keep this too/);
+    assert.match(settings, /echo user-hook/);
+    assert.match(settings, /context-mode-router\.mjs/);
+    assert.match(settings, /agent-policy-hook\.mjs/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("harness-builder-claude: --dry-run reports planned writes without writing files", () => {
+  const target = mkTarget("claude-dry-run");
+  try {
+    const res = runInit(CLAUDE_INIT, [target, "--dry-run"]);
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /dry-run: would write/);
+    assert.ok(!existsSync(resolve(target, "CLAUDE.md")));
+    assert.ok(!existsSync(resolve(target, ".claude/hooks/agent-policy-hook.mjs")));
+    assert.ok(!existsSync(resolve(target, ".visual-qa.json")));
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
 
 test("harness-builder-codex: SKILL.md documents that lite skips config snippet output", () => {
   const body = readFileSync(CODEX_INIT_SKILL, "utf-8");
