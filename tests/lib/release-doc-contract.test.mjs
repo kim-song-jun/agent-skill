@@ -396,6 +396,8 @@ test("manual release checklist is mapped to automated gates and Claude/Codex liv
   assert.match(body, /Codex CLI live session/i);
   assert.match(body, /\/agent-init --lite/);
   assert.match(body, /\/codex-init --lite/);
+  assert.match(body, /run \/agent-all for "smoke task"/);
+  assert.doesNotMatch(body, /\/agent-all-codex "smoke task"|codex exec "smoke task"|codex skill run/i);
   assert.match(body, /codex exec[\s\S]{0,240}positional/i);
   assert.doesNotMatch(body, /^- \[ \]/m);
   assert.doesNotMatch(body, /Confirm that the slash command is discoverable/);

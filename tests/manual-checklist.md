@@ -25,7 +25,7 @@ The gate covers:
 - Sentinel merge, dry-run, force, policy-hook, folder-guide, task-ledger, foundation-status, and lite-profile contracts.
 - Release readiness audit coverage for Claude/Codex manifests, required files, hook schema, role routing, and audit tokens.
 - Fresh release fixture coverage for Claude marketplace dry-run, Claude operational/lite render output, and Codex operational/lite installs in new git repos.
-- Command-surface coverage for Claude/Codex skill metadata and Codex init help/unknown-flag behavior.
+- Command-surface coverage for Claude/Codex skill metadata, Codex init help/unknown-flag behavior, and documented post-install entrypoints.
 
 ## Claude Code live session
 
@@ -54,3 +54,8 @@ Inside Codex CLI, run `/codex-init`, then `/codex-init --lite` in a second
 fresh fixture. The automated gate already checks the command metadata; here,
 confirm Codex accepts both slash-command invocations, accepts the interactive
 prompts, and reaches the summary screen without host-runtime errors.
+
+In an operational Codex fixture, run `run /agent-all for "smoke task"` and
+confirm the host accepts the documented post-install workflow entrypoint, starts
+the prompt-level harness flow, and reaches its summary without host-runtime
+errors.
