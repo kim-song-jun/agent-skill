@@ -27,6 +27,91 @@ test("install-all --dry-run for Claude essentials does not require the claude bi
   assert.doesNotMatch(res.stderr, /claude' binary not found/);
 });
 
+test("install-all --help documents approved foundation bootstrap flags", () => {
+  const res = spawnSync("/bin/bash", [INSTALL_ALL, "--help"], {
+    encoding: "utf-8",
+  });
+
+  assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+  assert.match(res.stdout, /--foundations/);
+  assert.match(res.stdout, /--foundations-only/);
+  assert.match(res.stdout, /superpowers/);
+  assert.match(res.stdout, /context-mode/);
+  assert.doesNotMatch(res.stderr, /claude' binary not found/);
+});
+
+test("install-all --dry-run --foundations prints approved foundations and selected plugins without claude", () => {
+  const res = spawnSync("/bin/bash", [INSTALL_ALL, "--dry-run", "--foundations", "--claude-code"], {
+    encoding: "utf-8",
+    env: { ...process.env, PATH: "/usr/bin:/bin" },
+  });
+
+  assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+  assert.match(res.stdout, /Selected foundation install dry-run/);
+  assert.match(res.stdout, /DRY-RUN: claude plugin marketplace update claude-plugins-official/);
+  assert.match(res.stdout, /DRY-RUN: claude plugin marketplace update context-mode/);
+  assert.match(res.stdout, /DRY-RUN: claude plugin install superpowers@claude-plugins-official/);
+  assert.match(res.stdout, /DRY-RUN: claude plugin install context-mode@context-mode/);
+  assert.match(res.stdout, /DRY-RUN: claude plugin install harness-builder@agent-skill/);
+  assert.doesNotMatch(res.stderr, /claude' binary not found/);
+});
+
+test("install-all --dry-run --foundations-only skips agent-skill plugin selection", () => {
+  const res = spawnSync("/bin/bash", [INSTALL_ALL, "--dry-run", "--foundations-only"], {
+    encoding: "utf-8",
+    env: { ...process.env, PATH: "/usr/bin:/bin" },
+  });
+
+  assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+  assert.match(res.stdout, /Selected foundation install dry-run/);
+  assert.match(res.stdout, /DRY-RUN: claude plugin install superpowers@claude-plugins-official/);
+  assert.match(res.stdout, /DRY-RUN: claude plugin install context-mode@context-mode/);
+  assert.doesNotMatch(res.stdout, /harness-builder@agent-skill/);
+  assert.doesNotMatch(res.stdout, /Installing [0-9]+ plugins from agent-skill/);
+  assert.doesNotMatch(res.stderr, /claude' binary not found/);
+});
+
+test("install-all --foundations --cli=codex installs foundations before selected Codex plugins", () => {
+  const home = tmp("agent-skill-release-install-all-foundations-home-");
+  const binDir = resolve(home, "bin");
+  const claudeLog = resolve(home, "claude.log");
+  try {
+    mkdirSync(binDir, { recursive: true });
+    writeFileSync(
+      resolve(binDir, "claude"),
+      `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${claudeLog}"
+exit 0
+`,
+      { mode: 0o755 },
+    );
+
+    const res = spawnSync("/bin/bash", [INSTALL_ALL, "--foundations", "--cli=codex"], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home, PATH: `${binDir}:${process.env.PATH}` },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /Installing approved foundation plugins/);
+    assert.match(res.stdout, /Installing 3 plugins from agent-skill/);
+
+    const log = readFileSync(claudeLog, "utf-8");
+    const foundationIndex = log.indexOf("plugin install superpowers@claude-plugins-official");
+    const codexIndex = log.indexOf("plugin install harness-builder-codex@agent-skill");
+    assert.ok(foundationIndex >= 0, "missing superpowers install");
+    assert.ok(codexIndex > foundationIndex, "Codex plugin installs must run after foundation installs");
+    assert.match(log, /plugin marketplace update claude-plugins-official/);
+    assert.match(log, /plugin marketplace update context-mode/);
+    assert.match(log, /plugin install context-mode@context-mode/);
+    assert.match(log, /plugin install harness-floor-codex@agent-skill/);
+    assert.match(log, /plugin install harness-thrift-codex@agent-skill/);
+    assert.doesNotMatch(log, /plugin install harness-builder@agent-skill/);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test("install-all --dry-run labels Codex plugin bundles without presenting them as Claude-native installs", () => {
   const res = spawnSync("/bin/bash", [INSTALL_ALL, "--dry-run", "--cli=codex"], {
     encoding: "utf-8",

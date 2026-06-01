@@ -156,12 +156,13 @@ For Codex CLI projects, use the Codex-specific builder and floor ports:
 /codex-init
 /codex-init --lite
 /codex-init --lang=ko
+/codex-init --update-foundations
 run /agent-all for "Hard refactor that needs second-opinion"
 ```
 
 `/codex-init` writes `AGENTS.md`, `.codex/skills/*`, `.codex/hooks/agent-policy-hook.mjs`, and prints a current `~/.codex/config.toml` snippet using Codex command hooks such as `[[hooks.PreToolUse]]`. `/codex-init --lite` writes only the root `AGENTS.md` plus planner/dev/reviewer skills. Codex floor workflows run prompt-level/sequential dispatch because current Codex command hooks do not expose the Task-style subagent dispatch surface used by Claude Code.
 
-`/codex-init --lang=ko` records Korean as the Codex interaction language in `AGENTS.md`; keep `.agent-all.json` `language` aligned when the floor bundle is installed.
+`/codex-init --lang=ko` records Korean as the Codex interaction language in `AGENTS.md`; keep `.agent-all.json` `language` aligned when the floor bundle is installed. `/codex-init --update-foundations` refreshes only the approved foundations (`superpowers@claude-plugins-official`, `context-mode@context-mode`) and does not patch global Codex config.
 
 For a shell-driven install into a target repo, use the platform renderer:
 
@@ -169,9 +170,10 @@ For a shell-driven install into a target repo, use the platform renderer:
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lang=ko
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lite
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --update-foundations
 ```
 
-The default renderer path installs the heavy builder + floor + thrift bundle. `--lang=ko|en|auto` keeps `AGENTS.md` and `.agent-all.json` language aligned across the builder/floor install. The `--lite` path is builder-only and skips floor/thrift files plus global Codex config snippets.
+The default renderer path installs the heavy builder + floor + thrift bundle. `--lang=ko|en|auto` keeps `AGENTS.md` and `.agent-all.json` language aligned across the builder/floor install. The `--lite` path is builder-only and skips floor/thrift files plus global Codex config snippets. `--update-foundations` delegates to `scripts/update.sh --foundations-only`; with `--dry-run`, it prints the approved plan without calling `claude`.
 
 For direct library usage, the core modules are portable Node.js:
 

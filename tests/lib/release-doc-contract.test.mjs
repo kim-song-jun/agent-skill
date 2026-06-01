@@ -53,17 +53,18 @@ test("usage docs describe agent-init language persistence", () => {
   for (const path of ["docs/USAGE.md", "docs/USAGE.ko.md", "plugins/harness-builder-codex/README.md"]) {
     const body = read(path);
     assert.match(body, /codex-init --lang=ko/);
+    assert.match(body, /codex-init --update-foundations/);
   }
 });
 
 test("readme files describe the current Codex config surface and current test count", () => {
   for (const path of ["README.md", "README.ko.md"]) {
     const body = read(path);
-    assert.match(body, /1688\/1688/);
+    assert.match(body, /1692\/1692/);
     assert.doesNotMatch(body, /1279\/1279|1279\+|1279%20passing|1547\+/);
     assert.doesNotMatch(
       body,
-      /1552\/1552|1552%20passing|1554\/1554|1554%20passing|1557\/1557|1557%20passing|1558\/1558|1558%20passing|1559\/1559|1559%20passing|1560\/1560|1560%20passing|1561\/1561|1561%20passing|1564\/1564|1564%20passing|1565\/1565|1565%20passing|1566\/1566|1566%20passing|1567\/1567|1567%20passing|1568\/1568|1568%20passing|1569\/1569|1569%20passing|1572\/1572|1577\/1577|1579\/1579|1580\/1580|1581\/1581|1581%20passing|1581 tests|1591\/1591|1591%20passing|1591 tests|1600\/1600|1600%20passing|1600 tests|1602\/1602|1602%20passing|1602 tests|1604\/1604|1604%20passing|1604 tests|1605\/1605|1605%20passing|1605 tests|1606\/1606|1606%20passing|1606 tests|1611\/1611|1611%20passing|1611 tests|1612\/1612|1612%20passing|1612 tests|1613\/1613|1613%20passing|1613 tests|1614\/1614|1614%20passing|1614 tests|1615\/1615|1615%20passing|1615 tests|1616\/1616|1616%20passing|1616 tests|1623\/1623|1623%20passing|1623 tests|1625\/1625|1625%20passing|1625 tests|1627\/1627|1627%20passing|1627 tests|1629\/1629|1629%20passing|1629 tests|1630\/1630|1630%20passing|1630 tests|1632\/1632|1632%20passing|1632 tests|1633\/1633|1633%20passing|1633 tests|1634\/1634|1634%20passing|1634 tests|1637\/1637|1637%20passing|1637 tests|1638\/1638|1638%20passing|1638 tests|1639\/1639|1639%20passing|1639 tests|1642\/1642|1642%20passing|1642 tests|1645\/1645|1645%20passing|1645 tests|1646\/1646|1646%20passing|1646 tests|1647\/1647|1647%20passing|1647 tests|1648\/1648|1648%20passing|1648 tests|1649\/1649|1649%20passing|1649 tests|1650\/1650|1650%20passing|1650 tests|1651\/1651|1651%20passing|1651 tests|1652\/1652|1652%20passing|1652 tests|1654\/1654|1654%20passing|1654 tests|1656\/1656|1656%20passing|1656 tests|1657\/1657|1657%20passing|1657 tests|1659\/1659|1659%20passing|1659 tests|1660\/1660|1660%20passing|1660 tests|1661\/1661|1661%20passing|1661 tests|1662\/1662|1662%20passing|1662 tests|1663\/1663|1663%20passing|1663 tests|1664\/1664|1664%20passing|1664 tests|1665\/1665|1665%20passing|1665 tests|1666\/1666|1666%20passing|1666 tests|1667\/1667|1667%20passing|1667 tests|1668\/1668|1668%20passing|1668 tests|1669\/1669|1669%20passing|1669 tests|1670\/1670|1670%20passing|1670 tests|1671\/1671|1671%20passing|1671 tests|1672\/1672|1672%20passing|1672 tests|1673\/1673|1673%20passing|1673 tests|1674\/1674|1674%20passing|1674 tests|1675\/1675|1675%20passing|1675 tests|1676\/1676|1676%20passing|1676 tests|1681\/1681|1681%20passing|1681 tests|1684\/1684|1684%20passing|1684 tests|1685\/1685|1685%20passing|1685 tests|1687\/1687|1687%20passing|1687 tests/,
+      /1552\/1552|1552%20passing|1554\/1554|1554%20passing|1557\/1557|1557%20passing|1558\/1558|1558%20passing|1559\/1559|1559%20passing|1560\/1560|1560%20passing|1561\/1561|1561%20passing|1564\/1564|1564%20passing|1565\/1565|1565%20passing|1566\/1566|1566%20passing|1567\/1567|1567%20passing|1568\/1568|1568%20passing|1569\/1569|1569%20passing|1572\/1572|1577\/1577|1579\/1579|1580\/1580|1581\/1581|1581%20passing|1581 tests|1591\/1591|1591%20passing|1591 tests|1600\/1600|1600%20passing|1600 tests|1602\/1602|1602%20passing|1602 tests|1604\/1604|1604%20passing|1604 tests|1605\/1605|1605%20passing|1605 tests|1606\/1606|1606%20passing|1606 tests|1611\/1611|1611%20passing|1611 tests|1612\/1612|1612%20passing|1612 tests|1613\/1613|1613%20passing|1613 tests|1614\/1614|1614%20passing|1614 tests|1615\/1615|1615%20passing|1615 tests|1616\/1616|1616%20passing|1616 tests|1623\/1623|1623%20passing|1623 tests|1625\/1625|1625%20passing|1625 tests|1627\/1627|1627%20passing|1627 tests|1629\/1629|1629%20passing|1629 tests|1630\/1630|1630%20passing|1630 tests|1632\/1632|1632%20passing|1632 tests|1633\/1633|1633%20passing|1633 tests|1634\/1634|1634%20passing|1634 tests|1637\/1637|1637%20passing|1637 tests|1638\/1638|1638%20passing|1638 tests|1639\/1639|1639%20passing|1639 tests|1642\/1642|1642%20passing|1642 tests|1645\/1645|1645%20passing|1645 tests|1646\/1646|1646%20passing|1646 tests|1647\/1647|1647%20passing|1647 tests|1648\/1648|1648%20passing|1648 tests|1649\/1649|1649%20passing|1649 tests|1650\/1650|1650%20passing|1650 tests|1651\/1651|1651%20passing|1651 tests|1652\/1652|1652%20passing|1652 tests|1654\/1654|1654%20passing|1654 tests|1656\/1656|1656%20passing|1656 tests|1657\/1657|1657%20passing|1657 tests|1659\/1659|1659%20passing|1659 tests|1660\/1660|1660%20passing|1660 tests|1661\/1661|1661%20passing|1661 tests|1662\/1662|1662%20passing|1662 tests|1663\/1663|1663%20passing|1663 tests|1664\/1664|1664%20passing|1664 tests|1665\/1665|1665%20passing|1665 tests|1666\/1666|1666%20passing|1666 tests|1667\/1667|1667%20passing|1667 tests|1668\/1668|1668%20passing|1668 tests|1669\/1669|1669%20passing|1669 tests|1670\/1670|1670%20passing|1670 tests|1671\/1671|1671%20passing|1671 tests|1672\/1672|1672%20passing|1672 tests|1673\/1673|1673%20passing|1673 tests|1674\/1674|1674%20passing|1674 tests|1675\/1675|1675%20passing|1675 tests|1676\/1676|1676%20passing|1676 tests|1681\/1681|1681%20passing|1681 tests|1684\/1684|1684%20passing|1684 tests|1685\/1685|1685%20passing|1685 tests|1687\/1687|1687%20passing|1687 tests|1688\/1688|1688%20passing|1688 tests/,
     );
     assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
     assert.match(body, /\[\[hooks\.PreToolUse\]\]|\[mcp_servers\.playwright\]/);
@@ -82,6 +83,8 @@ test("readme files describe release-safe update and per-platform install paths",
   assert.match(english, /scripts\/update\.sh[\s\S]{0,420}force-updates already-installed selected plugins/i);
   assert.match(english, /scripts\/update\.sh --foundations[\s\S]{0,360}superpowers[\s\S]{0,180}context-mode/i);
   assert.match(english, /scripts\/update\.sh --foundations-only[\s\S]{0,260}approved foundation plugins/i);
+  assert.match(english, /install-all\.sh --foundations[\s\S]{0,320}superpowers[\s\S]{0,180}context-mode/i);
+  assert.match(english, /--foundations-only[\s\S]{0,260}bootstrap just the foundations/i);
   assert.match(english, /--cli=cursor\|copilot\|codex\|gemini/);
   assert.match(english, /--update-foundations[\s\S]{0,520}approved foundation plugins/i);
   assert.match(english, /install-platform\.sh[\s\S]{0,420}does not patch global CLI config files/i);
@@ -93,6 +96,8 @@ test("readme files describe release-safe update and per-platform install paths",
   assert.match(korean, /scripts\/update\.sh[\s\S]{0,520}이미 설치된 선택 플러그인을 강제 업데이트/i);
   assert.match(korean, /scripts\/update\.sh --foundations[\s\S]{0,460}superpowers[\s\S]{0,220}context-mode/i);
   assert.match(korean, /scripts\/update\.sh --foundations-only[\s\S]{0,320}approved foundation plugins|승인된 foundation 플러그인/i);
+  assert.match(korean, /install-all\.sh --foundations[\s\S]{0,420}superpowers[\s\S]{0,220}context-mode/i);
+  assert.match(korean, /--foundations-only[\s\S]{0,320}foundation만 부트스트랩/i);
   assert.match(korean, /--cli=cursor\|copilot\|codex\|gemini/);
   assert.match(korean, /--update-foundations[\s\S]{0,640}승인된 foundation 플러그인/i);
   assert.match(korean, /install-platform\.sh[\s\S]{0,520}전역 CLI config 파일을 패치하지 않음/i);
@@ -313,8 +318,8 @@ test("Codex runtime specs describe the current sequential surface instead of sta
   ]) {
     const body = read(path);
     assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
-    assert.doesNotMatch(body, /1246\/1246|1279\/1279|1645\/1645|1646\/1646|1647\/1647|1648\/1648|1649\/1649|1650\/1650|1651\/1651|1652\/1652|1654\/1654|1656\/1656|1657\/1657|1659\/1659|1660\/1660|1661\/1661|1662\/1662|1663\/1663|1664\/1664|1665\/1665|1666\/1666|1667\/1667|1668\/1668|1669\/1669|1670\/1670|1671\/1671|1672\/1672|1673\/1673|1674\/1674|1675\/1675|1676\/1676|1681\/1681|1684\/1684|1685\/1685|1687\/1687/);
-    assert.match(body, /1688\/1688/);
+    assert.doesNotMatch(body, /1246\/1246|1279\/1279|1645\/1645|1646\/1646|1647\/1647|1648\/1648|1649\/1649|1650\/1650|1651\/1651|1652\/1652|1654\/1654|1656\/1656|1657\/1657|1659\/1659|1660\/1660|1661\/1661|1662\/1662|1663\/1663|1664\/1664|1665\/1665|1666\/1666|1667\/1667|1668\/1668|1669\/1669|1670\/1670|1671\/1671|1672\/1672|1673\/1673|1674\/1674|1675\/1675|1676\/1676|1681\/1681|1684\/1684|1685\/1685|1687\/1687|1688\/1688/);
+    assert.match(body, /1692\/1692/);
     assert.match(body, /Codex CLI[\s\S]{0,260}(PreToolUse|prompt-level|sequential|프롬프트|순차)/i);
   }
 });
@@ -324,8 +329,8 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /## Implementation Status/i);
   assert.match(plan, /Implemented through Task 12/i);
   assert.match(plan, /root role routing/i);
-  assert.match(plan, /node --test[\s\S]{0,120}1688\/1688/);
-  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}318\/318/);
+  assert.match(plan, /node --test[\s\S]{0,120}1692\/1692/);
+  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}322\/322/);
   assert.match(plan, /release-audit\.mjs/);
   assert.match(plan, /release-fixture-smoke\.mjs/);
   assert.match(plan, /historical TDD checklist/i);
