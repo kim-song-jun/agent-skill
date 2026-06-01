@@ -32,10 +32,13 @@ codex plugins install harness-thrift-codex
 Then in your project:
 
 ```
-/thrift-codex                 # one-time setup: seeds .thrift.json + emits Codex TOML snippets
-/thrift-codex summarise       # manual summariser trigger
-/thrift-codex audit           # ad-hoc audit report (otherwise auto on Codex Stop)
+run /thrift                   # one-time setup: seeds .thrift.json + emits Codex TOML snippets
+run /thrift summarise         # manual summariser trigger
+run /thrift audit             # ad-hoc audit report (otherwise auto on Codex Stop)
 ```
+
+These public prompt-level entrypoints route to the installed
+`thrift-codex` skill contract under `.codex/skills/`.
 
 For non-interactive release installs, `scripts/install-platform.sh --platform=codex --theme=all`
 runs thrift with `--no-instrument`: it writes `.thrift.json` and `.codex/hooks/*.toml`

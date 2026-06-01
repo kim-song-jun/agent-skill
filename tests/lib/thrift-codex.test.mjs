@@ -109,7 +109,8 @@ test("config-loader: missing path returns DEFAULTS with warning", () => {
   assert.equal(r.ok, true);
   assert.equal(r.config.summariser.everyNTurns, 25);
   assert.match(r.warning, /not found/);
-  assert.match(r.warning, /thrift-codex/);
+  assert.match(r.warning, /Run \/thrift to seed/);
+  assert.doesNotMatch(r.warning, /Run \/thrift-codex/);
 });
 
 test("config-loader: rejects field-level errors", () => {

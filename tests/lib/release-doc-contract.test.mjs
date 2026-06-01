@@ -181,6 +181,10 @@ test("platform plugin READMEs match implemented builder and floor ports", () => 
   assert.match(thrift, /Codex CLI/i);
   assert.match(thrift, /~\/\.codex\/config\.toml/);
   assert.match(thrift, /--no-instrument/);
+  assert.match(thrift, /run \/thrift\s+# one-time setup/);
+  assert.match(thrift, /run \/thrift summarise/);
+  assert.match(thrift, /run \/thrift audit/);
+  assert.doesNotMatch(thrift, /^\/thrift-codex\s+#/m);
   assert.doesNotMatch(thrift, /MVP scope|follow-up plan|scaffold-only|TBD|placeholder/i);
 });
 

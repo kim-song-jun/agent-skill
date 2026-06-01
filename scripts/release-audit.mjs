@@ -149,13 +149,15 @@ const PLATFORM_CONTRACTS = {
         patterns: [
           /^---\nname: thrift-codex\n/m,
           /^# \/thrift-codex$/m,
-          /\/thrift-codex summarise/,
-          /\/thrift-codex audit/,
+          /^run \/thrift(?:\s+#.*)?$/m,
+          /run \/thrift summarise/,
+          /run \/thrift audit/,
           /--dry-run/,
           /--no-instrument/,
           /Append-only hook patches/,
           /When done/i,
         ],
+        forbidden: [/codex skill run/i, /codex exec\s+["'][^"']+["']/i],
       },
       {
         file: "plugins/harness-builder-codex/skills/codex-init/templates/AGENTS.md.hbs",

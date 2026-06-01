@@ -37,7 +37,7 @@ Note: Codex does not expose OpenAI cache hit telemetry — savedRatio is heurist
 - Output path not writable → fall back to `.thrift/audit-<date>.md` and
   warn.
 - Render failure → log the partial state; user can re-run
-  `/thrift-codex audit`.
+  `run /thrift audit`.
 
 ## Heuristic-vs-measured savings
 

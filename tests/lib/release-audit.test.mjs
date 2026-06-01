@@ -278,9 +278,12 @@ test("release audit fails incomplete Codex slash-command skill surfaces", () => 
       "",
       "# /thrift-codex",
       "",
+      "Public subcommands: run /thrift summarise and run /thrift audit.",
       "/thrift-codex summarise and /thrift-codex audit are supported.",
       "Flags: --force --no-instrument --dry-run.",
       "Append-only hook patches. When done, print Thrift audit.",
+      "Stale entrypoint: codex skill run /thrift-codex",
+      "Stale entrypoint: codex exec \"thrift audit\"",
       "",
     ].join("\n"),
   );
@@ -308,4 +311,14 @@ test("release audit fails incomplete Codex slash-command skill surfaces", () => 
   assert.match(staleVisualQaEntrypoint.details, /forbidden/);
   assert.match(staleVisualQaEntrypoint.details, /codex skill run/);
   assert.match(staleVisualQaEntrypoint.details, /codex exec/);
+
+  const staleThriftEntrypoint = result.platforms.codex.checks.find(
+    (check) => !check.ok && check.name.includes("thrift-codex/SKILL.md"),
+  );
+  assert.ok(staleThriftEntrypoint, JSON.stringify(result.platforms.codex.checks, null, 2));
+  assert.match(staleThriftEntrypoint.details, /missing/);
+  assert.match(staleThriftEntrypoint.details, new RegExp(String.raw`run \\/thrift`));
+  assert.match(staleThriftEntrypoint.details, /forbidden/);
+  assert.match(staleThriftEntrypoint.details, /codex skill run/);
+  assert.match(staleThriftEntrypoint.details, /codex exec/);
 });

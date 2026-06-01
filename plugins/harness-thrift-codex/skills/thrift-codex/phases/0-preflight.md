@@ -7,7 +7,7 @@
 2. Confirm Codex CLI is installed and `~/.codex/config.toml` exists.
    If `~/.codex/config.toml` is missing: abort with
    `Codex config not found. Run codex once to seed ~/.codex/config.toml,
-   then re-run /thrift-codex.`
+   then run /thrift again.`
 3. Detect context-mode-codex availability. If the user has the matching
    context-mode plugin for Codex, the coerce telemetry hooks have a
    downstream recipient. Otherwise the coerce hooks degrade to pure

@@ -101,7 +101,7 @@ function validate(config) {
 
 export function loadConfig(path) {
   if (!path || !existsSync(path)) {
-    return { ok: true, config: structuredClone(DEFAULTS), warning: ".thrift.json not found; using built-ins. Run /thrift-codex to seed." };
+    return { ok: true, config: structuredClone(DEFAULTS), warning: ".thrift.json not found; using built-ins. Run /thrift to seed." };
   }
   let raw;
   try {

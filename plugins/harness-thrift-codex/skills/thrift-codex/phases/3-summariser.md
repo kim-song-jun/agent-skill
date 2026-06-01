@@ -19,7 +19,7 @@ paste the summary path.
    (`thrift-posttool-summariser-trigger.mjs`) fires `shouldFireSummariser`
    after each tool call. When threshold hit, the hook writes a
    notification file and emits a stderr system reminder.
-2. **Manual trigger**: `/thrift-codex summarise` from the Codex chat.
+2. **Manual trigger**: `run /thrift summarise` from the Codex chat.
 
 ## Steps (when actually generating)
 
