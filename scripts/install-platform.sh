@@ -264,7 +264,8 @@ fi
 
 if [ "$THEME" = "debug" ] && [ "$PLATFORM" != "codex" ]; then
   echo "Error: --theme=debug is currently supported only with --platform=codex." >&2
-  echo "Claude uses /plugin install harness-debug@agent-skill; other debug ports are still pending." >&2
+  echo "Codex CLI supports --theme=debug through install-platform; Claude Code uses /plugin install harness-debug@agent-skill." >&2
+  echo "Cursor, Copilot, and Gemini debug ports remain on the porting roadmap." >&2
   exit 1
 fi
 

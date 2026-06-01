@@ -905,6 +905,32 @@ test("install-platform rejects --update-foundations outside Claude/Codex before 
   }
 });
 
+test("install-platform rejects non-Codex debug theme with current release guidance", () => {
+  const target = tmp("agent-skill-release-platform-debug-unsupported-target-");
+  const home = tmp("agent-skill-release-platform-debug-unsupported-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=gemini",
+      `--target=${target}`,
+      "--theme=debug",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.notEqual(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stderr, /--theme=debug is currently supported only with --platform=codex/);
+    assert.match(res.stderr, /Codex CLI supports --theme=debug through install-platform/);
+    assert.match(res.stderr, /Claude Code uses \/plugin install harness-debug@agent-skill/);
+    assert.doesNotMatch(res.stderr, /other debug ports are still pending/);
+    assert.ok(!existsSync(resolve(target, "GEMINI.md")), "unsupported debug theme must fail before writing Gemini files");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test("install-platform vscode-copilot installs only VS Code instructions", () => {
   const target = tmp("agent-skill-release-vscode-copilot-target-");
   try {

@@ -19,7 +19,7 @@ The gate covers:
 
 - Claude native release manifests, hook syntax, `/agent-init` release docs, Phase 3 parallel fan-out contract, final summary contract, and visual-qa seed config.
 - Claude slash-command metadata, headings, flags, and summary contracts for `/agent-init`, `/agent-all`, `/visual-qa`, and `/thrift`.
-- Codex slash-command metadata, headings, flags, and summary contracts for `/codex-init`, `/agent-all-codex`, `/visual-qa-codex`, and `/thrift-codex`.
+- Codex slash-command metadata, headings, flags, and summary contracts for `/codex-init`, `/agent-all-codex`, `/visual-qa-codex`, `/thrift-codex`, and `/debug-codex`.
 - Codex install renderers for operational, lite, builder, floor, thrift, and debug profiles, including `/codex-init --lite` via `install-platform.sh --platform=codex --lite`, single-theme installs via `--theme=builder|floor|thrift`, and debug-only installs via `--theme=debug`.
 - Codex floor and visual-qa dispatch contracts, including the verified `codex exec` positional `[PROMPT]` interface.
 - Sentinel merge, dry-run, force, policy-hook, folder-guide, task-ledger, foundation-status, and lite-profile contracts.
