@@ -30,11 +30,11 @@ test("usage docs describe Codex lite setup paths", () => {
 test("readme files describe the current Codex config surface and current test count", () => {
   for (const path of ["README.md", "README.ko.md"]) {
     const body = read(path);
-    assert.match(body, /1615\/1615/);
+    assert.match(body, /1616\/1616/);
     assert.doesNotMatch(body, /1279\/1279|1279\+|1279%20passing|1547\+/);
     assert.doesNotMatch(
       body,
-      /1552\/1552|1552%20passing|1554\/1554|1554%20passing|1557\/1557|1557%20passing|1558\/1558|1558%20passing|1559\/1559|1559%20passing|1560\/1560|1560%20passing|1561\/1561|1561%20passing|1564\/1564|1564%20passing|1565\/1565|1565%20passing|1566\/1566|1566%20passing|1567\/1567|1567%20passing|1568\/1568|1568%20passing|1569\/1569|1569%20passing|1572\/1572|1572%20passing|1577\/1577|1577%20passing|1579\/1579|1579%20passing|1580\/1580|1580%20passing|1581\/1581|1581%20passing|1581 tests|1591\/1591|1591%20passing|1591 tests|1600\/1600|1600%20passing|1600 tests|1602\/1602|1602%20passing|1602 tests|1604\/1604|1604%20passing|1604 tests|1605\/1605|1605%20passing|1605 tests|1606\/1606|1606%20passing|1606 tests|1611\/1611|1611%20passing|1611 tests|1612\/1612|1612%20passing|1612 tests|1613\/1613|1613%20passing|1613 tests|1614\/1614|1614%20passing|1614 tests/,
+      /1552\/1552|1552%20passing|1554\/1554|1554%20passing|1557\/1557|1557%20passing|1558\/1558|1558%20passing|1559\/1559|1559%20passing|1560\/1560|1560%20passing|1561\/1561|1561%20passing|1564\/1564|1564%20passing|1565\/1565|1565%20passing|1566\/1566|1566%20passing|1567\/1567|1567%20passing|1568\/1568|1568%20passing|1569\/1569|1569%20passing|1572\/1572|1572%20passing|1577\/1577|1577%20passing|1579\/1579|1579%20passing|1580\/1580|1580%20passing|1581\/1581|1581%20passing|1581 tests|1591\/1591|1591%20passing|1591 tests|1600\/1600|1600%20passing|1600 tests|1602\/1602|1602%20passing|1602 tests|1604\/1604|1604%20passing|1604 tests|1605\/1605|1605%20passing|1605 tests|1606\/1606|1606%20passing|1606 tests|1611\/1611|1611%20passing|1611 tests|1612\/1612|1612%20passing|1612 tests|1613\/1613|1613%20passing|1613 tests|1614\/1614|1614%20passing|1614 tests|1615\/1615|1615%20passing|1615 tests/,
     );
     assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
     assert.match(body, /\[\[hooks\.PreToolUse\]\]|\[mcp_servers\.playwright\]/);
@@ -105,6 +105,38 @@ test("Codex floor runtime comments reflect the verified CLI surface", () => {
   assert.match(bodies[5], /not exposed by Codex CLI 0\.135\.0/);
 });
 
+test("Codex runtime specs describe the current sequential surface instead of stale agent hooks", () => {
+  const runtimeChecklist = read("docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md");
+  assert.match(runtimeChecklist, /release-smoke\.sh --fast --with-live-cli/);
+  assert.match(runtimeChecklist, /codex exec[\s\S]{0,180}\[PROMPT\]/);
+  assert.match(runtimeChecklist, /prompt-level|sequential/i);
+  assert.doesNotMatch(runtimeChecklist, /codex skill run codex-init/i);
+  assert.doesNotMatch(runtimeChecklist, /cat \.codex\/config\.toml/i);
+  assert.doesNotMatch(runtimeChecklist, /\[\[hooks\.agent\]\]|codex agent (?:wait|dispatch)/i);
+
+  for (const path of [
+    "docs/superpowers/specs/2026-05-18-agent-all-codex-impl-spec.md",
+    "docs/superpowers/specs/2026-05-18-visual-qa-codex-impl-spec.md",
+  ]) {
+    const body = read(path);
+    assert.match(body, /Codex CLI 0\.135\.0/);
+    assert.match(body, /positional \[PROMPT\]/);
+    assert.match(body, /sequential/i);
+    assert.doesNotMatch(body, /\[\[hooks\.agent\]\]|codex agent (?:wait|dispatch)|agent-hook E2E|pending spike|post-spike/i);
+  }
+
+  for (const path of [
+    "docs/superpowers/specs/2026-05-21-decision-surfacing-and-policy-hooks-design.md",
+    "docs/superpowers/specs/2026-05-21-decision-surfacing-and-policy-hooks-design.ko.md",
+  ]) {
+    const body = read(path);
+    assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
+    assert.doesNotMatch(body, /1246\/1246|1279\/1279/);
+    assert.match(body, /1616\/1616/);
+    assert.match(body, /Codex CLI[\s\S]{0,260}(PreToolUse|prompt-level|sequential|프롬프트|순차)/i);
+  }
+});
+
 test("Claude plugin READMEs describe release surfaces without MVP/deferred wording", () => {
   const thrift = read("plugins/harness-thrift/README.md");
   assert.match(thrift, /harness-thrift/);
@@ -130,4 +162,5 @@ test("manual release checklist is mapped to automated gates and Claude/Codex liv
   assert.match(body, /codex exec[\s\S]{0,240}positional/i);
   assert.doesNotMatch(body, /^- \[ \]/m);
   assert.doesNotMatch(body, /Phase 3 launches|parallel subagents|final summary names/i);
+  assert.doesNotMatch(body, /operational run prints|lite run skips hook\/config|routes through sequential skill prompts/i);
 });

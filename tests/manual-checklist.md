@@ -43,7 +43,6 @@ mkdir /tmp/harness-fixture-codex && cd /tmp/harness-fixture-codex && git init
 ```
 
 Inside Codex CLI, run `/codex-init`, then `/codex-init --lite` in a second
-fresh fixture. Confirm that the operational run prints the current
-`~/.codex/config.toml` command-hook snippet, the lite run skips hook/config
-snippet output, and `run /agent-all for "smoke task"` routes through sequential
-skill prompts rather than an unsupported agent-dispatch hook.
+fresh fixture. Confirm that both commands are discoverable, Codex accepts the
+interactive prompts, and both sessions reach their summary screen without
+host-runtime errors.

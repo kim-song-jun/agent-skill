@@ -218,7 +218,7 @@ A summary is written to the iteration's report (`docs/agent-all/iter-<N>/decisio
 |---|---|---|---|
 | Claude Code | `.claude/settings.local.json` hooks | `AskUserQuestion` MCP-style tool | 🟢 Hard |
 | Copilot CLI | `.github/hooks/*.json` | stdin prompt | 🟢 Hard |
-| Codex CLI | `[[hooks.agent]]` in `~/.codex/config.toml` | stdin prompt | 🟢 Hard (after manual config merge) |
+| Codex CLI | `[[hooks.PreToolUse]]` in `~/.codex/config.toml` for shell/policy events; floor workflows use prompt-level sequential dispatch | stdin prompt | 🟡 Mixed: hard shell policy, prompt-level floor orchestration |
 | Cursor | `.cursor/rules/decision-protocol.mdc` (always-loaded rule) | chat prompt | 🟡 Soft (prompt-only) |
 | Gemini CLI | `GEMINI.md` section | chat prompt | 🟡 Soft (prompt-only) |
 | VS Code Copilot | `.github/copilot-instructions.md` | chat prompt | 🟡 Soft (prompt-only) |
@@ -289,7 +289,7 @@ In per-platform README (each port plugin's bin output):
 - **Cross-plugin isolation**: existing `tests/lib/cross-platform-isolation.test.mjs` must still pass after `lib/_shared/` additions (may need rule tweak).
 - **Smoke**: end-to-end `/agent-all "trivial task" --yes` exercising the full 3a/3b/3c flow in non-TTY mode.
 
-Target: maintain repo's "1246/1246 passing" green status. Add ~30-40 tests for the new lib/hook surface.
+Target: maintain repo's "1616/1616 passing" green status. Add focused tests for any new lib/hook surface.
 
 ## 15. Out of scope (v1)
 
