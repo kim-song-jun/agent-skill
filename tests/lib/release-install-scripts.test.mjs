@@ -133,6 +133,7 @@ test("install-platform --help documents dry-run and canonical wrapper flags", ()
   assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
   assert.match(res.stdout, /Usage:/);
   assert.match(res.stdout, /--platform=<NAME>/);
+  assert.match(res.stdout, /claude\s+— Claude Code project files/);
   assert.match(res.stdout, /--target=<DIR>/);
   assert.match(res.stdout, /--ctx(?:[ =]|=<)/);
   assert.match(res.stdout, /--dry-run/);
@@ -142,6 +143,191 @@ test("install-platform --help documents dry-run and canonical wrapper flags", ()
   assert.match(res.stdout, /--uninstall/);
   assert.match(res.stdout, /--force-root-clean/);
   assert.doesNotMatch(res.stderr, /--platform and --target are required/);
+});
+
+test("install-platform claude all succeeds in a fresh project and runs doctor", () => {
+  const target = tmp("agent-skill-release-claude-platform-target-");
+  const home = tmp("agent-skill-release-claude-platform-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=claude",
+      `--target=${target}`,
+      "--theme=all",
+      "--lang=ko",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    for (const rel of [
+      "CLAUDE.md",
+      "AGENTS.md",
+      ".claude/settings.local.json",
+      ".claude/agents/orchestrator.md",
+      ".claude/agents/qa-reviewer.md",
+      ".claude/hooks/agent-policy-hook.mjs",
+      "docs/tasks/index.md",
+      "scripts/agent-task-ledger-check.mjs",
+      ".visual-qa.json",
+      ".agent-all.json",
+    ]) {
+      assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
+    }
+
+    const claude = readFileSync(resolve(target, "CLAUDE.md"), "utf-8");
+    const agentAll = JSON.parse(readFileSync(resolve(target, ".agent-all.json"), "utf-8"));
+    assert.match(claude, /Orchestration Contract/);
+    assert.match(claude, /Interaction language:\s+`?ko`?/);
+    assert.equal(agentAll.language, "ko");
+    assert.match(res.stdout, /harness-builder \/ init\.mjs/);
+    assert.match(res.stdout, /Post-install doctor/i);
+    assert.match(res.stdout, /harness doctor: ok/i);
+    assert.match(res.stdout, /platform: Claude/i);
+    assert.match(res.stdout, /profile: operational/i);
+    assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "Claude installer must not patch global Codex config");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("install-platform claude --lite installs only the lightweight project scaffold", () => {
+  const target = tmp("agent-skill-release-claude-platform-lite-target-");
+  const home = tmp("agent-skill-release-claude-platform-lite-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=claude",
+      `--target=${target}`,
+      "--lite",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    for (const rel of [
+      "CLAUDE.md",
+      "AGENTS.md",
+      ".claude/settings.local.json",
+      ".claude/agents/planner.md",
+      ".claude/agents/dev.md",
+      ".claude/agents/reviewer.md",
+      ".claude/hooks/context-mode-router.mjs",
+      ".claude/hooks/session-summary.mjs",
+      ".claude/hooks/cache-heal.mjs",
+    ]) {
+      assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
+    }
+    for (const rel of [
+      ".claude/agents/orchestrator.md",
+      ".claude/agents/qa-reviewer.md",
+      ".claude/hooks/agent-policy-hook.mjs",
+      "docs/tasks/index.md",
+      ".visual-qa.json",
+      ".agent-all.json",
+      ".thrift.json",
+    ]) {
+      assert.ok(!existsSync(resolve(target, rel)), `unexpected lite artifact ${rel}`);
+    }
+
+    assert.match(res.stdout, /profile: lite/i);
+    assert.match(res.stdout, /Post-install doctor/i);
+    assert.doesNotMatch(res.stdout, /\.visual-qa\.json|\.agent-all\.json|\.thrift\.json/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("install-platform claude --dry-run --update-foundations prints the approved plan without writes", () => {
+  const target = tmp("agent-skill-release-claude-platform-foundations-dry-run-target-");
+  const home = tmp("agent-skill-release-claude-platform-foundations-dry-run-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=claude",
+      `--target=${target}`,
+      "--dry-run",
+      "--update-foundations",
+      "--no-doctor",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home, PATH: "/usr/bin:/bin" },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /Selected foundation update dry-run/);
+    assert.match(res.stdout, /DRY-RUN: claude plugin marketplace update claude-plugins-official/);
+    assert.match(res.stdout, /DRY-RUN: claude plugin install superpowers@claude-plugins-official/);
+    assert.match(res.stdout, /harness-builder\/bin\/init\.mjs/);
+    assert.match(res.stdout, /--no-doctor/);
+    assert.ok(!existsSync(resolve(target, "CLAUDE.md")), "dry-run must not write CLAUDE.md");
+    assert.ok(!existsSync(resolve(target, ".claude/agents/dev.md")), "dry-run must not write Claude agents");
+    assert.doesNotMatch(res.stderr, /claude' binary not found/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("install-platform claude --uninstall runs the conservative project cleaner", () => {
+  const target = tmp("agent-skill-release-claude-platform-uninstall-target-");
+  const home = tmp("agent-skill-release-claude-platform-uninstall-home-");
+  try {
+    const install = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=claude",
+      `--target=${target}`,
+      "--no-doctor",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(install.status, 0, `stdout:\n${install.stdout}\nstderr:\n${install.stderr}`);
+    assert.ok(existsSync(resolve(target, "CLAUDE.md")), "install should create root CLAUDE.md");
+    assert.ok(existsSync(resolve(target, ".claude/agents/dev.md")), "install should create Claude role agents");
+    assert.ok(existsSync(resolve(target, ".claude/hooks/agent-policy-hook.mjs")), "install should create Claude policy hook");
+
+    const dryRun = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=claude",
+      `--target=${target}`,
+      "--uninstall",
+      "--dry-run",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(dryRun.status, 0, `stdout:\n${dryRun.stdout}\nstderr:\n${dryRun.stderr}`);
+    assert.match(dryRun.stdout, /DRY-RUN: node .*scripts\/harness-clean\.mjs .*--platform=claude/);
+    assert.match(dryRun.stdout, /harness clean: dry-run/);
+    assert.ok(existsSync(resolve(target, ".claude/agents/dev.md")), "dry-run must not remove Claude role agents");
+
+    const uninstall = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=claude",
+      `--target=${target}`,
+      "--uninstall",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(uninstall.status, 0, `stdout:\n${uninstall.stdout}\nstderr:\n${uninstall.stderr}`);
+    assert.match(uninstall.stdout, /harness clean: ok/);
+    assert.ok(existsSync(resolve(target, "CLAUDE.md")), "root CLAUDE.md without sentinel is preserved by default");
+    assert.ok(!existsSync(resolve(target, ".claude/agents/dev.md")), "Claude role agent should be removed");
+    assert.ok(!existsSync(resolve(target, ".claude/hooks/agent-policy-hook.mjs")), "Claude policy hook should be removed");
+    assert.ok(!existsSync(resolve(target, ".visual-qa.json")), "Claude floor seed config should be removed");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
 });
 
 test("install-platform codex --uninstall runs the conservative project cleaner", () => {
@@ -340,7 +526,7 @@ exit 0
   }
 });
 
-test("install-platform rejects --update-foundations outside Codex before writing scaffold files", () => {
+test("install-platform rejects --update-foundations outside Claude/Codex before writing scaffold files", () => {
   const target = tmp("agent-skill-release-platform-foundations-non-codex-target-");
   const home = tmp("agent-skill-release-platform-foundations-non-codex-home-");
   try {
@@ -355,7 +541,7 @@ test("install-platform rejects --update-foundations outside Codex before writing
     });
 
     assert.notEqual(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
-    assert.match(res.stderr, /--update-foundations is currently supported only with --platform=codex/);
+    assert.match(res.stderr, /--update-foundations is currently supported only with --platform=claude or --platform=codex/);
     assert.match(res.stderr, /scripts\/update\.sh --foundations-only/);
     assert.ok(!existsSync(resolve(target, "GEMINI.md")), "unsupported foundation update flag must fail before writing GEMINI.md");
     assert.ok(!existsSync(resolve(home, ".gemini/settings.json")), "unsupported foundation update flag must not patch global Gemini settings");

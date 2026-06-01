@@ -148,7 +148,7 @@ The session won't end until either:
 /agent-all "Feature A" && /agent-all "Feature B" && /agent-all "Feature C" && /agent-all "Bugfix" --loop
 ```
 
-## Codex / non-Claude-Code integration
+## Claude/Codex / non-Claude-Code integration
 
 For Codex CLI projects, use the Codex-specific builder and floor ports:
 
@@ -164,20 +164,23 @@ run /agent-all for "Hard refactor that needs second-opinion"
 
 `/codex-init --lang=ko` records Korean as the Codex interaction language in `AGENTS.md`; keep `.agent-all.json` `language` aligned when the floor bundle is installed. `/codex-init --update-foundations` refreshes only the approved foundations (`superpowers@claude-plugins-official`, `context-mode@context-mode`) and does not patch global Codex config.
 
-For a shell-driven install into a target repo, use the platform renderer:
+For a shell-driven install into a target repo, use the platform renderer. Claude uses the same project-local bootstrapper as `/agent-init`; Codex and other tools use their platform-specific renderers:
 
 ```bash
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --lite
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lang=ko
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lite
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --update-foundations
 ```
 
-The default renderer path installs the heavy builder + floor + thrift bundle. `--lang=ko|en|auto` keeps `AGENTS.md` and `.agent-all.json` language aligned across the builder/floor install. The `--lite` path is builder-only and skips floor/thrift files plus global Codex config snippets. `--update-foundations` delegates to `scripts/update.sh --foundations-only`; with `--dry-run`, it prints the approved plan without calling `claude`. Codex `all`, `builder`, and `--lite` installs run the post-install doctor automatically; pass `--no-doctor` only when intentionally deferring validation.
+The default renderer path installs the operational scaffold. Non-Claude platforms install the heavy builder + floor + thrift bundle by default. `--lang=ko|en|auto` keeps generated root guidance and `.agent-all.json` language aligned across the builder/floor install. The `--lite` path is builder-only and skips floor/thrift files plus global Codex config snippets. `--update-foundations` delegates to `scripts/update.sh --foundations-only`; with `--dry-run`, it prints the approved plan without calling `claude`. Claude and Codex `all`, `builder`, and `--lite` installs run the post-install doctor automatically; pass `--no-doctor` only when intentionally deferring validation.
 
 Manual doctor re-run:
 
 ```bash
+node /path/to/harness-builder/bin/doctor.mjs --target=/path/to/my-project --platform=claude
 node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex
 node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=builder
 node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=lite
@@ -185,15 +188,17 @@ node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project 
 
 From a source checkout, `node /path/to/agent-skill/scripts/doctor.mjs ...` is the equivalent compatibility wrapper. The doctor validates the project-local Claude/Codex scaffold, auto-detects operational, builder, or lite profile when `--profile=auto`, exits non-zero for missing required artifacts, and warns when `superpowers` or `context-mode` are not installed.
 
-Codex uninstall and cleanup:
+Claude/Codex uninstall and cleanup:
 
 ```bash
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --uninstall
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --uninstall
+node /path/to/harness-builder/bin/clean.mjs --target=/path/to/my-project --platform=claude --dry-run
 node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/my-project --platform=codex --dry-run
 ```
 
-The conservative cleanup removes generated `.codex/skills`, `.codex/hooks`,
-floor/thrift config files, task templates, and helper scripts. Root `AGENTS.md`
+The conservative cleanup removes generated Claude/Codex role files, hooks,
+floor/thrift config files, task templates, and helper scripts. Root guidance
 is preserved unless it has an agent-skill sentinel; pass `--force-root-clean`
 through `install-platform.sh --uninstall` when intentionally removing
 generated-looking root guidance.

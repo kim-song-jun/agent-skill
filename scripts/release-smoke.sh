@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # release-smoke.sh - release gate for the Claude Code native plugins and
-# Codex CLI project renderer. Defaults to the full suite; use --fast for the
+# Claude/Codex project renderers. Defaults to the full suite; use --fast for the
 # focused release-contract subset used by CI and local preflight checks.
 #
 # Usage:

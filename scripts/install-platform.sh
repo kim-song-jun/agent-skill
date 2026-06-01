@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-# install-platform.sh — bootstrap a target project for a non-Claude-Code
+# install-platform.sh — bootstrap a target project for Claude Code or another
 # AI tool (Cursor / GitHub Copilot / Codex CLI / Gemini CLI / VS Code).
 #
-# These tools don't have Claude Code's marketplace, so we install via
-# our own renderer scripts. Each `bin/init.mjs` writes the right files
-# to the target project.
+# Claude Code has a native plugin marketplace, but project-local bootstrap can
+# still run outside Claude Code. Other tools install through renderer scripts
+# because they do not have comparable AI-workflow marketplaces.
 #
 # Usage:
 #   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations] [--no-doctor] [--uninstall] [--force-root-clean]
 #
 # --platform:
+#   claude          — Claude Code project files (CLAUDE.md + .claude/)
 #   cursor          — Cursor IDE (.cursor/rules + .cursor/agents)
 #   copilot         — GitHub Copilot CLI (.github/copilot-instructions.md + hooks)
 #   vscode-copilot  — VS Code Copilot extension (.github/copilot-instructions.md only)
@@ -34,21 +35,23 @@
 #   print the selected renderer commands without writing files.
 #
 # --update-foundations:
-#   for Codex installs, also update/install approved foundation plugins
+#   for Claude/Codex installs, also update/install approved foundation plugins
 #   (superpowers + context-mode) through scripts/update.sh --foundations-only.
 #
 # --no-doctor:
-#   skip the automatic Codex post-install doctor check.
+#   skip the automatic Claude/Codex post-install doctor check.
 #
 # --uninstall:
-#   remove Codex project-local harness artifacts through the conservative
-#   harness cleaner. Root AGENTS.md is preserved unless --force-root-clean is
-#   also passed.
+#   remove Claude/Codex project-local harness artifacts through the
+#   conservative harness cleaner. Root guidance is preserved unless
+#   --force-root-clean is also passed.
 #
 # --force-root-clean:
-#   with --uninstall, also remove generated-looking root AGENTS.md.
+#   with --uninstall, also remove generated-looking root guidance.
 #
 # Examples:
+#   ./scripts/install-platform.sh --platform=claude --target=/path/to/my-app
+#   ./scripts/install-platform.sh --platform=claude --target=. --lite
 #   ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-app
 #   ./scripts/install-platform.sh --platform=codex --target=. --theme=floor
 #   ./scripts/install-platform.sh --platform=copilot --target=. --ctx=ctx.json --force
@@ -57,17 +60,18 @@ set -euo pipefail
 
 print_usage() {
   cat <<'USAGE'
-install-platform.sh — bootstrap a target project for a non-Claude-Code
+install-platform.sh — bootstrap a target project for Claude Code or another
 AI tool (Cursor / GitHub Copilot / Codex CLI / Gemini CLI / VS Code).
 
-These tools don't have Claude Code's marketplace, so we install via
-our own renderer scripts. Each `bin/init.mjs` writes the right files
-to the target project.
+Claude Code has a native plugin marketplace, but project-local bootstrap can
+still run outside Claude Code. Other tools install through renderer scripts
+because they do not have comparable AI-workflow marketplaces.
 
 Usage:
   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations] [--no-doctor] [--uninstall] [--force-root-clean]
 
 --platform:
+  claude          — Claude Code project files (CLAUDE.md + .claude/)
   cursor          — Cursor IDE (.cursor/rules + .cursor/agents)
   copilot         — GitHub Copilot CLI (.github/copilot-instructions.md + hooks)
   vscode-copilot  — VS Code Copilot extension (.github/copilot-instructions.md only)
@@ -92,21 +96,23 @@ Usage:
   print the selected renderer commands without writing files.
 
 --update-foundations:
-  for Codex installs, also update/install approved foundation plugins
+  for Claude/Codex installs, also update/install approved foundation plugins
   (superpowers + context-mode) through scripts/update.sh --foundations-only.
 
 --no-doctor:
-  skip the automatic Codex post-install doctor check.
+  skip the automatic Claude/Codex post-install doctor check.
 
 --uninstall:
-  remove Codex project-local harness artifacts through the conservative
-  harness cleaner. Root AGENTS.md is preserved unless --force-root-clean is
+  remove Claude/Codex project-local harness artifacts through the conservative
+  harness cleaner. Root guidance is preserved unless --force-root-clean is
   also passed.
 
 --force-root-clean:
-  with --uninstall, also remove generated-looking root AGENTS.md.
+  with --uninstall, also remove generated-looking root guidance.
 
 Examples:
+  ./scripts/install-platform.sh --platform=claude --target=/path/to/my-app
+  ./scripts/install-platform.sh --platform=claude --target=. --lite
   ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-app
   ./scripts/install-platform.sh --platform=codex --target=. --theme=floor --dry-run
   ./scripts/install-platform.sh --platform=codex --target=. --update-foundations
@@ -182,10 +188,10 @@ EMIT_PLATFORM="$PLATFORM"
 VS_CODE_COPILOT=0
 case "$PLATFORM" in
   vscode-copilot) EMIT_PLATFORM="copilot"; VS_CODE_COPILOT=1 ;;
-  cursor|copilot|codex|gemini) ;;
+  claude|cursor|copilot|codex|gemini) ;;
   *)
     echo "Error: unknown platform '$PLATFORM'." >&2
-    echo "Valid: cursor, copilot, vscode-copilot, codex, gemini" >&2
+    echo "Valid: claude, cursor, copilot, vscode-copilot, codex, gemini" >&2
     exit 1
     ;;
 esac
@@ -236,14 +242,20 @@ if [ "$LITE" = "1" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ]; }; 
   exit 1
 fi
 
-if [ "$UPDATE_FOUNDATIONS" = "1" ] && [ "$PLATFORM" != "codex" ]; then
-  echo "Error: --update-foundations is currently supported only with --platform=codex." >&2
+if [ "$UPDATE_FOUNDATIONS" = "1" ] && [ "$PLATFORM" != "claude" ] && [ "$PLATFORM" != "codex" ]; then
+  echo "Error: --update-foundations is currently supported only with --platform=claude or --platform=codex." >&2
   echo "Use scripts/update.sh --foundations-only to refresh the approved Claude Code foundations directly." >&2
   exit 1
 fi
 
-if [ "$UNINSTALL" = "1" ] && [ "$PLATFORM" != "codex" ]; then
-  echo "Error: --uninstall is currently supported only with --platform=codex." >&2
+if [ "$PLATFORM" = "claude" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ]; }; then
+  echo "Error: Claude project bootstrap supports --theme=all, --theme=builder, or --lite." >&2
+  echo "Use install-all.sh or Claude Code /plugin install for Claude floor/thrift plugin installation." >&2
+  exit 1
+fi
+
+if [ "$UNINSTALL" = "1" ] && [ "$PLATFORM" != "claude" ] && [ "$PLATFORM" != "codex" ]; then
+  echo "Error: --uninstall is currently supported only with --platform=claude or --platform=codex." >&2
   echo "Use plugin-specific uninstall commands for Cursor/Copilot/Gemini artifacts." >&2
   exit 1
 fi
@@ -276,7 +288,7 @@ TARGET_ABS="$(cd "$TARGET" 2>/dev/null && pwd)" || { echo "Error: target dir doe
 if [ "$UNINSTALL" = "1" ]; then
   echo "Uninstalling for $PLATFORM from $TARGET_ABS$([ "$DRY_RUN" = "1" ] && printf " (dry-run"))"
   echo
-  clean_cmd=(node "$REPO_ROOT/scripts/harness-clean.mjs" "--target=$TARGET_ABS" "--platform=codex")
+  clean_cmd=(node "$REPO_ROOT/scripts/harness-clean.mjs" "--target=$TARGET_ABS" "--platform=$PLATFORM")
   if [ "$DRY_RUN" = "1" ]; then
     clean_cmd+=(--dry-run)
   fi
@@ -385,6 +397,20 @@ run_post_install_doctor() {
 }
 
 run_builder_init() {
+  if [ "$EMIT_PLATFORM" = "claude" ]; then
+    local args=()
+    if [ "$LITE" = "1" ]; then
+      args+=(--lite)
+    fi
+    if [ "$HAS_LANG" = "1" ]; then
+      args+=(--lang="$INIT_LANG")
+    fi
+    if [ "$NO_DOCTOR" = "1" ]; then
+      args+=(--no-doctor)
+    fi
+    run_init "harness-builder" "init.mjs" "${args[@]}"
+    return 0
+  fi
   if [ "$VS_CODE_COPILOT" = "1" ]; then
     run_init "harness-builder-$EMIT_PLATFORM" "init.mjs" --vscode-only
     return 0
@@ -404,11 +430,15 @@ run_builder_init() {
   fi
 }
 
+if [ "$UPDATE_FOUNDATIONS" = "1" ]; then
+  run_foundation_update
+fi
+
 # Map theme → plugins to install
 case "$THEME" in
   all)
     run_builder_init
-    if [ "$LITE" != "1" ] && [ "$VS_CODE_COPILOT" != "1" ]; then
+    if [ "$LITE" != "1" ] && [ "$VS_CODE_COPILOT" != "1" ] && [ "$PLATFORM" != "claude" ]; then
       run_init "harness-floor-$EMIT_PLATFORM" "init.mjs"
       if [ "$EMIT_PLATFORM" = "codex" ]; then
         run_init "harness-thrift-$EMIT_PLATFORM" "install.mjs" --no-instrument
@@ -436,10 +466,6 @@ case "$THEME" in
     ;;
 esac
 
-if [ "$UPDATE_FOUNDATIONS" = "1" ]; then
-  run_foundation_update
-fi
-
 run_post_install_doctor
 
 print_install_summary() {
@@ -449,6 +475,9 @@ print_install_summary() {
 
   if [ "$lite" = "1" ]; then
     case "$platform" in
+      claude)
+        echo "  - CLAUDE.md, AGENTS.md, .claude/agents/{planner,dev,reviewer}/, non-policy hooks (Claude lite scaffold)"
+        ;;
       cursor)
         echo "  - .cursor/rules/, .cursor/agents/ (builder-only lite scaffold)"
         ;;
@@ -470,6 +499,10 @@ print_install_summary() {
   fi
 
   case "$platform:$theme" in
+    claude:all|claude:builder)
+      echo "  - CLAUDE.md, AGENTS.md, .claude/agents/, .claude/hooks/, docs/tasks/, .visual-qa.json, .agent-all.json"
+      echo "  - Note: Claude plugin installation still uses install-all.sh or Claude Code /plugin install"
+      ;;
     cursor:all)
       echo "  - .cursor/rules/, .cursor/agents/, .visual-qa.json, .agent-all.json, .thrift.json"
       ;;

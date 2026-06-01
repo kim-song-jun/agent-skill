@@ -148,7 +148,7 @@ npm run dev                                       # dev 서버 :3000에서
 /agent-all "Feature A" && /agent-all "Feature B" && /agent-all "Feature C" && /agent-all "Bugfix" --loop
 ```
 
-## Codex / Claude Code가 아닌 통합
+## Claude/Codex / Claude Code가 아닌 통합
 
 Codex CLI 프로젝트에서는 Codex 전용 builder/floor 포트를 사용합니다:
 
@@ -164,20 +164,23 @@ run /agent-all for "Hard refactor that needs second-opinion"
 
 `/codex-init --lang=ko`는 Codex 상호작용 언어를 `AGENTS.md`에 기록합니다. floor 번들을 설치할 때 `.agent-all.json` `language`도 같은 값으로 유지하세요. `/codex-init --update-foundations`는 승인된 foundation(`superpowers@claude-plugins-official`, `context-mode@context-mode`)만 갱신하며 전역 Codex config를 패치하지 않습니다.
 
-대상 저장소에 shell로 설치할 때는 platform renderer를 사용합니다:
+대상 저장소에 shell로 설치할 때는 platform renderer를 사용합니다. Claude는 `/agent-init`과 같은 project-local bootstrapper를 쓰고, Codex 및 다른 도구는 각 플랫폼 전용 renderer를 사용합니다:
 
 ```bash
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --lite
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lang=ko
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lite
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --update-foundations
 ```
 
-기본 renderer 경로는 무거운 builder + floor + thrift 번들을 설치합니다. `--lang=ko|en|auto`는 builder/floor 설치 전체에서 `AGENTS.md`와 `.agent-all.json` language 값을 맞춥니다. `--lite`는 builder-only 경로이며 floor/thrift 파일과 전역 Codex config 스니펫을 건너뜁니다. `--update-foundations`는 `scripts/update.sh --foundations-only`로 위임하고, `--dry-run`과 함께 쓰면 `claude` 호출 없이 승인된 계획만 출력합니다. Codex `all`, `builder`, `--lite` 설치는 post-install doctor를 자동 실행하며, 검증을 의도적으로 미룰 때만 `--no-doctor`를 넘기세요.
+기본 renderer 경로는 operational scaffold를 설치합니다. Claude가 아닌 플랫폼은 기본으로 무거운 builder + floor + thrift 번들을 설치합니다. `--lang=ko|en|auto`는 생성된 루트 지침과 `.agent-all.json` language 값을 builder/floor 설치 전체에서 맞춥니다. `--lite`는 builder-only 경로이며 floor/thrift 파일과 전역 Codex config 스니펫을 건너뜁니다. `--update-foundations`는 `scripts/update.sh --foundations-only`로 위임하고, `--dry-run`과 함께 쓰면 `claude` 호출 없이 승인된 계획만 출력합니다. Claude와 Codex `all`, `builder`, `--lite` 설치는 post-install doctor를 자동 실행하며, 검증을 의도적으로 미룰 때만 `--no-doctor`를 넘기세요.
 
 수동 doctor 재실행:
 
 ```bash
+node /path/to/harness-builder/bin/doctor.mjs --target=/path/to/my-project --platform=claude
 node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex
 node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=builder
 node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=lite
@@ -185,16 +188,18 @@ node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project 
 
 source checkout에서 실행할 때는 `node /path/to/agent-skill/scripts/doctor.mjs ...` compatibility wrapper가 같은 검사를 수행합니다. doctor는 project-local Claude/Codex scaffold를 검증하고, `--profile=auto`일 때 operational/builder/lite profile을 자동 감지하며, 필수 artifact 누락은 non-zero exit로 보고하고 `superpowers` 또는 `context-mode`가 없으면 경고합니다.
 
-Codex uninstall과 cleanup:
+Claude/Codex uninstall과 cleanup:
 
 ```bash
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --uninstall
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --uninstall
+node /path/to/harness-builder/bin/clean.mjs --target=/path/to/my-project --platform=claude --dry-run
 node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/my-project --platform=codex --dry-run
 ```
 
-보수적 cleanup은 생성된 `.codex/skills`, `.codex/hooks`, floor/thrift config,
-task template, helper script를 제거합니다. 루트 `AGENTS.md`는 agent-skill
-sentinel이 있을 때만 정리하며, 생성된 루트 가이드까지 의도적으로 제거하려면
+보수적 cleanup은 생성된 Claude/Codex 역할 파일, hook, floor/thrift config,
+task template, helper script를 제거합니다. 루트 가이드는 agent-skill sentinel이
+있을 때만 정리하며, 생성된 루트 가이드까지 의도적으로 제거하려면
 `install-platform.sh --uninstall`에 `--force-root-clean`을 같이 넘기세요.
 
 직접 라이브러리로 사용할 때, 핵심 모듈은 이식 가능한 Node.js입니다:

@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1711%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1715%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..." --loop --qa` per feature; the agent brainstorms → plans → writes → tests → **visually QAs every page** → opens the PR — and keeps iterating until tests AND the UI both pass — without you babysitting every turn.
 
@@ -452,15 +452,19 @@ cargo new mycli && cd mycli && git init && git add -A && git commit -m "init"
 
 ---
 
-## Use it on other AI tools
+## Use it from Claude Code or other AI tools
 
-Claude Code has a native marketplace (`/plugin install`). The other AI tools — Cursor, GitHub Copilot, Codex CLI, Gemini CLI, VS Code — **don't have a comparable plugin marketplace for AI workflows**, so we ship renderer scripts that write the right files into your project. CLI platforms receive their config, hook, and skill files in that tool's expected layout; VS Code Copilot receives editor instructions only.
+Claude Code has a native marketplace (`/plugin install`), and `/agent-init` remains the primary in-Claude setup path. For terminal-driven project bootstrap, `install-platform.sh --platform=claude` runs the same project-local renderer outside Claude Code. The other AI tools — Cursor, GitHub Copilot, Codex CLI, Gemini CLI, VS Code — **don't have a comparable plugin marketplace for AI workflows**, so the same wrapper writes the right files into your project. CLI platforms receive their config, hook, and skill files in that tool's expected layout; VS Code Copilot receives editor instructions only.
 
 ### One-command install per platform
 
 ```bash
 git clone https://github.com/kim-song-jun/agent-skill /tmp/agent-skill
 cd /tmp/agent-skill
+
+# Claude Code project bootstrap outside Claude Code
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --lite
 
 # Cursor
 ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-project
@@ -483,7 +487,7 @@ cd /tmp/agent-skill
 ./scripts/install-platform.sh --platform=gemini --target=/path/to/my-project
 ```
 
-Default installs all three themes (builder + floor + thrift). Use `--theme=floor` or `--theme=thrift` to install just one. Use `--lite` for a builder-only lightweight scaffold; for Codex this passes through to `codex-init --lite` and skips floor/thrift files plus global config snippets. VS Code Copilot is instructions-only and does not accept floor/thrift theme installs. Use `--lang=ko|en|auto` to keep generated root guidance and `.agent-all.json` language aligned across builder/floor artifacts. For Codex, add `--update-foundations` to refresh only the approved foundation plugins (`superpowers@claude-plugins-official`, `context-mode@context-mode`) during bootstrap; `--dry-run --update-foundations` prints the exact approved plan without calling `claude`. Codex `all`, `builder`, and `--lite` installs run the post-install doctor automatically; pass `--no-doctor` only when intentionally deferring validation. `install-platform.sh` writes project-local files and prints any global config snippets to stdout; it does not patch global CLI config files.
+Default installs the operational scaffold. Non-Claude platforms install all three themes (builder + floor + thrift); use `--theme=floor` or `--theme=thrift` to install just one. Claude project bootstrap supports the operational builder scaffold, `--theme=builder`, and `--lite`; install Claude slash-command plugins through `install-all.sh` or `/plugin install`. Use `--lite` for a builder-only lightweight scaffold; for Codex this passes through to `codex-init --lite` and skips floor/thrift files plus global config snippets. VS Code Copilot is instructions-only and does not accept floor/thrift theme installs. Use `--lang=ko|en|auto` to keep generated root guidance and `.agent-all.json` language aligned across builder/floor artifacts. For Claude/Codex, add `--update-foundations` to refresh only the approved foundation plugins (`superpowers@claude-plugins-official`, `context-mode@context-mode`) during bootstrap; `--dry-run --update-foundations` prints the exact approved plan without calling `claude`. Claude and Codex `all`, `builder`, and `--lite` installs run the post-install doctor automatically; pass `--no-doctor` only when intentionally deferring validation. `install-platform.sh` writes project-local files and prints any global config snippets to stdout; it does not patch global CLI config files.
 
 After any Claude or Codex project install, you can manually re-run the plugin-local doctor (`node /path/to/harness-builder/bin/doctor.mjs --target=/path/to/my-project --platform=claude` or `node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex`). From a source checkout, `node /path/to/agent-skill/scripts/doctor.mjs ...` is equivalent. It validates the project-local Claude/Codex scaffold, auto-detects operational, builder, or lite profile when possible, reports missing artifacts with a non-zero exit, and warns if approved foundations are not installed.
 
@@ -491,6 +495,7 @@ After any Claude or Codex project install, you can manually re-run the plugin-lo
 
 | Platform | Files written | Notes |
 |---|---|---|
+| **Claude Code** | `CLAUDE.md`, `AGENTS.md`, `.claude/agents/*.md`, `.claude/hooks/*.mjs`, `.visual-qa.json`, `.agent-all.json` | Terminal project bootstrap for the same operational scaffold as `/agent-init`; marketplace plugin install remains `install-all.sh` or `/plugin install`. |
 | **Cursor** | `.cursor/rules/*.mdc`, `.cursor/agents/*.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | All native. `is_background: true` on parallel subagents. |
 | **Copilot CLI** | `.github/copilot-instructions.md`, `.github/hooks/*.json`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | Builder hook stubs are project-local; floor decision protocol is prompt-level by default. Optional hook helpers require manual hook review. |
 | **VS Code Copilot** | `.github/copilot-instructions.md` | VS Code Copilot extension reads this automatically. Floor, visual-qa, thrift, and Copilot CLI automation files are not installed for this editor-only path. |
@@ -539,7 +544,8 @@ These platforms don't have plugin marketplaces for AI workflows yet. Use `./scri
 ### Uninstall per platform
 
 ```bash
-# Codex project-local harness cleanup
+# Claude/Codex project-local harness cleanup
+./scripts/install-platform.sh --platform=claude --target=/path/to/project --uninstall
 ./scripts/install-platform.sh --platform=codex --target=/path/to/project --uninstall
 ./scripts/install-platform.sh --platform=codex --target=/path/to/project --uninstall --force-root-clean
 
@@ -551,7 +557,7 @@ node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/project --pl
 node plugins/harness-thrift-cursor/bin/install.mjs /path/to/project --uninstall
 ```
 
-Codex cleanup removes generated `.codex/skills`, `.codex/hooks`, floor/thrift config files, task templates, and helper scripts. By default it preserves root `AGENTS.md` unless an agent-skill sentinel is present; `--force-root-clean` also removes generated-looking root `AGENTS.md`. Claude plugin-local cleanup strips generated sentinel sections and generated hook/agent/settings registrations while preserving root guidance without sentinels unless `--force-root` is explicit. Cursor, Copilot, Gemini, and VS Code Copilot still use plugin-specific cleanup or manual review for now.
+Claude cleanup strips generated sentinel sections and generated hook/agent/settings registrations while preserving root guidance without sentinels unless `--force-root-clean` is explicit. Codex cleanup removes generated `.codex/skills`, `.codex/hooks`, floor/thrift config files, task templates, and helper scripts. By default it preserves root `AGENTS.md` unless an agent-skill sentinel is present; `--force-root-clean` also removes generated-looking root `AGENTS.md`. Cursor, Copilot, Gemini, and VS Code Copilot still use plugin-specific cleanup or manual review for now.
 
 ---
 
@@ -694,7 +700,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 - **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for design docs per plugin.
 - **All 17 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
-- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1711 tests, all green.
+- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1715 tests, all green.
 - **Per-platform porting** — see specs ending in `-impl-spec.md` or `-decomposition.md` under `docs/superpowers/specs/`.
 - **Cross-platform support matrix** — see [docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md](docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md).
 - **Hook precedence (if you're mixing plugins that all register hooks)** — see [docs/superpowers/specs/2026-05-18-hook-precedence-integration.md](docs/superpowers/specs/2026-05-18-hook-precedence-integration.md).
@@ -705,8 +711,8 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 | Layer | Status | Note |
 |---|---|---|
-| Unit/integration tests | ✅ **1711/1711 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-fixture-smoke, command-surface, doctor, cleanup, and visual-qa regressions |
-| Install renderers (5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
+| Unit/integration tests | ✅ **1715/1715 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-fixture-smoke, command-surface, doctor, cleanup, and visual-qa regressions |
+| Project install renderers (Claude + 5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
 | Marketplace registration | ✅ 17 plugins listed | sync between local + origin |
 | Claude Code skills | ✅ ship today | core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug` |
 | Claude/Codex CLI runtime | ✅ live smoke probe available | `./scripts/release-smoke.sh --fast --with-live-cli` probes installed `claude`/`codex` versions and verifies Codex `exec [PROMPT]` support; release fixture smoke also imports the installed Codex `agent-all-codex` and `visual-qa-codex` sequential helpers |
@@ -753,7 +759,7 @@ Before submitting:
 ./scripts/release-smoke.sh --fast --with-live-cli  # also probe installed Claude/Codex CLIs
 node scripts/release-audit.mjs           # Claude/Codex release readiness matrix
 node scripts/release-fixture-smoke.mjs   # fresh Claude/Codex release fixtures
-node --test                              # 1711/1711 must pass
+node --test                              # 1715/1715 must pass
 node scripts/sync-lib.mjs --check        # vendored shared libs in sync
 ```
 
