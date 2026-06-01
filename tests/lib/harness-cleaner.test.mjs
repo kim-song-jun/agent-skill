@@ -10,6 +10,8 @@ import {
 } from "../../plugins/harness-builder/skills/agent-init/lib/harness-cleaner.mjs";
 
 const CLEAN = resolve("scripts/harness-clean.mjs");
+const CLAUDE_PLUGIN_CLEAN = resolve("plugins/harness-builder/bin/clean.mjs");
+const CODEX_PLUGIN_CLEAN = resolve("plugins/harness-builder-codex/bin/clean.mjs");
 
 function tmp(prefix) {
   return mkdtempSync(join(tmpdir(), prefix));
@@ -184,5 +186,16 @@ test("cleanup CLI emits JSON dry-run output and does not mutate", () => {
     assert.ok(existsSync(resolve(target, ".codex/hooks/agent-policy-hook.mjs")));
   } finally {
     rmSync(target, { recursive: true, force: true });
+  }
+});
+
+test("cleanup CLI help works without requiring platform for source and plugin wrappers", () => {
+  for (const script of [CLEAN, CLAUDE_PLUGIN_CLEAN, CODEX_PLUGIN_CLEAN]) {
+    const res = spawnSync(process.execPath, [script, "--help"], { encoding: "utf-8" });
+    const output = `${res.stdout}\n${res.stderr}`;
+    assert.equal(res.status, 0, `${script}\nstdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(output, /Usage: clean\.mjs --platform=claude\|codex/);
+    assert.match(output, /--force-root/);
+    assert.doesNotMatch(output, /--platform is required/);
   }
 });

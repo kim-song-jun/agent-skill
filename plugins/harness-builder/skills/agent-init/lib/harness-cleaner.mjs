@@ -427,6 +427,7 @@ export function parseCleanupArgs(argv) {
     else args.target = arg;
   }
 
+  if (args.help) return args;
   if (!args.platform) throw new Error("--platform is required");
   if (args.platform !== "claude" && args.platform !== "codex") {
     throw new Error("--platform must be claude or codex");
