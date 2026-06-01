@@ -6,7 +6,7 @@ description: >
   existing project. Use --lite to opt out of the heavy operational artifacts.
 ---
 
-# Codex Init
+# /codex-init
 
 You are scaffolding agent infrastructure for a Codex CLI project. The default
 profile is operational and heavy. `--lite` and `--theme=lite` write root
@@ -151,3 +151,9 @@ For `--lite` and `--theme=lite`, skip this phase entirely. Lite mode writes
 root AGENTS and base skills only, and skips repo hooks, task ledger files,
 operational reviewer personas, and Codex config snippet/global hook patch
 output.
+
+## When done
+
+Print the detected stack, runtime, profile, roles scaffolded, and in the
+operational/default profile, the Codex config snippet for manual merge. Do not
+claim that global config was patched automatically.

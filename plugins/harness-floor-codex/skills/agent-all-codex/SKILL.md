@@ -7,7 +7,7 @@ description: >
   phase files in this skill are the runnable Codex workflow contract.
 ---
 
-# /agent-all (Codex port)
+# /agent-all-codex
 
 Runs the cost-unrestricted multi-agent pipeline using Codex CLI
 primitives. Current Codex hooks do not expose a command surface for the

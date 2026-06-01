@@ -184,3 +184,108 @@ test("release audit fails incomplete Claude slash-command skill surfaces", () =>
   assert.ok(failed, JSON.stringify(result.platforms.claude.checks, null, 2));
   assert.match(failed.details, /--lite/);
 });
+
+test("release audit fails incomplete Codex slash-command skill surfaces", () => {
+  const root = mkdtempSync(resolve(tmpdir(), "release-audit-codex-command-"));
+  writeRel(
+    root,
+    ".claude-plugin/marketplace.json",
+    JSON.stringify({
+      plugins: [
+        { name: "harness-builder-codex" },
+        { name: "harness-floor-codex" },
+        { name: "harness-thrift-codex" },
+      ],
+    }),
+  );
+
+  writeRel(root, "plugins/harness-builder-codex/.claude-plugin/plugin.json", '{"name":"harness-builder-codex"}');
+  writeRel(root, "plugins/harness-builder-codex/bin/init.mjs", "");
+  writeRel(
+    root,
+    "plugins/harness-builder-codex/skills/codex-init/SKILL.md",
+    [
+      "---",
+      "name: codex-init",
+      "---",
+      "",
+      "# Codex Init",
+      "",
+      "The default profile is operational and heavy.",
+      "Flags: --lite --theme=lite --dry-run --lang=en|ko|auto.",
+      "When done, print summary and the Codex config snippet.",
+      "",
+    ].join("\n"),
+  );
+  writeRel(
+    root,
+    "plugins/harness-builder-codex/skills/codex-init/templates/AGENTS.md.hbs",
+    "Role Routing\norchestrator owns HOT-file coordination\nverification-reviewer records evidence\n",
+  );
+  writeRel(
+    root,
+    "plugins/harness-builder-codex/skills/codex-init/templates/codex-config.toml.hbs",
+    "# agent-skill:codex-config:start\n[[hooks.PreToolUse]]\n",
+  );
+  writeRel(root, "plugins/harness-builder-codex/skills/codex-init/templates/hooks/agent-policy-hook.mjs", "");
+  writeRel(
+    root,
+    "plugins/harness-floor-codex/skills/agent-all-codex/SKILL.md",
+    [
+      "---",
+      "name: agent-all-codex",
+      "---",
+      "",
+      "# /agent-all-codex",
+      "",
+      "Flags: --loop --qa --dispatch=sequential --resume --force --yes.",
+      "Uses sequential skill invocations. When done, print summary and dispatch strategy.",
+      "",
+    ].join("\n"),
+  );
+  writeRel(
+    root,
+    "plugins/harness-floor-codex/skills/agent-all-codex/phases/4-gate.md",
+    "classifyChangedFiles(files)\nQA_AUDIT\nVERIFICATION_AUDIT\nunsupported legacy agent hook\n",
+  );
+  writeRel(
+    root,
+    "plugins/harness-floor-codex/skills/visual-qa-codex/SKILL.md",
+    [
+      "---",
+      "name: visual-qa-codex",
+      "---",
+      "",
+      "# /visual-qa-codex",
+      "",
+      "comprehensive mode, Playwright MCP, --resume --force --yes --budget=<USD> --dispatch=sequential.",
+      "When done, print summary, dispatch strategy, and report path.",
+      "",
+    ].join("\n"),
+  );
+  writeRel(
+    root,
+    "plugins/harness-thrift-codex/skills/thrift-codex/SKILL.md",
+    [
+      "---",
+      "name: thrift-codex",
+      "---",
+      "",
+      "# /thrift-codex",
+      "",
+      "/thrift-codex summarise and /thrift-codex audit are supported.",
+      "Flags: --force --no-instrument --dry-run.",
+      "Append-only hook patches. When done, print Thrift audit.",
+      "",
+    ].join("\n"),
+  );
+
+  const result = runReleaseAudit({ root, platforms: ["codex"] });
+
+  assert.equal(result.ok, false);
+  const failed = result.platforms.codex.checks.find(
+    (check) => !check.ok && check.name.includes("codex-init/SKILL.md"),
+  );
+  assert.ok(failed, JSON.stringify(result.platforms.codex.checks, null, 2));
+  assert.match(failed.details, /\/codex-init/);
+});

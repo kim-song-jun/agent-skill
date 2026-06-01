@@ -9,7 +9,7 @@ description: >
   local phase files in this skill are the runnable Codex workflow contract.
 ---
 
-# /visual-qa (Codex port)
+# /visual-qa-codex
 
 Runs the cost-unrestricted visual-QA pipeline on Codex CLI. Reads
 `.visual-qa.json`, captures via Playwright MCP, analyses each image

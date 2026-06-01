@@ -102,6 +102,58 @@ const PLATFORM_CONTRACTS = {
     ],
     textChecks: [
       {
+        file: "plugins/harness-builder-codex/skills/codex-init/SKILL.md",
+        patterns: [
+          /^---\nname: codex-init\n/m,
+          /^# \/codex-init$/m,
+          /default[\s\S]{0,140}operational and heavy/i,
+          /--lite/,
+          /--theme=lite/,
+          /--dry-run/,
+          /--lang=en\|ko\|auto/,
+          /When done[\s\S]{0,220}Codex config snippet/i,
+        ],
+      },
+      {
+        file: "plugins/harness-floor-codex/skills/agent-all-codex/SKILL.md",
+        patterns: [
+          /^---\nname: agent-all-codex\n/m,
+          /^# \/agent-all-codex$/m,
+          /--loop/,
+          /--qa/,
+          /--dispatch=sequential/,
+          /--resume/,
+          /sequential skill/i,
+          /When done[\s\S]{0,180}dispatch strategy/i,
+        ],
+      },
+      {
+        file: "plugins/harness-floor-codex/skills/visual-qa-codex/SKILL.md",
+        patterns: [
+          /^---\nname: visual-qa-codex\n/m,
+          /^# \/visual-qa-codex$/m,
+          /comprehensive/,
+          /--budget=<USD>/,
+          /--dispatch=sequential/,
+          /--resume/,
+          /Playwright MCP/,
+          /When done[\s\S]{0,220}dispatch strategy/i,
+        ],
+      },
+      {
+        file: "plugins/harness-thrift-codex/skills/thrift-codex/SKILL.md",
+        patterns: [
+          /^---\nname: thrift-codex\n/m,
+          /^# \/thrift-codex$/m,
+          /\/thrift-codex summarise/,
+          /\/thrift-codex audit/,
+          /--dry-run/,
+          /--no-instrument/,
+          /Append-only hook patches/,
+          /When done/i,
+        ],
+      },
+      {
         file: "plugins/harness-builder-codex/skills/codex-init/templates/AGENTS.md.hbs",
         patterns: [/Role Routing/i, /orchestrator[\s\S]{0,240}HOT-file/i, /verification-reviewer/i],
       },

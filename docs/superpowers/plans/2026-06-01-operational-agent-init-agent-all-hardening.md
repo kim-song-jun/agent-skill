@@ -19,14 +19,14 @@ Implemented through Task 12 as of 2026-06-01. The detailed TDD task list below i
 Completed scope:
 
 - Tasks 1-12 are implemented in repo artifacts: sentinel merge, folder guides, foundation checks, task ledger, pathspec policy, Claude/Codex/Gemini operational init surfaces, agent-all handoff runtime, changed-file reviewer routing, foundation update planning, docs, and release audit.
-- Latest hardening addition: Claude slash-command release audit coverage for Skill frontmatter, command headings, canonical flags, and summary contracts, plus Codex command-surface release coverage for `codex-init --help` and unknown-flag handling. This sits alongside `scripts/release-fixture-smoke.mjs`, a fresh fixture smoke gate covering Claude marketplace dry-run, Claude operational/lite render output, and Codex operational/lite installs in new git repos. It complements `scripts/release-audit.mjs`, the Claude/Codex release readiness matrix for marketplace manifests, required init/floor/thrift files, hook schema expectations, reviewer routing, audit tokens, and root role routing.
+- Latest hardening addition: Claude and Codex slash-command release audit coverage for Skill frontmatter, command headings, canonical flags, and summary contracts, plus Codex command-surface release coverage for `codex-init --help` and unknown-flag handling. This sits alongside `scripts/release-fixture-smoke.mjs`, a fresh fixture smoke gate covering Claude marketplace dry-run, Claude operational/lite render output, and Codex operational/lite installs in new git repos. It complements `scripts/release-audit.mjs`, the Claude/Codex release readiness matrix for marketplace manifests, required init/floor/thrift files, hook schema expectations, reviewer routing, audit tokens, and root role routing.
 - Current release-doc contract pins stale test-count regressions so future changes must update public verification evidence.
 
 Verification evidence:
 
 - `node scripts/release-audit.mjs`: Claude/Codex readiness checks passing.
 - `node scripts/release-fixture-smoke.mjs`: Claude marketplace dry-run, Claude operational/lite render output, and Codex operational/lite fresh fixtures passing.
-- `node --test`: 1646/1646 passing.
+- `node --test`: 1647/1647 passing.
 - `./scripts/release-smoke.sh --fast --with-live-cli`: 286/286 passing with Claude Code and Codex CLI live probes.
 - `node scripts/sync-lib.mjs --check`: 31 vendored files match source.
 

@@ -51,11 +51,11 @@ test("usage docs describe agent-init language persistence", () => {
 test("readme files describe the current Codex config surface and current test count", () => {
   for (const path of ["README.md", "README.ko.md"]) {
     const body = read(path);
-    assert.match(body, /1646\/1646/);
+    assert.match(body, /1647\/1647/);
     assert.doesNotMatch(body, /1279\/1279|1279\+|1279%20passing|1547\+/);
     assert.doesNotMatch(
       body,
-      /1552\/1552|1552%20passing|1554\/1554|1554%20passing|1557\/1557|1557%20passing|1558\/1558|1558%20passing|1559\/1559|1559%20passing|1560\/1560|1560%20passing|1561\/1561|1561%20passing|1564\/1564|1564%20passing|1565\/1565|1565%20passing|1566\/1566|1566%20passing|1567\/1567|1567%20passing|1568\/1568|1568%20passing|1569\/1569|1569%20passing|1572\/1572|1572%20passing|1577\/1577|1577%20passing|1579\/1579|1579%20passing|1580\/1580|1580%20passing|1581\/1581|1581%20passing|1581 tests|1591\/1591|1591%20passing|1591 tests|1600\/1600|1600%20passing|1600 tests|1602\/1602|1602%20passing|1602 tests|1604\/1604|1604%20passing|1604 tests|1605\/1605|1605%20passing|1605 tests|1606\/1606|1606%20passing|1606 tests|1611\/1611|1611%20passing|1611 tests|1612\/1612|1612%20passing|1612 tests|1613\/1613|1613%20passing|1613 tests|1614\/1614|1614%20passing|1614 tests|1615\/1615|1615%20passing|1615 tests|1616\/1616|1616%20passing|1616 tests|1623\/1623|1623%20passing|1623 tests|1625\/1625|1625%20passing|1625 tests|1627\/1627|1627%20passing|1627 tests|1629\/1629|1629%20passing|1629 tests|1630\/1630|1630%20passing|1630 tests|1632\/1632|1632%20passing|1632 tests|1633\/1633|1633%20passing|1633 tests|1634\/1634|1634%20passing|1634 tests|1637\/1637|1637%20passing|1637 tests|1638\/1638|1638%20passing|1638 tests|1639\/1639|1639%20passing|1639 tests|1642\/1642|1642%20passing|1642 tests|1645\/1645|1645%20passing|1645 tests|1647\/1647|1647%20passing|1647 tests/,
+      /1552\/1552|1552%20passing|1554\/1554|1554%20passing|1557\/1557|1557%20passing|1558\/1558|1558%20passing|1559\/1559|1559%20passing|1560\/1560|1560%20passing|1561\/1561|1561%20passing|1564\/1564|1564%20passing|1565\/1565|1565%20passing|1566\/1566|1566%20passing|1567\/1567|1567%20passing|1568\/1568|1568%20passing|1569\/1569|1569%20passing|1572\/1572|1572%20passing|1577\/1577|1577%20passing|1579\/1579|1579%20passing|1580\/1580|1580%20passing|1581\/1581|1581%20passing|1581 tests|1591\/1591|1591%20passing|1591 tests|1600\/1600|1600%20passing|1600 tests|1602\/1602|1602%20passing|1602 tests|1604\/1604|1604%20passing|1604 tests|1605\/1605|1605%20passing|1605 tests|1606\/1606|1606%20passing|1606 tests|1611\/1611|1611%20passing|1611 tests|1612\/1612|1612%20passing|1612 tests|1613\/1613|1613%20passing|1613 tests|1614\/1614|1614%20passing|1614 tests|1615\/1615|1615%20passing|1615 tests|1616\/1616|1616%20passing|1616 tests|1623\/1623|1623%20passing|1623 tests|1625\/1625|1625%20passing|1625 tests|1627\/1627|1627%20passing|1627 tests|1629\/1629|1629%20passing|1629 tests|1630\/1630|1630%20passing|1630 tests|1632\/1632|1632%20passing|1632 tests|1633\/1633|1633%20passing|1633 tests|1634\/1634|1634%20passing|1634 tests|1637\/1637|1637%20passing|1637 tests|1638\/1638|1638%20passing|1638 tests|1639\/1639|1639%20passing|1639 tests|1642\/1642|1642%20passing|1642 tests|1645\/1645|1645%20passing|1645 tests|1646\/1646|1646%20passing|1646 tests/,
     );
     assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
     assert.match(body, /\[\[hooks\.PreToolUse\]\]|\[mcp_servers\.playwright\]/);
@@ -154,8 +154,8 @@ test("Codex runtime specs describe the current sequential surface instead of sta
   ]) {
     const body = read(path);
     assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
-    assert.doesNotMatch(body, /1246\/1246|1279\/1279|1645\/1645|1647\/1647/);
-    assert.match(body, /1646\/1646/);
+    assert.doesNotMatch(body, /1246\/1246|1279\/1279|1645\/1645|1646\/1646/);
+    assert.match(body, /1647\/1647/);
     assert.match(body, /Codex CLI[\s\S]{0,260}(PreToolUse|prompt-level|sequential|프롬프트|순차)/i);
   }
 });
@@ -165,7 +165,7 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /## Implementation Status/i);
   assert.match(plan, /Implemented through Task 12/i);
   assert.match(plan, /root role routing/i);
-  assert.match(plan, /node --test[\s\S]{0,120}1646\/1646/);
+  assert.match(plan, /node --test[\s\S]{0,120}1647\/1647/);
   assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}286\/286/);
   assert.match(plan, /release-audit\.mjs/);
   assert.match(plan, /release-fixture-smoke\.mjs/);
@@ -196,6 +196,7 @@ test("manual release checklist is mapped to automated gates and Claude/Codex liv
   assert.match(body, /release-command-surface\.test\.mjs/);
   assert.match(body, /release-smoke\.sh --fast --with-live-cli/);
   assert.match(body, /Claude slash-command metadata, headings, flags, and summary contracts/i);
+  assert.match(body, /Codex slash-command metadata, headings, flags, and summary contracts/i);
   assert.match(body, /node --test[\s\S]{0,480}claude-native-release-contract\.test\.mjs/);
   assert.match(body, /node --test[\s\S]{0,480}release-install-scripts\.test\.mjs/);
   assert.match(body, /Claude Code live session/i);
