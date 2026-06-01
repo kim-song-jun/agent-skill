@@ -1,35 +1,49 @@
-# Manual end-to-end checklist
+# Release validation checklist
 
-Run before each `harness-builder` release. Use a fresh tmpdir as the target project.
+Run this before each Claude/Codex release candidate. This file is a release
+map, not a duplicate unchecked to-do list: anything deterministic belongs in
+the automated gate, and only runtime UX observations stay manual.
 
-## Setup
+## Automated release gate
 
 ```bash
-mkdir /tmp/harness-fixture && cd /tmp/harness-fixture && git init
-# (Optional: drop a package.json or pyproject.toml to influence stack detection)
+./scripts/release-smoke.sh --fast --with-live-cli
+node --test tests/lib/claude-native-release-contract.test.mjs tests/lib/release-install-scripts.test.mjs tests/lib/release-doc-contract.test.mjs
+node --test
+node scripts/sync-lib.mjs --check
 ```
 
-## Run
+The gate covers:
 
-In Claude Code, invoke `/agent-init`.
+- Claude native release manifests, hook syntax, `/agent-init` release docs, and visual-qa seed config.
+- Codex install renderers for operational and lite profiles, including `/codex-init --lite` via `install-platform.sh --platform=codex --lite`.
+- Codex floor and visual-qa dispatch contracts, including the verified `codex exec` positional `[PROMPT]` interface.
+- Sentinel merge, dry-run, force, policy-hook, folder-guide, task-ledger, foundation-status, and lite-profile contracts.
 
-## Checks
+## Claude Code live session
 
-- [ ] Phase 1 actually triggers `superpowers:brainstorming` (you see brainstorming questions).
-- [ ] Stack detection picked the right language (or "unknown").
-- [ ] Phase 3 dispatches in parallel (visible in the agent log as multiple subagents launched at once).
-- [ ] `CLAUDE.md` written; re-run `/agent-init` against an existing `CLAUDE.md` and confirm only the `agent-skill:operational` sentinel section is appended or replaced.
-- [ ] `.claude/agents/*.md` count matches size (small=3, medium=6+#qa, large=9+#qa).
-- [ ] Each generated agent file contains the three operating principles in its `## Rules` section.
-- [ ] `.claude/hooks/{context-mode-router,session-summary,cache-heal,agent-policy-hook}.mjs` exist and are syntactically valid (`node --check`).
-- [ ] `.claude/settings.local.json` registers the base three hooks and the operational policy hook.
-- [ ] `.gitignore` contains `.claude/.agent-init-state.json`.
-- [ ] Final commit message is `chore: bootstrap harness via /agent-init`.
-- [ ] Re-running with no flags is a no-op and prints "All phases already complete (use --force to re-run)".
-- [ ] `--force` rebuilds from scratch and overwrites artefacts.
-- [ ] `--dry-run` writes nothing to disk.
-- [ ] `/agent-init` default creates `docs/tasks/index.md`, folder guides, and policy hook artifacts.
-- [ ] `/agent-init --lite` skips task ledger and policy hooks.
-- [ ] Re-running `/agent-init` against existing `CLAUDE.md` appends or replaces only the sentinel section.
-- [ ] `--dry-run --update-foundations` prints foundation update plan without changing files.
-- [ ] Missing-plugin scenario: temporarily disable `context-mode` in settings, re-run, confirm Phase 5 prints the install command.
+Use a fresh git fixture and observe only the host runtime behavior that unit
+tests cannot prove:
+
+```bash
+mkdir /tmp/harness-fixture-claude && cd /tmp/harness-fixture-claude && git init
+```
+
+Inside Claude Code, run `/agent-init`, then `/agent-init --lite` in a second
+fresh fixture. Confirm that brainstorming prompts are shown, Phase 3 launches
+parallel subagents, and the final summary names any missing foundation plugin
+install commands.
+
+## Codex CLI live session
+
+Use a fresh git fixture and run the generated Codex workflow from the Codex CLI:
+
+```bash
+mkdir /tmp/harness-fixture-codex && cd /tmp/harness-fixture-codex && git init
+```
+
+Inside Codex CLI, run `/codex-init`, then `/codex-init --lite` in a second
+fresh fixture. Confirm that the operational run prints the current
+`~/.codex/config.toml` command-hook snippet, the lite run skips hook/config
+snippet output, and `run /agent-all for "smoke task"` routes through sequential
+skill prompts rather than an unsupported agent-dispatch hook.
