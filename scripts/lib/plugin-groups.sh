@@ -39,9 +39,24 @@ select_plugins_for_mode() {
   esac
 }
 
+plugin_platform_label() {
+  case "$1" in
+    *-codex)   echo "Codex CLI" ;;
+    *-copilot) echo "Copilot CLI" ;;
+    *-gemini)  echo "Gemini CLI" ;;
+    *-cursor)  echo "Cursor" ;;
+    *)         echo "Claude Code" ;;
+  esac
+}
+
 print_plugin_install_dry_run() {
-  local p
+  local p platform
   for p in "$@"; do
-    echo "DRY-RUN: claude plugin install ${p}@${MARKETPLACE}"
+    platform="$(plugin_platform_label "$p")"
+    if [ "$platform" = "Claude Code" ]; then
+      echo "DRY-RUN: claude plugin install ${p}@${MARKETPLACE}"
+    else
+      echo "DRY-RUN: install ${p}@${MARKETPLACE} for ${platform} (marketplace command: claude plugin install ${p}@${MARKETPLACE})"
+    fi
   done
 }

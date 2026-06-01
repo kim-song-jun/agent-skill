@@ -27,6 +27,19 @@ test("install-all --dry-run for Claude essentials does not require the claude bi
   assert.doesNotMatch(res.stderr, /claude' binary not found/);
 });
 
+test("install-all --dry-run labels Codex plugin bundles without presenting them as Claude-native installs", () => {
+  const res = spawnSync("/bin/bash", [INSTALL_ALL, "--dry-run", "--cli=codex"], {
+    encoding: "utf-8",
+    env: { ...process.env, PATH: "/usr/bin:/bin" },
+  });
+
+  assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+  assert.match(res.stdout, /DRY-RUN: install harness-builder-codex@agent-skill for Codex CLI/);
+  assert.match(res.stdout, /marketplace command: claude plugin install harness-builder-codex@agent-skill/);
+  assert.doesNotMatch(res.stdout, /DRY-RUN: claude plugin install harness-builder-codex@agent-skill/);
+  assert.doesNotMatch(res.stderr, /claude' binary not found/);
+});
+
 test("install-platform codex all succeeds in a fresh project without patching global Codex config", () => {
   const target = tmp("agent-skill-release-codex-target-");
   const home = tmp("agent-skill-release-codex-home-");
@@ -482,5 +495,8 @@ test("update --dry-run exposes the exact selected install set without requiring 
 });
 
 function dryRunPluginNames(stdout) {
-  return Array.from(stdout.matchAll(/DRY-RUN: claude plugin install ([^@\s]+)@agent-skill/g), (match) => match[1]).sort();
+  return Array.from(
+    stdout.matchAll(/DRY-RUN: (?:claude plugin install|install) ([^@\s]+)@agent-skill/g),
+    (match) => match[1],
+  ).sort();
 }
