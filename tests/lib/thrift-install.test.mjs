@@ -144,6 +144,26 @@ test("install: default run patches .claude/settings.local.json with 5 thrift hoo
   }
 });
 
+test("install: --uninstall removes thrift hook registrations only", () => {
+  const target = makeTmp();
+  try {
+    const install = runInstall([target]);
+    assert.equal(install.status, 0, install.stderr);
+
+    const res = runInstall([target, "--uninstall"]);
+    assert.equal(res.status, 0, `stderr: ${res.stderr}\nstdout: ${res.stdout}`);
+    assert.match(res.stdout, /removed=5/);
+
+    const settings = JSON.parse(readFileSync(resolve(target, ".claude/settings.local.json"), "utf-8"));
+    assert.doesNotMatch(JSON.stringify(settings), /thrift-/);
+    assert.ok(existsSync(resolve(target, ".thrift.json")), "uninstall must not remove thrift config");
+    assert.ok(existsSync(resolve(target, ".claude/hooks/thrift-pretool-bash-telemetry.mjs")),
+      "uninstall must not remove hook scripts");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
 test("install: --ctx overrides default values", () => {
   const target = makeTmp();
   const ctxPath = join(target, "ctx.json");

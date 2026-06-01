@@ -7,7 +7,7 @@
 //
 // Usage:
 //   node plugins/harness-thrift/bin/install.mjs <target> \
-//        [--ctx ctx.json] [--force] [--dry-run] [--no-instrument]
+//        [--ctx ctx.json] [--force] [--dry-run] [--no-instrument] [--uninstall]
 //
 // What gets installed to <target>:
 //   .thrift.json                                       (config seed)
@@ -32,7 +32,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, chmodS
 import { resolve, dirname, basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { render } from "./lib/render.mjs";
-import { patchSettings, buildStandardThriftHooks } from "../skills/thrift/lib/settings-patcher.mjs";
+import { patchSettings, unpatchSettings, buildStandardThriftHooks } from "../skills/thrift/lib/settings-patcher.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = resolve(here, "..");
@@ -56,6 +56,7 @@ function parseArgs(argv) {
     force: false,
     dryRun: false,
     noInstrument: false,
+    uninstall: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -63,6 +64,7 @@ function parseArgs(argv) {
     else if (a === "--force") args.force = true;
     else if (a === "--dry-run") args.dryRun = true;
     else if (a === "--no-instrument") args.noInstrument = true;
+    else if (a === "--uninstall") args.uninstall = true;
     else if (!a.startsWith("--") && !args.target) args.target = a;
     else {
       console.error(`Unknown argument: ${a}`);
@@ -79,7 +81,7 @@ function parseArgs(argv) {
 
 function printUsage() {
   console.error(
-    "Usage: install.mjs <target> [--ctx ctx.json] [--force] [--dry-run] [--no-instrument]",
+    "Usage: install.mjs <target> [--ctx ctx.json] [--force] [--dry-run] [--no-instrument] [--uninstall]",
   );
 }
 
@@ -144,6 +146,19 @@ function main() {
     console.error(`Error: target directory does not exist: ${target}`);
     process.exit(1);
   }
+
+  if (args.uninstall) {
+    const settingsPath = resolve(target, ".claude/settings.local.json");
+    const res = unpatchSettings({ settingsPath, dryRun: args.dryRun });
+    console.log("");
+    console.log("Thrift uninstall summary:");
+    console.log(`  target:      ${target}`);
+    console.log(`  settings:    .claude/settings.local.json`);
+    console.log(`  removed:     removed=${res.removed}`);
+    console.log(`  dry-run:     ${args.dryRun ? "yes" : "no"}`);
+    return;
+  }
+
   const ctx = loadCtx(args.ctxPath);
 
   // 1. Render config seed

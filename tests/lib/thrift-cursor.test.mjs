@@ -310,6 +310,22 @@ test("install: --force overwrites existing files", () => {
   }
 });
 
+test("install: --uninstall removes Cursor thrift artifacts", () => {
+  const target = makeTmp();
+  try {
+    const install = runInstall([target]);
+    assert.equal(install.status, 0, install.stderr);
+
+    const res = runInstall([target, "--uninstall"]);
+    assert.equal(res.status, 0, `stderr: ${res.stderr}\nstdout: ${res.stdout}`);
+    assert.match(res.stdout, /removed=2/);
+    assert.ok(!existsSync(resolve(target, ".thrift.json")), "uninstall should remove .thrift.json");
+    assert.ok(!existsSync(resolve(target, ".cursor/rules/thrift.mdc")), "uninstall should remove Cursor thrift rule");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});
+
 test("install: --ctx overrides default values", () => {
   const target = makeTmp();
   const ctxPath = join(target, "ctx.json");
