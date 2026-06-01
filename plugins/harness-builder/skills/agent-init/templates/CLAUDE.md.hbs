@@ -91,7 +91,15 @@ Lite mode keeps only root memory and the minimal role roster.
 
 ## Foundation Status
 
-This harness is in degraded mode because superpowers or context-mode is missing. Install or update the recommended foundations before long-running work.{{/if}}{{#if constraints}}
+This harness is in degraded mode because superpowers or context-mode is missing. Install or update the recommended foundations before long-running work.{{#if foundationUpdateCommand}}
+
+Run the approved foundation updater first:
+- `{{foundationUpdateCommand}}`
+{{/if}}{{#if foundationInstructions}}
+
+Manual fallback:
+{{#each foundationInstructions}}- `{{this}}`
+{{/each}}{{/if}}{{/if}}{{#if constraints}}
 
 ## Special Constraints
 

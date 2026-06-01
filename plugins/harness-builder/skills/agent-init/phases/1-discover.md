@@ -12,7 +12,7 @@
    const scan = scanPlugins({ installedPlugins, enabledPlugins, required: ["context-mode@context-mode", "superpowers@claude-plugins-official"] });
    ```
    Stash `scan` for Phase 5. Do NOT abort on missing plugins.
-4. Call `scanFoundationState` using installed plugin IDs from the plugin scan. Stash the result as `degradedFoundations`/`foundation_state` for later phases. Continue when degraded; Phase 5 prints the update plan.
+4. Call `scanFoundationState` using installed plugin IDs from the plugin scan. Stash the result as `degradedFoundations`/`foundation_state` for later phases, including `foundationUpdateCommand` and `foundationInstructions`. Continue when degraded; Phase 5 prints the update plan.
 5. Read `.claude/.agent-init-state.json` if present. If `--resume` and `max(state.phases[*].phase) >= 1`, skip Phase 1 proper.
 
 ## Phase 1 proper
@@ -71,6 +71,9 @@
      theme,
      floorTheme,
      degradedFoundations: foundationState.degraded,
+     foundationMissing: foundationState.missing.join(", "),
+     foundationUpdateCommand: foundationState.updateCommand,
+     foundationInstructions: foundationState.instructions,
      local_guides,
      ...detected,                    // stack, runtime, services
      services_str: detected.services.join(", "), // pre-joined for template

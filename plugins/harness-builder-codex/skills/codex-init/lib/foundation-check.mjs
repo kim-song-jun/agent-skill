@@ -11,6 +11,9 @@ const FOUNDATIONS = [
   },
 ];
 
+const UPDATE_COMMAND =
+  "bash <(curl -fsSL https://raw.githubusercontent.com/kim-song-jun/agent-skill/main/scripts/update.sh) --foundations-only";
+
 export function scanFoundationState({ installedPluginIds = [] } = {}) {
   const missing = FOUNDATIONS
     .filter((foundation) => !installedPluginIds.some((id) => foundation.match.test(String(id))))
@@ -21,6 +24,7 @@ export function scanFoundationState({ installedPluginIds = [] } = {}) {
   return {
     degraded: missing.length > 0,
     missing,
+    updateCommand: UPDATE_COMMAND,
     instructions,
   };
 }

@@ -170,6 +170,7 @@ function loadCtx(ctxPath, target, options = {}) {
     liteProfile: lite,
     degradedFoundations: !lite && foundationState.degraded,
     foundationMissing: foundationState.missing.join(", "),
+    foundationUpdateCommand: foundationState.updateCommand,
     foundationInstructions: foundationState.instructions,
     services_str: detected.services.join(", "),
     agents: lite ? BASE_AGENTS : [...BASE_AGENTS, ...OPERATIONAL_AGENTS],

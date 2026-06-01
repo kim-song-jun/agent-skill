@@ -212,3 +212,14 @@ test("agent-init --lang contract persists into root guidance and agent-all confi
   assert.match(claudeTemplate, /{{interactionLang}}/);
   assert.match(agentAllTemplate, /"language": "{{language}}"/);
 });
+
+test("agent-init degraded foundation guidance points at the approved updater", () => {
+  const phase1 = readPhase("1-discover.md");
+  const phase2 = readPhase("2-claude-md.md");
+  const claudeTemplate = readTemplate("CLAUDE.md.hbs");
+
+  assert.match(phase1, /foundationUpdateCommand/);
+  assert.match(phase2, /foundationUpdateCommand/);
+  assert.match(claudeTemplate, /foundationUpdateCommand/);
+  assert.match(claudeTemplate, /Manual fallback/);
+});

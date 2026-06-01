@@ -194,6 +194,7 @@ test("harness-builder-codex: default AGENTS.md records degraded foundation statu
 
     assert.match(body, /Foundation Status/);
     assert.match(body, /degraded mode/i);
+    assert.match(body, /scripts\/update\.sh[\s\S]{0,180}--foundations-only/);
     assert.match(body, /superpowers@claude-plugins-official/);
     assert.match(body, /context-mode@context-mode/);
   } finally {

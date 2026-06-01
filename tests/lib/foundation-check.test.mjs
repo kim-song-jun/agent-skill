@@ -14,5 +14,6 @@ test("reports missing foundations without aborting", () => {
   const result = scanFoundationState({ installedPluginIds: ["harness-builder@agent-skill"] });
   assert.equal(result.degraded, true);
   assert.deepEqual(result.missing, ["superpowers", "context-mode"]);
+  assert.match(result.updateCommand, /scripts\/update\.sh.*--foundations-only/);
   assert.match(result.instructions.join("\n"), /plugin install superpowers/);
 });
