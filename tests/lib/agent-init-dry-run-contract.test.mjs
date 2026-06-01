@@ -10,6 +10,10 @@ function readPhase(name) {
   );
 }
 
+function readSkill() {
+  return readFileSync(resolve("plugins/harness-builder/skills/agent-init/SKILL.md"), "utf-8");
+}
+
 function assertDryRunGuardBeforeMutation({ phaseFile, mutationPattern }) {
   const text = readPhase(phaseFile);
   const guardIndex = text.indexOf("If `--dry-run` is set");
@@ -139,4 +143,16 @@ test("phase 1 resolves legacy visual-qa before default floor theme", () => {
     legacyIndex < floorIndex,
     "Phase 1 must check legacy --visual-qa before the default floor branch",
   );
+});
+
+test("agent-init skill presents operational default and rejects unsupported theme flags", () => {
+  const skill = readSkill();
+  assert.match(skill, /Default \(no theme flag\)[\s\S]{0,180}operational\/heavy/);
+  assert.match(skill, /`--lite`[\s\S]{0,180}canonical lightweight/);
+  assert.doesNotMatch(skill, /--theme=thrift|no-op stub|design pending|Theme B planned/i);
+
+  const phase1 = readPhase("1-discover.md");
+  assert.match(phase1, /Unsupported `--theme=` value/);
+  assert.match(phase1, /Use `\/thrift` after `\/agent-init`/);
+  assert.doesNotMatch(phase1, /--theme=thrift/i);
 });

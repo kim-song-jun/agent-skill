@@ -7,22 +7,31 @@ description: Bootstrap a Claude Code agent harness in the current project — CL
 
 Sets up a full per-project agent harness following the three operating principles: brainstorming-first, superpowers for parallel, context-mode for large output.
 
+## Default profile
+
+Default (no theme flag) is operational/heavy. It renders the task ledger,
+local folder guides, reviewer personas, policy hooks, foundation checks, and
+the floor bundle (`.visual-qa.json` + `.agent-all.json`). Use `--lite` only
+when a project needs a minimal root memory and minimal role roster.
+
 ## Flags
 
 - `--force` — re-run all phases; overwrite existing artefacts.
 - `--merge` — preserve existing CLAUDE.md and append a harness section.
 - `--dry-run` — print decisions and intended writes; touch nothing.
-- `--lite` — canonical lightweight mode. Alias for `--theme=lite`; skips task ledger, policy hooks, and global config patch prompts.
+- `--lite` — canonical lightweight mode; skips task ledger, local folder guides, policy hooks, reviewer personas, and global config patch prompts.
 - `--update-foundations` — after printing the foundation plan, run the approved update path. Does not patch global CLI config.
 - `--platform=claude,codex,gemini` — select platform artifacts to wire. Defaults to prompting in interactive use and Claude-only in non-interactive use.
 - `--resume` — skip phases already marked complete in `.claude/.agent-init-state.json`.
 - `--size=small|medium|large` — override auto-inferred agent team size.
 - `--qa=<persona>[,<persona>]` — override auto-inferred QA personas.
 - `--lang=ko|en` — (v0.5.1+) force the brainstorming dialogue language. Default: read `$AGENT_INIT_LANG` / `$LANG` / `$LC_ALL` / `$LC_MESSAGES` and resolve to `ko` for Korean locales, else `en`. The scaffolded `CLAUDE.md` records the choice as `language:` so downstream commands (`/agent-all` decision-surfacing, etc.) inherit it.
-- `--theme=floor` — (DEFAULT) bundle harness-floor configs (.visual-qa.json + .agent-all.json + CLAUDE.md Floor section). Implicit `--visual-qa`.
-- `--theme=lite` — compatibility alias for `--lite`. Print a deprecation note and behave exactly like `--lite`.
-- `--theme=thrift` — (RESERVED, Theme B planned) cost-optimization mode. Currently a no-op stub; design pending. Use `--theme=floor` (default) or `--theme=lite` for now.
-- `--visual-qa` — (legacy alias) scaffold only `.visual-qa.json` without the rest of the floor bundle. Most users want the default theme=floor instead.
+
+## Compatibility flags
+
+- `--theme=floor` — legacy alias for the default operational/heavy profile.
+- `--theme=lite` — legacy alias for `--lite`. Print a deprecation note and behave exactly like `--lite`.
+- `--visual-qa` — legacy alias that scaffolds only `.visual-qa.json` without the rest of the floor bundle. Most users want the default operational/heavy profile instead.
 
 ## Pipeline
 
