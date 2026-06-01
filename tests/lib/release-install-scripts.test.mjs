@@ -600,6 +600,62 @@ exit 0
   }
 });
 
+test("install-platform claude operational bootstrap auto-updates approved foundations by default", () => {
+  const target = tmp("agent-skill-release-platform-claude-foundations-auto-target-");
+  const home = tmp("agent-skill-release-platform-claude-foundations-auto-home-");
+  const binDir = resolve(home, "bin");
+  const pluginsDir = resolve(home, ".claude/plugins");
+  const claudeLog = resolve(home, "claude.log");
+  try {
+    mkdirSync(binDir, { recursive: true });
+    mkdirSync(pluginsDir, { recursive: true });
+    writeFileSync(
+      resolve(pluginsDir, "installed_plugins.json"),
+      JSON.stringify({
+        plugins: {
+          "context-mode@context-mode": {},
+          "harness-builder@agent-skill": {},
+        },
+      }),
+    );
+    writeFileSync(
+      resolve(binDir, "claude"),
+      `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${claudeLog}"
+exit 0
+`,
+      { mode: 0o755 },
+    );
+
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=claude",
+      `--target=${target}`,
+      "--theme=builder",
+      "--no-doctor",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home, PATH: `${binDir}:${process.env.PATH}` },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /approved foundation auto-update/);
+    assert.ok(existsSync(resolve(target, "CLAUDE.md")), "default auto-update run should still scaffold CLAUDE.md");
+
+    const log = readFileSync(claudeLog, "utf-8");
+    assert.match(log, /plugin marketplace update claude-plugins-official/);
+    assert.match(log, /plugin marketplace update context-mode/);
+    assert.match(log, /plugin install superpowers@claude-plugins-official/);
+    assert.match(log, /plugin uninstall context-mode@context-mode/);
+    assert.match(log, /plugin install context-mode@context-mode/);
+    assert.doesNotMatch(log, /harness-builder@agent-skill/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test("install-platform codex auto foundation update degrades without claude", () => {
   const target = tmp("agent-skill-release-platform-foundations-auto-no-claude-target-");
   const home = tmp("agent-skill-release-platform-foundations-auto-no-claude-home-");
@@ -630,6 +686,93 @@ exec ${JSON.stringify(process.execPath)} "$@"
     assert.match(res.stdout, /degraded foundation mode/);
     assert.ok(existsSync(resolve(target, "AGENTS.md")), "missing claude should not block Codex project scaffold");
     assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "must not patch global Codex config");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("install-platform codex auto foundation update degrades when approved update fails", () => {
+  const target = tmp("agent-skill-release-platform-foundations-auto-fail-target-");
+  const home = tmp("agent-skill-release-platform-foundations-auto-fail-home-");
+  const binDir = resolve(home, "bin");
+  const claudeLog = resolve(home, "claude.log");
+  try {
+    mkdirSync(binDir, { recursive: true });
+    writeFileSync(
+      resolve(binDir, "claude"),
+      `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${claudeLog}"
+if [ "$1 $2 $3" = "plugin install context-mode@context-mode" ]; then
+  exit 17
+fi
+exit 0
+`,
+      { mode: 0o755 },
+    );
+
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=builder",
+      "--no-doctor",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home, PATH: `${binDir}:${process.env.PATH}` },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /foundation auto-update failed/);
+    assert.match(res.stdout, /degraded foundation mode/);
+    assert.ok(existsSync(resolve(target, "AGENTS.md")), "failed foundation auto-update should not block Codex scaffold");
+    assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "must not patch global Codex config");
+
+    const log = readFileSync(claudeLog, "utf-8");
+    assert.match(log, /plugin install superpowers@claude-plugins-official/);
+    assert.match(log, /plugin install context-mode@context-mode/);
+    assert.doesNotMatch(log, /harness-builder-codex@agent-skill/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("install-platform codex --update-foundations fails when approved update fails", () => {
+  const target = tmp("agent-skill-release-platform-foundations-strict-fail-target-");
+  const home = tmp("agent-skill-release-platform-foundations-strict-fail-home-");
+  const binDir = resolve(home, "bin");
+  try {
+    mkdirSync(binDir, { recursive: true });
+    writeFileSync(
+      resolve(binDir, "claude"),
+      `#!/usr/bin/env bash
+set -euo pipefail
+if [ "$1 $2 $3" = "plugin install context-mode@context-mode" ]; then
+  exit 17
+fi
+exit 0
+`,
+      { mode: 0o755 },
+    );
+
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=builder",
+      "--no-doctor",
+      "--update-foundations",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home, PATH: `${binDir}:${process.env.PATH}` },
+    });
+
+    assert.notEqual(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /approved foundation update/);
+    assert.match(res.stderr, /one or more approved foundation plugin installs failed/);
+    assert.ok(!existsSync(resolve(target, "AGENTS.md")), "strict foundation failure must stop before scaffold writes");
   } finally {
     rmSync(target, { recursive: true, force: true });
     rmSync(home, { recursive: true, force: true });

@@ -452,7 +452,7 @@ Changes:
 
 - Detect installed superpowers/context-mode foundations during heavy `/agent-init`.
 - Print degraded-mode warnings when required foundations are missing.
-- Terminal Claude/Codex operational installs auto-run the approved foundation update/install path when `claude` is available, continue with a degraded-mode warning when it is missing, and allow `--no-update-foundations` opt-out.
+- Terminal Claude/Codex operational installs auto-run the approved foundation update/install path when possible, continue with a degraded-mode warning when `claude` is missing or the approved update fails, and allow `--no-update-foundations` opt-out.
 - Add `--update-foundations` to make the approved update/install path strict.
 - Add `--dry-run` foundation output to show the approved update plan without changing local or global state.
 - Route large logs, broad search outputs, and bulky screenshots to context-mode guidance in generated Claude/Codex/Gemini instructions.

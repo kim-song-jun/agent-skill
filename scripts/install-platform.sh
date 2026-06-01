@@ -384,6 +384,18 @@ run_foundation_update() {
     echo "    Re-run with --update-foundations after installing Claude Code, or pass --no-update-foundations to opt out."
     return 0
   fi
+  if [ "$FOUNDATION_MODE" = "auto" ]; then
+    set +e
+    bash "$REPO_ROOT/scripts/update.sh" --foundations-only
+    local status=$?
+    set -e
+    if [ $status -ne 0 ]; then
+      echo "  ⚠ foundation auto-update failed (exit $status)."
+      echo "    Scaffold will continue in degraded foundation mode."
+      echo "    Re-run with --update-foundations after fixing foundation installs, or pass --no-update-foundations to opt out."
+    fi
+    return 0
+  fi
   bash "$REPO_ROOT/scripts/update.sh" --foundations-only
 }
 
