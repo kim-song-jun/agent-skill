@@ -18,12 +18,13 @@ node scripts/sync-lib.mjs --check
 The gate covers:
 
 - Claude native release manifests, hook syntax, `/agent-init` release docs, Phase 3 parallel fan-out contract, final summary contract, and visual-qa seed config.
+- Claude slash-command metadata, headings, flags, and summary contracts for `/agent-init`, `/agent-all`, `/visual-qa`, and `/thrift`.
 - Codex install renderers for operational and lite profiles, including `/codex-init --lite` via `install-platform.sh --platform=codex --lite`.
 - Codex floor and visual-qa dispatch contracts, including the verified `codex exec` positional `[PROMPT]` interface.
 - Sentinel merge, dry-run, force, policy-hook, folder-guide, task-ledger, foundation-status, and lite-profile contracts.
 - Release readiness audit coverage for Claude/Codex manifests, required files, hook schema, role routing, and audit tokens.
 - Fresh release fixture coverage for Claude marketplace dry-run, Claude operational/lite render output, and Codex operational/lite installs in new git repos.
-- Command-surface coverage for Codex init help and unknown-flag behavior.
+- Command-surface coverage for Claude skill metadata and Codex init help/unknown-flag behavior.
 
 ## Claude Code live session
 
@@ -35,9 +36,10 @@ mkdir /tmp/harness-fixture-claude && cd /tmp/harness-fixture-claude && git init
 ```
 
 Inside Claude Code, run `/agent-init`, then `/agent-init --lite` in a second
-fresh fixture. Confirm that the slash command is discoverable, the host accepts
-the interactive brainstorming prompts, and both sessions reach their summary
-screen without host-runtime errors.
+fresh fixture. The automated gate already checks the command metadata; here,
+confirm Claude Code accepts both slash-command invocations, accepts the
+interactive brainstorming prompts, and reaches the summary screen without
+host-runtime errors.
 
 ## Codex CLI live session
 

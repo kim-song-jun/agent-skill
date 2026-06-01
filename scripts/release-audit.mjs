@@ -23,6 +23,56 @@ const PLATFORM_CONTRACTS = {
     ],
     textChecks: [
       {
+        file: "plugins/harness-builder/skills/agent-init/SKILL.md",
+        patterns: [
+          /^---\nname: agent-init\n/m,
+          /^# \/agent-init$/m,
+          /Default \(no theme flag\) is operational\/heavy/,
+          /--lite/,
+          /--dry-run/,
+          /--resume/,
+          /--platform=claude,codex,gemini/,
+          /--lang=ko\|en\|auto/,
+          /When done[\s\S]{0,180}(phases completed|files written)/i,
+        ],
+      },
+      {
+        file: "plugins/harness-floor/skills/agent-all/SKILL.md",
+        patterns: [
+          /^---\nname: agent-all\n/m,
+          /^# \/agent-all$/m,
+          /--loop/,
+          /--qa/,
+          /--resume/,
+          /superpowers:subagent-driven-development/,
+          /When done/i,
+        ],
+      },
+      {
+        file: "plugins/harness-floor/skills/visual-qa/SKILL.md",
+        patterns: [
+          /^---\nname: visual-qa\n/m,
+          /^# \/visual-qa$/m,
+          /comprehensive/,
+          /--budget=<USD>/,
+          /--resume/,
+          /Playwright MCP/,
+          /When done/i,
+        ],
+      },
+      {
+        file: "plugins/harness-thrift/skills/thrift/SKILL.md",
+        patterns: [
+          /^---\nname: thrift\n/m,
+          /^# \/thrift$/m,
+          /\/thrift summarise/,
+          /\/thrift audit/,
+          /--dry-run/,
+          /Append-only hook patches/,
+          /When done/i,
+        ],
+      },
+      {
         file: "plugins/harness-builder/skills/agent-init/templates/CLAUDE.md.hbs",
         patterns: [/Role Routing/i, /orchestrator[\s\S]{0,240}HOT-file/i, /verification-reviewer/i],
       },
