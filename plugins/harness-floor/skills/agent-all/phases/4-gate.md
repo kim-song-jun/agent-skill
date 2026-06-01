@@ -29,7 +29,7 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
    `lib/gate-plan.mjs` wraps `lib/changed-file-classifier.mjs` and uses
    `classifyChangedFiles(files)` internally, dispatches returned coordinators
    before reviewers, and includes the description prefix plus required audit
-   token for each dispatch.
+   token, gate reason, and pass criteria for each dispatch.
 
 3. Dispatch every `gatePlan.dispatches[]` entry in order:
    - `kind=coordinator`, `role=orchestrator`: description prefix
@@ -42,6 +42,9 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
    - `mode=quality`: dispatch one reviewer subagent per returned reviewer
      persona. Prompt includes the wave's plan section, diff, changed-file list,
      and persona context when available.
+   - Each prompt MUST copy `dispatch.requiredAudit`, `dispatch.gateReason`,
+     and `dispatch.passCriteria` so the reviewer knows why the classifier
+     selected that gate and what evidence can pass it.
    - `qa-reviewer` audits **user-side flow only** — completeness of scenarios,
      persona-perspective edge cases, would-this-confuse-the-user concerns. NOT
      tech-stack verification. It must emit `QA_AUDIT: passed|failed|skipped`.
@@ -86,7 +89,7 @@ Every reviewer Task prompt in this phase MUST include:
   - Do not stage broad changes or self-commit.
   - Do not revert unrelated user or other-agent edits.
 - Expected output: verdict, issues by severity, audit token, verification evidence checked, and a concise `Self-Audit` covering reviewed scope, unreviewed items, shortcuts, and next action.
-- Reusable references: task doc, plan section, diff command, changed-file list, reviewer persona file, and relevant root guidance.
+- Reusable references: task doc, plan section, diff command, changed-file list, reviewer persona file, `dispatch.requiredAudit`, `dispatch.gateReason`, `dispatch.passCriteria`, and relevant root guidance.
 
 Do not self-commit from a reviewer subagent. Report findings and verification evidence back to the orchestrator for retry or pathspec commit review.
 

@@ -27,6 +27,18 @@ const DESCRIPTION_PREFIXES = {
   "integration-dev": "Integration-dev Review Task",
 };
 
+const GATE_REASONS = {
+  "orchestrator": "Changed-file classifier selected the orchestration gate for HOT/shared files or broad non-doc changes.",
+  "reviewer:spec": "Spec review is enabled; compare the wave diff against the task goal, plan, and acceptance criteria.",
+  "reviewer:quality": "Base quality review is enabled; inspect the wave diff for code quality, maintainability, and regressions.",
+  "verification-reviewer": "Feature or bug-fix work requires verification evidence: tests, typecheck, lint, diff scope, and reruns after fixes.",
+  "qa-reviewer": "User-visible work requires user-side QA: scenarios, persona confusion, accessibility-visible behavior, loading, empty, and error states.",
+  "design-reviewer": "Frontend or UI files changed; review visual hierarchy, responsive fit, component conventions, and state styling.",
+  "security-reviewer": "Auth, API, permissions, secrets, or destructive-action surfaces changed; review authorization and blast radius.",
+  "data-reviewer": "Data-shape or lifecycle files changed; review migrations, models, seeds, fixtures, backfills, and rollback safety.",
+  "integration-dev": "Frontend and backend/API surfaces changed together; review contracts, wiring, fixtures, and end-to-end compatibility.",
+};
+
 function orderRoles(roles, order = REVIEWER_ORDER) {
   const rank = new Map(order.map((role, index) => [role, index]));
   return [...new Set(roles)].sort((a, b) => {
@@ -49,6 +61,30 @@ function prefixForRole(role, mode, kind) {
   return DESCRIPTION_PREFIXES[role] ?? `${role[0]?.toUpperCase() ?? ""}${role.slice(1)} Review Task`;
 }
 
+function gateReasonForRole(role, mode, kind) {
+  if (kind === "coordinator") return GATE_REASONS[role] ?? GATE_REASONS.orchestrator;
+  return GATE_REASONS[`${role}:${mode}`] ?? GATE_REASONS[role] ?? "Classifier-selected reviewer gate.";
+}
+
+function passCriteriaForDispatch({ role, kind, auditToken }) {
+  if (kind === "coordinator") {
+    return [
+      `${auditToken}: passed or skipped.`,
+      "No HOT-file ownership conflicts, unsafe retry sequencing, or pathspec commit risk.",
+    ];
+  }
+  if (role === "qa-reviewer") {
+    return [
+      `${auditToken}: passed or skipped.`,
+      "No blocking user-flow, persona, accessibility-visible, loading, empty, or error-state issues.",
+    ];
+  }
+  return [
+    `${auditToken}: passed or skipped.`,
+    "No blocking technical, security, data, design, integration, or verification-evidence issues for this persona.",
+  ];
+}
+
 function makeDispatch({ role, kind, mode, taskId, title }) {
   const descriptionPrefix = prefixForRole(role, mode, kind);
   const auditToken = auditForRole(role, kind);
@@ -59,7 +95,9 @@ function makeDispatch({ role, kind, mode, taskId, title }) {
     descriptionPrefix,
     auditToken,
     requiredAudit: `${auditToken}: passed|failed|skipped`,
+    gateReason: gateReasonForRole(role, mode, kind),
   };
+  dispatch.passCriteria = passCriteriaForDispatch(dispatch);
   dispatch.description = descriptionForDispatch(dispatch, { taskId, title });
   return dispatch;
 }

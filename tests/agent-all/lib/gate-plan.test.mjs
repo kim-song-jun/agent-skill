@@ -30,6 +30,11 @@ test("gate-plan dispatches orchestrator first for shared hot files", () => {
   assert.equal(plan.dispatches[0].kind, "coordinator");
   assert.equal(plan.dispatches[0].mode, "orchestration");
   assert.equal(plan.dispatches[0].auditToken, "ORCHESTRATION_AUDIT");
+  assert.match(plan.dispatches[0].gateReason, /HOT\/shared files|broad non-doc/);
+  assert.ok(
+    plan.dispatches[0].passCriteria.some((criterion) => /pathspec commit risk/.test(criterion)),
+    "orchestrator pass criteria should name pathspec commit risk",
+  );
   assert.equal(
     plan.dispatches[0].description,
     "Orchestration Gate Task 7: Stabilize workspace install",
@@ -55,6 +60,9 @@ test("gate-plan preserves spec review before quality reviewer gates after coordi
       ["reviewer", "integration-dev", "quality", "VERIFICATION_AUDIT"],
     ],
   );
+  const qaDispatch = plan.dispatches.find((dispatch) => dispatch.role === "qa-reviewer");
+  assert.match(qaDispatch.gateReason, /User-visible work/);
+  assert.ok(qaDispatch.passCriteria.some((criterion) => /user-flow/.test(criterion)));
 });
 
 test("gate-plan can emit a stable task description for every dispatch", () => {

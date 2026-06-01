@@ -22,6 +22,28 @@ function shellQuote(value) {
   return `'${String(value).replace(/'/g, "'\\''")}'`;
 }
 
+function requiredAuditForReview(review, persona) {
+  if (typeof review.requiredAudit === "string" && review.requiredAudit.trim()) {
+    return review.requiredAudit.trim();
+  }
+  if (typeof review.auditToken === "string" && review.auditToken.trim()) {
+    return `${review.auditToken.trim()}: passed|failed|skipped`;
+  }
+  if (review.kind === "coordinator" || persona === "orchestrator") {
+    return "ORCHESTRATION_AUDIT: passed|failed|skipped";
+  }
+  if (persona === "qa-reviewer") {
+    return "QA_AUDIT: passed|failed|skipped";
+  }
+  return "VERIFICATION_AUDIT: passed|failed|skipped";
+}
+
+function listLines(values, fallback) {
+  return Array.isArray(values) && values.length > 0
+    ? values.map((value) => `  - ${value}`).join("\n")
+    : `  - ${fallback}`;
+}
+
 /**
  * Resolve the path to a role's SKILL.md relative to the project root.
  *
@@ -173,6 +195,8 @@ export function buildReviewPrompt(args) {
   const workingDirectory = args.workingDirectory || plan?.workingDirectory || process.cwd();
   const diffRange = review.diffRange || "(not provided)";
   const diffBody = review.diff || "(diff not inlined; use the provided diff command/range)";
+  const requiredAudit = requiredAuditForReview(review, persona);
+  const gateReason = review.gateReason || "Classifier-selected reviewer gate.";
   const roleSkill = skillBody
     ? [
         "## Reviewer Skill",
@@ -207,6 +231,12 @@ export function buildReviewPrompt(args) {
     `Mode:      ${review.mode || "quality"}`,
     planRef,
     planSection,
+    `Required audit: ${requiredAudit}`,
+    `Gate reason: ${gateReason}`,
+    "",
+    "## Gate Pass Criteria",
+    "",
+    listLines(review.passCriteria, `${requiredAudit} and no blocking findings for this persona.`),
     "",
     "## Dispatch Contract",
     "",
@@ -243,8 +273,10 @@ export function buildReviewPrompt(args) {
     "",
     "## Required output",
     "",
+    `The \`audit\` field MUST contain exactly one ${requiredAudit} line.`,
+    "",
     "End with a JSON line:",
-    '`{"status": "passed"|"failed"|"blocked", "issues": [{"severity": "critical"|"major"|"minor", "file": "<path>", "message": "..."}], "audit": "QA_AUDIT: passed|failed|skipped or VERIFICATION_AUDIT: passed|failed|skipped", "errors": ["..."]}`',
+    `\`{"status": "passed"|"failed"|"blocked", "issues": [{"severity": "critical"|"major"|"minor", "file": "<path>", "message": "..."}], "audit": "${requiredAudit}", "errors": ["..."]}\``,
   ].join("\n");
 }
 

@@ -93,8 +93,8 @@ Additional Codex-specific:
 ## Lib modules
 
 - `lib/dispatch-strategy.mjs` — detect current Codex sequential dispatch support.
-- `lib/sequential-dispatch.mjs` — build sequential implementer/reviewer prompts.
-- `lib/gate-plan.mjs` — `buildGatePlan({files,gates,taskId,title})` → ordered coordinator/reviewer dispatches with audit-token contracts.
+- `lib/sequential-dispatch.mjs` — build sequential implementer/reviewer prompts, including required audit, gate reason, and pass criteria.
+- `lib/gate-plan.mjs` — `buildGatePlan({files,gates,taskId,title})` → ordered coordinator/reviewer dispatches with audit-token, gate-reason, and pass-criteria contracts.
 - `lib/changed-file-classifier.mjs` — source-mirrored changed-file routing for reviewer personas and coordinator escalation.
 
 ## On error

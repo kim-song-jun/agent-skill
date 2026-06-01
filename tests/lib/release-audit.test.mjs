@@ -18,10 +18,10 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.ok, true);
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
-  assert.equal(result.platforms.claude.checks.length, 31);
-  assert.equal(result.platforms.codex.checks.length, 37);
-  assert.match(result.platforms.claude.summary, /Claude: ok \(31\/31 checks\)/);
-  assert.match(result.platforms.codex.summary, /Codex: ok \(37\/37 checks\)/);
+  assert.equal(result.platforms.claude.checks.length, 32);
+  assert.equal(result.platforms.codex.checks.length, 39);
+  assert.match(result.platforms.claude.summary, /Claude: ok \(32\/32 checks\)/);
+  assert.match(result.platforms.codex.summary, /Codex: ok \(39\/39 checks\)/);
   assert.ok(result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh exists"));
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh matches release contract"),

@@ -139,7 +139,18 @@ const PLATFORM_CONTRACTS = {
       },
       {
         file: "plugins/harness-floor/skills/agent-all/phases/4-gate.md",
-        patterns: [/buildGatePlan/, /classifyChangedFiles\(files\)/, /ORCHESTRATION_AUDIT/, /QA_AUDIT/, /VERIFICATION_AUDIT/, /3 retry cycles/],
+        patterns: [/buildGatePlan/, /classifyChangedFiles\(files\)/, /dispatch\.gateReason/, /dispatch\.passCriteria/, /ORCHESTRATION_AUDIT/, /QA_AUDIT/, /VERIFICATION_AUDIT/, /3 retry cycles/],
+      },
+      {
+        file: "plugins/harness-floor/skills/agent-all/lib/gate-plan.mjs",
+        patterns: [
+          /gateReason/,
+          /passCriteriaForDispatch/,
+          /Changed-file classifier selected/,
+          /ORCHESTRATION_AUDIT/,
+          /QA_AUDIT/,
+          /VERIFICATION_AUDIT/,
+        ],
       },
       {
         file: "scripts/install-platform.sh",
@@ -314,7 +325,29 @@ const PLATFORM_CONTRACTS = {
       },
       {
         file: "plugins/harness-floor-codex/skills/agent-all-codex/phases/4-gate.md",
-        patterns: [/buildGatePlan/, /classifyChangedFiles\(files\)/, /ORCHESTRATION_AUDIT/, /QA_AUDIT/, /VERIFICATION_AUDIT/, /unsupported legacy agent hook/],
+        patterns: [/buildGatePlan/, /classifyChangedFiles\(files\)/, /dispatch\.gateReason/, /dispatch\.passCriteria/, /ORCHESTRATION_AUDIT/, /QA_AUDIT/, /VERIFICATION_AUDIT/, /unsupported legacy agent hook/],
+      },
+      {
+        file: "plugins/harness-floor-codex/skills/agent-all-codex/lib/gate-plan.mjs",
+        patterns: [
+          /gateReason/,
+          /passCriteriaForDispatch/,
+          /Changed-file classifier selected/,
+          /ORCHESTRATION_AUDIT/,
+          /QA_AUDIT/,
+          /VERIFICATION_AUDIT/,
+        ],
+      },
+      {
+        file: "plugins/harness-floor-codex/skills/agent-all-codex/lib/sequential-dispatch.mjs",
+        patterns: [
+          /requiredAuditForReview/,
+          /Gate reason/,
+          /Gate Pass Criteria/,
+          /ORCHESTRATION_AUDIT: passed\|failed\|skipped/,
+          /QA_AUDIT: passed\|failed\|skipped/,
+          /VERIFICATION_AUDIT: passed\|failed\|skipped/,
+        ],
       },
       {
         file: "scripts/install-platform.sh",

@@ -403,6 +403,12 @@ test("sequential-dispatch: buildReviewPrompt includes reviewer dispatch contract
       forbiddenFiles: ["src/billing.js"],
       diffRange: "abc..def",
       mode: "quality",
+      requiredAudit: "VERIFICATION_AUDIT: passed|failed|skipped",
+      gateReason: "Feature work requires verification evidence.",
+      passCriteria: [
+        "VERIFICATION_AUDIT: passed or skipped.",
+        "No blocking verification-evidence issues.",
+      ],
     },
     plan: { path: "docs/plan.md", section: "Task 1" },
     workingDirectory: "/repo",
@@ -417,8 +423,29 @@ test("sequential-dispatch: buildReviewPrompt includes reviewer dispatch contract
   assert.match(prompt, /DO NOT:[\s\S]*self-commit/i);
   assert.match(prompt, /verdict, issues by severity, audit token/i);
   assert.match(prompt, /Self-Audit/);
+  assert.match(prompt, /Required audit:\s*VERIFICATION_AUDIT: passed\|failed\|skipped/);
+  assert.match(prompt, /Gate reason:\s*Feature work requires verification evidence/);
+  assert.match(prompt, /## Gate Pass Criteria[\s\S]*No blocking verification-evidence issues/);
+  assert.match(prompt, /audit.*VERIFICATION_AUDIT: passed\|failed\|skipped/);
   assert.match(prompt, /Do not self-commit/i);
   assert.doesNotMatch(prompt, /"commits": \["<sha>"/);
+
+  const orchestrationPrompt = buildReviewPrompt({
+    review: {
+      id: "wave-1-orchestration",
+      title: "Review orchestration",
+      persona: "orchestrator",
+      kind: "coordinator",
+      changedFiles: ["package.json"],
+      diffRange: "abc..def",
+      gateReason: "Changed-file classifier selected HOT/shared files.",
+      passCriteria: ["ORCHESTRATION_AUDIT: passed or skipped."],
+    },
+    plan: { path: "docs/plan.md" },
+  });
+  assert.match(orchestrationPrompt, /Required audit:\s*ORCHESTRATION_AUDIT: passed\|failed\|skipped/);
+  assert.match(orchestrationPrompt, /Changed-file classifier selected HOT\/shared files/);
+  assert.match(orchestrationPrompt, /audit.*ORCHESTRATION_AUDIT: passed\|failed\|skipped/);
 });
 
 test("sequential-dispatch: buildSkillPrompt embeds role skill body when provided", () => {

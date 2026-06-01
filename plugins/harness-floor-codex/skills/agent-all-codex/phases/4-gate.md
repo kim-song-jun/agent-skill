@@ -30,7 +30,7 @@ For each wave with `status === "completed"`:
    `lib/gate-plan.mjs` wraps `lib/changed-file-classifier.mjs` and uses
    `classifyChangedFiles(files)` internally, invokes returned coordinators
    before reviewers, and includes the description prefix plus required audit
-   token for each dispatch.
+   token, gate reason, and pass criteria for each dispatch.
 3. Dispatch every `gatePlan.dispatches[]` entry in order:
    - `kind=coordinator`, `role=orchestrator`: prompt `.codex/skills/orchestrator/SKILL.md`
      first. Ask it to identify HOT files, unsafe ownership overlap, retry
@@ -42,7 +42,10 @@ For each wave with `status === "completed"`:
      by reading `.codex/skills/<persona>/SKILL.md`.
    - Prompt each persona with `lib/sequential-dispatch.mjs` `buildReviewPrompt`,
      including the wave plan section, diff, changed-file list, and persona
-     context. Preserve Codex's sequential strategy; do not use the unsupported legacy agent hook.
+     context. Pass `dispatch.requiredAudit`, `dispatch.gateReason`, and
+     `dispatch.passCriteria` into the review prompt so the sequential skill
+     knows why it was selected and what evidence can pass the gate. Preserve
+     Codex's sequential strategy; do not use the unsupported legacy agent hook.
    - `qa-reviewer` audits user-side flow only: missing scenarios, persona
      confusion, accessibility-visible behavior, and acceptance gaps. NOT
      tech-stack verification. It must emit `QA_AUDIT: passed|failed|skipped`.
@@ -99,7 +102,7 @@ Every sequential reviewer invocation in this phase MUST receive a prompt contain
   - Do not stage broad changes or self-commit.
   - Do not revert unrelated user or other-agent edits.
 - Expected output: verdict, issues by severity, audit token, verification evidence checked, and a concise `Self-Audit` covering reviewed scope, unreviewed items, shortcuts, and next action.
-- Reusable references: task doc, plan section, diff command, changed-file list, reviewer skill path, and relevant root guidance.
+- Reusable references: task doc, plan section, diff command, changed-file list, reviewer skill path, `dispatch.requiredAudit`, `dispatch.gateReason`, `dispatch.passCriteria`, and relevant root guidance.
 
 Do not self-commit from a reviewer invocation. Report findings and verification evidence back to the coordinator for retry or pathspec commit review.
 
