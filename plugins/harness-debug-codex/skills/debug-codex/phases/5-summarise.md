@@ -15,9 +15,16 @@ Render the durable debug-log artifact and populate `state.resolution`.
 3. Render `templates/debug-log.md.hbs` with the full state. The
    template iterates `hypotheses[]`, `checkpoints[]`, and the parsed
    error frames.
-4. Write the rendered markdown to the computed path. Atomic write
-   (tmp + rename).
-5. Populate `state.resolution`:
+4. Prefer the deterministic helper:
+   ```
+   import { finishDebugSession } from "./lib/debug-artifacts.mjs";
+   const result = finishDebugSession({ projectRoot, state, slug, now });
+   ```
+   It renders the markdown, writes the log atomically, updates
+   `.debug-state.json`, and appends `docs/debug/index.md`.
+5. If implementing manually, write the rendered markdown to the computed
+   path with atomic write (tmp + rename).
+6. Populate `state.resolution`:
    ```
    state.resolution = {
      rootCause: <verified hypothesis's text || "abandoned — no verification">,
@@ -27,7 +34,7 @@ Render the durable debug-log artifact and populate `state.resolution`.
    };
    saveState(statePath, state);
    ```
-6. Optionally append a one-line entry to `docs/debug/index.md`:
+7. Optionally append a one-line entry to `docs/debug/index.md`:
    ```
    - YYYY-MM-DD — <slug> — <rootCause one-liner> — <path>
    ```

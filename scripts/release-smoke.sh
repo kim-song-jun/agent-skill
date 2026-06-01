@@ -95,6 +95,7 @@ run_step "focused release contracts" \
     tests/lib/cross-platform-manifest.test.mjs \
     tests/lib/codex-current-hook-schema.test.mjs \
     tests/lib/codex-install-hook.test.mjs \
+    tests/lib/debug-artifacts.test.mjs \
     tests/lib/visual-qa-vendored-libs.test.mjs \
     tests/lib/agent-all-codex.test.mjs \
     tests/lib/agent-all-codex-dispatch.test.mjs \

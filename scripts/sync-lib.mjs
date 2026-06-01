@@ -95,6 +95,22 @@ const HARNESS_CLEANER_TARGETS = [
   "plugins/harness-builder-codex/skills/codex-init/lib/harness-cleaner.mjs",
 ].map((p) => resolve(repoRoot, p));
 
+const DEBUG_SKILL_LIB_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-debug/skills/debug/lib",
+);
+const DEBUG_SKILL_LIB_TARGETS = [
+  "plugins/harness-debug-codex/skills/debug-codex/lib",
+].map((p) => resolve(repoRoot, p));
+const DEBUG_SKILL_LIB_FILES = [
+  "bisector.mjs",
+  "debug-artifacts.mjs",
+  "error-parser.mjs",
+  "hypothesis-tracker.mjs",
+  "repro-suggester.mjs",
+  "state-checkpoint.mjs",
+];
+
 function readOrNull(path) {
   return existsSync(path) ? readFileSync(path, "utf-8") : null;
 }
@@ -194,6 +210,24 @@ function collectDrift() {
       drift.push({ file: "harness-cleaner.mjs", dest: destPath, reason: "diverged", sourceContent: cleanerSrc });
     }
   }
+  // debug skill runtime libs (Claude source → Codex debug copy).
+  for (const file of DEBUG_SKILL_LIB_FILES) {
+    const sourcePath = resolve(DEBUG_SKILL_LIB_SOURCE, file);
+    const sourceContent = readOrNull(sourcePath);
+    if (sourceContent == null) {
+      console.error(`Source missing: ${sourcePath}`);
+      process.exit(2);
+    }
+    for (const dest of DEBUG_SKILL_LIB_TARGETS) {
+      const destPath = resolve(dest, file);
+      const destContent = readOrNull(destPath);
+      if (destContent == null) {
+        drift.push({ file, dest: destPath, reason: "missing", sourceContent });
+      } else if (destContent !== sourceContent) {
+        drift.push({ file, dest: destPath, reason: "diverged", sourceContent });
+      }
+    }
+  }
   return drift;
 }
 
@@ -204,7 +238,8 @@ function totalChecked() {
     + CHANGED_FILE_CLASSIFIER_TARGETS.length
     + FOUNDATION_CHECK_TARGETS.length
     + DOCTOR_CORE_TARGETS.length
-    + HARNESS_CLEANER_TARGETS.length;
+    + HARNESS_CLEANER_TARGETS.length
+    + DEBUG_SKILL_LIB_FILES.length * DEBUG_SKILL_LIB_TARGETS.length;
 }
 
 function checkMode() {

@@ -116,6 +116,7 @@ const CODEX_LITE_ABSENT = [
 
 const CODEX_DEBUG_PRESENT = [
   ".codex/skills/debug-codex/SKILL.md",
+  ".codex/skills/debug-codex/lib/debug-artifacts.mjs",
   ".codex/skills/debug-codex/lib/error-parser.mjs",
   ".codex/skills/debug-codex/lib/state-checkpoint.mjs",
   ".codex/skills/debug-codex/phases/1-reproduce.md",

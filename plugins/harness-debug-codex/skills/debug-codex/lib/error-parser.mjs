@@ -1,5 +1,5 @@
 // error-parser.mjs — dispatch table of self-contained parsers for the
-// 10 error formats harness-debug-codex supports.
+// 10 error formats harness-debug supports.
 //
 // Public API:
 //   parseError(text, hints?) → {kind, frames[], rootException?} |

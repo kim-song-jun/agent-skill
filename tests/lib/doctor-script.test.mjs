@@ -94,6 +94,7 @@ test("doctor validates an installed Codex operational scaffold", () => {
     assert.equal(data.profile, "operational");
     assert.ok(data.summary.passed >= 20, "expected a broad Codex operational check set");
     assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug-codex/SKILL.md"), "operational doctor must validate debug skill");
+    assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug-codex/lib/debug-artifacts.mjs"), "operational doctor must validate debug artifact helper");
     assert.ok(data.checks.some((check) => check.path === "docs/debug/index.md"), "operational doctor must validate debug docs");
     assert.deepEqual(data.failures, []);
     assert.ok(data.warnings.some((warning) => /foundations missing: superpowers, context-mode/.test(warning.message)));
@@ -174,6 +175,7 @@ test("doctor validates a Codex debug-only scaffold without requiring builder fil
     assert.equal(data.ok, true);
     assert.equal(data.profile, "debug");
     assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug-codex/SKILL.md"));
+    assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug-codex/lib/debug-artifacts.mjs"));
     assert.ok(!data.checks.some((check) => check.path === "AGENTS.md"), "debug profile must not require builder root guidance");
 
     rmSync(resolve(target, ".codex/skills/debug-codex"), { recursive: true, force: true });

@@ -622,6 +622,7 @@ test("install-platform codex all succeeds in a fresh project without patching gl
       ".codex/skills/orchestrator/SKILL.md",
       ".codex/skills/visual-qa-page/SKILL.md",
       ".codex/skills/debug-codex/SKILL.md",
+      ".codex/skills/debug-codex/lib/debug-artifacts.mjs",
       ".codex/hooks/agent-policy-hook.mjs",
       ".codex/hooks/thrift-pretool-bash-telemetry.toml",
       "docs/tasks/index.md",
@@ -983,6 +984,7 @@ test("install-platform codex debug theme installs only debug artifacts and repor
     assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
     for (const rel of [
       ".codex/skills/debug-codex/SKILL.md",
+      ".codex/skills/debug-codex/lib/debug-artifacts.mjs",
       ".codex/skills/debug-codex/lib/error-parser.mjs",
       ".debug-artifacts",
       "docs/debug/index.md",

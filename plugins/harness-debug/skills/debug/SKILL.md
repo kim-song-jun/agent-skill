@@ -76,6 +76,7 @@ under `phases/`; Read it on demand.
 
 - `lib/error-parser.mjs` — `parseError(text, hints?)` → `{kind, frames[], rootException?}` for 10 formats.
 - `lib/state-checkpoint.mjs` — `loadState/saveState/computeTreeHash/pushCheckpoint/restoreTo`.
+- `lib/debug-artifacts.mjs` — `finishDebugSession/renderDebugLog/slugifyDebugSubject` for Phase 5 state/log/index output.
 - `lib/bisector.mjs` — `inputBisect({input, predicate})` ddmin; `gitBisect({command, knownGood, knownBad, spawn?})`.
 - `lib/hypothesis-tracker.mjs` — `addHypothesis/decide/selectCandidate/nextUntested/summary/exportToDebugLog`.
 - `lib/repro-suggester.mjs` — `suggestCommands({projectRoot, vague})` for Phase 0 when no command was provided.

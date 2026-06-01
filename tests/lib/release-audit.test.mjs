@@ -19,9 +19,9 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
   assert.equal(result.platforms.claude.checks.length, 24);
-  assert.equal(result.platforms.codex.checks.length, 33);
+  assert.equal(result.platforms.codex.checks.length, 34);
   assert.match(result.platforms.claude.summary, /Claude: ok \(24\/24 checks\)/);
-  assert.match(result.platforms.codex.summary, /Codex: ok \(33\/33 checks\)/);
+  assert.match(result.platforms.codex.summary, /Codex: ok \(34\/34 checks\)/);
   assert.ok(result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh exists"));
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh matches release contract"),
@@ -338,6 +338,7 @@ test("release audit fails incomplete Codex slash-command skill surfaces", () => 
   );
   writeRel(root, "plugins/harness-debug-codex/.claude-plugin/plugin.json", '{"name":"harness-debug-codex"}');
   writeRel(root, "plugins/harness-debug-codex/bin/install.mjs", "");
+  writeRel(root, "plugins/harness-debug-codex/skills/debug-codex/lib/debug-artifacts.mjs", "");
   writeRel(root, "plugins/harness-debug-codex/skills/debug-codex/lib/error-parser.mjs", "");
   writeRel(root, "plugins/harness-debug-codex/skills/debug-codex/lib/state-checkpoint.mjs", "");
   writeRel(root, "plugins/harness-debug-codex/skills/debug-codex/phases/1-reproduce.md", "");
