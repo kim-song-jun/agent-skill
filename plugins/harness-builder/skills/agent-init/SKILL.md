@@ -25,7 +25,7 @@ when a project needs a minimal root memory and minimal role roster.
 - `--resume` — skip phases already marked complete in `.claude/.agent-init-state.json`.
 - `--size=small|medium|large` — override auto-inferred agent team size.
 - `--qa=<persona>[,<persona>]` — override auto-inferred QA personas.
-- `--lang=ko|en` — (v0.5.1+) force the brainstorming dialogue language so downstream commands inherit it. Default: read `$AGENT_INIT_LANG` / `$LANG` / `$LC_ALL` / `$LC_MESSAGES` and resolve to `ko` for Korean locales, else `en`. The scaffolded `CLAUDE.md` and `.agent-all.json` record the choice.
+- `--lang=ko|en|auto` — (v0.5.1+) force the brainstorming dialogue language, or use `--lang=auto` to resolve from `$AGENT_INIT_LANG`, `$LANG`, `$LC_ALL`, `$LC_MESSAGES` / locale before downstream commands inherit it. The scaffolded `CLAUDE.md` and `.agent-all.json` record the resolved `ko`/`en` choice.
 
 ## Compatibility flags
 

@@ -138,6 +138,7 @@ cat ~/.claude/plugins/installed_plugins.json | python3 -m json.tool | grep -B1 a
 /agent-init                       # 기본값: 운영형/무거운 scaffold
 /agent-init --lite                # 최소 루트 메모리 + 최소 역할
 /agent-init --lang=ko             # 한국어 프롬프트를 CLAUDE.md + .agent-all.json language에 유지
+/agent-init --lang=auto           # AGENT_INIT_LANG/로케일에서 언어를 해석한 뒤 ko/en 기록
 /agent-init --dry-run             # 생성/패치 계획만 출력
 /agent-init --update-foundations  # 승인된 foundation 플러그인만 업데이트
 ```

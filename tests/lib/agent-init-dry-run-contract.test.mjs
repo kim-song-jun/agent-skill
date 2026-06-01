@@ -202,7 +202,9 @@ test("agent-init --lang contract persists into root guidance and agent-all confi
     "utf-8",
   );
 
-  assert.match(skill, /--lang=ko\|en[\s\S]{0,220}downstream commands/);
+  assert.match(skill, /--lang=ko\|en\|auto[\s\S]{0,260}downstream commands/);
+  assert.match(skill, /--lang=auto[\s\S]{0,260}(locale|`LANG`|`LC_ALL`|`LC_MESSAGES`)/i);
+  assert.match(phase1, /--lang=auto[\s\S]{0,220}(locale|LANG|LC_ALL|LC_MESSAGES)/i);
   assert.match(phase1, /ctx\.interactionLang/);
   assert.match(phase2, /interactionLang[\s\S]{0,160}templates\/CLAUDE\.md\.hbs/);
   assert.match(phase5, /language:\s*ctx\.interactionLang/);

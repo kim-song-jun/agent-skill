@@ -32,10 +32,13 @@ Skips task ledger files, policy hooks, `.visual-qa.json`, `.agent-all.json`, and
 
 ```
 /agent-init --lang=ko
+/agent-init --lang=auto
 ```
 
 Records the selected interaction language in `CLAUDE.md` and keeps
 `.agent-all.json` `language` aligned so downstream `/agent-all` prompts inherit it.
+Use `--lang=auto` to resolve from `$AGENT_INIT_LANG`, `$LANG`, `$LC_ALL`,
+`$LC_MESSAGES`, or locale before persisting the resolved `ko`/`en` value.
 
 ### Existing project (preserve existing CLAUDE.md)
 

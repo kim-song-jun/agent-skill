@@ -35,6 +35,9 @@ test("usage docs describe agent-init language persistence", () => {
   for (const path of ["README.md", "README.ko.md", "docs/USAGE.md", "docs/USAGE.ko.md"]) {
     const body = read(path);
     assert.match(body, /agent-init --lang=ko/);
+    assert.match(body, /agent-init --lang=auto/);
+    assert.match(body, /--lang=ko\|en\|auto/);
+    assert.match(body, /auto[\s\S]{0,320}(locale|로케일|`LANG`|`LC_ALL`|`LC_MESSAGES`)/i);
     assert.match(body, /install-platform\.sh[\s\S]{0,420}--lang=ko/);
     assert.match(body, /\.agent-all\.json[\s\S]{0,180}language/);
   }

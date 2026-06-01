@@ -19,11 +19,12 @@
 
 0. **Resolve interaction language (v0.5.1+).** Detect the language the brainstorming dialogue should run in:
    ```javascript
-   // Priority: --lang flag > $AGENT_INIT_LANG > $LANG/$LC_ALL > 'en'
+   // Priority: explicit ko/en flag > --lang=auto/env auto fallthrough > $AGENT_INIT_LANG > $LANG/$LC_ALL > 'en'
    function detectLang() {
      if (process.argv.includes("--lang=ko")) return "ko";
      if (process.argv.includes("--lang=en")) return "en";
-     if (process.env.AGENT_INIT_LANG === "ko" || process.env.AGENT_INIT_LANG === "en") return process.env.AGENT_INIT_LANG;
+     const autoLang = process.argv.includes("--lang=auto") || process.env.AGENT_INIT_LANG === "auto";
+     if (!autoLang && (process.env.AGENT_INIT_LANG === "ko" || process.env.AGENT_INIT_LANG === "en")) return process.env.AGENT_INIT_LANG;
      const loc = (process.env.LANG || process.env.LC_ALL || process.env.LC_MESSAGES || "").toLowerCase();
      if (loc.startsWith("ko")) return "ko";
      return "en";

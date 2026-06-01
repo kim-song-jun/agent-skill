@@ -32,10 +32,13 @@ task ledger, 정책 훅, `.visual-qa.json`, `.agent-all.json`, 및 CLAUDE.md의 
 
 ```
 /agent-init --lang=ko
+/agent-init --lang=auto
 ```
 
 선택한 상호작용 언어를 `CLAUDE.md`에 기록하고 `.agent-all.json` `language`를
 같은 값으로 유지해 이후 `/agent-all` 프롬프트가 상속하게 합니다.
+`--lang=auto`는 `$AGENT_INIT_LANG`, `$LANG`, `$LC_ALL`, `$LC_MESSAGES`,
+또는 로케일을 해석한 뒤 확정된 `ko`/`en` 값을 기록합니다.
 
 ### 기존 프로젝트 (기존 CLAUDE.md 유지)
 

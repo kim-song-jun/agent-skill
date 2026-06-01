@@ -138,6 +138,7 @@ Run once per project. Operational mode creates task ledger files, local folder g
 /agent-init                       # default: operational/heavy scaffold
 /agent-init --lite                # minimal root memory + minimal roles
 /agent-init --lang=ko             # persist Korean prompts into CLAUDE.md + .agent-all.json language
+/agent-init --lang=auto           # resolve language from AGENT_INIT_LANG/locale, then persist ko/en
 /agent-init --dry-run             # print planned files and config patches
 /agent-init --update-foundations  # update approved foundation plugins only
 ```
