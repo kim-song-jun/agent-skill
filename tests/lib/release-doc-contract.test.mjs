@@ -473,6 +473,8 @@ test("CLI runtime checklist points at the release readiness audit gate", () => {
   assert.match(body, /release-audit\.mjs/);
   assert.match(body, /release-fixture-smoke\.mjs/);
   assert.match(body, /release readiness audit/i);
+  assert.match(body, /Codex debug-only git fixtures/i);
+  assert.match(body, /operational, lite, and debug profiles/i);
   assert.match(body, /release-smoke\.sh --fast --with-live-cli/);
   assert.match(body, /run \/agent-all for "smoke task"/);
   assert.match(body, /run \/visual-qa for the configured project/);

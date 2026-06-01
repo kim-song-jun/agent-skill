@@ -114,6 +114,28 @@ const CODEX_LITE_ABSENT = [
   ".thrift.json",
 ];
 
+const CODEX_DEBUG_PRESENT = [
+  ".codex/skills/debug-codex/SKILL.md",
+  ".codex/skills/debug-codex/lib/error-parser.mjs",
+  ".codex/skills/debug-codex/lib/state-checkpoint.mjs",
+  ".codex/skills/debug-codex/phases/1-reproduce.md",
+  ".debug-artifacts",
+  "docs/debug/index.md",
+];
+
+const CODEX_DEBUG_ABSENT = [
+  "AGENTS.md",
+  ".codex/skills/planner/SKILL.md",
+  ".codex/skills/orchestrator/SKILL.md",
+  ".codex/skills/agent-all-codex/SKILL.md",
+  ".codex/skills/visual-qa-codex/SKILL.md",
+  ".codex/hooks/agent-policy-hook.mjs",
+  "docs/tasks/index.md",
+  ".visual-qa.json",
+  ".agent-all.json",
+  ".thrift.json",
+];
+
 export function runReleaseFixtureSmoke({ root = ROOT } = {}) {
   const checks = {
     claudeMarketplace: checkClaudeMarketplace(root),
@@ -121,6 +143,7 @@ export function runReleaseFixtureSmoke({ root = ROOT } = {}) {
     claudeLite: checkClaudeLite(root),
     codexOperational: checkCodexOperational(root),
     codexLite: checkCodexLite(root),
+    codexDebug: checkCodexDebug(root),
   };
 
   return {
@@ -602,6 +625,39 @@ function checkCodexLite(root) {
       summary: `Codex lite fixture: ${ok ? "ok" : "failed"} (${CODEX_LITE_PRESENT.length + CODEX_LITE_ABSENT.length - missing.length - unexpected.length}/${CODEX_LITE_PRESENT.length + CODEX_LITE_ABSENT.length} file checks)`,
       details: ok
         ? "fresh git fixture received only builder-lite files and no global config side effects"
+        : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failedStdout, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
+    };
+  });
+}
+
+function checkCodexDebug(root) {
+  return withFixture("agent-skill-release-codex-debug-", ({ target, home }) => {
+    initGit(target);
+    const res = runInstallPlatform(root, target, home, ["--theme=debug"]);
+    const missing = missingFiles(target, CODEX_DEBUG_PRESENT);
+    const unexpected = existingFiles(target, CODEX_DEBUG_ABSENT);
+    const homeConfig = resolve(home, ".codex/config.toml");
+    const skill = readIfExists(resolve(target, ".codex/skills/debug-codex/SKILL.md"));
+    const stdoutChecks = [
+      ["reports debug theme", /theme:\s+debug/i.test(res.stdout)],
+      ["runs debug-profile doctor", /profile:\s+debug/i.test(res.stdout)],
+      ["post-install doctor passes", /harness doctor: ok/i.test(res.stdout)],
+      ["documents run /debug entrypoint", /run \/debug/.test(res.stdout) || /run \/debug/.test(skill)],
+      ["debug skill has completion contract", /Debug complete/.test(skill)],
+    ];
+    const failedStdout = stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name);
+    const ok = res.status === 0
+      && missing.length === 0
+      && unexpected.length === 0
+      && failedStdout.length === 0
+      && !existsSync(homeConfig);
+    const total = CODEX_DEBUG_PRESENT.length + CODEX_DEBUG_ABSENT.length;
+
+    return {
+      ok,
+      summary: `Codex debug fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
+      details: ok
+        ? "fresh git fixture received only debug-codex artifacts, post-install debug doctor coverage, and no global config side effects"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failedStdout, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });

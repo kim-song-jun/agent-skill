@@ -13,6 +13,7 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.equal(result.checks.claudeLite.ok, true);
   assert.equal(result.checks.codexOperational.ok, true);
   assert.equal(result.checks.codexLite.ok, true);
+  assert.equal(result.checks.codexDebug.ok, true);
   assert.match(result.checks.claudeMarketplace.summary, /Claude marketplace dry-run: ok/);
   assert.match(result.checks.claudeRendered.summary, /Claude rendered fixture: ok/);
   assert.match(result.checks.claudeLite.summary, /Claude lite fixture: ok/);
@@ -23,6 +24,9 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.codexOperational.details, /sequential visual-qa-codex page helper runs from the installed fixture/);
   assert.match(result.checks.codexOperational.details, /positional argv omits unsupported --prompt\/--skill flags/);
   assert.match(result.checks.codexLite.summary, /Codex lite fixture: ok/);
+  assert.match(result.checks.codexDebug.summary, /Codex debug fixture: ok/);
+  assert.match(result.checks.codexDebug.details, /only debug-codex artifacts/);
+  assert.match(result.checks.codexDebug.details, /post-install debug doctor coverage/);
 });
 
 test("release fixture smoke CLI emits human-readable summaries", () => {
@@ -38,6 +42,7 @@ test("release fixture smoke CLI emits human-readable summaries", () => {
   assert.match(output, /Claude lite fixture: ok/);
   assert.match(output, /Codex operational fixture: ok/);
   assert.match(output, /Codex lite fixture: ok/);
+  assert.match(output, /Codex debug fixture: ok/);
 });
 
 test("release fixture smoke CLI emits JSON", () => {
@@ -53,4 +58,5 @@ test("release fixture smoke CLI emits JSON", () => {
   assert.equal(data.checks.claudeLite.ok, true);
   assert.equal(data.checks.codexOperational.ok, true);
   assert.equal(data.checks.codexLite.ok, true);
+  assert.equal(data.checks.codexDebug.ok, true);
 });
