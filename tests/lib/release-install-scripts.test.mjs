@@ -509,6 +509,72 @@ test("install-platform codex --uninstall runs the conservative project cleaner",
   }
 });
 
+test("install-platform --uninstall --force-root-clean removes managed root guidance", () => {
+  for (const platform of ["claude", "codex"]) {
+    const target = tmp(`agent-skill-release-${platform}-force-root-clean-target-`);
+    const home = tmp(`agent-skill-release-${platform}-force-root-clean-home-`);
+    const rootFiles = platform === "claude" ? ["CLAUDE.md", "AGENTS.md"] : ["AGENTS.md"];
+    try {
+      const install = spawnSync("/bin/bash", [
+        INSTALL_PLATFORM,
+        `--platform=${platform}`,
+        `--target=${target}`,
+        "--theme=builder",
+        "--no-doctor",
+        "--no-update-foundations",
+      ], {
+        encoding: "utf-8",
+        env: { ...process.env, HOME: home },
+      });
+
+      assert.equal(install.status, 0, `${platform} stdout:\n${install.stdout}\nstderr:\n${install.stderr}`);
+      for (const rel of rootFiles) {
+        assert.ok(existsSync(resolve(target, rel)), `${platform} install should create ${rel}`);
+      }
+
+      const dryRun = spawnSync("/bin/bash", [
+        INSTALL_PLATFORM,
+        `--platform=${platform}`,
+        `--target=${target}`,
+        "--uninstall",
+        "--dry-run",
+        "--force-root-clean",
+      ], {
+        encoding: "utf-8",
+        env: { ...process.env, HOME: home },
+      });
+
+      assert.equal(dryRun.status, 0, `${platform} stdout:\n${dryRun.stdout}\nstderr:\n${dryRun.stderr}`);
+      assert.match(dryRun.stdout, /DRY-RUN: node .*scripts\/harness-clean\.mjs .*--force-root/);
+      assert.match(dryRun.stdout, /harness clean: dry-run/);
+      for (const rel of rootFiles) {
+        assert.ok(existsSync(resolve(target, rel)), `${platform} dry-run must preserve ${rel}`);
+      }
+
+      const uninstall = spawnSync("/bin/bash", [
+        INSTALL_PLATFORM,
+        `--platform=${platform}`,
+        `--target=${target}`,
+        "--uninstall",
+        "--force-root-clean",
+      ], {
+        encoding: "utf-8",
+        env: { ...process.env, HOME: home },
+      });
+
+      assert.equal(uninstall.status, 0, `${platform} stdout:\n${uninstall.stdout}\nstderr:\n${uninstall.stderr}`);
+      assert.match(uninstall.stdout, /harness clean: ok/);
+      for (const rel of rootFiles) {
+        assert.ok(!existsSync(resolve(target, rel)), `${platform} force root clean should remove ${rel}`);
+      }
+      assert.ok(!existsSync(resolve(home, ".codex/config.toml")), `${platform} uninstall must not patch global Codex config`);
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+      rmSync(home, { recursive: true, force: true });
+    }
+  }
+});
+
 test("install-platform codex --dry-run reports selected scripts without writing files", () => {
   const target = tmp("agent-skill-release-platform-dry-run-target-");
   const home = tmp("agent-skill-release-platform-dry-run-home-");
