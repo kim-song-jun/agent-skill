@@ -86,6 +86,14 @@ const DOCTOR_CORE_TARGETS = [
   "plugins/harness-builder-codex/skills/codex-init/lib/doctor-core.mjs",
 ].map((p) => resolve(repoRoot, p));
 
+const HARNESS_CLEANER_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-builder/skills/agent-init/lib/harness-cleaner.mjs",
+);
+const HARNESS_CLEANER_TARGETS = [
+  "plugins/harness-builder-codex/skills/codex-init/lib/harness-cleaner.mjs",
+].map((p) => resolve(repoRoot, p));
+
 function readOrNull(path) {
   return existsSync(path) ? readFileSync(path, "utf-8") : null;
 }
@@ -171,6 +179,20 @@ function collectDrift() {
       drift.push({ file: "doctor-core.mjs", dest: destPath, reason: "diverged", sourceContent: doctorCoreSrc });
     }
   }
+  // harness-cleaner.mjs (Claude source → Codex init copy).
+  const cleanerSrc = readOrNull(HARNESS_CLEANER_SOURCE);
+  if (cleanerSrc == null) {
+    console.error(`Source missing: ${HARNESS_CLEANER_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of HARNESS_CLEANER_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "harness-cleaner.mjs", dest: destPath, reason: "missing", sourceContent: cleanerSrc });
+    } else if (destContent !== cleanerSrc) {
+      drift.push({ file: "harness-cleaner.mjs", dest: destPath, reason: "diverged", sourceContent: cleanerSrc });
+    }
+  }
   return drift;
 }
 
@@ -180,7 +202,8 @@ function totalChecked() {
     + CONFIG_LOADER_TARGETS.length
     + CHANGED_FILE_CLASSIFIER_TARGETS.length
     + FOUNDATION_CHECK_TARGETS.length
-    + DOCTOR_CORE_TARGETS.length;
+    + DOCTOR_CORE_TARGETS.length
+    + HARNESS_CLEANER_TARGETS.length;
 }
 
 function checkMode() {

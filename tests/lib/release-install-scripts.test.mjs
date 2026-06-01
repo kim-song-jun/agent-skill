@@ -139,7 +139,68 @@ test("install-platform --help documents dry-run and canonical wrapper flags", ()
   assert.match(res.stdout, /--lang=en\|ko\|auto/);
   assert.match(res.stdout, /--update-foundations/);
   assert.match(res.stdout, /--no-doctor/);
+  assert.match(res.stdout, /--uninstall/);
+  assert.match(res.stdout, /--force-root-clean/);
   assert.doesNotMatch(res.stderr, /--platform and --target are required/);
+});
+
+test("install-platform codex --uninstall runs the conservative project cleaner", () => {
+  const target = tmp("agent-skill-release-platform-uninstall-target-");
+  const home = tmp("agent-skill-release-platform-uninstall-home-");
+  try {
+    const install = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=builder",
+      "--no-doctor",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(install.status, 0, `stdout:\n${install.stdout}\nstderr:\n${install.stderr}`);
+    assert.ok(existsSync(resolve(target, "AGENTS.md")), "install should create root AGENTS.md");
+    assert.ok(existsSync(resolve(target, ".codex/skills/dev/SKILL.md")), "install should create Codex role skills");
+    assert.ok(existsSync(resolve(target, ".codex/hooks/agent-policy-hook.mjs")), "install should create Codex policy hook");
+
+    const dryRun = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--uninstall",
+      "--dry-run",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(dryRun.status, 0, `stdout:\n${dryRun.stdout}\nstderr:\n${dryRun.stderr}`);
+    assert.match(dryRun.stdout, /DRY-RUN: node .*scripts\/harness-clean\.mjs/);
+    assert.match(dryRun.stdout, /harness clean: dry-run/);
+    assert.ok(existsSync(resolve(target, ".codex/skills/dev/SKILL.md")), "dry-run must not remove role skills");
+
+    const uninstall = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--uninstall",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(uninstall.status, 0, `stdout:\n${uninstall.stdout}\nstderr:\n${uninstall.stderr}`);
+    assert.match(uninstall.stdout, /harness clean: ok/);
+    assert.ok(existsSync(resolve(target, "AGENTS.md")), "root AGENTS.md without sentinel is preserved by default");
+    assert.ok(!existsSync(resolve(target, ".codex/skills/dev")), "role skill dir should be removed");
+    assert.ok(!existsSync(resolve(target, ".codex/hooks/agent-policy-hook.mjs")), "policy hook should be removed");
+    assert.ok(!existsSync(resolve(target, "docs/tasks/_template.md")), "generated task template should be removed");
+    assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "uninstall must not patch global Codex config");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
 });
 
 test("install-platform codex --dry-run reports selected scripts without writing files", () => {

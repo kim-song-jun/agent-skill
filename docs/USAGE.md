@@ -185,6 +185,19 @@ node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project 
 
 From a source checkout, `node /path/to/agent-skill/scripts/doctor.mjs ...` is the equivalent compatibility wrapper. The doctor validates the project-local Claude/Codex scaffold, auto-detects operational, builder, or lite profile when `--profile=auto`, exits non-zero for missing required artifacts, and warns when `superpowers` or `context-mode` are not installed.
 
+Codex uninstall and cleanup:
+
+```bash
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --uninstall
+node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/my-project --platform=codex --dry-run
+```
+
+The conservative cleanup removes generated `.codex/skills`, `.codex/hooks`,
+floor/thrift config files, task templates, and helper scripts. Root `AGENTS.md`
+is preserved unless it has an agent-skill sentinel; pass `--force-root-clean`
+through `install-platform.sh --uninstall` when intentionally removing
+generated-looking root guidance.
+
 For direct library usage, the core modules are portable Node.js:
 
 ```bash

@@ -27,6 +27,10 @@ profiles. For a manual skill run, re-run the same check with
 or `--profile=lite`. When running from a source checkout instead of an installed
 plugin bundle, `node /path/to/agent-skill/scripts/doctor.mjs ...` is the
 equivalent compatibility wrapper.
+For cleanup, use `node <plugin-root>/bin/clean.mjs --target=. --platform=codex --dry-run`
+first. The cleaner removes project-local Codex harness artifacts and preserves
+root `AGENTS.md` unless it has a complete agent-skill sentinel or `--force-root`
+is explicit.
 
 ## Phase 1 — Gather
 

@@ -185,6 +185,18 @@ node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project 
 
 source checkout에서 실행할 때는 `node /path/to/agent-skill/scripts/doctor.mjs ...` compatibility wrapper가 같은 검사를 수행합니다. doctor는 project-local Claude/Codex scaffold를 검증하고, `--profile=auto`일 때 operational/builder/lite profile을 자동 감지하며, 필수 artifact 누락은 non-zero exit로 보고하고 `superpowers` 또는 `context-mode`가 없으면 경고합니다.
 
+Codex uninstall과 cleanup:
+
+```bash
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --uninstall
+node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/my-project --platform=codex --dry-run
+```
+
+보수적 cleanup은 생성된 `.codex/skills`, `.codex/hooks`, floor/thrift config,
+task template, helper script를 제거합니다. 루트 `AGENTS.md`는 agent-skill
+sentinel이 있을 때만 정리하며, 생성된 루트 가이드까지 의도적으로 제거하려면
+`install-platform.sh --uninstall`에 `--force-root-clean`을 같이 넘기세요.
+
 직접 라이브러리로 사용할 때, 핵심 모듈은 이식 가능한 Node.js입니다:
 
 ```bash

@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1698%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1703%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-17-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..." --loop --qa` per feature; the agent brainstorms → plans → writes → tests → **visually QAs every page** → opens the PR — and keeps iterating until tests AND the UI both pass — without you babysitting every turn.
 
@@ -539,19 +539,19 @@ These platforms don't have plugin marketplaces for AI workflows yet. Use `./scri
 ### Uninstall per platform
 
 ```bash
-# Per-plugin clean removal — only removes that plugin's artifacts
-node plugins/harness-thrift-cursor/bin/install.mjs /path/to/project --uninstall
+# Codex project-local harness cleanup
+./scripts/install-platform.sh --platform=codex --target=/path/to/project --uninstall
+./scripts/install-platform.sh --platform=codex --target=/path/to/project --uninstall --force-root-clean
 
-# Manually for the rest — delete:
-# - .cursor/ (Cursor)
-# - .github/copilot-instructions.md + .github/hooks/ (Copilot)
-# - AGENTS.md + .codex/ (Codex)
-# - GEMINI.md + .gemini/ (Gemini)
-# - .visual-qa.json + .agent-all.json + .thrift.json (Cursor/Copilot CLI/Codex/Gemini)
-# - .github/copilot-instructions.md only (VS Code Copilot)
+# Plugin-local cleanup preview for Claude or Codex bundles
+node /path/to/harness-builder/bin/clean.mjs --target=/path/to/project --platform=claude --dry-run
+node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/project --platform=codex --dry-run
+
+# Other platforms still use plugin-specific cleanup, for example:
+node plugins/harness-thrift-cursor/bin/install.mjs /path/to/project --uninstall
 ```
 
-A future `install-platform.sh --uninstall` flag is planned; for now uninstall is per-plugin via each plugin's bin script.
+Codex cleanup removes generated `.codex/skills`, `.codex/hooks`, floor/thrift config files, task templates, and helper scripts. By default it preserves root `AGENTS.md` unless an agent-skill sentinel is present; `--force-root-clean` also removes generated-looking root `AGENTS.md`. Claude plugin-local cleanup strips generated sentinel sections and generated hook/agent/settings registrations while preserving root guidance without sentinels unless `--force-root` is explicit. Cursor, Copilot, Gemini, and VS Code Copilot still use plugin-specific cleanup or manual review for now.
 
 ---
 
@@ -694,7 +694,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 - **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for design docs per plugin.
 - **All 17 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
-- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1698 tests, all green.
+- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1703 tests, all green.
 - **Per-platform porting** — see specs ending in `-impl-spec.md` or `-decomposition.md` under `docs/superpowers/specs/`.
 - **Cross-platform support matrix** — see [docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md](docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md).
 - **Hook precedence (if you're mixing plugins that all register hooks)** — see [docs/superpowers/specs/2026-05-18-hook-precedence-integration.md](docs/superpowers/specs/2026-05-18-hook-precedence-integration.md).
@@ -705,7 +705,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 | Layer | Status | Note |
 |---|---|---|
-| Unit/integration tests | ✅ **1698/1698 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-fixture-smoke, command-surface, doctor, and visual-qa regressions |
+| Unit/integration tests | ✅ **1703/1703 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-fixture-smoke, command-surface, doctor, cleanup, and visual-qa regressions |
 | Install renderers (5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
 | Marketplace registration | ✅ 17 plugins listed | sync between local + origin |
 | Claude Code skills | ✅ ship today | core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug` |
@@ -753,7 +753,7 @@ Before submitting:
 ./scripts/release-smoke.sh --fast --with-live-cli  # also probe installed Claude/Codex CLIs
 node scripts/release-audit.mjs           # Claude/Codex release readiness matrix
 node scripts/release-fixture-smoke.mjs   # fresh Claude/Codex release fixtures
-node --test                              # 1698/1698 must pass
+node --test                              # 1703/1703 must pass
 node scripts/sync-lib.mjs --check        # vendored shared libs in sync
 ```
 

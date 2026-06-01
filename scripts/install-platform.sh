@@ -7,7 +7,7 @@
 # to the target project.
 #
 # Usage:
-#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations] [--no-doctor]
+#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations] [--no-doctor] [--uninstall] [--force-root-clean]
 #
 # --platform:
 #   cursor          — Cursor IDE (.cursor/rules + .cursor/agents)
@@ -40,6 +40,14 @@
 # --no-doctor:
 #   skip the automatic Codex post-install doctor check.
 #
+# --uninstall:
+#   remove Codex project-local harness artifacts through the conservative
+#   harness cleaner. Root AGENTS.md is preserved unless --force-root-clean is
+#   also passed.
+#
+# --force-root-clean:
+#   with --uninstall, also remove generated-looking root AGENTS.md.
+#
 # Examples:
 #   ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-app
 #   ./scripts/install-platform.sh --platform=codex --target=. --theme=floor
@@ -57,7 +65,7 @@ our own renderer scripts. Each `bin/init.mjs` writes the right files
 to the target project.
 
 Usage:
-  ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations] [--no-doctor]
+  ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations] [--no-doctor] [--uninstall] [--force-root-clean]
 
 --platform:
   cursor          — Cursor IDE (.cursor/rules + .cursor/agents)
@@ -90,10 +98,19 @@ Usage:
 --no-doctor:
   skip the automatic Codex post-install doctor check.
 
+--uninstall:
+  remove Codex project-local harness artifacts through the conservative
+  harness cleaner. Root AGENTS.md is preserved unless --force-root-clean is
+  also passed.
+
+--force-root-clean:
+  with --uninstall, also remove generated-looking root AGENTS.md.
+
 Examples:
   ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-app
   ./scripts/install-platform.sh --platform=codex --target=. --theme=floor --dry-run
   ./scripts/install-platform.sh --platform=codex --target=. --update-foundations
+  ./scripts/install-platform.sh --platform=codex --target=. --uninstall --dry-run
   ./scripts/install-platform.sh --platform=copilot --target=. --ctx=ctx.json --force
 USAGE
 }
@@ -111,6 +128,8 @@ INIT_LANG=""
 DRY_RUN=0
 UPDATE_FOUNDATIONS=0
 NO_DOCTOR=0
+UNINSTALL=0
+FORCE_ROOT_CLEAN=0
 
 while [ "$#" -gt 0 ]; do
   arg="$1"
@@ -137,6 +156,8 @@ while [ "$#" -gt 0 ]; do
     --dry-run)    DRY_RUN=1 ;;
     --update-foundations) UPDATE_FOUNDATIONS=1 ;;
     --no-doctor)  NO_DOCTOR=1 ;;
+    --uninstall)  UNINSTALL=1 ;;
+    --force-root-clean) FORCE_ROOT_CLEAN=1 ;;
     -h|--help)
       print_usage
       exit 0
@@ -221,19 +242,21 @@ if [ "$UPDATE_FOUNDATIONS" = "1" ] && [ "$PLATFORM" != "codex" ]; then
   exit 1
 fi
 
+if [ "$UNINSTALL" = "1" ] && [ "$PLATFORM" != "codex" ]; then
+  echo "Error: --uninstall is currently supported only with --platform=codex." >&2
+  echo "Use plugin-specific uninstall commands for Cursor/Copilot/Gemini artifacts." >&2
+  exit 1
+fi
+
+if [ "$FORCE_ROOT_CLEAN" = "1" ] && [ "$UNINSTALL" != "1" ]; then
+  echo "Error: --force-root-clean can only be used with --uninstall." >&2
+  exit 1
+fi
+
 if [ "$VS_CODE_COPILOT" = "1" ] && { [ "$THEME" = "floor" ] || [ "$THEME" = "thrift" ]; }; then
   echo "Error: vscode-copilot supports only the builder instructions surface." >&2
   exit 1
 fi
-
-TARGET_ABS="$(cd "$TARGET" 2>/dev/null && pwd)" || { echo "Error: target dir does not exist: $TARGET" >&2; exit 1; }
-
-if [ "$LITE" = "1" ]; then
-  echo "Installing for $PLATFORM into $TARGET_ABS (theme: builder, profile: lite$([ "$DRY_RUN" = "1" ] && printf ", dry-run"))"
-else
-  echo "Installing for $PLATFORM into $TARGET_ABS (theme: $THEME, profile: operational$([ "$DRY_RUN" = "1" ] && printf ", dry-run"))"
-fi
-echo
 
 format_cmd() {
   local rendered=""
@@ -247,6 +270,39 @@ format_cmd() {
   done
   printf "%s\n" "$rendered"
 }
+
+TARGET_ABS="$(cd "$TARGET" 2>/dev/null && pwd)" || { echo "Error: target dir does not exist: $TARGET" >&2; exit 1; }
+
+if [ "$UNINSTALL" = "1" ]; then
+  echo "Uninstalling for $PLATFORM from $TARGET_ABS$([ "$DRY_RUN" = "1" ] && printf " (dry-run"))"
+  echo
+  clean_cmd=(node "$REPO_ROOT/scripts/harness-clean.mjs" "--target=$TARGET_ABS" "--platform=codex")
+  if [ "$DRY_RUN" = "1" ]; then
+    clean_cmd+=(--dry-run)
+  fi
+  if [ "$FORCE_ROOT_CLEAN" = "1" ]; then
+    clean_cmd+=(--force-root)
+  fi
+  echo "  → harness cleaner"
+  if [ "$DRY_RUN" = "1" ]; then
+    echo "  DRY-RUN: $(format_cmd "${clean_cmd[@]}")"
+  fi
+  "${clean_cmd[@]}"
+  echo
+  if [ "$DRY_RUN" = "1" ]; then
+    echo "DRY-RUN complete. No files were removed."
+  else
+    echo "Done. Review any skipped root guidance files reported above."
+  fi
+  exit 0
+fi
+
+if [ "$LITE" = "1" ]; then
+  echo "Installing for $PLATFORM into $TARGET_ABS (theme: builder, profile: lite$([ "$DRY_RUN" = "1" ] && printf ", dry-run"))"
+else
+  echo "Installing for $PLATFORM into $TARGET_ABS (theme: $THEME, profile: operational$([ "$DRY_RUN" = "1" ] && printf ", dry-run"))"
+fi
+echo
 
 run_init() {
   local plugin="$1"

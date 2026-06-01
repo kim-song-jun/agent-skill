@@ -69,6 +69,7 @@ Deterministic mechanics live in `lib/`. Import them when a phase says so:
 - `lib/sentinel-merge.mjs` — `mergeSentinelSection(existing, generated)` for root and folder guidance files
 - `lib/folder-guides.mjs` — `detectGuideDirs(projectDir)` for local guide discovery
 - `lib/foundation-check.mjs` — `scanFoundationState({ installedPluginIds })` for degraded foundation reporting
+- `lib/harness-cleaner.mjs` — `planHarnessCleanup(...)` and `runHarnessCleanup(...)` for plugin-local cleanup. It preserves root `CLAUDE.md`/`AGENTS.md` unless a complete agent-skill sentinel is present, or `--force-root` is explicit for generated-looking root guidance.
 
 Each phase file names which helpers it needs and how to call them.
 

@@ -38,6 +38,27 @@ node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/project --p
 From a source checkout, `node scripts/doctor.mjs ...` is the equivalent
 compatibility wrapper.
 
+## Uninstall
+
+Preview the project-local cleanup first:
+
+```bash
+node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/project --platform=codex --dry-run
+```
+
+From a source checkout, `install-platform.sh` exposes the conservative Codex
+cleanup path:
+
+```bash
+./scripts/install-platform.sh --platform=codex --target=/path/to/project --uninstall
+./scripts/install-platform.sh --platform=codex --target=/path/to/project --uninstall --force-root-clean
+```
+
+The default cleanup removes generated `.codex/skills`, `.codex/hooks`, floor and
+thrift config files, task templates, and generated helper scripts. Root
+`AGENTS.md` is preserved unless it carries a complete agent-skill sentinel;
+`--force-root-clean` removes generated-looking root guidance too.
+
 ## Usage
 
 Run `/codex-init` inside Codex CLI. The skill scaffolds:
