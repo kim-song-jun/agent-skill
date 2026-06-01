@@ -39,7 +39,15 @@ test("release-smoke --fast --with-live-cli probes Claude and Codex binaries", ()
   const claude = resolve(binDir, "claude");
   const codex = resolve(binDir, "codex");
   writeFileSync(claude, "#!/usr/bin/env bash\necho '2.1.158 (Claude Code)'\n");
-  writeFileSync(codex, "#!/usr/bin/env bash\necho 'codex-cli 0.135.0'\n");
+  writeFileSync(codex, [
+    "#!/usr/bin/env bash",
+    "if [ \"$1\" = \"exec\" ] && [ \"$2\" = \"--help\" ]; then",
+    "  echo 'Usage: codex exec [OPTIONS] [PROMPT]'",
+    "  exit 0",
+    "fi",
+    "echo 'codex-cli 0.135.0'",
+    "",
+  ].join("\n"));
   chmodSync(claude, 0o755);
   chmodSync(codex, 0o755);
 
@@ -64,4 +72,5 @@ test("release-smoke --fast --with-live-cli probes Claude and Codex binaries", ()
   assert.match(output, /release smoke: live Claude\/Codex CLI probes/);
   assert.match(output, /claude: 2\.1\.158 \(Claude Code\)/);
   assert.match(output, /codex: codex-cli 0\.135\.0/);
+  assert.match(output, /codex exec: positional prompt interface/);
 });

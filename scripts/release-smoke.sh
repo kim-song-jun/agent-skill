@@ -54,8 +54,18 @@ if [ "$WITH_LIVE_CLI" -eq 1 ]; then
       version="$("$name" --version 2>&1)"
       echo "$name: $version"
     }
+    probe_codex_exec_surface() {
+      local help
+      help="$(codex exec --help 2>&1)"
+      if ! grep -Eq "Usage: codex exec .*\\[PROMPT\\]" <<<"$help"; then
+        echo "Codex exec prompt interface changed; expected positional [PROMPT] support." >&2
+        return 1
+      fi
+      echo "codex exec: positional prompt interface"
+    }
     probe_cli claude
     probe_cli codex
+    probe_codex_exec_surface
   '
 fi
 

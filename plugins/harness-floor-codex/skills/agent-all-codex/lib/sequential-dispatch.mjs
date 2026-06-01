@@ -2,19 +2,11 @@
 //
 // Current Codex hooks do not expose the older agent-dispatch surface,
 // so this module provides the stable sequential path.
-// Instead we invoke `.codex/skills/<role>/SKILL.md` one task at a time
-// via Codex's CLI surface.
 //
-// The exact invocation that triggers a skill in a non-interactive Codex
-// session is still unverified — see Open Question #7 in the impl spec
-// ("Skill-roster path for sequential dispatch"). For now we shell out
-// to `codex exec` with the skill body as the prompt, which matches the
-// scaffold's phase docs. Callers swap `codexBin` / `subcommand` to adapt
-// if the live CLI uses different argv.
-//
-// TODO: requires live Codex CLI to verify (1) that `codex exec` is the
-// correct non-interactive entry-point and (2) that the skill-resolution
-// path includes `<repo>/.codex/skills/` by default.
+// Verified against Codex CLI 0.135.0: `codex exec` is the supported
+// non-interactive entry point and it accepts the initial instructions as
+// a positional prompt. It does not expose `--skill` or `--prompt`, so
+// this dispatcher embeds the role SKILL.md content into that prompt.
 
 import { existsSync, readFileSync } from "node:fs";
 
@@ -60,7 +52,7 @@ export function resolveSkillPath(role, projectRoot) {
  * @returns {string}
  */
 export function buildSkillPrompt(args) {
-  const { task, plan } = args;
+  const { task, plan, skillPath, skillBody } = args;
   if (!task || typeof task !== "object") {
     throw new Error("buildSkillPrompt: task object required");
   }
@@ -69,9 +61,33 @@ export function buildSkillPrompt(args) {
   const files = Array.isArray(task.files) ? task.files : [];
   const bodyText = task.body || "(no body provided)";
   const planRef = plan?.path ? `Plan: ${plan.path}` : "Plan: (inline)";
+  const roleSkill = skillBody
+    ? [
+        "## Role Skill",
+        "",
+        `Path: ${skillPath || "(inline)"}`,
+        "",
+        "Follow this role skill for the task:",
+        "",
+        "```markdown",
+        skillBody,
+        "```",
+        "",
+      ]
+    : skillPath
+      ? [
+          "## Role Skill",
+          "",
+          `Path: ${skillPath}`,
+          "",
+          "The dispatcher could not inline the skill body; load and follow this role skill before editing.",
+          "",
+        ]
+      : [];
   return [
     "# Sequential dispatch (agent-all-codex fallback)",
     "",
+    ...roleSkill,
     `Task ID: ${task.id}`,
     `Title:   ${task.title}`,
     planRef,
@@ -91,8 +107,8 @@ export function buildSkillPrompt(args) {
 }
 
 /**
- * Build argv for the sequential skill invocation. We invoke the role's
- * SKILL.md by passing its full content as the prompt to `codex exec`.
+ * Build argv for the sequential skill invocation. Current Codex CLI
+ * accepts the prompt as the positional argument to `codex exec`.
  *
  * @param {object} opts
  * @param {object} opts.task
@@ -101,6 +117,7 @@ export function buildSkillPrompt(args) {
  * @param {string} [opts.codexBin="codex"]
  * @param {string} [opts.subcommand="exec"]
  * @param {string} [opts.skillPath] — pre-resolved override; otherwise derived from task.role
+ * @param {string} [opts.skillBody] — optional inlined SKILL.md content
  * @returns {{argv: string[], skillPath: string, prompt: string}}
  */
 export function buildSequentialInvocation(opts) {
@@ -111,15 +128,19 @@ export function buildSequentialInvocation(opts) {
   const skillPath = opts.skillPath || resolveSkillPath(role, opts.projectRoot);
   const codexBin = opts.codexBin || "codex";
   const subcommand = opts.subcommand || DEFAULT_SUBCOMMAND;
-  const prompt = buildSkillPrompt({ task: opts.task, plan: opts.plan });
+  const prompt = buildSkillPrompt({
+    task: opts.task,
+    plan: opts.plan,
+    skillPath,
+    skillBody: opts.skillBody,
+  });
   return {
     skillPath,
     prompt,
     argv: [
       codexBin,
       subcommand,
-      "--skill", skillPath,
-      "--prompt", prompt,
+      prompt,
     ],
   };
 }
@@ -127,7 +148,7 @@ export function buildSequentialInvocation(opts) {
 /**
  * Build the single-string `shell_command` form. Phase 3 doc shape:
  *
- *   shell_command("codex exec --skill <path> --prompt <body>")
+ *   shell_command("codex exec <inlined skill + task prompt>")
  *
  * @param {Parameters<typeof buildSequentialInvocation>[0]} opts
  * @returns {{command: string, skillPath: string}}
@@ -185,20 +206,27 @@ export async function dispatchSequential(opts, shellRunner) {
   if (typeof shellRunner !== "function") {
     throw new Error("dispatchSequential: shellRunner must be a function");
   }
-  const { command, skillPath } = buildSequentialShellCommand(opts);
+  const { skillPath } = buildSequentialInvocation(opts);
   if (opts.requireSkillExists !== false && !existsSync(skillPath)) {
     throw new Error(`sequential-dispatch: skill file missing: ${skillPath}`);
   }
-  // Read the skill file for the side-effect of asserting it's a valid
-  // SKILL.md (cheap precondition for callers that want to fail fast).
-  if (opts.assertSkillFrontmatter && existsSync(skillPath)) {
-    const head = readFileSync(skillPath, "utf-8").slice(0, 200);
+  let skillBody = opts.skillBody;
+  if (existsSync(skillPath)) {
+    skillBody = readFileSync(skillPath, "utf-8");
+  }
+  if (opts.assertSkillFrontmatter && skillBody) {
+    const head = skillBody.slice(0, 200);
     if (!head.startsWith("---")) {
       throw new Error(
         `sequential-dispatch: ${skillPath} missing YAML front-matter`,
       );
     }
   }
+  const { command } = buildSequentialShellCommand({
+    ...opts,
+    skillPath,
+    skillBody,
+  });
   const result = await shellRunner(command);
   const stdout = result?.stdout || "";
   const parsed = parseSkillResult(stdout);

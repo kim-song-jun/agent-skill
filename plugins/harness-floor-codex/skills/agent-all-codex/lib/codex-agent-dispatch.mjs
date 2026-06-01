@@ -1,8 +1,8 @@
 // codex-agent-dispatch.mjs — wraps Codex CLI's `agent dispatch` subcommand.
 //
 // Legacy experimental helper for a Codex agent-dispatch CLI surface.
-// Current Codex hooks do not expose that surface; production phases use
-// sequential-dispatch.mjs.
+// Verified against Codex CLI 0.135.0: `codex agent dispatch` is not exposed by Codex CLI 0.135.0.
+// Production phases use sequential-dispatch.mjs.
 //
 // This module produces *both*:
 //   - `buildDispatchArgs(...)` — argv array suitable for spawn-style
@@ -10,8 +10,8 @@
 //   - `buildDispatchShellCommand(...)` — the equivalent single-string
 //     command for `shell_command(...)` callers (phase docs show this form).
 //
-// TODO: requires live Codex CLI to verify `codex agent dispatch` argv
-// schema. The shape below mirrors what the phase docs assume:
+// The retained legacy argv shape mirrors what the phase docs originally
+// assumed, so future CLI support can be re-evaluated in one module:
 //
 //   codex agent dispatch \
 //     --role <role> \
@@ -107,7 +107,7 @@ export function buildDispatchShellCommand(inv) {
  * the parsed agent id from stdout. Callers wire `shellRunner` to either
  * the Codex `shell_command` host tool or `spawnSync` in tests.
  *
- * Expected stdout shape (TODO verify on live CLI):
+ * Legacy expected stdout shape if this surface reappears:
  *   {"agentId": "<uuid>", "taskId": "<full-task-id>", "started": true}
  *
  * @param {DispatchInvocation & {waveIndex: number|string, codexBin?: string}} inv

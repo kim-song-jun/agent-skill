@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 
@@ -357,6 +357,17 @@ test("sequential-dispatch: buildSkillPrompt includes task metadata", () => {
   assert.match(prompt, /End with a JSON line/);
 });
 
+test("sequential-dispatch: buildSkillPrompt embeds role skill body when provided", () => {
+  const prompt = buildSkillPrompt({
+    task: { id: "t-1", title: "Fix login" },
+    skillPath: "/repo/.codex/skills/dev/SKILL.md",
+    skillBody: "---\nname: dev\n---\nFollow TDD strictly.",
+  });
+  assert.match(prompt, /## Role Skill/);
+  assert.match(prompt, /Path: \/repo\/\.codex\/skills\/dev\/SKILL\.md/);
+  assert.match(prompt, /Follow TDD strictly/);
+});
+
 test("sequential-dispatch: buildSkillPrompt requires task fields", () => {
   assert.throws(() => buildSkillPrompt({}), /task object required/);
   assert.throws(() => buildSkillPrompt({ task: { id: "", title: "x" } }), /id/);
@@ -370,6 +381,10 @@ test("sequential-dispatch: buildSequentialInvocation defaults role to dev", () =
   assert.match(inv.skillPath, /\/repo\/\.codex\/skills\/dev\/SKILL\.md$/);
   assert.equal(inv.argv[0], "codex");
   assert.equal(inv.argv[1], "exec");
+  assert.equal(inv.argv.length, 3);
+  assert.equal(inv.argv.includes("--skill"), false);
+  assert.equal(inv.argv.includes("--prompt"), false);
+  assert.match(inv.argv[2], /Task ID: t-1/);
 });
 
 test("sequential-dispatch: buildSequentialInvocation honours custom role", () => {
@@ -386,6 +401,7 @@ test("sequential-dispatch: buildSequentialShellCommand shell-quotes", () => {
     projectRoot: "/r",
   });
   assert.match(command, /^'codex' 'exec'/);
+  assert.doesNotMatch(command, /'--skill'|'--prompt'/);
   assert.match(skillPath, /SKILL\.md$/);
 });
 
@@ -438,6 +454,35 @@ test("sequential-dispatch: dispatchSequential happy path returns unified shape",
   assert.equal(r.status, "completed");
   assert.deepEqual(r.commits, ["sha-x"]);
   assert.equal(r.costUSD, 0);
+});
+
+test("sequential-dispatch: dispatchSequential inlines the role skill file into the prompt", async () => {
+  const t = makeTmp();
+  try {
+    const skillDir = join(t, ".codex", "skills", "dev");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: dev\n---\nUse the project TDD protocol.",
+    );
+    const runner = async (cmd) => {
+      assert.match(cmd, /^'codex' 'exec'/);
+      assert.doesNotMatch(cmd, /'--skill'|'--prompt'/);
+      assert.match(cmd, /Use the project TDD protocol/);
+      return {
+        stdout: `{"status":"completed","commits":[],"errors":[]}`,
+        stderr: "",
+        status: 0,
+      };
+    };
+    const r = await dispatchSequential({
+      task: { id: "t1", title: "X", role: "dev" },
+      projectRoot: t,
+    }, runner);
+    assert.equal(r.status, "completed");
+  } finally {
+    rmSync(t, { recursive: true, force: true });
+  }
 });
 
 test("sequential-dispatch: dispatchSequential captures shell failure as blocked", async () => {
