@@ -95,6 +95,7 @@ const CODEX_OPERATIONAL_PRESENT = [
   ".codex/skills/agent-all-codex/SKILL.md",
   ".codex/skills/agent-all-codex/lib/sequential-dispatch.mjs",
   ".codex/skills/visual-qa-codex/SKILL.md",
+  ".codex/skills/visual-qa-codex/lib/sequential-dispatch.mjs",
   ".codex/skills/visual-qa-page/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
   ".codex/hooks/thrift-pretool-bash-telemetry.toml",
@@ -357,7 +358,8 @@ function checkCodexOperational(root) {
     initGit(target);
     const res = runInstallPlatform(root, target, home, ["--theme=all"]);
     const missing = missingFiles(target, CODEX_OPERATIONAL_PRESENT);
-    const sequentialRuntime = checkCodexSequentialRuntime(target);
+    const agentAllRuntime = checkCodexAgentAllSequentialRuntime(target);
+    const visualQaRuntime = checkCodexVisualQaSequentialRuntime(target);
     const homeConfig = resolve(home, ".codex/config.toml");
     const stdoutChecks = [
       ["prints current PreToolUse hook snippet", /\[\[hooks\.PreToolUse\]\]/.test(res.stdout)],
@@ -369,20 +371,21 @@ function checkCodexOperational(root) {
     const ok = res.status === 0
       && missing.length === 0
       && failedStdout.length === 0
-      && sequentialRuntime.ok
+      && agentAllRuntime.ok
+      && visualQaRuntime.ok
       && !existsSync(homeConfig);
 
     return {
       ok,
       summary: `Codex operational fixture: ${ok ? "ok" : "failed"} (${CODEX_OPERATIONAL_PRESENT.length - missing.length}/${CODEX_OPERATIONAL_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh git fixture received operational builder, floor, thrift, hooks, configs, and sequential agent-all-codex prompt helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
-        : compactFailure(res, [...missing, ...failedStdout, sequentialRuntime.ok ? null : sequentialRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
+        ? "fresh git fixture received operational builder, floor, thrift, hooks, configs, and sequential agent-all-codex prompt helper runs from the installed fixture; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
+        : compactFailure(res, [...missing, ...failedStdout, agentAllRuntime.ok ? null : agentAllRuntime.details, visualQaRuntime.ok ? null : visualQaRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
 }
 
-function checkCodexSequentialRuntime(target) {
+function checkCodexAgentAllSequentialRuntime(target) {
   const helperRel = ".codex/skills/agent-all-codex/lib/sequential-dispatch.mjs";
   const helperPath = resolve(target, helperRel);
   if (!existsSync(helperPath)) {
@@ -521,6 +524,133 @@ if (parsed.commits.length !== 0) {
     ok: res.status === 0,
     details: res.status === 0
       ? "sequential agent-all-codex prompt helper runs from the installed fixture"
+      : compactFailure(res, [`${helperRel} runtime probe failed`]),
+  };
+}
+
+function checkCodexVisualQaSequentialRuntime(target) {
+  const helperRel = ".codex/skills/visual-qa-codex/lib/sequential-dispatch.mjs";
+  const helperPath = resolve(target, helperRel);
+  if (!existsSync(helperPath)) {
+    return { ok: false, details: `missing ${helperRel}` };
+  }
+
+  const script = `
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+
+const helperPath = resolve("${helperRel}");
+if (!existsSync(helperPath)) {
+  throw new Error("missing installed visual-qa sequential helper");
+}
+
+const {
+  buildPagePrompt,
+  buildSequentialPageInvocation,
+  buildSequentialPageShellCommand,
+  parsePageResult,
+  resolvePageSkillPath,
+} = await import(pathToFileURL(helperPath).href);
+
+function requireIncludes(label, body, needle) {
+  if (!body.includes(needle)) {
+    throw new Error(label + " missing " + needle);
+  }
+}
+
+function requireOmits(label, body, needle) {
+  if (body.includes(needle)) {
+    throw new Error(label + " unexpectedly included " + needle);
+  }
+}
+
+const page = {
+  name: "home",
+  path: "/",
+  breakpoints: [{ name: "desktop", width: 1440, height: 900 }],
+};
+const prompt = buildPagePrompt({
+  page,
+  slugDir: "docs/visual-qa/release-smoke",
+  baseUrl: "http://localhost:3000",
+  skillPath: ".codex/skills/visual-qa-page/SKILL.md",
+});
+requireIncludes("page prompt", prompt, "PAGE_NAME: home");
+requireIncludes("page prompt", prompt, "BASE_URL:  http://localhost:3000");
+requireIncludes("page prompt", prompt, "OUTPUT_DIR: docs/visual-qa/release-smoke/home/");
+requireIncludes("page prompt", prompt, "End with a JSON line summarizing the page");
+
+const shell = buildSequentialPageShellCommand({
+  page,
+  slugDir: "docs/visual-qa/release-smoke",
+  baseUrl: "http://localhost:3000",
+  codexBin: "codex",
+  projectRoot: process.cwd(),
+});
+requireIncludes("visual-qa command", shell.command, "'codex' 'exec'");
+requireIncludes("visual-qa skill path", shell.skillPath, ".codex/skills/visual-qa-page/SKILL.md");
+requireOmits("visual-qa command", shell.command, "--prompt");
+requireOmits("visual-qa command", shell.command, "--skill");
+
+const invocation = buildSequentialPageInvocation({
+  page,
+  slugDir: "docs/visual-qa/release-smoke",
+  baseUrl: "http://localhost:3000",
+  codexBin: "codex",
+  projectRoot: process.cwd(),
+});
+if (invocation.argv.length !== 3) {
+  throw new Error("visual-qa invocation argv length mismatch");
+}
+if (invocation.argv[0] !== "codex" || invocation.argv[1] !== "exec") {
+  throw new Error("visual-qa invocation must use codex exec");
+}
+if (invocation.argv.includes("--prompt") || invocation.argv.includes("--skill")) {
+  throw new Error("visual-qa invocation used unsupported prompt or skill flags");
+}
+requireIncludes("visual-qa invocation prompt", invocation.argv[2], "PAGE_NAME: home");
+requireIncludes("visual-qa invocation prompt", invocation.argv[2], "OUTPUT_DIR: docs/visual-qa/release-smoke/home/");
+
+const resolvedSkill = resolvePageSkillPath(process.cwd());
+requireIncludes("resolved page skill", resolvedSkill, ".codex/skills/visual-qa-page/SKILL.md");
+
+const parsed = parsePageResult([
+  "page capture log",
+  JSON.stringify({
+    page: "home",
+    status: "completed",
+    captures: ["docs/visual-qa/release-smoke/home/desktop.png"],
+    analyses: ["docs/visual-qa/release-smoke/home/desktop.analysis.json"],
+    errors: [],
+  }),
+].join("\\n"));
+if (parsed.page !== "home") {
+  throw new Error("parsed page mismatch");
+}
+if (parsed.status !== "completed") {
+  throw new Error("parsed status mismatch");
+}
+if (parsed.captures[0] !== "docs/visual-qa/release-smoke/home/desktop.png") {
+  throw new Error("parsed captures mismatch");
+}
+if (parsed.analyses[0] !== "docs/visual-qa/release-smoke/home/desktop.analysis.json") {
+  throw new Error("parsed analyses mismatch");
+}
+if (parsed.errors.length !== 0) {
+  throw new Error("parsed errors mismatch");
+}
+`;
+
+  const res = spawnSync(process.execPath, ["--input-type=module", "--eval", script], {
+    cwd: target,
+    encoding: "utf-8",
+  });
+
+  return {
+    ok: res.status === 0,
+    details: res.status === 0
+      ? "sequential visual-qa-codex page helper runs from the installed fixture"
       : compactFailure(res, [`${helperRel} runtime probe failed`]),
   };
 }

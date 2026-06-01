@@ -1,7 +1,7 @@
 # CLI runtime verification checklist
 
 **Date:** 2026-05-18
-**Last refreshed:** 2026-06-01 for the release-smoke verified Codex surface, Codex release fixture runtime probe, and Claude/Codex command-surface audit
+**Last refreshed:** 2026-06-01 for the release-smoke verified Codex surface, Codex agent-all/visual-qa release fixture runtime probes, and Claude/Codex command-surface audit
 **Status:** Current release handoff. Deterministic assertions belong in tests; this checklist keeps only host-runtime observations.
 
 ## Automated Gate First
@@ -26,6 +26,7 @@ The fast smoke gate verifies:
 - Codex install renderers for operational and lite profiles.
 - Codex floor and visual-qa sequential dispatch contracts.
 - Release fixture smoke imports the installed fixture's sequential agent-all-codex prompt helper and validates implementer/reviewer prompt contracts plus changedFiles/verification parsing.
+- Release fixture smoke imports the installed fixture's sequential visual-qa-codex page helper and validates page prompt contracts, positional argv, captures parsing, and analyses parsing.
 - Codex CLI live probe for the positional prompt interface: `codex exec [OPTIONS] [PROMPT]`.
 - Vendored lib sync.
 

@@ -16,8 +16,9 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.claudeMarketplace.summary, /Claude marketplace dry-run: ok/);
   assert.match(result.checks.claudeRendered.summary, /Claude rendered fixture: ok/);
   assert.match(result.checks.claudeLite.summary, /Claude lite fixture: ok/);
-  assert.match(result.checks.codexOperational.summary, /Codex operational fixture: ok \(14\/14 artifacts\)/);
+  assert.match(result.checks.codexOperational.summary, /Codex operational fixture: ok \(15\/15 artifacts\)/);
   assert.match(result.checks.codexOperational.details, /sequential agent-all-codex prompt helper runs from the installed fixture/);
+  assert.match(result.checks.codexOperational.details, /sequential visual-qa-codex page helper runs from the installed fixture/);
   assert.match(result.checks.codexOperational.details, /positional argv omits unsupported --prompt\/--skill flags/);
   assert.match(result.checks.codexLite.summary, /Codex lite fixture: ok/);
 });

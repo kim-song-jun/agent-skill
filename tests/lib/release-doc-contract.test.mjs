@@ -274,6 +274,7 @@ test("Codex runtime specs describe the current sequential surface instead of sta
   const runtimeChecklist = read("docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md");
   assert.match(runtimeChecklist, /release-smoke\.sh --fast --with-live-cli/);
   assert.match(runtimeChecklist, /release fixture smoke[\s\S]{0,260}installed fixture[\s\S]{0,260}sequential agent-all-codex prompt helper/i);
+  assert.match(runtimeChecklist, /release fixture smoke[\s\S]{0,360}installed fixture[\s\S]{0,360}sequential visual-qa-codex page helper/i);
   assert.match(runtimeChecklist, /codex exec[\s\S]{0,180}\[PROMPT\]/);
   assert.match(runtimeChecklist, /Manual Host UX Observation/i);
   assert.match(runtimeChecklist, /prompt-level|sequential/i);
@@ -296,6 +297,9 @@ test("Codex runtime specs describe the current sequential surface instead of sta
 
   const agentAllSpec = read("docs/superpowers/specs/2026-05-18-agent-all-codex-impl-spec.md");
   assert.match(agentAllSpec, /release fixture smoke[\s\S]{0,260}installed fixture[\s\S]{0,260}sequential agent-all-codex prompt helper/i);
+
+  const visualQaSpec = read("docs/superpowers/specs/2026-05-18-visual-qa-codex-impl-spec.md");
+  assert.match(visualQaSpec, /release fixture smoke[\s\S]{0,360}installed fixture[\s\S]{0,360}sequential visual-qa-codex page helper/i);
 
   for (const path of [
     "docs/superpowers/specs/2026-05-21-decision-surfacing-and-policy-hooks-design.md",

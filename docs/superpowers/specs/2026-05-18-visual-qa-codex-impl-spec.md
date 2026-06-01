@@ -76,6 +76,7 @@ Current automated coverage lives in:
 - `tests/lib/visual-qa-cross-platform.test.mjs`
 - `tests/lib/visual-qa-vendored-libs.test.mjs`
 - `tests/lib/release-install-scripts.test.mjs`
+- `tests/lib/release-fixture-smoke.test.mjs`
 - `tests/lib/release-doc-contract.test.mjs`
 - `tests/lib/codex-current-hook-schema.test.mjs`
 
@@ -86,13 +87,17 @@ Key assertions:
 - The unsupported legacy hook strategy fails early.
 - Installed Codex floor artifacts include runnable visual-QA skill directories.
 - The generated visual-QA seed config matches the comprehensive-mode contract.
+- Release fixture smoke imports the installed fixture's sequential visual-qa-codex page helper and validates page prompt contracts, positional argv, captures parsing, and analyses parsing.
 - Live release smoke probes `codex exec [OPTIONS] [PROMPT]`.
 
 ## Automated Runtime Evidence
 
 Automated contracts cover the source sequential dispatcher, generated Codex
 visual-QA artifacts, release install renderers, and the live `codex exec
-[OPTIONS] [PROMPT]` surface.
+[OPTIONS] [PROMPT]` surface. The release fixture smoke gate also installs into
+a fresh Codex operational fixture, imports the installed fixture's sequential
+visual-qa-codex page helper, and validates page prompt contracts, positional
+argv, captures parsing, and analyses parsing.
 
 ## Manual Host UX Observation
 
