@@ -98,6 +98,9 @@ run_step "focused release contracts" \
     tests/lib/debug-artifacts.test.mjs \
     tests/lib/visual-qa-vendored-libs.test.mjs \
     tests/agent-all/lib/changed-file-classifier.test.mjs \
+    tests/agent-all/lib/gate-plan.test.mjs \
+    tests/agent-all/policy/coordinator-audit-validator.test.mjs \
+    tests/agent-all/policy/hook-router-coordinator.test.mjs \
     tests/lib/agent-all-codex.test.mjs \
     tests/lib/agent-all-codex-dispatch.test.mjs \
     tests/lib/visual-qa-codex-dispatch.test.mjs \

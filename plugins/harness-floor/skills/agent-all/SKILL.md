@@ -66,6 +66,7 @@ Runs a complete multi-agent pipeline from a free-form prompt or an existing task
 
 - `lib/config-loader.mjs` — `loadConfig(path)` → `{ok, config | errors, warning?}`. Returns built-in `DEFAULTS` when path missing.
 - `lib/wave-builder.mjs` — `buildWaves(tasks, waveConfig)` → array of waves.
+- `lib/gate-plan.mjs` — `buildGatePlan({files,gates,taskId,title})` → ordered coordinator/reviewer dispatches with audit-token contracts.
 - `lib/loop-evaluator.mjs` — `evaluateLoop(state, limits, runner)` → `{action: "break"|"continue"|"exhausted", consecutivePass?, exitCode?}`.
 
 ## On error

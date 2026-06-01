@@ -18,10 +18,10 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.ok, true);
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
-  assert.equal(result.platforms.claude.checks.length, 24);
-  assert.equal(result.platforms.codex.checks.length, 34);
-  assert.match(result.platforms.claude.summary, /Claude: ok \(24\/24 checks\)/);
-  assert.match(result.platforms.codex.summary, /Codex: ok \(34\/34 checks\)/);
+  assert.equal(result.platforms.claude.checks.length, 27);
+  assert.equal(result.platforms.codex.checks.length, 36);
+  assert.match(result.platforms.claude.summary, /Claude: ok \(27\/27 checks\)/);
+  assert.match(result.platforms.codex.summary, /Codex: ok \(36\/36 checks\)/);
   assert.ok(result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh exists"));
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh matches release contract"),
@@ -190,8 +190,11 @@ test("release audit fails incomplete Claude slash-command skill surfaces", () =>
   writeRel(
     root,
     "plugins/harness-floor/skills/agent-all/phases/4-gate.md",
-    "classifyChangedFiles(files)\nQA_AUDIT\nVERIFICATION_AUDIT\n3 retry cycles\n",
+    "buildGatePlan\nclassifyChangedFiles(files)\nORCHESTRATION_AUDIT\nQA_AUDIT\nVERIFICATION_AUDIT\n3 retry cycles\n",
   );
+  writeRel(root, "plugins/harness-floor/bin/floor-policy-hook.mjs", "");
+  writeRel(root, "plugins/harness-floor/skills/agent-all/lib/gate-plan.mjs", "");
+  writeRel(root, "plugins/harness-floor/skills/agent-all/lib/policy/coordinator-audit-validator.mjs", "");
   writeRel(
     root,
     "plugins/harness-floor/skills/visual-qa/SKILL.md",
@@ -297,7 +300,13 @@ test("release audit fails incomplete Codex slash-command skill surfaces", () => 
   writeRel(
     root,
     "plugins/harness-floor-codex/skills/agent-all-codex/phases/4-gate.md",
-    "classifyChangedFiles(files)\nQA_AUDIT\nVERIFICATION_AUDIT\nunsupported legacy agent hook\n",
+    "buildGatePlan\nclassifyChangedFiles(files)\nORCHESTRATION_AUDIT\nQA_AUDIT\nVERIFICATION_AUDIT\nunsupported legacy agent hook\n",
+  );
+  writeRel(root, "plugins/harness-floor-codex/skills/agent-all-codex/lib/gate-plan.mjs", "");
+  writeRel(
+    root,
+    "plugins/harness-floor-codex/skills/agent-all-codex/lib/policy/coordinator-audit-validator.mjs",
+    "",
   );
   writeRel(
     root,

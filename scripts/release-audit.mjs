@@ -23,7 +23,10 @@ const PLATFORM_CONTRACTS = {
       "plugins/harness-builder/skills/agent-init/templates/AGENTS.md.hbs",
       "plugins/harness-builder/skills/agent-init/templates/settings.local.json.hbs",
       "plugins/harness-builder/skills/agent-init/templates/hooks/agent-policy-hook.mjs",
+      "plugins/harness-floor/bin/floor-policy-hook.mjs",
       "plugins/harness-floor/skills/agent-all/SKILL.md",
+      "plugins/harness-floor/skills/agent-all/lib/gate-plan.mjs",
+      "plugins/harness-floor/skills/agent-all/lib/policy/coordinator-audit-validator.mjs",
       "plugins/harness-floor/skills/visual-qa/SKILL.md",
       "plugins/harness-thrift/skills/thrift/SKILL.md",
     ],
@@ -95,7 +98,7 @@ const PLATFORM_CONTRACTS = {
       },
       {
         file: "plugins/harness-floor/skills/agent-all/phases/4-gate.md",
-        patterns: [/classifyChangedFiles\(files\)/, /QA_AUDIT/, /VERIFICATION_AUDIT/, /3 retry cycles/],
+        patterns: [/buildGatePlan/, /classifyChangedFiles\(files\)/, /ORCHESTRATION_AUDIT/, /QA_AUDIT/, /VERIFICATION_AUDIT/, /3 retry cycles/],
       },
       {
         file: "scripts/install-platform.sh",
@@ -126,6 +129,8 @@ const PLATFORM_CONTRACTS = {
       "plugins/harness-builder-codex/skills/codex-init/templates/codex-config.toml.hbs",
       "plugins/harness-builder-codex/skills/codex-init/templates/hooks/agent-policy-hook.mjs",
       "plugins/harness-floor-codex/skills/agent-all-codex/SKILL.md",
+      "plugins/harness-floor-codex/skills/agent-all-codex/lib/gate-plan.mjs",
+      "plugins/harness-floor-codex/skills/agent-all-codex/lib/policy/coordinator-audit-validator.mjs",
       "plugins/harness-floor-codex/skills/visual-qa-codex/SKILL.md",
       "plugins/harness-thrift-codex/skills/thrift-codex/SKILL.md",
       "plugins/harness-debug-codex/.claude-plugin/plugin.json",
@@ -253,7 +258,7 @@ const PLATFORM_CONTRACTS = {
       },
       {
         file: "plugins/harness-floor-codex/skills/agent-all-codex/phases/4-gate.md",
-        patterns: [/classifyChangedFiles\(files\)/, /QA_AUDIT/, /VERIFICATION_AUDIT/, /unsupported legacy agent hook/],
+        patterns: [/buildGatePlan/, /classifyChangedFiles\(files\)/, /ORCHESTRATION_AUDIT/, /QA_AUDIT/, /VERIFICATION_AUDIT/, /unsupported legacy agent hook/],
       },
       {
         file: "scripts/install-platform.sh",

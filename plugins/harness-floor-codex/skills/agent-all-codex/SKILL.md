@@ -90,6 +90,13 @@ Additional Codex-specific:
 | Prompt user | `ask_user` |
 | Persist plan/state | `apply_patch` to `.agent-all-state.json` |
 
+## Lib modules
+
+- `lib/dispatch-strategy.mjs` — detect current Codex sequential dispatch support.
+- `lib/sequential-dispatch.mjs` — build sequential implementer/reviewer prompts.
+- `lib/gate-plan.mjs` — `buildGatePlan({files,gates,taskId,title})` → ordered coordinator/reviewer dispatches with audit-token contracts.
+- `lib/changed-file-classifier.mjs` — source-mirrored changed-file routing for reviewer personas and coordinator escalation.
+
 ## On error
 
 Same as Claude port. Additional Codex-specific notes:

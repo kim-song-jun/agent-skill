@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { classifyChangedFiles as classifyClaudeChangedFiles } from "../../plugins/harness-floor/skills/agent-all/lib/changed-file-classifier.mjs";
+import { buildGatePlan as buildClaudeGatePlan } from "../../plugins/harness-floor/skills/agent-all/lib/gate-plan.mjs";
 import { classifyChangedFiles as classifyCodexChangedFiles } from "../../plugins/harness-floor-codex/skills/agent-all-codex/lib/changed-file-classifier.mjs";
+import { buildGatePlan as buildCodexGatePlan } from "../../plugins/harness-floor-codex/skills/agent-all-codex/lib/gate-plan.mjs";
 
 const SKILL_ROOT = "plugins/harness-floor-codex/skills/agent-all-codex";
 
@@ -65,6 +67,8 @@ test("agent-all-codex: phase 4 uses changed-file classifier persona gates", () =
   const body = readFileSync(resolve(SKILL_ROOT, "phases/4-gate.md"), "utf-8");
 
   assert.match(body, /changed-file-classifier\.mjs/);
+  assert.match(body, /gate-plan\.mjs/);
+  assert.match(body, /buildGatePlan/);
   assert.match(body, /classifyChangedFiles\(files\)/);
   assert.match(body, /coordinators/);
   assert.match(body, /orchestrator/);
@@ -76,6 +80,7 @@ test("agent-all-codex: phase 4 uses changed-file classifier persona gates", () =
   assert.match(body, /security-reviewer/);
   assert.match(body, /data-reviewer/);
   assert.match(body, /integration-dev/);
+  assert.match(body, /ORCHESTRATION_AUDIT: passed\|failed\|skipped/);
   assert.match(body, /QA_AUDIT: passed\|failed\|skipped/);
   assert.match(body, /VERIFICATION_AUDIT: passed\|failed\|skipped/);
   assert.match(body, /Tech success ≠ user-flow success|Tech success != user-flow success/);
@@ -95,6 +100,22 @@ test("agent-all-codex: changed-file classifier matches Claude source of truth", 
       classifyCodexChangedFiles(files),
       classifyClaudeChangedFiles(files),
       `classifier mismatch for ${files.join(", ")}`,
+    );
+  }
+});
+
+test("agent-all-codex: gate plan matches Claude source of truth", () => {
+  const cases = [
+    ["package.json", "pnpm-lock.yaml", ".github/workflows/test.yml"],
+    ["src/components/Button.tsx"],
+    ["src/api/http-client.ts", "apps/users/views.py", "backend/users/models.py"],
+  ];
+
+  for (const files of cases) {
+    assert.deepEqual(
+      buildCodexGatePlan({ files, gates: { specReview: true, qualityReview: true }, taskId: "9", title: "Gate" }),
+      buildClaudeGatePlan({ files, gates: { specReview: true, qualityReview: true }, taskId: "9", title: "Gate" }),
+      `gate plan mismatch for ${files.join(", ")}`,
     );
   }
 });

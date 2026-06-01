@@ -20,32 +20,42 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
    ```
    `wave.baseCommit` is the pre-wave commit captured by Phase 3 before implementation. For older state without `baseCommit`, fall back to `git diff <wave.startCommit>^..<wave.endCommit>` and `git diff --name-only <wave.startCommit>^..<wave.endCommit>` when `wave.startCommit` has a parent. If `wave.startCommit` is a root commit with no parent, use the empty-tree hash (`4b825dc642cb6eb9a060e54bf8d69288fbee4904`) as the diff base.
 
-2. If `gates.specReview`:
-   - Dispatch the generated `reviewer` subagent with `mode=spec`. Prompt includes: the plan section for this wave, the diff, and a request to flag any spec deviations.
-   - Use description prefix `Spec Review Task <N>: <title>` so the `floor-policy` hook routes the task through the technical review audit validator.
+2. Build the deterministic gate plan:
+   ```
+   import { buildGatePlan } from "./lib/gate-plan.mjs";
+   const gatePlan = buildGatePlan({ files, gates: config.gates, taskId, title });
+   ```
+   `gatePlan.dispatches` is the source of truth for Phase 4 ordering.
+   `lib/gate-plan.mjs` wraps `lib/changed-file-classifier.mjs` and uses
+   `classifyChangedFiles(files)` internally, dispatches returned coordinators
+   before reviewers, and includes the description prefix plus required audit
+   token for each dispatch.
 
-3. If `gates.qualityReview`:
-   - Load `const { reviewers, coordinators } = classifyChangedFiles(files)` from `lib/changed-file-classifier.mjs`, where `files` is the `git diff --name-only <wave.baseCommit>..<wave.endCommit>` output, or the compatibility fallback output described above.
-   - Dispatch returned `coordinators` first. Today this is `orchestrator` for shared manifests/lockfiles, CI/build config, or broad non-doc changes. Prompt it to identify HOT files, unsafe ownership overlap, retry sequencing, and pathspec commit risk before reviewer dispatch.
-   - Dispatch one reviewer subagent per returned `reviewers` persona.
-   - The classifier always returns the base `reviewer` and `verification-reviewer` personas.
-   - The classifier adds `design-reviewer`, `qa-reviewer`, `security-reviewer`, `data-reviewer`, and `integration-dev` only when the changed-file set requires them.
-   - The classifier returns `coordinators: ["orchestrator"]` when the changed-file set needs wave ownership review rather than another audit reviewer.
-   - Description prefixes:
-     - `reviewer`: `Review Task <N>: <title>`
-     - `verification-reviewer`: `Verification Review Task <N>: <title>`
-     - `qa-reviewer`: `QA Review Task <N>: <title>`
-     - Other personas: `<Persona> Review Task <N>: <title>`
-   - Prompt includes: the wave's plan section, the diff, the changed-file list, and persona context when available.
-   - `qa-reviewer` audits **user-side flow only** — completeness of scenarios, persona-perspective edge cases, would-this-confuse-the-user concerns. NOT tech-stack verification.
-   - QA audit token: `qa-reviewer` must emit `QA_AUDIT: passed|failed|skipped`. The `QA ` description prefix routes the `floor-policy` hook to the user-side directive + `QA_AUDIT` token validation.
-   - Verification audit token: `verification-reviewer` must emit `VERIFICATION_AUDIT: passed|failed|skipped`.
-   - Other personas dispatched with `<Persona> Review Task` descriptions must also emit `VERIFICATION_AUDIT: passed|failed|skipped`, because the `floor-policy` hook routes those review tasks through the same technical review audit validator.
-   - Persona-specific reviewers should emit their existing reviewer verdict format and issue severities before the audit token.
+3. Dispatch every `gatePlan.dispatches[]` entry in order:
+   - `kind=coordinator`, `role=orchestrator`: description prefix
+     `Orchestration Gate Task <N>: <title>`. Prompt it to identify HOT files,
+     unsafe ownership overlap, retry sequencing, and pathspec commit risk before
+     reviewer dispatch. It must emit `ORCHESTRATION_AUDIT: passed|failed|skipped`.
+   - `mode=spec`: description prefix `Spec Review Task <N>: <title>`. Prompt
+     includes the plan section for this wave, the diff, and a request to flag
+     spec deviations.
+   - `mode=quality`: dispatch one reviewer subagent per returned reviewer
+     persona. Prompt includes the wave's plan section, diff, changed-file list,
+     and persona context when available.
+   - `qa-reviewer` audits **user-side flow only** — completeness of scenarios,
+     persona-perspective edge cases, would-this-confuse-the-user concerns. NOT
+     tech-stack verification. It must emit `QA_AUDIT: passed|failed|skipped`.
+   - Technical reviewers must emit `VERIFICATION_AUDIT: passed|failed|skipped`.
+   - Other personas (`data-reviewer`, `design-reviewer`, `integration-dev`,
+     `security-reviewer`) are technical reviewers for Phase 4 and must emit
+     `VERIFICATION_AUDIT: passed|failed|skipped`.
+   - Persona-specific reviewers should emit their existing reviewer verdict
+     format and issue severities before the audit token.
 
 4. Collect verdicts. Bucket issues by severity (`critical | major | minor`).
 
 4b. **Classifier-based gate.** Wave passes Phase 4 iff:
+   - `ORCHESTRATION_AUDIT ∈ {passed, skipped}` for every coordinator dispatch, AND
    - `VERIFICATION_AUDIT ∈ {passed, skipped}` for the `verification-reviewer` dispatch, AND
    - `QA_AUDIT ∈ {passed, skipped}` for the `qa-reviewer` dispatch when the classifier returned `qa-reviewer`, AND
    - no returned coordinator reports HOT-file ownership conflicts, unsafe retry sequencing, or pathspec commit risk, AND

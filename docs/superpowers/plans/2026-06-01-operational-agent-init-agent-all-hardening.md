@@ -19,16 +19,16 @@ Implemented through Task 12 as of 2026-06-01. The detailed TDD task list below i
 Completed scope:
 
 - Tasks 1-12 are implemented in repo artifacts: sentinel merge, folder guides, foundation checks, task ledger, pathspec policy, Claude/Codex/Gemini operational init surfaces, agent-all handoff runtime, changed-file reviewer routing, foundation update planning, docs, and release audit.
-- Latest hardening addition: Claude/Codex operational orchestration contracts, role gate matrices, configured QA persona propagation, doctor validation for stale operational guidance, shell-callable Claude `bin/init.mjs` fixture bootstrap with post-install doctor parity, `install-platform.sh --platform=claude` project bootstrap and uninstall coverage, release-fixture evidence for persona-aware reviewer scaffolds, project-local cleanup contracts, plugin-local `clean.mjs` entrypoints, `clean.mjs --help` command-surface coverage, `install-platform.sh --platform=codex --uninstall`, Codex debug project-local installation and post-install doctor coverage through `install-platform.sh --platform=codex --theme=all|debug`, Codex debug-only fresh fixture coverage, and release-audit coverage for the shared Claude/Codex project installer wrapper. This sits alongside slash-command release audit coverage, Codex command-surface checks, `scripts/release-fixture-smoke.mjs`, and the Claude/Codex release readiness matrix for marketplace manifests, required init/floor/thrift/debug files, hook schema expectations, reviewer routing, audit tokens, and root role routing.
+- Latest hardening addition: Claude/Codex operational orchestration contracts, deterministic Phase 4 `buildGatePlan` dispatch ordering, coordinator-first `orchestrator` gate review, `ORCHESTRATION_AUDIT` policy validation, role gate matrices, configured QA persona propagation, doctor validation for stale operational guidance, shell-callable Claude `bin/init.mjs` fixture bootstrap with post-install doctor parity, `install-platform.sh --platform=claude` project bootstrap and uninstall coverage, release-fixture evidence for persona-aware reviewer scaffolds, project-local cleanup contracts, plugin-local `clean.mjs` entrypoints, `clean.mjs --help` command-surface coverage, `install-platform.sh --platform=codex --uninstall`, Codex debug project-local installation and post-install doctor coverage through `install-platform.sh --platform=codex --theme=all|debug`, Codex debug-only fresh fixture coverage, and release-audit coverage for the shared Claude/Codex project installer wrapper. This sits alongside slash-command release audit coverage, Codex command-surface checks, `scripts/release-fixture-smoke.mjs`, and the Claude/Codex release readiness matrix for marketplace manifests, required init/floor/thrift/debug files, hook schema expectations, reviewer routing, audit tokens, and root role routing.
 - Current release-doc contract pins stale test-count regressions so future changes must update public verification evidence.
 
 Verification evidence:
 
 - `node scripts/release-audit.mjs`: Claude/Codex readiness checks passing.
 - `node scripts/release-fixture-smoke.mjs`: Claude marketplace dry-run, Claude operational/lite render output, and Codex operational/lite fresh fixtures passing.
-- `node --test`: 1729/1729 passing.
-- `./scripts/release-smoke.sh --fast --with-live-cli`: 393/393 passing with Claude Code and Codex CLI live probes.
-- `node scripts/sync-lib.mjs --check`: 40 vendored files match source.
+- `node --test`: 1742/1742 passing.
+- `./scripts/release-smoke.sh --fast --with-live-cli`: 406/406 passing with Claude Code and Codex CLI live probes.
+- `node scripts/sync-lib.mjs --check`: 42 vendored files match source.
 
 ## Scope Decomposition
 

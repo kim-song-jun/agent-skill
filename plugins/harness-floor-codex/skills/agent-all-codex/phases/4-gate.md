@@ -21,38 +21,36 @@ For each wave with `status === "completed"`:
    `wave.startCommit` has a parent. If `wave.startCommit` is a root commit
    with no parent, use the empty-tree hash
    (`4b825dc642cb6eb9a060e54bf8d69288fbee4904`) as the diff base.
-2. If `gates.specReview`: dispatch the `reviewer` skill (via the same
-   strategy as Phase 3) with `mode=spec`, passing the diff + plan section.
-3. If `gates.qualityReview`:
-   - Load `const { reviewers, coordinators } = classifyChangedFiles(files)` from
-     `lib/changed-file-classifier.mjs`, where `files` is the
-     `git diff --name-only <wave.baseCommit>..<wave.endCommit>` output, or the
-     compatibility fallback output described above.
-   - Invoke returned `coordinators` first. Today this is `orchestrator` for
-     shared manifests/lockfiles, CI/build config, or broad non-doc changes.
-     Prompt it to identify HOT files, unsafe ownership overlap, retry
-     sequencing, and pathspec commit risk before reviewer dispatch.
-   - Dispatch one sequential review invocation per returned persona by reading
-     `.codex/skills/<persona>/SKILL.md`.
-   - The classifier always returns `reviewer` and `verification-reviewer`.
-   - It adds `qa-reviewer`, `design-reviewer`, `security-reviewer`,
-     `data-reviewer`, and `integration-dev` when the changed-file set requires
-     user-flow, UI, security, data, or cross-stack review.
-   - It returns `coordinators: ["orchestrator"]` when the changed-file set
-     needs wave ownership review rather than another audit reviewer.
-   - Prompt each persona with `lib/sequential-dispatch.mjs`
-     `buildReviewPrompt`, including the wave plan section, diff, changed-file
-     list, and persona context. Preserve Codex's sequential strategy; do not
-     use the unsupported legacy agent hook.
+2. Build the deterministic gate plan:
+   ```
+   import { buildGatePlan } from "./lib/gate-plan.mjs";
+   const gatePlan = buildGatePlan({ files, gates: config.gates, taskId, title });
+   ```
+   `gatePlan.dispatches` is the source of truth for Phase 4 ordering.
+   `lib/gate-plan.mjs` wraps `lib/changed-file-classifier.mjs` and uses
+   `classifyChangedFiles(files)` internally, invokes returned coordinators
+   before reviewers, and includes the description prefix plus required audit
+   token for each dispatch.
+3. Dispatch every `gatePlan.dispatches[]` entry in order:
+   - `kind=coordinator`, `role=orchestrator`: prompt `.codex/skills/orchestrator/SKILL.md`
+     first. Ask it to identify HOT files, unsafe ownership overlap, retry
+     sequencing, and pathspec commit risk before reviewer dispatch. It must emit
+     `ORCHESTRATION_AUDIT: passed|failed|skipped`.
+   - `mode=spec`: invoke `reviewer` with the plan section, diff, and a request
+     to flag spec deviations.
+   - `mode=quality`: invoke one sequential review per returned reviewer persona
+     by reading `.codex/skills/<persona>/SKILL.md`.
+   - Prompt each persona with `lib/sequential-dispatch.mjs` `buildReviewPrompt`,
+     including the wave plan section, diff, changed-file list, and persona
+     context. Preserve Codex's sequential strategy; do not use the unsupported legacy agent hook.
    - `qa-reviewer` audits user-side flow only: missing scenarios, persona
      confusion, accessibility-visible behavior, and acceptance gaps. NOT
-     tech-stack verification.
-   - QA audit token: `qa-reviewer` must emit
-     `QA_AUDIT: passed|failed|skipped`.
-   - Verification audit token: `verification-reviewer` must emit
-     `VERIFICATION_AUDIT: passed|failed|skipped`.
+     tech-stack verification. It must emit `QA_AUDIT: passed|failed|skipped`.
+   - Technical reviewers must emit `VERIFICATION_AUDIT: passed|failed|skipped`.
 4. Collect verdicts. Bucket issues by severity.
 4b. **Classifier-based gate.** Wave passes Phase 4 iff:
+   - `ORCHESTRATION_AUDIT` is `passed` or `skipped` for every coordinator
+     dispatch, AND
    - `VERIFICATION_AUDIT` is `passed` or `skipped` for
      `verification-reviewer`, AND
    - `QA_AUDIT` is `passed` or `skipped` for `qa-reviewer` when the classifier

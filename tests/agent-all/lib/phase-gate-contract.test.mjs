@@ -35,6 +35,8 @@ test("phase 4 diffs from baseCommit and includes the first wave commit in fallba
 
 test("phase 4 routes spec review through the generated reviewer persona", () => {
   assert.doesNotMatch(phase4, /spec-reviewer/);
-  assert.match(phase4, /`reviewer` subagent[\s\S]{0,160}mode=spec/i);
+  assert.match(phase4, /buildGatePlan/);
+  assert.match(phase4, /classifyChangedFiles\(files\)/);
+  assert.match(phase4, /mode=spec/i);
   assert.match(phase4, /Spec Review Task <N>: <title>/);
 });
