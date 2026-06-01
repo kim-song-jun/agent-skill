@@ -262,7 +262,7 @@ The protocol skips entirely. Verification + reviewer-audit hook validation conti
 | Platform | Mechanism | Strength |
 |---|---|---|
 | Claude Code | `floor-policy` hook (PreToolUse + PostToolUse on Task) | 🟢 Hard |
-| Copilot CLI | `.github/hooks/decision-protocol.json` | 🟢 Hard |
+| Copilot CLI | `.github/agent-all/decision-protocol.md`; optional hook helper after manual hook review | 🟡 Prompt-level |
 | Codex CLI | Prompt-level/sequential floor workflow; command hooks only for shell/policy events | 🟡 Prompt-level |
 | Cursor | `.cursor/rules/decision-protocol.mdc` (always-loaded rule) | 🟡 Soft |
 | Gemini CLI | `.gemini/agent-all-decision-protocol.md` (referenced from GEMINI.md) | 🟡 Soft |

@@ -19,6 +19,14 @@ test("usage docs present --lite as canonical and retire Codex agent-hook hard-en
     assert.match(body, /\.claude\/agents\/\*\.md[\s\S]{0,420}(security-reviewer|보안)/i);
     assert.match(body, /\.claude\/agents\/\*\.md[\s\S]{0,420}(data-reviewer|데이터)/i);
   }
+
+  const usageEn = read("docs/USAGE.md");
+  assert.match(usageEn, /\| Copilot CLI \|[^|]*(prompt-level|optional hook helper|manual hook review)[^|]*\| 🟡/i);
+  assert.doesNotMatch(usageEn, /\| Copilot CLI \|[^|]*\| 🟢 Hard \|/);
+
+  const usageKo = read("docs/USAGE.ko.md");
+  assert.match(usageKo, /\| Copilot CLI \|[^|]*(프롬프트|선택적 hook helper|수동 hook 검토)[^|]*\| 🟡/i);
+  assert.doesNotMatch(usageKo, /\| Copilot CLI \|[^|]*\| 🟢 Hard \|/);
 });
 
 test("usage docs describe Codex lite setup paths", () => {
@@ -74,13 +82,17 @@ test("readme files describe release-safe update and per-platform install paths",
   assert.match(english, /scripts\/update\.sh[\s\S]{0,420}force-updates already-installed selected plugins/i);
   assert.match(english, /--cli=cursor\|copilot\|codex\|gemini/);
   assert.match(english, /install-platform\.sh[\s\S]{0,420}does not patch global CLI config files/i);
+  assert.match(english, /Copilot CLI[\s\S]{0,360}(prompt-level|optional hook helper|manual hook review)/i);
   assert.doesNotMatch(english, /target CLI installed.*config dir writable/i);
+  assert.doesNotMatch(english, /Hooks integrate with `gh copilot`|Copilot CLI get Task-level hard enforcement/i);
 
   const korean = read("README.ko.md");
   assert.match(korean, /scripts\/update\.sh[\s\S]{0,520}이미 설치된 선택 플러그인을 강제 업데이트/i);
   assert.match(korean, /--cli=cursor\|copilot\|codex\|gemini/);
   assert.match(korean, /install-platform\.sh[\s\S]{0,520}전역 CLI config 파일을 패치하지 않음/i);
+  assert.match(korean, /Copilot CLI[\s\S]{0,420}(프롬프트|선택적 hook helper|수동 hook 검토)/i);
   assert.doesNotMatch(korean, /config dir writable/i);
+  assert.doesNotMatch(korean, /Copilot CLI는 Task-level hard enforcement/i);
 });
 
 test("readme files describe VS Code Copilot as instructions-only", () => {

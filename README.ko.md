@@ -472,7 +472,7 @@ cd /tmp/agent-skill
 | 플랫폼 | 작성되는 파일 | 비고 |
 |---|---|---|
 | **Cursor** | `.cursor/rules/*.mdc`, `.cursor/agents/*.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | 모두 native. 병렬 subagent에 `is_background: true`. |
-| **Copilot CLI** | `.github/copilot-instructions.md`, `.github/hooks/*.json`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | hooks가 `gh copilot`과 통합. |
+| **Copilot CLI** | `.github/copilot-instructions.md`, `.github/hooks/*.json`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | Builder hook stub은 project-local; floor decision protocol은 기본 프롬프트 수준. 선택적 hook helper는 수동 hook 검토 필요. |
 | **VS Code Copilot** | `.github/copilot-instructions.md` | VS Code Copilot 확장이 이 파일을 자동 읽음. 이 editor-only 경로에는 floor, visual-qa, thrift, Copilot CLI 자동화 파일을 설치하지 않음. |
 | **Codex CLI** | `AGENTS.md`, `.codex/skills/<role>/SKILL.md`, `.codex/hooks/agent-policy-hook.mjs`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | `[mcp_servers.playwright]` 스니펫과 `[[hooks.PreToolUse]]` 같은 현재 command hook 스니펫을 stdout으로 출력. Floor 워크플로는 Codex command hook이 Claude Code의 Task-style subagent 표면을 제공하지 않으므로 프롬프트/순차 dispatch로 동작. |
 | **Gemini CLI** | `GEMINI.md`, `.gemini/skills/<role>/SKILL.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | `mcpServers` 스니펫이 stdout으로 출력 — `~/.gemini/settings.json`에 **수동 merge**. |
@@ -704,7 +704,7 @@ Decision-surfacing prompt와 패널이 다국어 지원. `.agent-all.json` `lang
 
 ## 알려진 한계
 
-- **Cursor / Gemini / VS Code Copilot은 decision-surfacing soft 강제만 가능.** 이 플랫폼들은 tool-call hook이 없어서 protocol이 rules / `GEMINI.md` / `copilot-instructions.md`에 prompt로만 주입됩니다. 비준수 subagent를 harness 레이어에서 차단할 수 없습니다. Claude Code와 Copilot CLI는 Task-level hard enforcement가 가능하고, Codex CLI는 현재 command hook으로 shell/policy 이벤트를 다루되 floor subagent 워크플로는 프롬프트/순차 방식입니다.
+- **Cursor / Copilot CLI / Gemini / VS Code Copilot의 decision-surfacing은 기본적으로 프롬프트/soft 수준입니다.** Cursor, Gemini, VS Code Copilot은 이 워크플로용 Task-style tool-call hook을 노출하지 않습니다. Copilot CLI는 선택적 hook helper를 제공하지만 `install-platform.sh`가 `~/.copilot/hooks.json`을 패치하지 않으므로 수동 hook 검토 후에만 사용하세요. Claude Code는 Task-level hard enforcement가 가능하고, Codex CLI는 현재 command hook으로 shell/policy 이벤트를 다루되 floor subagent 워크플로는 프롬프트/순차 방식입니다.
 
 - **Non-TTY auto-pick은 틀릴 수 있음.** 야간 루프는 모든 결정을 subagent의 `recommended_index`로 자동 해결. 잘못된 선택은 다음날에야 드러남. 모든 auto-pick은 `docs/agent-all/iter-<N>/decisions.md`에 reasoning과 함께 기록되어 다음 iteration plan에서 재검토 대상.
 

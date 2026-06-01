@@ -479,7 +479,7 @@ Default installs all three themes (builder + floor + thrift). Use `--theme=floor
 | Platform | Files written | Notes |
 |---|---|---|
 | **Cursor** | `.cursor/rules/*.mdc`, `.cursor/agents/*.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | All native. `is_background: true` on parallel subagents. |
-| **Copilot CLI** | `.github/copilot-instructions.md`, `.github/hooks/*.json`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | Hooks integrate with `gh copilot`. |
+| **Copilot CLI** | `.github/copilot-instructions.md`, `.github/hooks/*.json`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | Builder hook stubs are project-local; floor decision protocol is prompt-level by default. Optional hook helpers require manual hook review. |
 | **VS Code Copilot** | `.github/copilot-instructions.md` | VS Code Copilot extension reads this automatically. Floor, visual-qa, thrift, and Copilot CLI automation files are not installed for this editor-only path. |
 | **Codex CLI** | `AGENTS.md`, `.codex/skills/<role>/SKILL.md`, `.codex/hooks/agent-policy-hook.mjs`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | A `[mcp_servers.playwright]` snippet and current command-hook snippets such as `[[hooks.PreToolUse]]` are printed to stdout. Floor workflows use prompt-level/sequential dispatch because Codex command hooks do not expose Claude Code's Task-style subagent surface. |
 | **Gemini CLI** | `GEMINI.md`, `.gemini/skills/<role>/SKILL.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | A `mcpServers` snippet is printed to stdout — **merge manually** into `~/.gemini/settings.json`. |
@@ -711,7 +711,7 @@ Decision-surfacing prompts and panels are localized. Set `.agent-all.json` `lang
 
 ## Known limitations
 
-- **Cursor / Gemini / VS Code Copilot decision-surfacing enforcement is soft.** Those platforms don't expose tool-call hooks, so the protocol is prompt-injected via rules / `GEMINI.md` / `copilot-instructions.md`. A non-compliant subagent cannot be blocked at the harness layer. Claude Code and Copilot CLI get Task-level hard enforcement; Codex CLI uses current command hooks for shell/policy events, while floor subagent workflows remain prompt-level/sequential.
+- **Cursor / Copilot CLI / Gemini / VS Code Copilot decision-surfacing enforcement is prompt-level or soft by default.** Cursor, Gemini, and VS Code Copilot do not expose Task-style tool-call hooks for this workflow. Copilot CLI ships an optional hook helper, but `install-platform.sh` does not patch `~/.copilot/hooks.json`; use it only after manual hook review. Claude Code gets Task-level hard enforcement. Codex CLI uses current command hooks for shell/policy events, while floor subagent workflows remain prompt-level/sequential.
 
 - **Non-TTY auto-pick can be wrong.** Overnight runs auto-resolve every decision to the subagent's `recommended_index`. Mistakes only surface the next morning. Every auto-pick is logged with reasoning to `docs/agent-all/iter-<N>/decisions.md` so the next iteration's plan can flag past picks for re-review.
 

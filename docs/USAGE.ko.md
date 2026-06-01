@@ -261,7 +261,7 @@ Protocol 전체 스킵. Verification + reviewer-audit hook은 별도로 계속.
 | 플랫폼 | 메커니즘 | 강도 |
 |---|---|---|
 | Claude Code | `floor-policy` hook (PreToolUse + PostToolUse on Task) | 🟢 Hard |
-| Copilot CLI | `.github/hooks/decision-protocol.json` | 🟢 Hard |
+| Copilot CLI | `.github/agent-all/decision-protocol.md`; 수동 hook 검토 후 선택적 hook helper | 🟡 프롬프트 |
 | Codex CLI | 프롬프트/순차 floor 워크플로; command hook은 shell/policy 이벤트만 담당 | 🟡 프롬프트 |
 | Cursor | `.cursor/rules/decision-protocol.mdc` (always-loaded rule) | 🟡 Soft |
 | Gemini CLI | `.gemini/agent-all-decision-protocol.md` (GEMINI.md에서 참조) | 🟡 Soft |
