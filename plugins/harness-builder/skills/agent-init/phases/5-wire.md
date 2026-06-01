@@ -51,6 +51,7 @@
 
 8. **Theme wiring.** Use Phase 1's already-resolved `theme` and `floorTheme` from discovery:
    - If `theme === "lite"`: skip steps 8a and 8b entirely.
+   - Else if `theme === "builder"`: keep the heavy builder scaffold already rendered, but skip steps 8a and 8b entirely.
    - Else if `theme === "floor"` and `floorTheme === true`: continue to 8a and 8b.
    - Backwards compat: if `theme === "legacy-visual-qa"`: render only `.visual-qa.json` (legacy behavior); skip 8b.
 

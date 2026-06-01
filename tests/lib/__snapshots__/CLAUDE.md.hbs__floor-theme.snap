@@ -9,6 +9,7 @@ typescript - deploys to vercel
 ## Language
 
 - Interaction language: `en`
+- Downstream `/agent-all` config keeps `.agent-all.json` `language` aligned with this value.
 
 ## Operating Principles
 

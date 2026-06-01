@@ -62,8 +62,8 @@ test("usage docs describe agent-init language persistence", () => {
 test("readme files describe the current Codex config surface and current test count", () => {
   for (const path of ["README.md", "README.ko.md"]) {
     const body = read(path);
-    assert.match(body, /1758\/1758/);
-    assert.doesNotMatch(body, /1721\/1721|1721%20passing|1721 tests|1726\/1726|1726%20passing|1726 tests|1729\/1729|1729%20passing|1729 tests|1741\/1741|1741%20passing|1741 tests|1742\/1742|1742%20passing|1742 tests|1746\/1746|1746%20passing|1746 tests|1749\/1749|1749%20passing|1749 tests|1752\/1752|1752%20passing|1752 tests|1755\/1755|1755%20passing|1755 tests|1756\/1756|1756%20passing|1756 tests/);
+    assert.match(body, /1759\/1759/);
+    assert.doesNotMatch(body, /1721\/1721|1721%20passing|1721 tests|1726\/1726|1726%20passing|1726 tests|1729\/1729|1729%20passing|1729 tests|1741\/1741|1741%20passing|1741 tests|1742\/1742|1742%20passing|1742 tests|1746\/1746|1746%20passing|1746 tests|1749\/1749|1749%20passing|1749 tests|1752\/1752|1752%20passing|1752 tests|1755\/1755|1755%20passing|1755 tests|1756\/1756|1756%20passing|1756 tests|1758\/1758|1758%20passing|1758 tests/);
     assert.doesNotMatch(body, /1279\/1279|1279\+|1279%20passing|1547\+/);
     assert.doesNotMatch(body, /1719\/1719|1719%20passing|1719 tests/);
     assert.doesNotMatch(
@@ -82,6 +82,7 @@ test("readme files describe the current Codex config surface and current test co
       /(?:harness-builder\/bin\/doctor\.mjs[\s\S]{0,360}--platform=claude[\s\S]{0,520}harness-builder-codex\/bin\/doctor\.mjs[\s\S]{0,360}--platform=codex|scripts\/doctor\.mjs[\s\S]{0,360}--platform=claude\|codex|doctor[\s\S]{0,360}(Claude\/Codex|project-local) scaffold)/i,
     );
     assert.match(body, /doctor[\s\S]{0,320}(operational, builder, lite, or Codex debug|operational\/builder\/lite 또는 Codex debug)/i);
+    assert.match(body, /install-platform\.sh[\s\S]{0,360}--platform=claude[\s\S]{0,180}--theme=builder/);
     assert.match(body, /install-platform\.sh[\s\S]{0,360}--platform=codex[\s\S]{0,180}--lite/);
     assert.doesNotMatch(body, /stable--cli--verification--pending|CLI verification pending|CLI 검증 대기|Sandbox lacks Codex|Sandbox에 Codex/);
   }
@@ -369,8 +370,8 @@ test("Codex runtime specs describe the current sequential surface instead of sta
     assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
     assert.doesNotMatch(body, /1246\/1246|1279\/1279|1645\/1645|1646\/1646|1647\/1647|1648\/1648|1649\/1649|1650\/1650|1651\/1651|1652\/1652|1654\/1654|1656\/1656|1657\/1657|1659\/1659|1660\/1660|1661\/1661|1662\/1662|1663\/1663|1664\/1664|1665\/1665|1666\/1666|1667\/1667|1668\/1668|1669\/1669|1670\/1670|1671\/1671|1672\/1672|1673\/1673|1674\/1674|1675\/1675|1676\/1676|1681\/1681|1684\/1684|1685\/1685|1687\/1687|1688\/1688|1692\/1692|1696\/1696|1697\/1697|1698\/1698|1703\/1703|1704\/1704|1705\/1705|1706\/1706|1711\/1711|1715\/1715|1716\/1716|1718\/1718/);
     assert.doesNotMatch(body, /1719\/1719|1721\/1721/);
-    assert.doesNotMatch(body, /1726\/1726|1729\/1729|1741\/1741|1742\/1742|1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756/);
-    assert.match(body, /1758\/1758/);
+    assert.doesNotMatch(body, /1726\/1726|1729\/1729|1741\/1741|1742\/1742|1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|1758\/1758/);
+    assert.match(body, /1759\/1759/);
     assert.match(body, /Codex CLI[\s\S]{0,260}(PreToolUse|prompt-level|sequential|프롬프트|순차)/i);
   }
 });
@@ -385,12 +386,13 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /generated hook\/task-checker executable packaging/i);
   assert.match(plan, /Claude\/Codex QA and base\/specialized reviewer audit-token contracts/i);
   assert.match(plan, /Claude 52\/52 and Codex 57\/57 readiness checks passing/i);
-  assert.match(plan, /node --test[\s\S]{0,120}1758\/1758/);
-  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}427\/427/);
-  assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|412\/412|418\/418|421\/421|424\/424|425\/425/);
+  assert.match(plan, /node --test[\s\S]{0,120}1759\/1759/);
+  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}428\/428/);
+  assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|1758\/1758|412\/412|418\/418|421\/421|424\/424|425\/425|427\/427/);
   assert.match(plan, /foundation auto-update/i);
   assert.match(plan, /install-platform\.sh --platform=codex --theme=all\|debug/);
   assert.match(plan, /Claude\/Codex `install-platform\.sh --uninstall` release-fixture roundtrips/i);
+  assert.match(plan, /install-platform\.sh --platform=claude` operational\/builder\/lite project bootstrap release-fixture coverage/i);
   assert.match(plan, /Codex operational\/default-heavy, builder, and lite post-install doctor evidence/i);
   assert.match(plan, /Codex floor\/thrift single-theme release fixtures/i);
   assert.match(plan, /post-install doctor coverage/i);
@@ -471,6 +473,7 @@ test("manual release checklist is mapped to automated gates and Claude/Codex liv
   assert.match(body, /node --test[\s\S]{0,480}claude-native-release-contract\.test\.mjs/);
   assert.match(body, /node --test[\s\S]{0,480}release-install-scripts\.test\.mjs/);
   assert.match(body, /Codex install renderers[\s\S]{0,180}builder, floor, thrift/i);
+  assert.match(body, /Fresh release fixture coverage[\s\S]{0,240}Claude terminal `install-platform\.sh --platform=claude` operational\/builder\/lite installs/i);
   assert.match(body, /Fresh release fixture coverage[\s\S]{0,320}Codex operational\/lite\/builder\/floor\/thrift\/debug installs/i);
   assert.match(body, /Fresh release fixture coverage[\s\S]{0,360}Claude\/Codex install→uninstall roundtrips/i);
   assert.match(body, /Doctor coverage[\s\S]{0,260}Codex debug-only scaffolds/i);

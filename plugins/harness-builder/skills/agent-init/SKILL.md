@@ -13,6 +13,7 @@ Default (no theme flag) is operational/heavy. It renders the task ledger,
 local folder guides, reviewer personas, policy hooks, foundation checks, and
 the floor bundle (`.visual-qa.json` + `.agent-all.json`). Use `--lite` only
 when a project needs a minimal root memory and minimal role roster.
+Use `--theme=builder` for the heavy builder scaffold without the floor bundle.
 Phase 5 runs the post-install doctor before committing so incomplete scaffolds
 fail fast.
 
@@ -24,6 +25,7 @@ fail fast.
 - `--lite` — canonical lightweight mode; skips task ledger, local folder guides, policy hooks, reviewer personas, and global config patch prompts.
 - `--update-foundations` — after printing the foundation plan, run the approved update path. Does not patch global CLI config.
 - `--platform=claude,codex,gemini` — select platform artifacts to wire. Defaults to prompting in interactive use and Claude-only in non-interactive use.
+- `--theme=builder` — heavy builder scaffold: task ledger, local guides, policy hooks, and reviewer personas, but no `.visual-qa.json` or `.agent-all.json`.
 - `--resume` — skip phases already marked complete in `.claude/.agent-init-state.json`.
 - `--size=small|medium|large` — override auto-inferred agent team size.
 - `--qa=<persona>[,<persona>]` — override auto-inferred QA personas.
@@ -55,7 +57,7 @@ The skill runs 5 phases strictly in order. Each phase is described in a separate
 3. **Brainstorm before scaffolding.** Phase 1 invokes `superpowers:brainstorming` — do not skip it even if you "know" what the user wants.
 4. **Parallel only in Phase 3.** Before fan-out, invoke `superpowers:dispatching-parallel-agents` to set up the dispatch correctly.
 5. **context-mode for any inspection.** When reading `installed_plugins.json`, large directories, or `git status`, use `mcp__plugin_context-mode_context-mode__ctx_batch_execute` instead of raw Bash.
-6. **Operational profile is default.** Unless `--lite` or `--theme=lite` is passed, render task ledger, local guides, policy hooks, and foundation checks.
+6. **Operational profile is default.** Unless `--lite` or `--theme=lite` is passed, render task ledger, local guides, policy hooks, and foundation checks. Only the default/floor profile renders `.visual-qa.json` and `.agent-all.json`; `--theme=builder` skips those floor config files.
 7. **Dry-run is a no-mutation planning mode.** When `--dry-run` is set, phases must only compute and print planned writes. Do not write root files, local guides, agents, hooks, settings, state files, task ledger files, platform artifacts, foundation updates, global config patches, or commits. Phase 5 prints the complete plan and exits.
 
 ## Lib modules

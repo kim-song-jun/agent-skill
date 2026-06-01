@@ -12,6 +12,7 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.equal(result.checks.claudeRendered.ok, true);
   assert.equal(result.checks.claudeLite.ok, true);
   assert.equal(result.checks.claudePlatform.ok, true);
+  assert.equal(result.checks.claudePlatformBuilder.ok, true);
   assert.equal(result.checks.claudePlatformLite.ok, true);
   assert.equal(result.checks.claudeUninstall.ok, true);
   assert.equal(result.checks.codexOperational.ok, true);
@@ -30,6 +31,11 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.claudePlatform.details, /QA and base\/specialized reviewer audit tokens/);
   assert.match(result.checks.claudePlatform.details, /post-install Claude platform doctor coverage/);
   assert.match(result.checks.claudePlatform.details, /no HOME patching/);
+  assert.match(result.checks.claudePlatformBuilder.summary, /Claude platform builder fixture: ok \(27\/27 file checks\)/);
+  assert.match(result.checks.claudePlatformBuilder.details, /only builder-heavy artifacts/);
+  assert.match(result.checks.claudePlatformBuilder.details, /post-install Claude builder doctor coverage/);
+  assert.match(result.checks.claudePlatformBuilder.details, /no floor configs/);
+  assert.match(result.checks.claudePlatformBuilder.details, /no HOME patching/);
   assert.match(result.checks.claudePlatformLite.summary, /Claude platform lite fixture: ok \(25\/25 file checks\)/);
   assert.match(result.checks.claudePlatformLite.details, /executable non-policy hooks/);
   assert.match(result.checks.claudePlatformLite.details, /post-install Claude platform lite doctor coverage/);
@@ -81,6 +87,7 @@ test("release fixture smoke CLI emits human-readable summaries", () => {
   assert.match(output, /Claude rendered fixture: ok/);
   assert.match(output, /Claude lite fixture: ok/);
   assert.match(output, /Claude platform fixture: ok/);
+  assert.match(output, /Claude platform builder fixture: ok/);
   assert.match(output, /Claude platform lite fixture: ok/);
   assert.match(output, /Claude uninstall fixture: ok/);
   assert.match(output, /Codex operational fixture: ok/);
@@ -104,6 +111,7 @@ test("release fixture smoke CLI emits JSON", () => {
   assert.equal(data.checks.claudeRendered.ok, true);
   assert.equal(data.checks.claudeLite.ok, true);
   assert.equal(data.checks.claudePlatform.ok, true);
+  assert.equal(data.checks.claudePlatformBuilder.ok, true);
   assert.equal(data.checks.claudePlatformLite.ok, true);
   assert.equal(data.checks.claudeUninstall.ok, true);
   assert.equal(data.checks.codexOperational.ok, true);

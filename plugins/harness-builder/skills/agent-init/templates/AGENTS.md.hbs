@@ -8,9 +8,10 @@
 
 ## Language
 
-- Interaction language: `{{interactionLang}}`{{#if operationalProfile}}
+- Interaction language: `{{interactionLang}}`{{#if floorTheme}}
 - Downstream `/agent-all` config keeps `.agent-all.json` `language` aligned with this value.{{/if}}{{#if liteProfile}}
-- Lite mode does not seed downstream `/agent-all` config; if you add it later, keep its language aligned with this value.{{/if}}
+- Lite mode does not seed downstream `/agent-all` config; if you add it later, keep its language aligned with this value.{{/if}}{{#if builderProfile}}
+- Builder theme does not seed downstream `/agent-all` config; add the floor bundle later if you want `/agent-all` defaults.{{/if}}
 
 ## Operating Principles
 

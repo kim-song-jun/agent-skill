@@ -56,7 +56,7 @@ const OPERATIONAL_WORKSPACE_FILES = [
 ];
 
 const LANGUAGE_VALUES = new Set(["en", "ko", "auto"]);
-const USAGE = "Usage: init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--lite|--theme=lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations] [--no-doctor]";
+const USAGE = "Usage: init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--lite|--theme=lite|--theme=builder] [--lang=en|ko|auto] [--dry-run] [--update-foundations] [--no-doctor]";
 
 function printHelp() {
   console.log([
@@ -66,6 +66,7 @@ function printHelp() {
     "  --ctx <ctx.json>        Read scaffold context from a JSON file.",
     "  --force                 Overwrite non-mergeable generated files.",
     "  --lite                  Lightweight scaffold: CLAUDE.md, AGENTS.md, base agents, and non-policy hooks.",
+    "  --theme=builder         Heavy builder scaffold without .visual-qa.json or .agent-all.json.",
     "  --theme=lite            Legacy alias for --lite.",
     "  --theme=floor           Legacy alias for the default operational profile.",
     "  --lang=en|ko|auto       Persist interaction language in generated guidance.",
@@ -93,6 +94,7 @@ function parseArgs(argv) {
     dryRun: false,
     updateFoundations: false,
     noDoctor: false,
+    theme: "floor",
     lang: null,
     help: false,
   };
@@ -103,12 +105,20 @@ function parseArgs(argv) {
     else if (arg === "--force") args.force = true;
     else if (arg === "--lite") args.lite = true;
     else if (arg === "--theme=lite") args.lite = true;
-    else if (arg === "--theme=floor") args.lite = false;
+    else if (arg === "--theme=builder") args.theme = "builder";
+    else if (arg === "--theme=floor") {
+      args.lite = false;
+      args.theme = "floor";
+    }
     else if (arg === "--theme" && argv[i + 1] === "lite") {
       args.lite = true;
       i += 1;
+    } else if (arg === "--theme" && argv[i + 1] === "builder") {
+      args.theme = "builder";
+      i += 1;
     } else if (arg === "--theme" && argv[i + 1] === "floor") {
       args.lite = false;
+      args.theme = "floor";
       i += 1;
     } else if (arg === "--dry-run") args.dryRun = true;
     else if (arg === "--update-foundations") args.updateFoundations = true;
@@ -170,6 +180,8 @@ function loadCtx(ctxPath, target, options = {}) {
   const fileCtx = ctxPath ? JSON.parse(readFileSync(ctxPath, "utf-8")) : {};
   const detected = detectProject(target);
   const lite = Boolean(options.lite);
+  const profile = lite ? "lite" : options.theme === "builder" ? "builder" : "operational";
+  const heavy = profile !== "lite";
   const interactionLang = resolveLanguage(options.lang ?? fileCtx.language ?? "auto");
   const qaPersonas = Array.isArray(fileCtx.qa_personas)
     ? fileCtx.qa_personas.map(String).map((item) => item.trim()).filter(Boolean)
@@ -194,15 +206,18 @@ function loadCtx(ctxPath, target, options = {}) {
     target_path: target,
     interactionLang,
     language: interactionLang,
-    operationalProfile: !lite,
+    profile,
+    theme: profile === "operational" ? "floor" : profile,
+    operationalProfile: heavy,
+    builderProfile: profile === "builder",
     liteProfile: lite,
-    floorTheme: !lite,
-    degradedFoundations: !lite && foundationState.degraded,
+    floorTheme: profile === "operational",
+    degradedFoundations: heavy && foundationState.degraded,
     foundationMissing: foundationState.missing.join(", "),
     foundationUpdateCommand: foundationState.updateCommand,
     foundationInstructions: foundationState.instructions,
     services_str: detected.services.join(", "),
-    agents: lite ? BASE_AGENTS : [...BASE_AGENTS, ...OPERATIONAL_AGENTS],
+    agents: heavy ? [...BASE_AGENTS, ...OPERATIONAL_AGENTS] : BASE_AGENTS,
   };
 }
 
@@ -324,6 +339,9 @@ function buildWrites(target, ctx) {
         kind: "text",
       });
     }
+  }
+
+  if (ctx.floorTheme) {
     planned.push({
       rel: ".visual-qa.json",
       outPath: resolve(target, ".visual-qa.json"),
@@ -426,7 +444,7 @@ function main() {
     console.error(`Error: target directory does not exist: ${target}`);
     process.exit(1);
   }
-  const ctx = loadCtx(args.ctxPath, target, { lite: args.lite, lang: args.lang });
+  const ctx = loadCtx(args.ctxPath, target, { lite: args.lite, theme: args.theme, lang: args.lang });
   if (args.updateFoundations) printFoundationUpdatePlan({ dryRun: args.dryRun });
 
   const writes = buildWrites(target, ctx);
@@ -456,7 +474,7 @@ function main() {
   }
 
   if (!args.noDoctor && !args.dryRun) {
-    runPostInstallDoctor(target, args.lite ? "lite" : "operational");
+    runPostInstallDoctor(target, ctx.profile);
   }
 
   console.log(`done - detected ${ctx.stack}${ctx.runtime ? ` (on ${ctx.runtime})` : ""}`);

@@ -325,6 +325,8 @@ fi
 
 if [ "$LITE" = "1" ]; then
   echo "Installing for $PLATFORM into $TARGET_ABS (theme: builder, profile: lite$([ "$DRY_RUN" = "1" ] && printf ", dry-run"))"
+elif [ "$THEME" = "builder" ]; then
+  echo "Installing for $PLATFORM into $TARGET_ABS (theme: builder, profile: builder$([ "$DRY_RUN" = "1" ] && printf ", dry-run"))"
 else
   echo "Installing for $PLATFORM into $TARGET_ABS (theme: $THEME, profile: operational$([ "$DRY_RUN" = "1" ] && printf ", dry-run"))"
 fi
@@ -452,6 +454,8 @@ run_builder_init() {
     local args=()
     if [ "$LITE" = "1" ]; then
       args+=(--lite)
+    elif [ "$THEME" = "builder" ]; then
+      args+=(--theme=builder)
     fi
     if [ "$HAS_LANG" = "1" ]; then
       args+=(--lang="$INIT_LANG")
@@ -558,9 +562,13 @@ print_install_summary() {
   fi
 
   case "$platform:$theme" in
-    claude:all|claude:builder)
+    claude:all)
       echo "  - CLAUDE.md, AGENTS.md, .claude/agents/, .claude/hooks/, docs/tasks/, .visual-qa.json, .agent-all.json"
       echo "  - Note: Claude plugin installation still uses install-all.sh or Claude Code /plugin install"
+      ;;
+    claude:builder)
+      echo "  - CLAUDE.md, AGENTS.md, .claude/agents/, .claude/hooks/, docs/tasks/ (builder-only heavy scaffold)"
+      echo "  - Note: Claude builder theme skips .visual-qa.json and .agent-all.json; install floor plugins with install-all.sh or Claude Code /plugin install"
       ;;
     cursor:all)
       echo "  - .cursor/rules/, .cursor/agents/, .visual-qa.json, .agent-all.json, .thrift.json"

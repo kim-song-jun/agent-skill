@@ -39,13 +39,14 @@
    Stash `ctx.interactionLang` for use in later phases — agent templates inherit it via `{{interactionLang}}` so dispatched subagents speak the same language.
 
 1. **Reject unsupported theme flags.** If `flags.theme` is set and is not
-   `"lite"` or `"floor"`, abort before brainstorming with:
+   `"lite"`, `"builder"`, or `"floor"`, abort before brainstorming with:
    ```text
-   Unsupported `--theme=` value "<value>". Default /agent-init is operational/heavy; pass --lite for the lightweight scaffold. Use `/thrift` after `/agent-init` for cost controls.
+   Unsupported `--theme=` value "<value>". Default /agent-init is operational/heavy; pass --lite for the lightweight scaffold, or --theme=builder for heavy builder-only scaffolding. Use `/thrift` after `/agent-init` for cost controls.
    ```
-2. **Resolve profile.** `lite = flags.lite || flags.theme === "lite"`. Default profile is operational/heavy. If `--theme=lite` was used, print a deprecation note and behave exactly as `--lite`.
+2. **Resolve profile.** `lite = flags.lite || flags.theme === "lite"`. Default profile is operational/heavy. If `--theme=lite` was used, print a deprecation note and behave exactly as `--lite`. If `flags.theme === "builder"` and `lite` is false, use the heavy builder-only profile.
 3. **Resolve theme.** This decision must be available before Phase 2 renders `CLAUDE.md`:
    - If `lite` is true: `theme = "lite"` and `floorTheme = false`.
+   - Else if `--theme=builder` was passed: `theme = "builder"` and `floorTheme = false`.
    - Else if `--visual-qa` was passed without `--theme=*`: `theme = "legacy-visual-qa"` and `floorTheme = false`.
    - Else if `--theme=floor` was passed OR no theme flag was passed: `theme = "floor"` and `floorTheme = true`.
 4. Invoke `Skill` with `superpowers:brainstorming` and these prompts (with the language directive from step 0 prepended when applicable):
@@ -68,6 +69,7 @@
      constraints: "",                // from brainstorming
      liteProfile: lite,
      operationalProfile: !lite,
+     builderProfile: theme === "builder",
      theme,
      floorTheme,
      degradedFoundations: foundationState.degraded,

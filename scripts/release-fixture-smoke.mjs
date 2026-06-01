@@ -51,6 +51,17 @@ const CLAUDE_EXECUTABLE_GENERATED = [
   "scripts/agent-task-ledger-check.mjs",
 ];
 
+const CLAUDE_BUILDER_PRESENT = [
+  ...CLAUDE_RENDER_PRESENT.filter((file) => ![".visual-qa.json", ".agent-all.json"].includes(file)),
+];
+
+const CLAUDE_BUILDER_ABSENT = [
+  ".visual-qa.json",
+  ".agent-all.json",
+  ".thrift.json",
+  ".codex/skills/debug-codex/SKILL.md",
+];
+
 const CLAUDE_LITE_PRESENT = [
   "CLAUDE.md",
   "AGENTS.md",
@@ -291,6 +302,7 @@ export function runReleaseFixtureSmoke({ root = ROOT } = {}) {
     claudeRendered: checkClaudeRendered(root),
     claudeLite: checkClaudeLite(root),
     claudePlatform: checkClaudePlatformInstall(root),
+    claudePlatformBuilder: checkClaudePlatformBuilderInstall(root),
     claudePlatformLite: checkClaudePlatformLiteInstall(root),
     claudeUninstall: checkClaudePlatformUninstall(root),
     codexOperational: checkCodexOperational(root),
@@ -542,6 +554,81 @@ function checkClaudePlatformInstall(root) {
       details: ok
         ? "fresh terminal install-platform Claude fixture produced operational scaffold, executable generated hooks and task checker, QA and base/specialized reviewer audit tokens, post-install Claude platform doctor coverage, role gate matrix, QA persona propagation, and no HOME patching"
         : compactFailure(res, [...missing, ...failed]),
+    };
+  });
+}
+
+function checkClaudePlatformBuilderInstall(root) {
+  return withFixture("agent-skill-release-claude-platform-builder-", ({ target, home }) => {
+    initGit(target);
+    const ctx = {
+      purpose: "Release Claude builder wrapper app",
+      deploy_targets: "vercel",
+      constraints: "",
+      language: "en",
+      qa_personas: ["auth"],
+      baseUrl: "http://localhost:3000",
+      model: "claude-sonnet-4-6",
+      maxIter: 10,
+      maxCostUSD: 500,
+      waveSize: "large",
+      breakCondition: "npm test",
+    };
+    writeFile(target, "_ctx.json", `${JSON.stringify(ctx, null, 2)}\n`);
+    const res = runInstallPlatform(root, target, home, ["--theme=builder", "--ctx", resolve(target, "_ctx.json")], "claude");
+
+    const missing = missingFiles(target, CLAUDE_BUILDER_PRESENT);
+    const unexpected = existingFiles(target, CLAUDE_BUILDER_ABSENT);
+    const settings = parseJsonFile(resolve(target, ".claude/settings.local.json"), "settings.local.json");
+    const homeSettings = resolve(home, ".claude/settings.local.json");
+    const claude = readIfExists(resolve(target, "CLAUDE.md"));
+    const orchestrator = readIfExists(resolve(target, ".claude/agents/orchestrator.md"));
+    const frontendDev = readIfExists(resolve(target, ".claude/agents/frontend-dev.md"));
+    const backendDev = readIfExists(resolve(target, ".claude/agents/backend-dev.md"));
+    const qaReviewer = readIfExists(resolve(target, ".claude/agents/qa-reviewer.md"));
+    const verificationAuditReviewers = {
+      "reviewer": readIfExists(resolve(target, ".claude/agents/reviewer.md")),
+      "verification-reviewer": readIfExists(resolve(target, ".claude/agents/verification-reviewer.md")),
+      "integration-dev": readIfExists(resolve(target, ".claude/agents/integration-dev.md")),
+      "design-reviewer": readIfExists(resolve(target, ".claude/agents/design-reviewer.md")),
+      "security-reviewer": readIfExists(resolve(target, ".claude/agents/security-reviewer.md")),
+      "data-reviewer": readIfExists(resolve(target, ".claude/agents/data-reviewer.md")),
+    };
+    const settingsText = JSON.stringify(settings.value || {});
+    const stdoutChecks = [
+      ["reports Claude platform builder install", /Installing for claude[\s\S]{0,180}theme:\s+builder/i.test(res.stdout)],
+      ["runs builder-profile doctor", /profile:\s+builder/i.test(res.stdout)],
+      ["post-install doctor passes", /harness doctor: ok/i.test(res.stdout)],
+      ["CLAUDE.md includes role gate matrix", /Role Gate Matrix/.test(claude)],
+      ["CLAUDE.md documents builder-only floor config skip", /Builder theme does not seed downstream `\/agent-all` config/.test(claude)],
+      ["CLAUDE.md does not claim .agent-all language alignment", !/Downstream `\/agent-all` config keeps/.test(claude)],
+      ...implementationRoutingChecks("CLAUDE.md", claude),
+      ...implementationRoutingChecks(".claude platform builder orchestrator", orchestrator),
+      [".claude platform builder frontend-dev embeds frontend discipline", /frontend layer[\s\S]{0,120}UI components[\s\S]{0,80}client-side logic[\s\S]{0,80}styles/.test(frontendDev)],
+      [".claude platform builder backend-dev embeds backend discipline", /backend layer[\s\S]{0,120}APIs[\s\S]{0,80}business logic[\s\S]{0,80}migrations/.test(backendDev)],
+      ["CLAUDE.md includes configured QA persona", /Configured QA Personas[\s\S]{0,120}auth/.test(claude)],
+      ...claudeQaAuditTokenChecks(qaReviewer),
+      ...claudeVerificationAuditTokenChecks(verificationAuditReviewers),
+      ["settings registers policy hook", settingsText.includes("agent-policy-hook.mjs")],
+    ];
+    const failed = [
+      ...settings.errors,
+      ...executableScriptErrors(target, CLAUDE_EXECUTABLE_GENERATED),
+      ...stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name),
+      existsSync(homeSettings) ? "unexpected ~/.claude/settings.local.json" : null,
+    ].filter(Boolean);
+    const ok = res.status === 0
+      && missing.length === 0
+      && unexpected.length === 0
+      && failed.length === 0;
+    const total = CLAUDE_BUILDER_PRESENT.length + CLAUDE_BUILDER_ABSENT.length;
+
+    return {
+      ok,
+      summary: `Claude platform builder fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
+      details: ok
+        ? "fresh terminal install-platform Claude builder fixture produced only builder-heavy artifacts, executable generated hooks and task checker, QA and base/specialized reviewer audit tokens, post-install Claude builder doctor coverage, role gate matrix, QA persona propagation, no floor configs, and no HOME patching"
+        : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failed]),
     };
   });
 }

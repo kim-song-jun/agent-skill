@@ -199,6 +199,64 @@ test("install-platform claude all succeeds in a fresh project and runs doctor", 
   }
 });
 
+test("install-platform claude builder theme installs only builder artifacts and runs builder doctor", () => {
+  const target = tmp("agent-skill-release-claude-platform-builder-target-");
+  const home = tmp("agent-skill-release-claude-platform-builder-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=claude",
+      `--target=${target}`,
+      "--theme=builder",
+      "--lang=ko",
+      "--no-update-foundations",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    for (const rel of [
+      "CLAUDE.md",
+      "AGENTS.md",
+      ".claude/settings.local.json",
+      ".claude/hooks/agent-policy-hook.mjs",
+      ".claude/agents/orchestrator.md",
+      ".claude/agents/frontend-dev.md",
+      ".claude/agents/backend-dev.md",
+      ".claude/agents/qa-reviewer.md",
+      "docs/tasks/index.md",
+      "scripts/agent-task-ledger-check.mjs",
+    ]) {
+      assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
+    }
+    for (const rel of [
+      ".visual-qa.json",
+      ".agent-all.json",
+      ".thrift.json",
+      ".codex/skills/debug-codex/SKILL.md",
+      ".debug-artifacts",
+      "docs/debug/index.md",
+    ]) {
+      assert.ok(!existsSync(resolve(target, rel)), `unexpected builder artifact ${rel}`);
+    }
+
+    const claude = readFileSync(resolve(target, "CLAUDE.md"), "utf-8");
+    assert.match(claude, /Orchestration Contract/);
+    assert.match(claude, /Interaction language:\s+`?ko`?/);
+    assert.match(claude, /Builder theme does not seed downstream `\/agent-all` config/);
+    assert.doesNotMatch(claude, /Downstream `\/agent-all` config keeps/);
+    assert.match(res.stdout, /theme: builder/i);
+    assert.match(res.stdout, /profile: builder/i);
+    assert.match(res.stdout, /Post-install doctor/i);
+    assert.match(res.stdout, /harness doctor: ok/i);
+    assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "Claude builder installer must not patch global Codex config");
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test("install-platform claude --lite installs only the lightweight project scaffold", () => {
   const target = tmp("agent-skill-release-claude-platform-lite-target-");
   const home = tmp("agent-skill-release-claude-platform-lite-home-");
