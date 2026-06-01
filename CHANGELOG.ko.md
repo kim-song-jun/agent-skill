@@ -20,6 +20,7 @@
 - `scripts/release-smoke.sh` 자체를 Claude/Codex release readiness audit에 추가해, 최종 gate 계약이 live CLI probe, fresh fixture, marketplace dry-run, focused release contract, vendored-lib sync, full-suite mode 연결을 release claim 전에 증명하도록 고정.
 - public CLI script의 shebang 및 executable bit를 release-audit packaging coverage로 추가하고, 직접 실행 가능한 release gate script까지 포함.
 - 생성되는 Claude/Codex hook 및 task-ledger checker script가 존재하는 프로필에서는 executable bit와 함께 쓰도록 하고, fresh install release fixture가 shebang/mode packaging을 증명하도록 강화.
+- Codex 기본 reviewer와 전문 reviewer persona에 Phase 4 `VERIFICATION_AUDIT` 출력 계약을 명시하고, fresh operational/builder 설치의 release fixture/audit가 해당 token surface를 증명하도록 강화.
 - Codex debug 포트를 마켓플레이스, Codex 설치 그룹, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, 공개 검증 문서에 등록. 현재 suite: 1756/1756 통과; fast release smoke: 426/426 통과.
 - Claude/Codex 터미널 operational bootstrap이 `claude` 사용 가능 시 승인된 foundation(`superpowers`, `context-mode`)만 자동 갱신하도록 변경. `--update-foundations` strict 모드와 `--no-update-foundations` opt-out 포함.
 - 기본 foundation auto-refresh에서 승인된 갱신이 실패해도 Claude/Codex bootstrap은 degraded foundation mode로 계속 진행하도록 강화. strict 실패는 `--update-foundations`에서만 유지.

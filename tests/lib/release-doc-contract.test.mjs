@@ -383,7 +383,8 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /release-smoke\.sh` gate contract/i);
   assert.match(plan, /public CLI script executable\/shebang packaging/i);
   assert.match(plan, /generated hook\/task-checker executable packaging/i);
-  assert.match(plan, /Claude 38\/38 and Codex 45\/45 readiness checks passing/i);
+  assert.match(plan, /Codex base\/specialized reviewer `VERIFICATION_AUDIT` token contracts/i);
+  assert.match(plan, /Claude 38\/38 and Codex 57\/57 readiness checks passing/i);
   assert.match(plan, /node --test[\s\S]{0,120}1756\/1756/);
   assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}426\/426/);
   assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|1755\/1755|412\/412|418\/418|421\/421|424\/424|425\/425/);

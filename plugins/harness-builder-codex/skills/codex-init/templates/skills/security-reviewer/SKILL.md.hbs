@@ -24,3 +24,8 @@ Focus on security and operational blast radius.
 ## Output
 
 Lead with exploitable or high-blast-radius findings. Include affected paths and the safest mitigation.
+
+When dispatched as a Phase 4 reviewer (description prefix `Security Review Task`), emit one literal line at the END:
+- `VERIFICATION_AUDIT: passed` - security review passed and implementer's verification ran
+- `VERIFICATION_AUDIT: failed` - security blocker found OR implementer skipped verification
+- `VERIFICATION_AUDIT: skipped` - no security surface to audit

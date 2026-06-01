@@ -38,6 +38,7 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.codexOperational.summary, /Codex operational fixture: ok \(26\/26 artifacts\)/);
   assert.match(result.checks.codexOperational.details, /executable hooks\/task checker/);
   assert.match(result.checks.codexOperational.details, /role gate matrix, QA personas/);
+  assert.match(result.checks.codexOperational.details, /base\/specialized reviewer audit tokens/);
   assert.match(result.checks.codexOperational.details, /floor, thrift, debug, executable hooks\/task checker, configs/);
   assert.match(result.checks.codexOperational.details, /post-install operational doctor coverage/);
   assert.match(result.checks.codexOperational.details, /sequential agent-all-codex prompt helper runs from the installed fixture/);
@@ -49,6 +50,7 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.codexBuilder.summary, /Codex builder fixture: ok \(28\/28 file checks\)/);
   assert.match(result.checks.codexBuilder.details, /executable hook\/task checker/);
   assert.match(result.checks.codexBuilder.details, /post-install builder doctor coverage/);
+  assert.match(result.checks.codexBuilder.details, /QA and base\/specialized reviewer audit tokens/);
   assert.match(result.checks.codexBuilder.details, /only Codex builder artifacts/);
   assert.match(result.checks.codexFloor.summary, /Codex floor fixture: ok \(19\/19 file checks\)/);
   assert.match(result.checks.codexFloor.details, /only Codex floor artifacts/);

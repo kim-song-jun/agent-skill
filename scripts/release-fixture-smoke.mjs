@@ -623,6 +623,14 @@ function checkCodexOperational(root) {
     const frontendDev = readIfExists(resolve(target, ".codex/skills/frontend-dev/SKILL.md"));
     const backendDev = readIfExists(resolve(target, ".codex/skills/backend-dev/SKILL.md"));
     const qaReviewer = readIfExists(resolve(target, ".codex/skills/qa-reviewer/SKILL.md"));
+    const verificationAuditReviewers = {
+      "reviewer": readIfExists(resolve(target, ".codex/skills/reviewer/SKILL.md")),
+      "verification-reviewer": readIfExists(resolve(target, ".codex/skills/verification-reviewer/SKILL.md")),
+      "integration-dev": readIfExists(resolve(target, ".codex/skills/integration-dev/SKILL.md")),
+      "design-reviewer": readIfExists(resolve(target, ".codex/skills/design-reviewer/SKILL.md")),
+      "security-reviewer": readIfExists(resolve(target, ".codex/skills/security-reviewer/SKILL.md")),
+      "data-reviewer": readIfExists(resolve(target, ".codex/skills/data-reviewer/SKILL.md")),
+    };
     const stdoutChecks = [
       ["runs operational-profile doctor", /profile:\s+operational/i.test(res.stdout)],
       ["post-install doctor passes", /harness doctor: ok/i.test(res.stdout)],
@@ -641,6 +649,7 @@ function checkCodexOperational(root) {
       ["AGENTS.md includes QA personas", /QA Personas[\s\S]{0,120}general/.test(agents)],
       ["qa-reviewer skill includes configured QA personas", /Configured QA Personas[\s\S]{0,120}general/.test(qaReviewer)],
       ["qa-reviewer skill includes QA audit tokens", /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/.test(qaReviewer)],
+      ...codexVerificationAuditTokenChecks(verificationAuditReviewers),
     ];
     const failedStdout = stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name);
     const ok = res.status === 0
@@ -655,7 +664,7 @@ function checkCodexOperational(root) {
       ok,
       summary: `Codex operational fixture: ${ok ? "ok" : "failed"} (${CODEX_OPERATIONAL_PRESENT.length - missing.length}/${CODEX_OPERATIONAL_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh git fixture received operational builder, role gate matrix, QA personas, floor, thrift, debug, executable hooks/task checker, configs, post-install operational doctor coverage, and sequential agent-all-codex prompt helper runs from the installed fixture with stack-specific frontend/backend role dispatch; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
+        ? "fresh git fixture received operational builder, role gate matrix, QA personas, base/specialized reviewer audit tokens, floor, thrift, debug, executable hooks/task checker, configs, post-install operational doctor coverage, and sequential agent-all-codex prompt helper runs from the installed fixture with stack-specific frontend/backend role dispatch; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
         : compactFailure(res, [...missing, ...failedStdout, ...executableScriptErrors(target, CODEX_EXECUTABLE_GENERATED), agentAllRuntime.ok ? null : agentAllRuntime.details, visualQaRuntime.ok ? null : visualQaRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
@@ -1045,6 +1054,14 @@ function checkCodexBuilder(root) {
     const frontendDev = readIfExists(resolve(target, ".codex/skills/frontend-dev/SKILL.md"));
     const backendDev = readIfExists(resolve(target, ".codex/skills/backend-dev/SKILL.md"));
     const qaReviewer = readIfExists(resolve(target, ".codex/skills/qa-reviewer/SKILL.md"));
+    const verificationAuditReviewers = {
+      "reviewer": readIfExists(resolve(target, ".codex/skills/reviewer/SKILL.md")),
+      "verification-reviewer": readIfExists(resolve(target, ".codex/skills/verification-reviewer/SKILL.md")),
+      "integration-dev": readIfExists(resolve(target, ".codex/skills/integration-dev/SKILL.md")),
+      "design-reviewer": readIfExists(resolve(target, ".codex/skills/design-reviewer/SKILL.md")),
+      "security-reviewer": readIfExists(resolve(target, ".codex/skills/security-reviewer/SKILL.md")),
+      "data-reviewer": readIfExists(resolve(target, ".codex/skills/data-reviewer/SKILL.md")),
+    };
     const stdoutChecks = [
       ["reports builder theme", /theme:\s+builder/i.test(res.stdout)],
       ["runs builder-profile doctor", /profile:\s+builder/i.test(res.stdout)],
@@ -1055,6 +1072,7 @@ function checkCodexBuilder(root) {
       [".codex frontend-dev skill embeds frontend responsibilities", /Implement UI components, routes, styles, client state/.test(frontendDev)],
       [".codex backend-dev skill embeds backend responsibilities", /Implement APIs, services, jobs, migrations, persistence/.test(backendDev)],
       ["qa-reviewer skill includes QA audit tokens", /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/.test(qaReviewer)],
+      ...codexVerificationAuditTokenChecks(verificationAuditReviewers),
       ["omits Playwright MCP snippet", !/\[mcp_servers\.playwright\]/.test(res.stdout)],
       ["omits thrift instrumentation summary", !/instrument:\s+no/.test(res.stdout)],
     ];
@@ -1070,7 +1088,7 @@ function checkCodexBuilder(root) {
       ok,
       summary: `Codex builder fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
       details: ok
-        ? "fresh git fixture received only Codex builder artifacts, executable hook/task checker, post-install builder doctor coverage, role gate matrix, QA reviewer audit tokens, and no global config side effects"
+        ? "fresh git fixture received only Codex builder artifacts, executable hook/task checker, post-install builder doctor coverage, role gate matrix, QA and base/specialized reviewer audit tokens, and no global config side effects"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failedStdout, ...executableScriptErrors(target, CODEX_EXECUTABLE_GENERATED), existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
@@ -1329,6 +1347,18 @@ function implementationRoutingChecks(label, text) {
     [`${label} routes API work to backend-dev`, /API, services, jobs, persistence[\s\S]{0,160}`backend-dev`/.test(text)],
     [`${label} routes cross-stack contracts through integration-dev`, /Frontend plus backend\/API contract[\s\S]{0,220}`integration-dev`[\s\S]{0,220}`frontend-dev`[\s\S]{0,220}`backend-dev`/.test(text)],
   ];
+}
+
+function codexVerificationAuditTokenChecks(roleBodies) {
+  const checks = [];
+  for (const [role, body] of Object.entries(roleBodies)) {
+    checks.push([`${role} skill includes Phase 4 review dispatch contract`, /Phase 4 reviewer[\s\S]{0,120}Review Task/i.test(body)]);
+    checks.push([`${role} skill includes VERIFICATION_AUDIT passed token`, /VERIFICATION_AUDIT: passed/.test(body)]);
+    checks.push([`${role} skill includes VERIFICATION_AUDIT failed token`, /VERIFICATION_AUDIT: failed/.test(body)]);
+    checks.push([`${role} skill includes VERIFICATION_AUDIT skipped token`, /VERIFICATION_AUDIT: skipped/.test(body)]);
+    checks.push([`${role} skill requires literal line at end`, /literal line at the END/i.test(body)]);
+  }
+  return checks;
 }
 
 function compactFailure(res, issues) {

@@ -25,3 +25,5 @@ Review the implementation evidence, not intent.
 ## Output
 
 Return `VERIFICATION_AUDIT: passed`, `VERIFICATION_AUDIT: failed`, or `VERIFICATION_AUDIT: skipped` with concise evidence and file:line references for concerns.
+
+When dispatched as a Phase 4 reviewer (description prefix `Verification Review Task`), emit that audit token as one literal line at the END so the gate can extract it mechanically.

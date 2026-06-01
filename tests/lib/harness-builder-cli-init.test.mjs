@@ -785,6 +785,14 @@ test("harness-builder-codex: generated role skills embed foundation and shared-t
       "data-reviewer": ["requesting-code-review", "verification-before-completion"],
       "integration-dev": ["test-driven-development", "verification-before-completion"],
     };
+    const verificationAuditRoles = [
+      "reviewer",
+      "verification-reviewer",
+      "integration-dev",
+      "design-reviewer",
+      "security-reviewer",
+      "data-reviewer",
+    ];
 
     for (const [role, skills] of Object.entries(roleSkills)) {
       const body = readFileSync(resolve(target, `.codex/skills/${role}/SKILL.md`), "utf-8");
@@ -795,6 +803,13 @@ test("harness-builder-codex: generated role skills embed foundation and shared-t
       }
       assert.match(body, /context-mode|file-backed logs|large output/i, `${role} must route bulk context`);
       assert.match(body, /shared-tree|unrelated edits|HOT-file/i, `${role} must preserve shared workspace safety`);
+      if (verificationAuditRoles.includes(role)) {
+        assert.match(body, /Phase 4|Review Task/i, `${role} must describe Phase 4 review dispatch`);
+        assert.match(body, /VERIFICATION_AUDIT: passed/, `${role} must emit a passed audit token`);
+        assert.match(body, /VERIFICATION_AUDIT: failed/, `${role} must emit a failed audit token`);
+        assert.match(body, /VERIFICATION_AUDIT: skipped/, `${role} must emit a skipped audit token`);
+        assert.match(body, /literal line at the END/i, `${role} must make the audit token mechanically extractable`);
+      }
     }
 
     const orchestrator = readFileSync(resolve(target, ".codex/skills/orchestrator/SKILL.md"), "utf-8");
