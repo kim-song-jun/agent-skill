@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -43,6 +43,14 @@ const CLAUDE_RENDER_PRESENT = [
   ".agent-all.json",
 ];
 
+const CLAUDE_EXECUTABLE_GENERATED = [
+  ".claude/hooks/context-mode-router.mjs",
+  ".claude/hooks/session-summary.mjs",
+  ".claude/hooks/cache-heal.mjs",
+  ".claude/hooks/agent-policy-hook.mjs",
+  "scripts/agent-task-ledger-check.mjs",
+];
+
 const CLAUDE_LITE_PRESENT = [
   "CLAUDE.md",
   "AGENTS.md",
@@ -53,6 +61,12 @@ const CLAUDE_LITE_PRESENT = [
   ".claude/agents/planner.md",
   ".claude/agents/dev.md",
   ".claude/agents/reviewer.md",
+];
+
+const CLAUDE_LITE_EXECUTABLE_GENERATED = [
+  ".claude/hooks/context-mode-router.mjs",
+  ".claude/hooks/session-summary.mjs",
+  ".claude/hooks/cache-heal.mjs",
 ];
 
 const CLAUDE_LITE_ABSENT = [
@@ -103,6 +117,11 @@ const CODEX_OPERATIONAL_PRESENT = [
   ".thrift.json",
 ];
 
+const CODEX_EXECUTABLE_GENERATED = [
+  ".codex/hooks/agent-policy-hook.mjs",
+  "scripts/agent-task-ledger-check.mjs",
+];
+
 const CODEX_LITE_PRESENT = [
   "AGENTS.md",
   ".codex/skills/planner/SKILL.md",
@@ -117,6 +136,7 @@ const CODEX_LITE_ABSENT = [
   ".codex/skills/agent-all-codex/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
   "docs/tasks/index.md",
+  "scripts/agent-task-ledger-check.mjs",
   ".visual-qa.json",
   ".agent-all.json",
   ".thrift.json",
@@ -374,6 +394,7 @@ function checkClaudeRendered(root) {
       ...settings.errors,
       ...visualQa.errors,
       ...agentAll.errors,
+      ...executableScriptErrors(target, CLAUDE_EXECUTABLE_GENERATED),
       ...hookChecks.filter((check) => !check.ok).map((check) => check.details),
       ...textChecks.filter(([, pass]) => !pass).map(([name]) => name),
     ];
@@ -383,7 +404,7 @@ function checkClaudeRendered(root) {
       ok,
       summary: `Claude rendered fixture: ${ok ? "ok" : "failed"} (${CLAUDE_RENDER_PRESENT.length - missing.length}/${CLAUDE_RENDER_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh Claude init produced root memory, role agents, hooks, task ledger, post-install doctor, and floor seed configs"
+        ? "fresh Claude init produced root memory, role agents, executable hooks, executable task ledger checker, post-install doctor, and floor seed configs"
         : compactFailure(res, [...missing, ...failed]),
     };
   });
@@ -424,6 +445,7 @@ function checkClaudeLite(root) {
     ];
     const failed = [
       ...settings.errors,
+      ...executableScriptErrors(target, CLAUDE_LITE_EXECUTABLE_GENERATED),
       ...hookChecks.filter((check) => !check.ok).map((check) => check.details),
       ...textChecks.filter(([, pass]) => !pass).map(([name]) => name),
     ];
@@ -437,7 +459,7 @@ function checkClaudeLite(root) {
       ok,
       summary: `Claude lite fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
       details: ok
-        ? "fresh Claude init produced lite root memory, minimal agents, post-install doctor, and non-policy hooks only"
+        ? "fresh Claude init produced lite root memory, minimal agents, post-install doctor, and executable non-policy hooks only"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failed]),
     };
   });
@@ -487,6 +509,7 @@ function checkClaudePlatformInstall(root) {
     const failed = [
       ...settings.errors,
       ...agentAll.errors,
+      ...executableScriptErrors(target, CLAUDE_EXECUTABLE_GENERATED),
       ...stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name),
       existsSync(homeSettings) ? "unexpected ~/.claude/settings.local.json" : null,
     ].filter(Boolean);
@@ -496,7 +519,7 @@ function checkClaudePlatformInstall(root) {
       ok,
       summary: `Claude platform fixture: ${ok ? "ok" : "failed"} (${CLAUDE_RENDER_PRESENT.length - missing.length}/${CLAUDE_RENDER_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh terminal install-platform Claude fixture produced operational scaffold, post-install Claude platform doctor coverage, role gate matrix, QA persona propagation, and no HOME patching"
+        ? "fresh terminal install-platform Claude fixture produced operational scaffold, executable generated hooks and task checker, post-install Claude platform doctor coverage, role gate matrix, QA persona propagation, and no HOME patching"
         : compactFailure(res, [...missing, ...failed]),
     };
   });
@@ -525,6 +548,7 @@ function checkClaudePlatformLiteInstall(root) {
     ];
     const failed = [
       ...settings.errors,
+      ...executableScriptErrors(target, CLAUDE_LITE_EXECUTABLE_GENERATED),
       ...stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name),
       existsSync(homeSettings) ? "unexpected ~/.claude/settings.local.json" : null,
     ].filter(Boolean);
@@ -538,7 +562,7 @@ function checkClaudePlatformLiteInstall(root) {
       ok,
       summary: `Claude platform lite fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
       details: ok
-        ? "fresh terminal install-platform Claude lite fixture produced only lite scaffold files, post-install Claude platform lite doctor coverage, and no HOME patching"
+        ? "fresh terminal install-platform Claude lite fixture produced only lite scaffold files, executable non-policy hooks, post-install Claude platform lite doctor coverage, and no HOME patching"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failed]),
     };
   });
@@ -622,6 +646,7 @@ function checkCodexOperational(root) {
     const ok = res.status === 0
       && missing.length === 0
       && failedStdout.length === 0
+      && executableScriptErrors(target, CODEX_EXECUTABLE_GENERATED).length === 0
       && agentAllRuntime.ok
       && visualQaRuntime.ok
       && !existsSync(homeConfig);
@@ -630,8 +655,8 @@ function checkCodexOperational(root) {
       ok,
       summary: `Codex operational fixture: ${ok ? "ok" : "failed"} (${CODEX_OPERATIONAL_PRESENT.length - missing.length}/${CODEX_OPERATIONAL_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh git fixture received operational builder, role gate matrix, QA personas, floor, thrift, debug, hooks, configs, post-install operational doctor coverage, and sequential agent-all-codex prompt helper runs from the installed fixture with stack-specific frontend/backend role dispatch; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
-        : compactFailure(res, [...missing, ...failedStdout, agentAllRuntime.ok ? null : agentAllRuntime.details, visualQaRuntime.ok ? null : visualQaRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
+        ? "fresh git fixture received operational builder, role gate matrix, QA personas, floor, thrift, debug, executable hooks/task checker, configs, post-install operational doctor coverage, and sequential agent-all-codex prompt helper runs from the installed fixture with stack-specific frontend/backend role dispatch; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
+        : compactFailure(res, [...missing, ...failedStdout, ...executableScriptErrors(target, CODEX_EXECUTABLE_GENERATED), agentAllRuntime.ok ? null : agentAllRuntime.details, visualQaRuntime.ok ? null : visualQaRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
 }
@@ -1002,7 +1027,7 @@ function checkCodexLite(root) {
       ok,
       summary: `Codex lite fixture: ${ok ? "ok" : "failed"} (${CODEX_LITE_PRESENT.length + CODEX_LITE_ABSENT.length - missing.length - unexpected.length}/${CODEX_LITE_PRESENT.length + CODEX_LITE_ABSENT.length} file checks)`,
       details: ok
-        ? "fresh git fixture received only builder-lite files, post-install lite doctor coverage, and no global config side effects"
+        ? "fresh git fixture received only builder-lite files, no hook/task checker side effects, post-install lite doctor coverage, and no global config side effects"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failedStdout, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
@@ -1045,8 +1070,8 @@ function checkCodexBuilder(root) {
       ok,
       summary: `Codex builder fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
       details: ok
-        ? "fresh git fixture received only Codex builder artifacts, post-install builder doctor coverage, role gate matrix, QA reviewer audit tokens, and no global config side effects"
-        : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failedStdout, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
+        ? "fresh git fixture received only Codex builder artifacts, executable hook/task checker, post-install builder doctor coverage, role gate matrix, QA reviewer audit tokens, and no global config side effects"
+        : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failedStdout, ...executableScriptErrors(target, CODEX_EXECUTABLE_GENERATED), existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
 }
@@ -1248,6 +1273,25 @@ function missingFiles(root, files) {
 
 function existingFiles(root, files) {
   return files.filter((file) => existsSync(resolve(root, file)));
+}
+
+function executableScriptErrors(root, files) {
+  const errors = [];
+  for (const file of files) {
+    const path = resolve(root, file);
+    if (!existsSync(path)) {
+      errors.push(`missing executable ${file}`);
+      continue;
+    }
+    const firstLine = readIfExists(path).split(/\r?\n/, 1)[0];
+    if (!firstLine.startsWith("#!")) {
+      errors.push(`missing shebang ${file}`);
+    }
+    if ((statSync(path).mode & 0o111) === 0) {
+      errors.push(`non-executable ${file}`);
+    }
+  }
+  return errors;
 }
 
 function readIfExists(file) {

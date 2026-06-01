@@ -5,6 +5,7 @@
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
+  chmodSync,
   mkdirSync,
   readdirSync,
   readFileSync,
@@ -257,6 +258,10 @@ function relToTarget(rel, ctx) {
   return `.claude/${stripped}`;
 }
 
+function isExecutableGeneratedFile(rel) {
+  return rel.startsWith(".claude/hooks/") || rel === "scripts/agent-task-ledger-check.mjs";
+}
+
 function isMergeableGuide(rel) {
   return rel === "CLAUDE.md" || rel === "AGENTS.md" || rel.endsWith("/CLAUDE.md") || rel.endsWith("/AGENTS.md");
 }
@@ -433,13 +438,16 @@ function main() {
     }
   }
 
-  for (const { outPath, rendered, action, merged } of writes) {
+  for (const { rel, outPath, rendered, action, merged } of writes) {
     if (args.dryRun) {
       console.log(`dry-run: would ${merged ? action : "write"} ${outPath}`);
       continue;
     }
     mkdirSync(dirname(outPath), { recursive: true });
     writeFileSync(outPath, rendered);
+    if (isExecutableGeneratedFile(rel)) {
+      chmodSync(outPath, 0o755);
+    }
     console.log(`wrote ${outPath}`);
   }
 

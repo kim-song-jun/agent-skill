@@ -16,7 +16,7 @@
 // Usage:
 //   init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--lite|--theme=lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations]
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, chmodSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { detectProject } from "../skills/codex-init/lib/detect-stack.mjs";
@@ -293,6 +293,10 @@ function relToTarget(rel) {
   return `.codex/${stripped}`;
 }
 
+function isExecutableGeneratedFile(rel) {
+  return rel === ".codex/hooks/agent-policy-hook.mjs" || rel === "scripts/agent-task-ledger-check.mjs";
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
@@ -360,13 +364,16 @@ function main() {
     }
   }
 
-  for (const { outPath, rendered, action, merged } of finalWrites) {
+  for (const { rel, outPath, rendered, action, merged } of finalWrites) {
     if (args.dryRun) {
       console.log(`dry-run: would ${merged ? action : "write"} ${outPath}`);
       continue;
     }
     mkdirSync(dirname(outPath), { recursive: true });
     writeFileSync(outPath, rendered);
+    if (isExecutableGeneratedFile(rel)) {
+      chmodSync(outPath, 0o755);
+    }
     console.log(`wrote ${outPath}`);
   }
   for (const chunk of stdoutChunks) {
