@@ -7,18 +7,22 @@
 #   ./scripts/release-smoke.sh          # focused contracts + full test suite
 #   ./scripts/release-smoke.sh --fast   # focused contracts only
 #   ./scripts/release-smoke.sh --full   # explicit full mode
+#   ./scripts/release-smoke.sh --fast --with-live-cli
+#                                      # also probe installed Claude/Codex CLIs
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MODE="full"
+WITH_LIVE_CLI=0
 
 for arg in "$@"; do
   case "$arg" in
     --fast) MODE="fast" ;;
     --full) MODE="full" ;;
+    --with-live-cli) WITH_LIVE_CLI=1 ;;
     -h|--help)
-      sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -36,6 +40,24 @@ run_step() {
   echo "==> release smoke: $label"
   (cd "$REPO_ROOT" && "$@")
 }
+
+if [ "$WITH_LIVE_CLI" -eq 1 ]; then
+  run_step "live Claude/Codex CLI probes" bash -c '
+    set -euo pipefail
+    probe_cli() {
+      local name="$1"
+      if ! command -v "$name" >/dev/null 2>&1; then
+        echo "Missing required live CLI: $name" >&2
+        return 1
+      fi
+      local version
+      version="$("$name" --version 2>&1)"
+      echo "$name: $version"
+    }
+    probe_cli claude
+    probe_cli codex
+  '
+fi
 
 run_step "Claude marketplace dry-run" \
   bash "$REPO_ROOT/scripts/install-all.sh" --dry-run --claude-code
