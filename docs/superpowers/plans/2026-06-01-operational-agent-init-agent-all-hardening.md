@@ -24,13 +24,14 @@ Completed scope:
 - Codex's generated project-local `agent-policy-hook.mjs` now mirrors that bulk-output discipline on the Bash PreToolUse path: safe broad commands emit non-blocking context-mode/file-backed guidance, small commands remain quiet, destructive commands still block, and release fixtures verify the installed operational hook contains the guidance.
 - Claude/Codex doctor output now carries release-audited recovery steps: missing artifacts point back to the matching `install-platform.sh` profile command, stale generated guidance points to a forced profile refresh, JSON failures ask for syntax repair, and foundation warnings print both the updater and the direct `/plugin install ...` next steps.
 - Current release-doc contract pins stale test-count regressions so future changes must update public verification evidence.
+- POSCO MDS-style Django/Vue monorepo routing is now a named fixture: Claude and Codex classifier/gate-plan tests require the same orchestrator, frontend, backend, security, data, QA, design, integration, and verification gates, and release-fixture smoke proves that operational installs keep this routing evidence.
 
 Verification evidence:
 
 - `node scripts/release-audit.mjs`: Claude 53/53 and Codex 59/59 readiness checks passing, including the final `scripts/release-smoke.sh` gate contract, doctor recovery guidance, Codex floor-conditional language guidance, and public CLI executable/shebang packaging.
 - `node scripts/release-fixture-smoke.mjs`: Claude marketplace dry-run, Claude operational/lite render output, Claude terminal `install-platform.sh --platform=claude` operational/builder/lite fixtures, Codex operational/lite/builder/floor/thrift/debug fresh fixtures, and Claude/Codex install→uninstall plus `--force-root-clean` roundtrip fixtures passing.
-- `node --test`: 1764/1764 passing.
-- `./scripts/release-smoke.sh --fast --with-live-cli`: 433/433 passing with Claude Code and Codex CLI live probes.
+- `node --test`: 1766/1766 passing.
+- `./scripts/release-smoke.sh --fast --with-live-cli`: 435/435 passing with Claude Code and Codex CLI live probes.
 - `node scripts/sync-lib.mjs --check`: 42 vendored files match source.
 
 ## Scope Decomposition

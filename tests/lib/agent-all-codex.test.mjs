@@ -8,6 +8,9 @@ import { classifyChangedFiles as classifyCodexChangedFiles } from "../../plugins
 import { buildGatePlan as buildCodexGatePlan } from "../../plugins/harness-floor-codex/skills/agent-all-codex/lib/gate-plan.mjs";
 
 const SKILL_ROOT = "plugins/harness-floor-codex/skills/agent-all-codex";
+const POSCO_MDS_DJANGO_VUE = JSON.parse(
+  readFileSync(resolve("tests/fixtures/project-shapes/posco-mds-django-vue.json"), "utf-8"),
+);
 
 test("agent-all-codex: SKILL.md exists with name frontmatter", () => {
   const md = readFileSync(resolve(SKILL_ROOT, "SKILL.md"), "utf-8");
@@ -93,6 +96,7 @@ test("agent-all-codex: changed-file classifier matches Claude source of truth", 
     ["server/auth/session.ts", "fixtures/users.json"],
     ["src/router/index.ts", "apps/users/viewsets.py", "apps/billing/celery.py"],
     ["package.json", "pnpm-lock.yaml", ".github/workflows/test.yml"],
+    POSCO_MDS_DJANGO_VUE.changedFiles,
   ];
 
   for (const files of cases) {
@@ -109,6 +113,7 @@ test("agent-all-codex: gate plan matches Claude source of truth", () => {
     ["package.json", "pnpm-lock.yaml", ".github/workflows/test.yml"],
     ["src/components/Button.tsx"],
     ["src/api/http-client.ts", "apps/users/views.py", "backend/users/models.py"],
+    POSCO_MDS_DJANGO_VUE.changedFiles,
   ];
 
   for (const files of cases) {
@@ -118,6 +123,32 @@ test("agent-all-codex: gate plan matches Claude source of truth", () => {
       `gate plan mismatch for ${files.join(", ")}`,
     );
   }
+});
+
+test("agent-all-codex: POSCO MDS-style Django and Vue fixture preserves persona gate order", () => {
+  const claudePlan = buildClaudeGatePlan({
+    files: POSCO_MDS_DJANGO_VUE.changedFiles,
+    gates: { specReview: true, qualityReview: true },
+    taskId: "42",
+    title: "POSCO MDS workflow",
+  });
+  const codexPlan = buildCodexGatePlan({
+    files: POSCO_MDS_DJANGO_VUE.changedFiles,
+    gates: { specReview: true, qualityReview: true },
+    taskId: "42",
+    title: "POSCO MDS workflow",
+  });
+  const projectedDispatches = codexPlan.dispatches.map(({ role, kind, mode, auditToken }) => ({
+    role,
+    kind,
+    mode,
+    auditToken,
+  }));
+
+  assert.deepEqual(codexPlan, claudePlan);
+  assert.deepEqual(codexPlan.coordinators, POSCO_MDS_DJANGO_VUE.expectedCoordinators);
+  assert.deepEqual(codexPlan.reviewers, POSCO_MDS_DJANGO_VUE.expectedGateReviewers);
+  assert.deepEqual(projectedDispatches, POSCO_MDS_DJANGO_VUE.expectedDispatches);
 });
 
 test("agent-all-codex: changed-file classifier routes POSCO-style Django and Vue gates", () => {

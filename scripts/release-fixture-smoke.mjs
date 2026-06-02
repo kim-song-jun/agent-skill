@@ -4,8 +4,15 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { classifyChangedFiles as classifyClaudeChangedFiles } from "../plugins/harness-floor/skills/agent-all/lib/changed-file-classifier.mjs";
+import { buildGatePlan as buildClaudeGatePlan } from "../plugins/harness-floor/skills/agent-all/lib/gate-plan.mjs";
+import { classifyChangedFiles as classifyCodexChangedFiles } from "../plugins/harness-floor-codex/skills/agent-all-codex/lib/changed-file-classifier.mjs";
+import { buildGatePlan as buildCodexGatePlan } from "../plugins/harness-floor-codex/skills/agent-all-codex/lib/gate-plan.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const POSCO_MDS_DJANGO_VUE = JSON.parse(
+  readFileSync(resolve(ROOT, "tests/fixtures/project-shapes/posco-mds-django-vue.json"), "utf-8"),
+);
 
 const CLAUDE_ESSENTIALS = [
   "harness-builder",
@@ -544,6 +551,7 @@ function checkClaudePlatformInstall(root) {
       ["CLAUDE.md includes role gate matrix", /Role Gate Matrix/.test(claude)],
       ...implementationRoutingChecks("CLAUDE.md", claude),
       ...implementationRoutingChecks(".claude platform orchestrator", orchestrator),
+      ...poscoMdsDjangoVueRoutingChecks("Claude", classifyClaudeChangedFiles, buildClaudeGatePlan),
       [".claude platform frontend-dev embeds frontend discipline", /frontend layer[\s\S]{0,120}UI components[\s\S]{0,80}client-side logic[\s\S]{0,80}styles/.test(frontendDev)],
       [".claude platform backend-dev embeds backend discipline", /backend layer[\s\S]{0,120}APIs[\s\S]{0,80}business logic[\s\S]{0,80}migrations/.test(backendDev)],
       ["CLAUDE.md includes configured QA persona", /Configured QA Personas[\s\S]{0,120}auth/.test(claude)],
@@ -565,7 +573,7 @@ function checkClaudePlatformInstall(root) {
       ok,
       summary: `Claude platform fixture: ${ok ? "ok" : "failed"} (${CLAUDE_RENDER_PRESENT.length - missing.length}/${CLAUDE_RENDER_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh terminal install-platform Claude fixture produced operational scaffold, executable generated hooks and task checker, QA and base/specialized reviewer audit tokens, post-install Claude platform doctor coverage, role gate matrix, QA persona propagation, and no HOME patching"
+        ? "fresh terminal install-platform Claude fixture produced operational scaffold, executable generated hooks and task checker, QA and base/specialized reviewer audit tokens, post-install Claude platform doctor coverage, role gate matrix, POSCO MDS Django/Vue routing proof, QA persona propagation, and no HOME patching"
         : compactFailure(res, [...missing, ...failed]),
     };
   });
@@ -809,6 +817,7 @@ function checkCodexOperational(root) {
       ["policy hook includes context-mode/file-backed output guidance", /context-mode[\s\S]{0,180}redirect output to a file/.test(policyHook)],
       ...implementationRoutingChecks("AGENTS.md", agents),
       ...implementationRoutingChecks(".codex orchestrator skill", orchestrator),
+      ...poscoMdsDjangoVueRoutingChecks("Codex", classifyCodexChangedFiles, buildCodexGatePlan),
       [".codex frontend-dev skill embeds frontend responsibilities", /Implement UI components, routes, styles, client state/.test(frontendDev)],
       [".codex frontend-dev skill references role-matched superpowers", /superpowers:brainstorming[\s\S]{0,120}superpowers:test-driven-development[\s\S]{0,120}superpowers:verification-before-completion/.test(frontendDev)],
       [".codex backend-dev skill embeds backend responsibilities", /Implement APIs, services, jobs, migrations, persistence/.test(backendDev)],
@@ -831,7 +840,7 @@ function checkCodexOperational(root) {
       ok,
       summary: `Codex operational fixture: ${ok ? "ok" : "failed"} (${CODEX_OPERATIONAL_PRESENT.length - missing.length}/${CODEX_OPERATIONAL_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh git fixture received operational builder, role gate matrix, QA personas, base/specialized reviewer audit tokens, floor, thrift, debug, executable hooks/task checker, configs, post-install operational doctor coverage, and sequential agent-all-codex prompt helper runs from the installed fixture with stack-specific frontend/backend role dispatch; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
+        ? "fresh git fixture received operational builder, role gate matrix, QA personas, POSCO MDS Django/Vue routing proof, base/specialized reviewer audit tokens, floor, thrift, debug, executable hooks/task checker, configs, post-install operational doctor coverage, and sequential agent-all-codex prompt helper runs from the installed fixture with stack-specific frontend/backend role dispatch; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
         : compactFailure(res, [...missing, ...failedStdout, ...executableScriptErrors(target, CODEX_EXECUTABLE_GENERATED), agentAllRuntime.ok ? null : agentAllRuntime.details, visualQaRuntime.ok ? null : visualQaRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
@@ -1554,6 +1563,30 @@ function implementationRoutingChecks(label, text) {
     [`${label} routes UI work to frontend-dev`, /UI, routes, client state, browser behavior[\s\S]{0,160}`frontend-dev`/.test(text)],
     [`${label} routes API work to backend-dev`, /API, services, jobs, persistence[\s\S]{0,160}`backend-dev`/.test(text)],
     [`${label} routes cross-stack contracts through integration-dev`, /Frontend plus backend\/API contract[\s\S]{0,220}`integration-dev`[\s\S]{0,220}`frontend-dev`[\s\S]{0,220}`backend-dev`/.test(text)],
+  ];
+}
+
+function projectDispatches(dispatches) {
+  return dispatches.map(({ role, kind, mode, auditToken }) => ({ role, kind, mode, auditToken }));
+}
+
+function sameJson(actual, expected) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+function poscoMdsDjangoVueRoutingChecks(label, classifyChangedFiles, buildGatePlan) {
+  const classification = classifyChangedFiles(POSCO_MDS_DJANGO_VUE.changedFiles);
+  const gatePlan = buildGatePlan({
+    files: POSCO_MDS_DJANGO_VUE.changedFiles,
+    gates: { specReview: true, qualityReview: true },
+    taskId: "posco-mds",
+    title: "POSCO MDS Django/Vue workflow",
+  });
+
+  return [
+    [`${label} routes POSCO MDS Django/Vue reviewers`, sameJson(classification.reviewers, POSCO_MDS_DJANGO_VUE.expectedReviewers)],
+    [`${label} routes POSCO MDS Django/Vue coordinator`, sameJson(classification.coordinators, POSCO_MDS_DJANGO_VUE.expectedCoordinators)],
+    [`${label} gate plan preserves POSCO MDS Django/Vue dispatch order`, sameJson(projectDispatches(gatePlan.dispatches), POSCO_MDS_DJANGO_VUE.expectedDispatches)],
   ];
 }
 
