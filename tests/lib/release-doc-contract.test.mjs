@@ -399,6 +399,8 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /Codex floor-conditional language guidance/i);
   assert.match(plan, /POSCO MDS-style Django\/Vue monorepo routing/i);
   assert.match(plan, /release-fixture smoke proves/i);
+  assert.match(plan, /release-fixture evidence[\s\S]{0,160}auto-update only approved `superpowers`\/`context-mode` foundations/i);
+  assert.match(plan, /Claude\/Codex approved foundation auto-update fixtures/i);
   assert.match(plan, /node --test[\s\S]{0,120}1766\/1766/);
   assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}435\/435/);
   assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|1758\/1758|1759\/1759|1760\/1760|1761\/1761|1762\/1762|1763\/1763|1764\/1764|57\/57|412\/412|418\/418|421\/421|424\/424|425\/425|427\/427|428\/428|429\/429|430\/430|431\/431|432\/432|433\/433/);

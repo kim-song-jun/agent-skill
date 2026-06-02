@@ -14,9 +14,11 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.equal(result.checks.claudePlatform.ok, true);
   assert.equal(result.checks.claudePlatformBuilder.ok, true);
   assert.equal(result.checks.claudePlatformLite.ok, true);
+  assert.equal(result.checks.claudeFoundationAutoUpdate.ok, true);
   assert.equal(result.checks.claudeUninstall.ok, true);
   assert.equal(result.checks.claudeForceRootClean.ok, true);
   assert.equal(result.checks.codexOperational.ok, true);
+  assert.equal(result.checks.codexFoundationAutoUpdate.ok, true);
   assert.equal(result.checks.codexLite.ok, true);
   assert.equal(result.checks.codexBuilder.ok, true);
   assert.equal(result.checks.codexFloor.ok, true);
@@ -43,6 +45,9 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.claudePlatformLite.details, /executable non-policy hooks/);
   assert.match(result.checks.claudePlatformLite.details, /post-install Claude platform lite doctor coverage/);
   assert.match(result.checks.claudePlatformLite.details, /only lite scaffold files/);
+  assert.match(result.checks.claudeFoundationAutoUpdate.summary, /Claude foundation auto-update fixture: ok \(9\/9 checks\)/);
+  assert.match(result.checks.claudeFoundationAutoUpdate.details, /approved superpowers\/context-mode foundations only/);
+  assert.match(result.checks.claudeFoundationAutoUpdate.details, /did not patch HOME CLI config/);
   assert.match(result.checks.claudeUninstall.summary, /Claude uninstall fixture: ok \(13\/13 removals\)/);
   assert.match(result.checks.claudeUninstall.details, /uninstall roundtrip removed generated agents, hooks, task ledger, and floor configs/);
   assert.match(result.checks.claudeUninstall.details, /preserving root guidance/);
@@ -58,6 +63,9 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.codexOperational.details, /sequential agent-all-codex prompt helper runs from the installed fixture/);
   assert.match(result.checks.codexOperational.details, /sequential visual-qa-codex page helper runs from the installed fixture/);
   assert.match(result.checks.codexOperational.details, /positional argv omits unsupported --prompt\/--skill flags/);
+  assert.match(result.checks.codexFoundationAutoUpdate.summary, /Codex foundation auto-update fixture: ok \(9\/9 checks\)/);
+  assert.match(result.checks.codexFoundationAutoUpdate.details, /approved superpowers\/context-mode foundations only/);
+  assert.match(result.checks.codexFoundationAutoUpdate.details, /did not patch HOME CLI config/);
   assert.match(result.checks.codexLite.summary, /Codex lite fixture: ok/);
   assert.match(result.checks.codexLite.details, /no hook\/task checker side effects/);
   assert.match(result.checks.codexLite.details, /floor-conditional language guidance/);
@@ -99,9 +107,11 @@ test("release fixture smoke CLI emits human-readable summaries", () => {
   assert.match(output, /Claude platform fixture: ok/);
   assert.match(output, /Claude platform builder fixture: ok/);
   assert.match(output, /Claude platform lite fixture: ok/);
+  assert.match(output, /Claude foundation auto-update fixture: ok/);
   assert.match(output, /Claude uninstall fixture: ok/);
   assert.match(output, /Claude force-root uninstall fixture: ok/);
   assert.match(output, /Codex operational fixture: ok/);
+  assert.match(output, /Codex foundation auto-update fixture: ok/);
   assert.match(output, /Codex lite fixture: ok/);
   assert.match(output, /Codex builder fixture: ok/);
   assert.match(output, /Codex floor fixture: ok/);
@@ -125,9 +135,11 @@ test("release fixture smoke CLI emits JSON", () => {
   assert.equal(data.checks.claudePlatform.ok, true);
   assert.equal(data.checks.claudePlatformBuilder.ok, true);
   assert.equal(data.checks.claudePlatformLite.ok, true);
+  assert.equal(data.checks.claudeFoundationAutoUpdate.ok, true);
   assert.equal(data.checks.claudeUninstall.ok, true);
   assert.equal(data.checks.claudeForceRootClean.ok, true);
   assert.equal(data.checks.codexOperational.ok, true);
+  assert.equal(data.checks.codexFoundationAutoUpdate.ok, true);
   assert.equal(data.checks.codexLite.ok, true);
   assert.equal(data.checks.codexBuilder.ok, true);
   assert.equal(data.checks.codexFloor.ok, true);

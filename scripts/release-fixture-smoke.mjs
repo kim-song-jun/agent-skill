@@ -322,9 +322,11 @@ export function runReleaseFixtureSmoke({ root = ROOT } = {}) {
     claudePlatform: checkClaudePlatformInstall(root),
     claudePlatformBuilder: checkClaudePlatformBuilderInstall(root),
     claudePlatformLite: checkClaudePlatformLiteInstall(root),
+    claudeFoundationAutoUpdate: checkClaudeFoundationAutoUpdate(root),
     claudeUninstall: checkClaudePlatformUninstall(root),
     claudeForceRootClean: checkClaudePlatformForceRootClean(root),
     codexOperational: checkCodexOperational(root),
+    codexFoundationAutoUpdate: checkCodexFoundationAutoUpdate(root),
     codexLite: checkCodexLite(root),
     codexBuilder: checkCodexBuilder(root),
     codexFloor: checkCodexFloor(root),
@@ -693,6 +695,41 @@ function checkClaudePlatformLiteInstall(root) {
       details: ok
         ? "fresh terminal install-platform Claude lite fixture produced only lite scaffold files, executable non-policy hooks, post-install Claude platform lite doctor coverage, and no HOME patching"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failed]),
+    };
+  });
+}
+
+function checkClaudeFoundationAutoUpdate(root) {
+  return withFixture("agent-skill-release-claude-foundation-auto-", ({ target, home }) => {
+    initGit(target);
+    const { binDir, logPath } = writeStubClaude(home, [
+      "context-mode@context-mode",
+      "harness-builder@agent-skill",
+    ]);
+    const res = runInstallPlatformWithFoundationAuto(root, target, home, ["--theme=builder", "--no-doctor"], "claude", binDir);
+    const log = readIfExists(logPath);
+    const homeSettings = resolve(home, ".claude/settings.local.json");
+    const homeCodexConfig = resolve(home, ".codex/config.toml");
+    const checks = [
+      ["reports approved foundation auto-update", /approved foundation auto-update/.test(res.stdout)],
+      ["writes Claude project scaffold after foundation update", existsSync(resolve(target, "CLAUDE.md"))],
+      ["refreshes official superpowers marketplace", /plugin marketplace update claude-plugins-official/.test(log)],
+      ["refreshes context-mode marketplace", /plugin marketplace update context-mode/.test(log)],
+      ["installs superpowers foundation", /plugin install superpowers@claude-plugins-official/.test(log)],
+      ["updates installed context-mode foundation", /plugin uninstall context-mode@context-mode/.test(log) && /plugin install context-mode@context-mode/.test(log)],
+      ["does not mutate agent-skill plugins during foundation auto-update", !/harness-builder@agent-skill/.test(log)],
+      ["does not patch HOME Claude settings", !existsSync(homeSettings)],
+      ["does not patch HOME Codex config", !existsSync(homeCodexConfig)],
+    ];
+    const failed = checks.filter(([, pass]) => !pass).map(([name]) => name);
+    const ok = res.status === 0 && failed.length === 0;
+
+    return {
+      ok,
+      summary: `Claude foundation auto-update fixture: ${ok ? "ok" : "failed"} (${checks.length - failed.length}/${checks.length} checks)`,
+      details: ok
+        ? "fresh Claude platform install auto-updated approved superpowers/context-mode foundations only before scaffolding and did not patch HOME CLI config"
+        : compactFailure(res, failed),
     };
   });
 }
@@ -1420,6 +1457,41 @@ function checkCodexPlatformUninstall(root) {
   });
 }
 
+function checkCodexFoundationAutoUpdate(root) {
+  return withFixture("agent-skill-release-codex-foundation-auto-", ({ target, home }) => {
+    initGit(target);
+    const { binDir, logPath } = writeStubClaude(home, [
+      "superpowers@claude-plugins-official",
+      "harness-builder-codex@agent-skill",
+    ]);
+    const res = runInstallPlatformWithFoundationAuto(root, target, home, ["--theme=builder", "--no-doctor"], "codex", binDir);
+    const log = readIfExists(logPath);
+    const homeSettings = resolve(home, ".claude/settings.local.json");
+    const homeCodexConfig = resolve(home, ".codex/config.toml");
+    const checks = [
+      ["reports approved foundation auto-update", /approved foundation auto-update/.test(res.stdout)],
+      ["writes Codex project scaffold after foundation update", existsSync(resolve(target, "AGENTS.md"))],
+      ["refreshes official superpowers marketplace", /plugin marketplace update claude-plugins-official/.test(log)],
+      ["refreshes context-mode marketplace", /plugin marketplace update context-mode/.test(log)],
+      ["updates installed superpowers foundation", /plugin uninstall superpowers@claude-plugins-official/.test(log) && /plugin install superpowers@claude-plugins-official/.test(log)],
+      ["installs context-mode foundation", /plugin install context-mode@context-mode/.test(log)],
+      ["does not mutate agent-skill plugins during foundation auto-update", !/harness-builder-codex@agent-skill/.test(log)],
+      ["does not patch HOME Claude settings", !existsSync(homeSettings)],
+      ["does not patch HOME Codex config", !existsSync(homeCodexConfig)],
+    ];
+    const failed = checks.filter(([, pass]) => !pass).map(([name]) => name);
+    const ok = res.status === 0 && failed.length === 0;
+
+    return {
+      ok,
+      summary: `Codex foundation auto-update fixture: ${ok ? "ok" : "failed"} (${checks.length - failed.length}/${checks.length} checks)`,
+      details: ok
+        ? "fresh Codex platform install auto-updated approved superpowers/context-mode foundations only before scaffolding and did not patch HOME CLI config"
+        : compactFailure(res, failed),
+    };
+  });
+}
+
 function checkCodexPlatformForceRootClean(root) {
   return withFixture("agent-skill-release-codex-force-root-clean-", ({ target, home }) => {
     initGit(target);
@@ -1491,6 +1563,22 @@ function runInstallPlatform(root, target, home, extraArgs, platform = "codex") {
   });
 }
 
+function runInstallPlatformWithFoundationAuto(root, target, home, extraArgs, platform = "codex", binDir = null) {
+  return spawnSync("/bin/bash", [
+    resolve(root, "scripts/install-platform.sh"),
+    `--platform=${platform}`,
+    `--target=${target}`,
+    ...extraArgs,
+  ], {
+    encoding: "utf-8",
+    env: {
+      ...process.env,
+      HOME: home,
+      PATH: binDir ? `${binDir}:${process.env.PATH}` : process.env.PATH,
+    },
+  });
+}
+
 function runClaudeInit(root, target, home, extraArgs) {
   return spawnSync(process.execPath, [
     resolve(root, "plugins/harness-builder/bin/init.mjs"),
@@ -1537,6 +1625,28 @@ function writeFile(target, destRel, body) {
   const dest = resolve(target, destRel);
   mkdirSync(dirname(dest), { recursive: true });
   writeFileSync(dest, body);
+}
+
+function writeStubClaude(home, installedPluginIds = []) {
+  const binDir = resolve(home, "bin");
+  const pluginsDir = resolve(home, ".claude/plugins");
+  const logPath = resolve(home, "claude.log");
+  mkdirSync(binDir, { recursive: true });
+  mkdirSync(pluginsDir, { recursive: true });
+  writeFileSync(
+    resolve(pluginsDir, "installed_plugins.json"),
+    `${JSON.stringify({ plugins: Object.fromEntries(installedPluginIds.map((id) => [id, {}])) }, null, 2)}\n`,
+  );
+  writeFileSync(
+    resolve(binDir, "claude"),
+    `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> ${JSON.stringify(logPath)}
+exit 0
+`,
+    { mode: 0o755 },
+  );
+  return { binDir, logPath };
 }
 
 function parseJsonFile(file, label) {
