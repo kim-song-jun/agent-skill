@@ -190,7 +190,7 @@ node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project 
 node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=debug
 ```
 
-From a source checkout, `node /path/to/agent-skill/scripts/doctor.mjs ...` is the equivalent compatibility wrapper. The doctor validates the project-local Claude/Codex scaffold, auto-detects operational, builder, lite, or Codex debug profile when `--profile=auto`, exits non-zero for missing required artifacts, and warns when `superpowers` or `context-mode` are not installed.
+From a source checkout, `node /path/to/agent-skill/scripts/doctor.mjs ...` is the equivalent compatibility wrapper. The doctor validates the project-local Claude/Codex scaffold, auto-detects operational, builder, lite, or Codex debug profile when `--profile=auto`, exits non-zero for missing required artifacts, prints actionable `fix:` commands for missing or stale generated files, and prints `next:` foundation install commands when `superpowers` or `context-mode` are not installed.
 
 Claude/Codex uninstall and cleanup:
 

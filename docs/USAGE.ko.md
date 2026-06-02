@@ -190,7 +190,7 @@ node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project 
 node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=debug
 ```
 
-source checkout에서 실행할 때는 `node /path/to/agent-skill/scripts/doctor.mjs ...` compatibility wrapper가 같은 검사를 수행합니다. doctor는 project-local Claude/Codex scaffold를 검증하고, `--profile=auto`일 때 operational/builder/lite 또는 Codex debug profile을 자동 감지하며, 필수 artifact 누락은 non-zero exit로 보고하고 `superpowers` 또는 `context-mode`가 없으면 경고합니다.
+source checkout에서 실행할 때는 `node /path/to/agent-skill/scripts/doctor.mjs ...` compatibility wrapper가 같은 검사를 수행합니다. doctor는 project-local Claude/Codex scaffold를 검증하고, `--profile=auto`일 때 operational/builder/lite 또는 Codex debug profile을 자동 감지하며, 필수 artifact 누락은 non-zero exit로 보고합니다. 누락되었거나 오래된 생성 파일에는 실행 가능한 `fix:` 명령을 출력하고, `superpowers` 또는 `context-mode`가 없으면 foundation 설치용 `next:` 명령도 함께 출력합니다.
 
 Claude/Codex uninstall과 cleanup:
 

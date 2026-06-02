@@ -183,6 +183,23 @@ Examples:
   node plugins/harness-builder-codex/bin/doctor.mjs --target=. --platform=codex --profile=debug
   node scripts/doctor.mjs --target=. --json`;
 
+function recoveryInstallCommand(platform, profile) {
+  const flags = [`--platform=${platform}`, "--target=<project>"];
+  if (profile === "lite") flags.push("--lite");
+  else if (profile === "builder") flags.push("--theme=builder");
+  else if (profile === "debug") flags.push("--theme=debug");
+  flags.push("--force");
+  return `./scripts/install-platform.sh ${flags.join(" ")}`;
+}
+
+function missingArtifactFix(platform, profile, path) {
+  return `${recoveryInstallCommand(platform, profile)} # restores ${path}`;
+}
+
+function generatedGuidanceFix(platform, profile, path) {
+  return `${recoveryInstallCommand(platform, profile)} # refreshes generated guidance for ${path}`;
+}
+
 export function runDoctor({
   target = process.cwd(),
   platform = "auto",
@@ -200,6 +217,7 @@ export function runDoctor({
       type: "target",
       path: targetAbs,
       message: `target directory does not exist: ${targetAbs}`,
+      fix: "create the target directory or pass --target=<existing-project>",
     });
     return buildResult({ targetAbs, platform, profile, failures, warnings, checks, foundationState: null });
   }
@@ -232,15 +250,15 @@ export function runDoctor({
 
   for (const rel of requiredFiles) {
     const ok = existsSync(resolve(targetAbs, rel));
-    checks.push({
+    const check = {
       ok,
       type: "file",
       path: rel,
       message: ok ? "present" : `missing required file: ${rel}`,
-    });
-    if (!ok) {
-      failures.push({ type: "missing", path: rel, message: `missing required file: ${rel}` });
-    }
+      fix: ok ? undefined : missingArtifactFix(resolvedPlatform, resolvedProfile, rel),
+    };
+    checks.push(check);
+    if (!ok) failures.push(check);
   }
 
   for (const rel of contract.jsonFiles.filter((file) => requiredFiles.includes(file))) {
@@ -248,21 +266,30 @@ export function runDoctor({
     if (!existsSync(abs)) continue;
     const parse = parseJson(abs, rel);
     checks.push(parse);
-    if (!parse.ok) failures.push(parse);
+    if (!parse.ok) {
+      parse.fix = `repair JSON syntax in ${rel}, then re-run doctor`;
+      failures.push(parse);
+    }
   }
 
   for (const check of contract.textChecks ?? []) {
     if (!check.profiles.includes(resolvedProfile)) continue;
     const result = checkTextPatterns(targetAbs, check);
     checks.push(result);
-    if (!result.ok) failures.push(result);
+    if (!result.ok) {
+      result.fix = generatedGuidanceFix(resolvedPlatform, resolvedProfile, result.path);
+      failures.push(result);
+    }
   }
 
   if (["builder", "operational"].includes(resolvedProfile) && contract.qaPersonaPropagation) {
     const result = checkQaPersonaPropagation(targetAbs, contract.qaPersonaPropagation);
     if (result) {
       checks.push(result);
-      if (!result.ok) failures.push(result);
+      if (!result.ok) {
+        result.fix = generatedGuidanceFix(resolvedPlatform, resolvedProfile, result.path);
+        failures.push(result);
+      }
     }
   }
 
@@ -283,6 +310,7 @@ export function runDoctor({
         path: "~/.claude/plugins/installed_plugins.json",
         message: warning.message,
         fix: warning.fix,
+        instructions: warning.instructions,
       });
     }
   }
@@ -324,6 +352,7 @@ function resolvePlatform(targetAbs, platform, failures) {
         type: "usage",
         path: "--platform",
         message: `unknown platform: ${platform}`,
+        fix: "run doctor --help and choose a supported --platform",
       });
       return null;
     }
@@ -340,6 +369,7 @@ function resolvePlatform(targetAbs, platform, failures) {
     type: "detect",
     path: targetAbs,
     message: "unable to auto-detect platform; pass --platform=claude or --platform=codex",
+    fix: "re-run doctor with --platform=claude or --platform=codex",
   });
   return null;
 }
@@ -353,6 +383,7 @@ function resolveProfile(targetAbs, contract, profile, failures) {
       type: "usage",
       path: "--profile",
       message: `unknown profile: ${profile}`,
+      fix: "run doctor --help and choose a supported --profile for this platform",
     });
     return null;
   }
@@ -488,6 +519,13 @@ export function parseArgs(argv) {
 
 export function printHuman(result) {
   const label = CONTRACTS[result.platform]?.label || result.platform;
+  const printInstructions = (instructions) => {
+    if (!Array.isArray(instructions) || instructions.length === 0) return;
+    for (const instruction of instructions) {
+      console.log(`    next: ${instruction}`);
+    }
+  };
+
   console.log(`harness doctor: ${result.ok ? "ok" : "failed"}`);
   console.log(`target: ${result.target}`);
   console.log(`platform: ${label}`);
@@ -499,6 +537,7 @@ export function printHuman(result) {
     for (const failure of result.failures) {
       console.log(`  - ${failure.message}`);
       if (failure.fix) console.log(`    fix: ${failure.fix}`);
+      printInstructions(failure.instructions);
     }
   }
   if (result.warnings.length > 0) {
@@ -507,6 +546,7 @@ export function printHuman(result) {
     for (const warning of result.warnings) {
       console.log(`  - ${warning.message}`);
       if (warning.fix) console.log(`    fix: ${warning.fix}`);
+      printInstructions(warning.instructions);
     }
   }
 }

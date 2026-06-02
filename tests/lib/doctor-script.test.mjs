@@ -121,7 +121,27 @@ test("doctor validates an installed Codex operational scaffold", () => {
     assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug-codex/lib/debug-artifacts.mjs"), "operational doctor must validate debug artifact helper");
     assert.ok(data.checks.some((check) => check.path === "docs/debug/index.md"), "operational doctor must validate debug docs");
     assert.deepEqual(data.failures, []);
-    assert.ok(data.warnings.some((warning) => /foundations missing: superpowers, context-mode/.test(warning.message)));
+    const foundationWarning = data.warnings.find((warning) => /foundations missing: superpowers, context-mode/.test(warning.message));
+    assert.ok(foundationWarning);
+    assert.match(foundationWarning.fix, /scripts\/update\.sh\) --foundations-only$/);
+    assert.deepEqual(foundationWarning.instructions, [
+      "/plugin install superpowers@claude-plugins-official",
+      "/plugin install context-mode@context-mode",
+    ]);
+
+    const human = spawnSync(process.execPath, [
+      DOCTOR,
+      "--platform=codex",
+      `--target=${target}`,
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(human.status, 0, `stdout:\n${human.stdout}\nstderr:\n${human.stderr}`);
+    assert.match(human.stdout, /Warnings:/);
+    assert.match(human.stdout, /next: \/plugin install superpowers@claude-plugins-official/);
+    assert.match(human.stdout, /next: \/plugin install context-mode@context-mode/);
   } finally {
     rmSync(target, { recursive: true, force: true });
     rmSync(home, { recursive: true, force: true });
@@ -162,7 +182,9 @@ test("doctor accepts Codex lite but fails the same target when operational is re
     ], { encoding: "utf-8" });
 
     assert.notEqual(operational.status, 0, "lite scaffold must not satisfy operational checks");
-    assert.match(`${operational.stdout}\n${operational.stderr}`, /\.codex\/skills\/agent-all-codex\/SKILL\.md|\.agent-all\.json/);
+    const output = `${operational.stdout}\n${operational.stderr}`;
+    assert.match(output, /\.codex\/skills\/agent-all-codex\/SKILL\.md|\.agent-all\.json/);
+    assert.match(output, /fix: \.\/scripts\/install-platform\.sh --platform=codex --target=<project> --force # restores \.agent-all\.json/);
   } finally {
     rmSync(target, { recursive: true, force: true });
   }
@@ -218,7 +240,12 @@ test("doctor validates a Codex debug-only scaffold without requiring builder fil
 
     assert.notEqual(broken.status, 0, "missing debug skill must fail debug doctor");
     const brokenData = JSON.parse(broken.stdout);
-    assert.ok(brokenData.failures.some((failure) => failure.path === ".codex/skills/debug-codex/SKILL.md"));
+    const debugFailure = brokenData.failures.find((failure) => failure.path === ".codex/skills/debug-codex/SKILL.md");
+    assert.ok(debugFailure);
+    assert.equal(
+      debugFailure.fix,
+      "./scripts/install-platform.sh --platform=codex --target=<project> --theme=debug --force # restores .codex/skills/debug-codex/SKILL.md",
+    );
   } finally {
     rmSync(target, { recursive: true, force: true });
     rmSync(home, { recursive: true, force: true });
@@ -241,7 +268,9 @@ test("doctor rejects the debug profile for Claude project scaffolds", () => {
     assert.notEqual(res.status, 0, "Claude debug project bootstrap is not a doctor profile");
     const data = JSON.parse(res.stdout);
     assert.equal(data.ok, false);
-    assert.ok(data.failures.some((failure) => failure.path === "--profile" && /unknown profile: debug/.test(failure.message)));
+    const profileFailure = data.failures.find((failure) => failure.path === "--profile" && /unknown profile: debug/.test(failure.message));
+    assert.ok(profileFailure);
+    assert.equal(profileFailure.fix, "run doctor --help and choose a supported --profile for this platform");
   } finally {
     rmSync(target, { recursive: true, force: true });
   }
@@ -332,8 +361,18 @@ test("doctor auto-detects platform and exits non-zero for missing required files
     const data = JSON.parse(res.stdout);
     assert.equal(data.ok, false);
     assert.equal(data.platform, "codex");
-    assert.ok(data.failures.some((failure) => failure.path === ".codex/skills/dev/SKILL.md"));
-    assert.ok(data.failures.some((failure) => failure.path === ".agent-all.json"));
+    const devFailure = data.failures.find((failure) => failure.path === ".codex/skills/dev/SKILL.md");
+    const agentAllFailure = data.failures.find((failure) => failure.path === ".agent-all.json");
+    assert.ok(devFailure);
+    assert.ok(agentAllFailure);
+    assert.equal(
+      devFailure.fix,
+      "./scripts/install-platform.sh --platform=codex --target=<project> --force # restores .codex/skills/dev/SKILL.md",
+    );
+    assert.equal(
+      agentAllFailure.fix,
+      "./scripts/install-platform.sh --platform=codex --target=<project> --force # restores .agent-all.json",
+    );
   } finally {
     rmSync(target, { recursive: true, force: true });
   }
@@ -387,8 +426,18 @@ test("doctor rejects operational scaffolds missing orchestration guidance and QA
     assert.notEqual(res.status, 0, "stale operational guidance must fail doctor");
     const data = JSON.parse(res.stdout);
     assert.equal(data.ok, false);
-    assert.ok(data.failures.some((failure) => failure.path === "AGENTS.md" && /Orchestration Contract/.test(failure.message)));
-    assert.ok(data.failures.some((failure) => failure.type === "persona" && /auth/.test(failure.message)));
+    const guidanceFailure = data.failures.find((failure) => failure.path === "AGENTS.md" && /Orchestration Contract/.test(failure.message));
+    const personaFailure = data.failures.find((failure) => failure.type === "persona" && /auth/.test(failure.message));
+    assert.ok(guidanceFailure);
+    assert.ok(personaFailure);
+    assert.equal(
+      guidanceFailure.fix,
+      "./scripts/install-platform.sh --platform=codex --target=<project> --theme=builder --force # refreshes generated guidance for AGENTS.md",
+    );
+    assert.equal(
+      personaFailure.fix,
+      "./scripts/install-platform.sh --platform=codex --target=<project> --theme=builder --force # refreshes generated guidance for AGENTS.md -> .codex/skills/qa-reviewer/SKILL.md",
+    );
   } finally {
     rmSync(target, { recursive: true, force: true });
     rmSync(home, { recursive: true, force: true });
