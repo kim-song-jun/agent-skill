@@ -29,6 +29,7 @@ const RELEASE_SMOKE_CONTRACT = {
     /install-all\.sh" --dry-run --claude-code/,
     /install-all\.sh" --dry-run --cli=codex/,
     /node --test[\s\S]{0,900}tests\/lib\/release-audit\.test\.mjs[\s\S]{0,900}tests\/lib\/release-install-scripts\.test\.mjs/,
+    /tests\/lib\/release-doc-contract\.test\.mjs/,
     /scripts\/sync-lib\.mjs --check/,
     /full test suite/,
   ],

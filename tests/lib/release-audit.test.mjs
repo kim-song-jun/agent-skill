@@ -217,6 +217,50 @@ test("release audit fails incomplete shared Claude/Codex project installer contr
   assert.match(codexInstaller.details, /--no-instrument/);
 });
 
+test("release audit fails release smoke without the release doc contract gate", () => {
+  const root = mkdtempSync(resolve(tmpdir(), "release-audit-release-smoke-doc-contract-"));
+  writeRel(
+    root,
+    ".claude-plugin/marketplace.json",
+    JSON.stringify({
+      plugins: [
+        { name: "harness-builder" },
+        { name: "harness-floor" },
+        { name: "harness-thrift" },
+        { name: "harness-explore" },
+        { name: "harness-debug" },
+      ],
+    }),
+  );
+  writeRel(
+    root,
+    "scripts/release-smoke.sh",
+    [
+      "#!/usr/bin/env bash",
+      "# release-smoke.sh - release gate for the Claude Code native plugins and Claude/Codex project renderers.",
+      "# Usage: ./scripts/release-smoke.sh --fast --with-live-cli",
+      "probe_codex_exec_surface() { :; }",
+      'node "$REPO_ROOT/scripts/release-audit.mjs"',
+      'node "$REPO_ROOT/scripts/release-fixture-smoke.mjs"',
+      'bash "$REPO_ROOT/scripts/install-all.sh" --dry-run --claude-code',
+      'bash "$REPO_ROOT/scripts/install-all.sh" --dry-run --cli=codex',
+      "node --test tests/lib/release-audit.test.mjs tests/lib/release-install-scripts.test.mjs",
+      "node scripts/sync-lib.mjs --check",
+      'run_step "full test suite" node --test "${TEST_FILES[@]}"',
+      "",
+    ].join("\n"),
+  );
+
+  const result = runReleaseAudit({ root, platforms: ["claude"] });
+
+  assert.equal(result.ok, false);
+  const failed = result.platforms.claude.checks.find(
+    (check) => !check.ok && check.name === "scripts/release-smoke.sh matches release contract",
+  );
+  assert.ok(failed, JSON.stringify(result.platforms.claude.checks, null, 2));
+  assert.match(failed.details, /release-doc-contract/);
+});
+
 test("release audit fails doctor cores without recovery guidance", () => {
   const root = mkdtempSync(resolve(tmpdir(), "release-audit-doctor-core-"));
   writeRel(
