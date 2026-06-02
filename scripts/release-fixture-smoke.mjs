@@ -630,6 +630,7 @@ function checkClaudePlatformBuilderInstall(root) {
     const frontendDev = readIfExists(resolve(target, ".claude/agents/frontend-dev.md"));
     const backendDev = readIfExists(resolve(target, ".claude/agents/backend-dev.md"));
     const qaReviewer = readIfExists(resolve(target, ".claude/agents/qa-reviewer.md"));
+    const roleBodies = readClaudeOperationalRoleBodies(target);
     const verificationAuditReviewers = {
       "reviewer": readIfExists(resolve(target, ".claude/agents/reviewer.md")),
       "verification-reviewer": readIfExists(resolve(target, ".claude/agents/verification-reviewer.md")),
@@ -648,6 +649,7 @@ function checkClaudePlatformBuilderInstall(root) {
       ["CLAUDE.md does not claim .agent-all language alignment", !/Downstream `\/agent-all` config keeps/.test(claude)],
       ...implementationRoutingChecks("CLAUDE.md", claude),
       ...implementationRoutingChecks(".claude platform builder orchestrator", orchestrator),
+      ...personaFoundationMatrixChecks("Claude", "agent", roleBodies, /CLAUDE\.md[\s\S]{0,160}docs\/tasks/),
       [".claude platform builder frontend-dev embeds frontend discipline", /frontend layer[\s\S]{0,120}UI components[\s\S]{0,80}client-side logic[\s\S]{0,80}styles/.test(frontendDev)],
       [".claude platform builder backend-dev embeds backend discipline", /backend layer[\s\S]{0,120}APIs[\s\S]{0,80}business logic[\s\S]{0,80}migrations/.test(backendDev)],
       ["CLAUDE.md includes configured QA persona", /Configured QA Personas[\s\S]{0,120}auth/.test(claude)],
@@ -671,7 +673,7 @@ function checkClaudePlatformBuilderInstall(root) {
       ok,
       summary: `Claude platform builder fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
       details: ok
-        ? "fresh terminal install-platform Claude builder fixture produced only builder-heavy artifacts, executable generated hooks and task checker, QA and base/specialized reviewer audit tokens, post-install Claude builder doctor coverage, role gate matrix, QA persona propagation, no floor configs, and no HOME patching"
+        ? "fresh terminal install-platform Claude builder fixture produced only builder-heavy artifacts, executable generated hooks and task checker, QA and base/specialized reviewer audit tokens, post-install Claude builder doctor coverage, role gate matrix, complete persona foundation/orchestration matrix, QA persona propagation, no floor configs, and no HOME patching"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failed]),
     };
   });
@@ -1292,6 +1294,7 @@ function checkCodexBuilder(root) {
     const frontendDev = readIfExists(resolve(target, ".codex/skills/frontend-dev/SKILL.md"));
     const backendDev = readIfExists(resolve(target, ".codex/skills/backend-dev/SKILL.md"));
     const qaReviewer = readIfExists(resolve(target, ".codex/skills/qa-reviewer/SKILL.md"));
+    const roleBodies = readCodexOperationalRoleBodies(target);
     const verificationAuditReviewers = {
       "reviewer": readIfExists(resolve(target, ".codex/skills/reviewer/SKILL.md")),
       "verification-reviewer": readIfExists(resolve(target, ".codex/skills/verification-reviewer/SKILL.md")),
@@ -1307,6 +1310,7 @@ function checkCodexBuilder(root) {
       ["AGENTS.md includes role gate matrix", /Role Gate Matrix/.test(agents)],
       ...implementationRoutingChecks("AGENTS.md", agents),
       ...implementationRoutingChecks(".codex orchestrator skill", orchestrator),
+      ...personaFoundationMatrixChecks("Codex", "skill", roleBodies, /AGENTS\.md[\s\S]{0,160}docs\/tasks/),
       [".codex frontend-dev skill embeds frontend responsibilities", /Implement UI components, routes, styles, client state/.test(frontendDev)],
       [".codex backend-dev skill embeds backend responsibilities", /Implement APIs, services, jobs, migrations, persistence/.test(backendDev)],
       ["qa-reviewer skill includes QA audit tokens", /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/.test(qaReviewer)],
@@ -1328,7 +1332,7 @@ function checkCodexBuilder(root) {
       ok,
       summary: `Codex builder fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
       details: ok
-        ? "fresh git fixture received only Codex builder artifacts, floor-conditional language guidance, executable hook/task checker, post-install builder doctor coverage, role gate matrix, QA and base/specialized reviewer audit tokens, and no global config side effects"
+        ? "fresh git fixture received only Codex builder artifacts, floor-conditional language guidance, executable hook/task checker, post-install builder doctor coverage, role gate matrix, complete persona foundation/orchestration matrix, QA and base/specialized reviewer audit tokens, and no global config side effects"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failedStdout, ...executableScriptErrors(target, CODEX_EXECUTABLE_GENERATED), existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });

@@ -40,6 +40,7 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.claudePlatformBuilder.summary, /Claude platform builder fixture: ok \(27\/27 file checks\)/);
   assert.match(result.checks.claudePlatformBuilder.details, /only builder-heavy artifacts/);
   assert.match(result.checks.claudePlatformBuilder.details, /post-install Claude builder doctor coverage/);
+  assert.match(result.checks.claudePlatformBuilder.details, /complete persona foundation\/orchestration matrix/);
   assert.match(result.checks.claudePlatformBuilder.details, /no floor configs/);
   assert.match(result.checks.claudePlatformBuilder.details, /no HOME patching/);
   assert.match(result.checks.claudePlatformLite.summary, /Claude platform lite fixture: ok \(25\/25 file checks\)/);
@@ -75,6 +76,7 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.codexBuilder.summary, /Codex builder fixture: ok \(28\/28 file checks\)/);
   assert.match(result.checks.codexBuilder.details, /executable hook\/task checker/);
   assert.match(result.checks.codexBuilder.details, /post-install builder doctor coverage/);
+  assert.match(result.checks.codexBuilder.details, /complete persona foundation\/orchestration matrix/);
   assert.match(result.checks.codexBuilder.details, /QA and base\/specialized reviewer audit tokens/);
   assert.match(result.checks.codexBuilder.details, /only Codex builder artifacts/);
   assert.match(result.checks.codexBuilder.details, /floor-conditional language guidance/);
