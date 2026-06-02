@@ -81,6 +81,11 @@ test("readme files describe the current Codex config surface and current test co
     assert.match(body, /scripts\/release-smoke\.sh --fast/);
     assert.match(body, /scripts\/release-smoke\.sh --fast --with-live-cli/);
     assert.match(body, /with-live-cli[\s\S]{0,260}(Claude plugin marketplace\/install|Claude plugin marketplace\/install 명령 표면)/i);
+    assert.match(body, /\/thrift` compact (delivery|전달)[\s\S]{0,220}API-gated advisory path/i);
+    assert.match(body, /Provider-backed thrift summarizer/i);
+    assert.match(body, /@anthropic-ai\/sdk[\s\S]{0,220}(implemented and tested|구현\/테스트 완료)/i);
+    assert.match(body, /Codex[\s\S]{0,260}(dependency-free heuristic summarizer|dependency-free heuristic summarizer)/i);
+    assert.doesNotMatch(body, /Anthropic\/OpenAI\/Vertex SDK (?:hookup|연결)[\s\S]{0,120}(?:deferred|연기)|Currently mock toolCallers|현재 mock toolCaller/i);
     assert.match(body, /scripts\/release-audit\.mjs/);
     assert.match(body, /scripts\/release-fixture-smoke\.mjs/);
     assert.match(
@@ -396,8 +401,9 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /public CLI script executable\/shebang packaging/i);
   assert.match(plan, /generated hook\/task-checker executable packaging/i);
   assert.match(plan, /Claude\/Codex QA and base\/specialized reviewer audit-token contracts/i);
-  assert.match(plan, /Claude 54\/54 and Codex 59\/59 readiness checks passing/i);
+  assert.match(plan, /Claude 54\/54 and Codex 60\/60 readiness checks passing/i);
   assert.match(plan, /Claude companion root guidance/i);
+  assert.match(plan, /Codex thrift advisory summariser contract/i);
   assert.match(plan, /doctor recovery guidance/i);
   assert.match(plan, /Codex floor-conditional language guidance/i);
   assert.match(plan, /POSCO MDS-style Django\/Vue monorepo routing/i);

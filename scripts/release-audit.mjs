@@ -451,6 +451,19 @@ const PLATFORM_CONTRACTS = {
         forbidden: [/codex skill run/i, /codex exec\s+["'][^"']+["']/i],
       },
       {
+        file: "plugins/harness-thrift-codex/skills/thrift-codex/phases/3-summariser.md",
+        label: "advisory summariser contract",
+        patterns: [
+          /Release default[\s\S]{0,180}heuristicSummariseFn/,
+          /dependency-free[\s\S]{0,160}no model call/i,
+          /Model-backed extension point/i,
+          /gpt-5-nano/i,
+          /gpt-5-nano` is the packaged deployment default/i,
+          /API-gated extension path/i,
+        ],
+        forbidden: [/TBD|placeholder default|Future \(v2\)|when Codex ships/i],
+      },
+      {
         file: "plugins/harness-debug-codex/skills/debug-codex/SKILL.md",
         patterns: [
           /^---\nname: debug-codex\n/m,

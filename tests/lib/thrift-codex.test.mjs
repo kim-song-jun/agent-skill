@@ -88,12 +88,19 @@ test("thrift-codex release docs describe model default as overrideable, not plac
   for (const rel of [
     "README.md",
     "skills/thrift-codex/phases/1-config.md",
+    "skills/thrift-codex/phases/3-summariser.md",
     "skills/thrift-codex/lib/config-loader.mjs",
   ]) {
     const body = readFileSync(resolve(PLUGIN_ROOT, rel), "utf-8");
     assert.match(body, /gpt-5-nano/);
-    assert.doesNotMatch(body, /TBD|placeholder/i, rel);
+    assert.doesNotMatch(body, /TBD|placeholder|Future \(v2\)|when Codex ships/i, rel);
   }
+
+  const phase3 = readFileSync(resolve(SKILL_ROOT, "phases/3-summariser.md"), "utf-8");
+  assert.match(phase3, /Release default[\s\S]{0,180}heuristicSummariseFn/);
+  assert.match(phase3, /dependency-free[\s\S]{0,160}no model call/i);
+  assert.match(phase3, /Model-backed extension point/i);
+  assert.match(phase3, /gpt-5-nano` is the packaged deployment default/i);
 });
 
 // ---------- config-loader ----------

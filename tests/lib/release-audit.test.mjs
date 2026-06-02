@@ -19,9 +19,9 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
   assert.equal(result.platforms.claude.checks.length, 54);
-  assert.equal(result.platforms.codex.checks.length, 59);
+  assert.equal(result.platforms.codex.checks.length, 60);
   assert.match(result.platforms.claude.summary, /Claude: ok \(54\/54 checks\)/);
-  assert.match(result.platforms.codex.summary, /Codex: ok \(59\/59 checks\)/);
+  assert.match(result.platforms.codex.summary, /Codex: ok \(60\/60 checks\)/);
   for (const platform of Object.values(result.platforms)) {
     const names = platform.checks.map((check) => check.name);
     const duplicateNames = names.filter((name, index) => names.indexOf(name) !== index);
@@ -45,6 +45,9 @@ test("release audit reports Claude and Codex as independently ready", () => {
   );
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "plugins/harness-builder/skills/agent-init/lib/doctor-core.mjs matches release contract"),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some((check) => check.name === "plugins/harness-thrift-codex/skills/thrift-codex/phases/3-summariser.md matches release contract (advisory summariser contract)"),
   );
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh matches release contract"),

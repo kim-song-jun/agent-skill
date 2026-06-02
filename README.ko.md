@@ -715,8 +715,8 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 | Claude/Codex skills | ✅ 오늘 출시 | Claude core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug`; Codex는 `harness-debug-codex` 추가 |
 | Claude/Codex CLI 런타임 | ✅ live smoke probe 가능 | `./scripts/release-smoke.sh --fast --with-live-cli`이 설치된 `claude`/`codex` 버전, Claude plugin marketplace/install 명령 표면, Codex `exec [PROMPT]` 지원을 probe함; release fixture smoke도 Claude 터미널 `install-platform.sh --platform=claude` operational/builder/`--lite` 경로, Codex operational/lite/builder/floor/thrift/debug fresh install, Claude/Codex install→uninstall 및 `--force-root-clean` roundtrip, 설치된 Codex `agent-all-codex` 및 `visual-qa-codex` sequential helper, Codex debug-only fixture를 검증 |
 | 기타 CLI 런타임 | ⚠️ 수동 검증 유지 | Cursor/Copilot/Gemini 런타임 체크는 `docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md` 체크리스트에 유지 |
-| `/thrift` v2 programmatic compact | ⏳ 연기 | Claude Code의 programmatic compact API 대기 |
-| Anthropic/OpenAI/Vertex SDK 연결 | ⏳ 연기 | 현재 mock toolCaller; 프로덕션 연결은 peer dep 필요 |
+| `/thrift` compact 전달 | ⚠️ API-gated advisory path | Claude/Codex 모두 durable summary 파일을 쓰고 `/compact` 사용을 안내; programmatic compact injection은 host CLI가 안정 API를 노출하면 연결 |
+| Provider-backed thrift summarizer | ✅ release-scoped | Claude의 선택적 `@anthropic-ai/sdk` summarizer 경로는 구현/테스트 완료; Codex는 dependency-free heuristic summarizer, configurable `gpt-5-nano` model metadata, OpenAI-rate audit heuristic을 제공 |
 
 버전: `harness-floor` `v0.5.1` (visual-qa 런타임 wiring + agent-init i18n patch), 나머지 Claude Code 코어 플러그인 `v0.2.0`, 플랫폼별 포트 `v0.1.0`.
 
