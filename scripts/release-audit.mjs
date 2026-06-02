@@ -12,6 +12,7 @@ const PUBLIC_CLI_SCRIPTS = [
   "scripts/install-all.sh",
   "scripts/install-platform.sh",
   "scripts/release-audit.mjs",
+  "scripts/release-candidate.mjs",
   "scripts/release-fixture-smoke.mjs",
   "scripts/release-smoke.sh",
   "scripts/sync-lib.mjs",
@@ -70,6 +71,21 @@ const RELEASE_CANDIDATE_LIFECYCLE = {
   ],
 };
 
+const RELEASE_CANDIDATE_SCRIPT_CONTRACT = {
+  file: "scripts/release-candidate.mjs",
+  label: "release-candidate evidence script",
+  patterns: [
+    /buildReleaseCandidateReport/,
+    /clean worktree before release-candidate tagging/,
+    /marketplace plugins align with plugin manifests/,
+    /README\/README\.ko Versioning matches plugin manifests/,
+    /CHANGELOG files are release-candidate ready/,
+    /no stale deferred\/mock release wording/,
+    /recommendedTag/,
+    /release-smoke\.sh --fast --with-live-cli/,
+  ],
+};
+
 const PLATFORM_CONTRACTS = {
   claude: {
     label: "Claude",
@@ -109,6 +125,7 @@ const PLATFORM_CONTRACTS = {
       RELEASE_SMOKE_CONTRACT,
       USER_OBJECTIVE_RELEASE_MATRIX,
       RELEASE_CANDIDATE_LIFECYCLE,
+      RELEASE_CANDIDATE_SCRIPT_CONTRACT,
       {
         file: "plugins/harness-builder/skills/agent-init/SKILL.md",
         patterns: [
@@ -406,6 +423,7 @@ const PLATFORM_CONTRACTS = {
       RELEASE_SMOKE_CONTRACT,
       USER_OBJECTIVE_RELEASE_MATRIX,
       RELEASE_CANDIDATE_LIFECYCLE,
+      RELEASE_CANDIDATE_SCRIPT_CONTRACT,
       {
         file: "plugins/harness-builder-codex/skills/codex-init/SKILL.md",
         patterns: [

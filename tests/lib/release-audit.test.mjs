@@ -18,10 +18,10 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.ok, true);
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
-  assert.equal(result.platforms.claude.checks.length, 56);
-  assert.equal(result.platforms.codex.checks.length, 62);
-  assert.match(result.platforms.claude.summary, /Claude: ok \(56\/56 checks\)/);
-  assert.match(result.platforms.codex.summary, /Codex: ok \(62\/62 checks\)/);
+  assert.equal(result.platforms.claude.checks.length, 57);
+  assert.equal(result.platforms.codex.checks.length, 63);
+  assert.match(result.platforms.claude.summary, /Claude: ok \(57\/57 checks\)/);
+  assert.match(result.platforms.codex.summary, /Codex: ok \(63\/63 checks\)/);
   for (const platform of Object.values(result.platforms)) {
     const names = platform.checks.map((check) => check.name);
     const duplicateNames = names.filter((name, index) => names.indexOf(name) !== index);
@@ -42,6 +42,11 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.ok(
     result.platforms.claude.checks.some(
       (check) => check.name === "tests/manual-checklist.md matches release contract (release candidate lifecycle)",
+    ),
+  );
+  assert.ok(
+    result.platforms.claude.checks.some(
+      (check) => check.name === "scripts/release-candidate.mjs matches release contract (release-candidate evidence script)",
     ),
   );
   assert.ok(
@@ -80,6 +85,11 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.ok(
     result.platforms.codex.checks.some(
       (check) => check.name === "tests/manual-checklist.md matches release contract (release candidate lifecycle)",
+    ),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some(
+      (check) => check.name === "scripts/release-candidate.mjs matches release contract (release-candidate evidence script)",
     ),
   );
   assert.ok(
