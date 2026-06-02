@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1769%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-18-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1776%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-18-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..." --loop --qa` per feature; the agent brainstorms → plans → writes → tests → **visually QAs every page** → opens the PR — and keeps iterating until tests AND the UI both pass — without you babysitting every turn.
 
@@ -705,7 +705,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 - **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for design docs per plugin.
 - **All 18 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
-- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1769 tests, all green.
+- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1776 tests, all green.
 - **Per-platform porting** — see specs ending in `-impl-spec.md` or `-decomposition.md` under `docs/superpowers/specs/`.
 - **Cross-platform support matrix** — see [docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md](docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md).
 - **Hook precedence (if you're mixing plugins that all register hooks)** — see [docs/superpowers/specs/2026-05-18-hook-precedence-integration.md](docs/superpowers/specs/2026-05-18-hook-precedence-integration.md).
@@ -716,7 +716,8 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 | Layer | Status | Note |
 |---|---|---|
-| Unit/integration tests | ✅ **1769/1769 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-candidate evidence, release-fixture-smoke, command-surface, doctor, cleanup, and visual-qa regressions |
+| Unit/integration tests | ✅ **1776/1776 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-candidate evidence, release publish preflight, target-project smoke, release-fixture-smoke, command-surface, doctor, cleanup, and visual-qa regressions |
+| Release gate | ✅ local deploy gate verified | This branch intentionally ships no `.github/workflows/release.yml`; deployment uses release-candidate evidence, release-audit, fresh fixtures, `./scripts/release-smoke.sh --fast --with-live-cli`, POSCO target smoke, `node --test`, and vendored-lib sync without requiring GitHub `workflow` scope |
 | Project install renderers (Claude + 5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
 | Marketplace registration | ✅ 18 plugins listed | sync between local + origin |
 | Claude/Codex skills | ✅ ship today | Claude core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug`; Codex adds `harness-debug-codex` |
@@ -732,7 +733,10 @@ Versioning: `harness-builder` at `v0.3.0`, `harness-floor` at `v0.5.1` (visual-q
 Treat [tests/manual-checklist.md](tests/manual-checklist.md) as the release map. A Claude/Codex release candidate is deployable only when one clean commit has all of this evidence:
 
 - Clean worktree with `git rev-parse HEAD` recorded, plus plugin manifests, `.claude-plugin/marketplace.json`, README/README.ko Versioning, and CHANGELOG.md/CHANGELOG.ko.md aligned.
-- `node scripts/release-audit.mjs`, `node scripts/release-fixture-smoke.mjs`, `./scripts/release-smoke.sh --fast --with-live-cli`, `node --test`, and `node scripts/sync-lib.mjs --check` all pass.
+- `node scripts/release-audit.mjs`, `node scripts/release-fixture-smoke.mjs`, `./scripts/release-smoke.sh --fast --with-live-cli`, `node scripts/release-publish-preflight.mjs --base=origin/main`, `node --test`, and `node scripts/sync-lib.mjs --check` all pass.
+- The local-only deployment gate passes for the same commit: release-candidate evidence, release-audit, fresh release fixtures, live Claude/Codex smoke, POSCO target smoke, the full Node test suite, and vendored-lib sync.
+- `node scripts/release-publish-preflight.mjs --base=origin/main` passes before branch/tag push. This branch ships no workflow file, so GitHub CLI `workflow` scope is not required.
+- `node scripts/target-project-smoke.mjs --target=/path/to/target --platform=claude,codex --lang=ko` passes for each intended rollout project; if the doctor fails, refresh with the recommended `install-platform.sh --force` command and rerun the smoke.
 - The live probe output records the installed `claude`/`codex` versions, Claude plugin marketplace/install command surfaces, and Codex `exec [PROMPT]` support for that same SHA.
 - The release candidate tag is date-stamped and points at the verified SHA. Rollback uses a previous verified tag/SHA plus the documented update/install path and post-rollback doctor, never hand-edited generated files.
 
@@ -773,7 +777,9 @@ Before submitting:
 ./scripts/release-smoke.sh --fast --with-live-cli  # also probe installed Claude/Codex CLIs and command surfaces
 node scripts/release-audit.mjs           # Claude/Codex release readiness matrix
 node scripts/release-fixture-smoke.mjs   # fresh Claude/Codex release fixtures
-node --test                              # 1769/1769 must pass
+node scripts/release-publish-preflight.mjs --base=origin/main
+node scripts/target-project-smoke.mjs --target=/path/to/project --platform=claude,codex --lang=ko
+node --test                              # 1776/1776 must pass
 node scripts/sync-lib.mjs --check        # vendored shared libs in sync
 ```
 

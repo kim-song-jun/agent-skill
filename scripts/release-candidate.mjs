@@ -10,6 +10,8 @@ const GATE_COMMANDS = [
   "node scripts/release-audit.mjs",
   "node scripts/release-fixture-smoke.mjs",
   "./scripts/release-smoke.sh --fast --with-live-cli",
+  "node scripts/release-publish-preflight.mjs --base=origin/main",
+  "node scripts/target-project-smoke.mjs --target=/path/to/target --platform=claude,codex --lang=ko",
   "node --test",
   "node scripts/sync-lib.mjs --check",
 ];

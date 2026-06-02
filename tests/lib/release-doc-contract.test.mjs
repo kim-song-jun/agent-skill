@@ -67,8 +67,8 @@ test("usage docs describe agent-init language persistence", () => {
 test("readme files describe the current Codex config surface and current test count", () => {
   for (const path of ["README.md", "README.ko.md"]) {
     const body = read(path);
-    assert.match(body, /1769\/1769/);
-    assert.doesNotMatch(body, /1721\/1721|1721%20passing|1721 tests|1726\/1726|1726%20passing|1726 tests|1729\/1729|1729%20passing|1729 tests|1741\/1741|1741%20passing|1741 tests|1742\/1742|1742%20passing|1742 tests|1746\/1746|1746%20passing|1746 tests|1749\/1749|1749%20passing|1749 tests|1752\/1752|1752%20passing|1752 tests|1755\/1755|1755%20passing|1755 tests|1756\/1756|1756%20passing|1756 tests|1758\/1758|1758%20passing|1758 tests|1759\/1759|1759%20passing|1759 tests|1760\/1760|1760%20passing|1760 tests|1761\/1761|1761%20passing|1761 tests|1762\/1762|1762%20passing|1762 tests|1763\/1763|1763%20passing|1763 tests|1764\/1764|1764%20passing|1764 tests|1766\/1766|1766%20passing|1766 tests/);
+    assert.match(body, /1776\/1776/);
+    assert.doesNotMatch(body, /1721\/1721|1721%20passing|1721 tests|1726\/1726|1726%20passing|1726 tests|1729\/1729|1729%20passing|1729 tests|1741\/1741|1741%20passing|1741 tests|1742\/1742|1742%20passing|1742 tests|1746\/1746|1746%20passing|1746 tests|1749\/1749|1749%20passing|1749 tests|1752\/1752|1752%20passing|1752 tests|1755\/1755|1755%20passing|1755 tests|1756\/1756|1756%20passing|1756 tests|1758\/1758|1758%20passing|1758 tests|1759\/1759|1759%20passing|1759 tests|1760\/1760|1760%20passing|1760 tests|1761\/1761|1761%20passing|1761 tests|1762\/1762|1762%20passing|1762 tests|1763\/1763|1763%20passing|1763 tests|1764\/1764|1764%20passing|1764 tests|1766\/1766|1766%20passing|1766 tests|1769\/1769|1769%20passing|1769 tests|1772\/1772|1772%20passing|1772 tests|1775\/1775|1775%20passing|1775 tests/);
     assert.doesNotMatch(body, /1279\/1279|1279\+|1279%20passing|1547\+/);
     assert.doesNotMatch(body, /1719\/1719|1719%20passing|1719 tests/);
     assert.doesNotMatch(
@@ -397,8 +397,8 @@ test("Codex runtime specs describe the current sequential surface instead of sta
     assert.doesNotMatch(body, /\[\[hooks\.agent\]\]/);
     assert.doesNotMatch(body, /1246\/1246|1279\/1279|1645\/1645|1646\/1646|1647\/1647|1648\/1648|1649\/1649|1650\/1650|1651\/1651|1652\/1652|1654\/1654|1656\/1656|1657\/1657|1659\/1659|1660\/1660|1661\/1661|1662\/1662|1663\/1663|1664\/1664|1665\/1665|1666\/1666|1667\/1667|1668\/1668|1669\/1669|1670\/1670|1671\/1671|1672\/1672|1673\/1673|1674\/1674|1675\/1675|1676\/1676|1681\/1681|1684\/1684|1685\/1685|1687\/1687|1688\/1688|1692\/1692|1696\/1696|1697\/1697|1698\/1698|1703\/1703|1704\/1704|1705\/1705|1706\/1706|1711\/1711|1715\/1715|1716\/1716|1718\/1718/);
     assert.doesNotMatch(body, /1719\/1719|1721\/1721/);
-    assert.doesNotMatch(body, /1726\/1726|1729\/1729|1741\/1741|1742\/1742|1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|1758\/1758|1759\/1759|1760\/1760|1761\/1761|1762\/1762|1763\/1763|1764\/1764|1766\/1766/);
-    assert.match(body, /1769\/1769/);
+    assert.doesNotMatch(body, /1726\/1726|1729\/1729|1741\/1741|1742\/1742|1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|1758\/1758|1759\/1759|1760\/1760|1761\/1761|1762\/1762|1763\/1763|1764\/1764|1766\/1766|1769\/1769|1772\/1772|1775\/1775/);
+    assert.match(body, /1776\/1776/);
     assert.match(body, /Codex CLI[\s\S]{0,260}(PreToolUse|prompt-level|sequential|프롬프트|순차)/i);
   }
 });
@@ -412,7 +412,10 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /public CLI script executable\/shebang packaging/i);
   assert.match(plan, /generated hook\/task-checker executable packaging/i);
   assert.match(plan, /Claude\/Codex QA and base\/specialized reviewer audit-token contracts/i);
-  assert.match(plan, /Claude 57\/57 and Codex 63\/63 readiness checks passing/i);
+  assert.match(plan, /Claude 60\/60 and Codex 66\/66 readiness checks passing/i);
+  assert.match(plan, /local-only release gate contract/i);
+  assert.match(plan, /release publish preflight/i);
+  assert.match(plan, /target project smoke/i);
   assert.match(plan, /Claude companion root guidance/i);
   assert.match(plan, /Codex thrift advisory summariser contract/i);
   assert.match(plan, /doctor recovery guidance/i);
@@ -425,7 +428,7 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /release-fixture evidence[\s\S]{0,160}auto-update only approved `superpowers`\/`context-mode` foundations/i);
   assert.match(plan, /Claude\/Codex approved foundation auto-update fixtures/i);
   assert.match(plan, /release candidate lifecycle/i);
-  assert.match(plan, /node --test[\s\S]{0,120}1769\/1769/);
+  assert.match(plan, /node --test[\s\S]{0,120}1776\/1776/);
   assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}438\/438/);
   assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|1758\/1758|1759\/1759|1760\/1760|1761\/1761|1762\/1762|1763\/1763|1764\/1764|1766\/1766|412\/412|418\/418|421\/421|424\/424|425\/425|427\/427|428\/428|429\/429|430\/430|431\/431|432\/432|433\/433|435\/435/);
   assert.match(plan, /foundation auto-update/i);
@@ -449,7 +452,7 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.doesNotMatch(changelog, /^## \[Unreleased\]$/m);
   assert.match(changelog, /User Objective Release Matrix/);
   assert.match(changelog, /Release Candidate Lifecycle/);
-  assert.match(changelog, /1769\/1769 passing/);
+  assert.match(changelog, /1776\/1776 passing/);
   assert.match(changelog, /438\/438 passing/);
   assert.doesNotMatch(changelog, /currently\s+mock toolCallers used in tests/i);
 
@@ -458,7 +461,7 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.doesNotMatch(changelogKo, /^## \[미출시\]$/m);
   assert.match(changelogKo, /User Objective Release Matrix/);
   assert.match(changelogKo, /Release Candidate Lifecycle/);
-  assert.match(changelogKo, /1769\/1769 통과/);
+  assert.match(changelogKo, /1776\/1776 통과/);
   assert.match(changelogKo, /438\/438 통과/);
   assert.doesNotMatch(changelogKo, /현재 mock[\s\S]{0,80}toolCaller/i);
 });

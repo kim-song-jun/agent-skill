@@ -14,8 +14,10 @@ const PUBLIC_CLI_SCRIPTS = [
   "scripts/release-audit.mjs",
   "scripts/release-candidate.mjs",
   "scripts/release-fixture-smoke.mjs",
+  "scripts/release-publish-preflight.mjs",
   "scripts/release-smoke.sh",
   "scripts/sync-lib.mjs",
+  "scripts/target-project-smoke.mjs",
   "scripts/update.sh",
 ];
 
@@ -38,6 +40,53 @@ const RELEASE_SMOKE_CONTRACT = {
   ],
 };
 
+const LOCAL_DEPLOY_CONTRACT = {
+  file: "tests/manual-checklist.md",
+  label: "local deploy release gate",
+  patterns: [
+    /Local-only deployment path/,
+    /No `.github\/workflows\/.*` file is shipped in this release branch/,
+    /workflow` scope is not required for branch publishing/,
+    /node scripts\/release-candidate\.mjs --date=2026-06-02/,
+    /node scripts\/release-audit\.mjs/,
+    /node scripts\/release-fixture-smoke\.mjs/,
+    /\.\/scripts\/release-smoke\.sh --fast --with-live-cli/,
+    /node scripts\/target-project-smoke\.mjs --target=\/Users\/sungjun\/Documents\/molcube\/posco\/posco-mds --platform=claude,codex --lang=ko/,
+    /node --test/,
+    /node scripts\/sync-lib\.mjs --check/,
+  ],
+};
+
+const TARGET_PROJECT_SMOKE_CONTRACT = {
+  file: "scripts/target-project-smoke.mjs",
+  label: "target project smoke",
+  patterns: [
+    /buildTargetProjectSmokeReport/,
+    /install-platform\.sh/,
+    /--dry-run/,
+    /--no-update-foundations/,
+    /doctor\.mjs/,
+    /--profile=operational/,
+    /--platform=claude,codex/,
+    /No files were written/,
+    /Refresh project-local harness artifacts/,
+  ],
+};
+
+const RELEASE_PUBLISH_PREFLIGHT_CONTRACT = {
+  file: "scripts/release-publish-preflight.mjs",
+  label: "release publish preflight",
+  patterns: [
+    /buildReleasePublishPreflightReport/,
+    /gh auth status/,
+    /Token scopes:/,
+    /workflow scope/,
+    /\.github\/workflows\/\*\.yml/,
+    /gh auth refresh -h github\.com -s workflow/,
+    /No files are written and no push is performed/,
+  ],
+};
+
 const USER_OBJECTIVE_RELEASE_MATRIX = {
   file: "tests/manual-checklist.md",
   label: "user objective release matrix",
@@ -53,7 +102,7 @@ const USER_OBJECTIVE_RELEASE_MATRIX = {
     /Codex current-CLI parity[\s\S]{0,260}prompt-level\/sequential floor/,
     /Doctor, recovery, and cleanup[\s\S]{0,260}install→uninstall roundtrips/,
     /No HOME\/global config mutation[\s\S]{0,260}do not patch HOME\/global CLI config files/,
-    /Deployable release gate[\s\S]{0,360}release-smoke\.sh --fast --with-live-cli[\s\S]{0,220}node scripts\/sync-lib\.mjs --check/,
+    /Deployable release gate[\s\S]{0,620}release-smoke\.sh --fast --with-live-cli[\s\S]{0,360}release-publish-preflight\.mjs[\s\S]{0,360}target-project-smoke\.mjs[\s\S]{0,360}node scripts\/sync-lib\.mjs --check/,
   ],
 };
 
@@ -66,6 +115,7 @@ const RELEASE_CANDIDATE_LIFECYCLE = {
     /plugin[\s\S]{0,80}manifests[\s\S]{0,180}\.claude-plugin\/marketplace\.json[\s\S]{0,220}README\/README\.ko[\s\S]{0,180}CHANGELOG\.md\/CHANGELOG\.ko\.md/,
     /no stale deferred\/mock[\s\S]{0,120}release wording/,
     /release-smoke\.sh --fast --with-live-cli[\s\S]{0,240}claude`\/`codex` versions[\s\S]{0,180}Codex `exec \[PROMPT\]` support/,
+    /release-publish-preflight\.mjs[\s\S]{0,260}workflow[\s\S]{0,80}scope/i,
     /date-stamped release-candidate tag[\s\S]{0,160}verified SHA/,
     /Roll back only to a previous verified tag\/SHA[\s\S]{0,260}install-platform\.sh --uninstall[\s\S]{0,220}doctor after rollback/,
   ],
@@ -83,6 +133,8 @@ const RELEASE_CANDIDATE_SCRIPT_CONTRACT = {
     /no stale deferred\/mock release wording/,
     /recommendedTag/,
     /release-smoke\.sh --fast --with-live-cli/,
+    /release-publish-preflight\.mjs/,
+    /target-project-smoke\.mjs/,
   ],
 };
 
@@ -123,6 +175,9 @@ const PLATFORM_CONTRACTS = {
     ],
     textChecks: [
       RELEASE_SMOKE_CONTRACT,
+      LOCAL_DEPLOY_CONTRACT,
+      RELEASE_PUBLISH_PREFLIGHT_CONTRACT,
+      TARGET_PROJECT_SMOKE_CONTRACT,
       USER_OBJECTIVE_RELEASE_MATRIX,
       RELEASE_CANDIDATE_LIFECYCLE,
       RELEASE_CANDIDATE_SCRIPT_CONTRACT,
@@ -421,6 +476,9 @@ const PLATFORM_CONTRACTS = {
     ],
     textChecks: [
       RELEASE_SMOKE_CONTRACT,
+      LOCAL_DEPLOY_CONTRACT,
+      RELEASE_PUBLISH_PREFLIGHT_CONTRACT,
+      TARGET_PROJECT_SMOKE_CONTRACT,
       USER_OBJECTIVE_RELEASE_MATRIX,
       RELEASE_CANDIDATE_LIFECYCLE,
       RELEASE_CANDIDATE_SCRIPT_CONTRACT,

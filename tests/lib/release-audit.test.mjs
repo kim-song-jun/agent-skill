@@ -18,10 +18,10 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.ok, true);
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
-  assert.equal(result.platforms.claude.checks.length, 57);
-  assert.equal(result.platforms.codex.checks.length, 63);
-  assert.match(result.platforms.claude.summary, /Claude: ok \(57\/57 checks\)/);
-  assert.match(result.platforms.codex.summary, /Codex: ok \(63\/63 checks\)/);
+  assert.equal(result.platforms.claude.checks.length, 60);
+  assert.equal(result.platforms.codex.checks.length, 66);
+  assert.match(result.platforms.claude.summary, /Claude: ok \(60\/60 checks\)/);
+  assert.match(result.platforms.codex.summary, /Codex: ok \(66\/66 checks\)/);
   for (const platform of Object.values(result.platforms)) {
     const names = platform.checks.map((check) => check.name);
     const duplicateNames = names.filter((name, index) => names.indexOf(name) !== index);
@@ -33,6 +33,21 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.ok(result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh exists"));
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "scripts/release-smoke.sh matches release contract"),
+  );
+  assert.ok(
+    result.platforms.claude.checks.some(
+      (check) => check.name === "tests/manual-checklist.md matches release contract (local deploy release gate)",
+    ),
+  );
+  assert.ok(
+    result.platforms.claude.checks.some(
+      (check) => check.name === "scripts/release-publish-preflight.mjs matches release contract (release publish preflight)",
+    ),
+  );
+  assert.ok(
+    result.platforms.claude.checks.some(
+      (check) => check.name === "scripts/target-project-smoke.mjs matches release contract (target project smoke)",
+    ),
   );
   assert.ok(
     result.platforms.claude.checks.some(
@@ -76,6 +91,21 @@ test("release audit reports Claude and Codex as independently ready", () => {
   );
   assert.ok(
     result.platforms.codex.checks.some((check) => check.name === "scripts/release-smoke.sh matches release contract"),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some(
+      (check) => check.name === "tests/manual-checklist.md matches release contract (local deploy release gate)",
+    ),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some(
+      (check) => check.name === "scripts/release-publish-preflight.mjs matches release contract (release publish preflight)",
+    ),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some(
+      (check) => check.name === "scripts/target-project-smoke.mjs matches release contract (target project smoke)",
+    ),
   );
   assert.ok(
     result.platforms.codex.checks.some(

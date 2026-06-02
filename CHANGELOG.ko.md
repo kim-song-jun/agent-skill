@@ -6,6 +6,9 @@
 
 ## 미출시
 
+- GitHub `workflow` scope 없이 publish할 수 있도록 deploy branch를 local-only release gate로 전환. release-audit는 이제 `tests/manual-checklist.md`의 local deploy 계약을 검증.
+- `.github/workflows/*.yml` 변경을 감지하고 GitHub CLI auth에 `workflow` scope가 없으면 push 전에 실패시키는 no-push branch publishing preflight `scripts/release-publish-preflight.mjs` 추가.
+- 실제 대상 프로젝트용 no-write rollout 리허설 `scripts/target-project-smoke.mjs` 추가. Claude/Codex `install-platform.sh --dry-run`과 operational doctor 증거를 묶고, stale scaffold에는 권장 refresh 명령을 출력.
 - Claude/Codex harness 요구사항을 authoritative gate에 직접 매핑하는 release-audited User Objective Release Matrix 추가: heavy 기본값 + lite opt-out, 승인된 foundation 자동 갱신, superpowers/context-mode 활성화, persona 세분화, orchestration gate, POSCO MDS-style Django/Vue routing, Codex current-CLI parity, doctor/cleanup, HOME config 안전성, deployable release gate 포함.
 - clean SHA 증거, 버전/changelog 정렬, live CLI probe 캡처, date-stamped release-candidate tag, rollout/update 경로, 이전 verified tag/SHA rollback을 다루는 release-audited Release Candidate Lifecycle 추가.
 - clean SHA 준비 상태, marketplace/manifest 정렬, README/README.ko Versioning 일치, changelog 준비 상태, stale release wording, 권장 date-stamped RC tag 이름, 필수 Claude/Codex gate 명령을 tag claim 전에 검증하는 release-candidate evidence generator `scripts/release-candidate.mjs` 추가.
@@ -27,7 +30,7 @@
 - Claude QA, 기본 reviewer, 전문 reviewer persona도 Codex와 같은 Phase 4 machine-token 출력 계약을 release fixture와 release audit에서 증명하도록 강화.
 - Claude 터미널 `install-platform.sh --theme=builder`가 이제 진짜 builder-only heavy scaffold를 설치하고, floor config를 생략하며, builder-profile doctor를 실행하도록 고정. release fixture도 이를 증명.
 - Codex builder/lite 루트 `AGENTS.md`가 이제 floor가 설치된 경우에만 `.agent-all.json` language 정렬을 안내하도록 변경. builder-only 설치가 없는 floor config를 암시하지 않도록 release fixture와 release audit에서 고정.
-- Codex debug 포트를 마켓플레이스, Codex 설치 그룹, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, 공개 검증 문서에 등록. 현재 suite: 1769/1769 통과; fast release smoke: 438/438 통과.
+- Codex debug 포트를 마켓플레이스, Codex 설치 그룹, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, 공개 검증 문서에 등록. 현재 suite: 1776/1776 통과; fast release smoke: 438/438 통과.
 - Claude/Codex 터미널 operational bootstrap이 `claude` 사용 가능 시 승인된 foundation(`superpowers`, `context-mode`)만 자동 갱신하도록 변경. `--update-foundations` strict 모드와 `--no-update-foundations` opt-out 포함.
 - 기본 foundation auto-refresh에서 승인된 갱신이 실패해도 Claude/Codex bootstrap은 degraded foundation mode로 계속 진행하도록 강화. strict 실패는 `--update-foundations`에서만 유지.
 - `/agent-init` 기본값을 운영형/무거운 scaffold로 변경하고, 최소 경로는 `/agent-init --lite`로 제공.

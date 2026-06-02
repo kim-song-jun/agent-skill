@@ -70,6 +70,10 @@ test("release-candidate report validates current checkout evidence", () => {
   assert.equal(report.plugins.manifests.find((plugin) => plugin.name === "harness-builder").version, "0.3.0");
   assert.equal(report.plugins.manifests.find((plugin) => plugin.name === "harness-floor").version, "0.5.1");
   assert.ok(report.gateCommands.includes("./scripts/release-smoke.sh --fast --with-live-cli"));
+  assert.ok(report.gateCommands.includes("node scripts/release-publish-preflight.mjs --base=origin/main"));
+  assert.ok(
+    report.gateCommands.includes("node scripts/target-project-smoke.mjs --target=/path/to/target --platform=claude,codex --lang=ko"),
+  );
   assert.ok(
     report.checks.some(
       (check) => check.ok && check.name === "README/README.ko Versioning matches plugin manifests",
