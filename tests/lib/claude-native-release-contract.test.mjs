@@ -51,9 +51,10 @@ test("Claude native release skills document production surfaces without scaffold
 });
 
 test("Claude native hook entrypoints are syntax-valid JavaScript", () => {
+  const router = "plugins/harness-builder/skills/agent-init/templates/hooks/context-mode-router.mjs";
   for (const rel of [
     "plugins/harness-builder/hooks/context-mode-cache-heal.mjs",
-    "plugins/harness-builder/skills/agent-init/templates/hooks/context-mode-router.mjs",
+    router,
     "plugins/harness-builder/skills/agent-init/templates/hooks/session-summary.mjs",
     "plugins/harness-builder/skills/agent-init/templates/hooks/cache-heal.mjs",
     "plugins/harness-builder/skills/agent-init/templates/hooks/agent-policy-hook.mjs",
@@ -66,6 +67,26 @@ test("Claude native hook entrypoints are syntax-valid JavaScript", () => {
     });
     assert.equal(res.status, 0, `${rel}\nstdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
   }
+
+  const runRouter = (command) => spawnSync(process.execPath, [resolve(router)], {
+    input: JSON.stringify({ tool_input: { command } }),
+    encoding: "utf-8",
+  });
+  const large = runRouter("git status --short");
+  assert.equal(large.status, 0, large.stderr);
+  assert.match(large.stdout, /context_guidance/);
+  assert.match(large.stdout, /ctx_batch_execute|ctx_execute/);
+
+  const small = runRouter("pwd");
+  assert.equal(small.status, 0, small.stderr);
+  assert.equal(small.stdout, "");
+
+  const malformed = spawnSync(process.execPath, [resolve(router)], {
+    input: "{not-json",
+    encoding: "utf-8",
+  });
+  assert.equal(malformed.status, 0, malformed.stderr);
+  assert.equal(malformed.stdout, "");
 });
 
 test("Claude native /agent-init floor seed config matches --qa comprehensive contract", () => {
