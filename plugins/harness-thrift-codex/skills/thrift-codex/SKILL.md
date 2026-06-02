@@ -16,6 +16,19 @@ Reads `.thrift.json` (or seeds it), patches `~/.codex/config.toml`'s
 
 ## Usage
 
+From an installed Codex project, open `codex` in the repo and type the public
+harness entrypoints:
+
+```
+run /thrift
+run /thrift summarise
+run /thrift audit
+```
+
+This routes to the local `thrift-codex` workflow contract below. The
+Codex-specific skill name remains visible so installed files, release audits,
+and phase paths can stay platform-explicit.
+
 ```
 /thrift-codex                          # one-time setup; idempotent
 /thrift-codex summarise                # manual summariser trigger
@@ -84,7 +97,7 @@ Reads `.thrift.json` (or seeds it), patches `~/.codex/config.toml`'s
   The patcher refuses to create the file from scratch (user must run
   `codex` once first to seed it).
 - Summariser call fails → log to `.thrift-state.json`; user can retry
-  via `/thrift-codex summarise`.
+  via `run /thrift summarise`.
 
 ## When done (Phase 5)
 

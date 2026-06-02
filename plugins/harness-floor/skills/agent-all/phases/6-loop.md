@@ -8,6 +8,7 @@
   `lib/break-resolver.mjs`.
 - CLI `--max-iter`, `--max-cost` (override config defaults)
 - `state.iter`, `state.consecutivePass`, `state.costUSD`
+- `task.path`, `task.title`
 
 ## Skip condition
 
@@ -93,10 +94,26 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}` to `phases`, exit norm
 
 4. Stash `state.lastBreakConditionExit = verdict.exitCode ?? 1`. Update `state.consecutivePass = verdict.consecutivePass ?? state.consecutivePass`.
 
-5. Branch on `verdict.action`:
+5. Prepare a handoff writer for non-success exits:
+   ```javascript
+   import { renderHandoff } from "./lib/handoff-writer.mjs";
+   ```
+   On exhausted, blocked, or interrupted runs, call `renderHandoff({
+   title: task.title, completed, remaining, blockers, validation, gitState,
+   nextAction })`. Keep `validation` to the latest command/result summary and
+   keep `gitState` to the current branch plus concise dirty/clean status. Do
+   not include raw logs or fenced code blocks.
+
+   Update the task doc's `## Handoff` section atomically. If the task doc has
+   no `## Handoff` section, write a sibling `docs/tasks/<NN>-<slug>.handoff.md`
+   file and mention that path in the final output.
+
+6. Branch on `verdict.action`:
    - `break`: push `{phase: 6, completedAt, status: "broken"}` to `phases`, exit 0.
    - `continue`: increment `state.iter`. Reset `state.phases` to drop entries with phase >= 1 (so re-entry skips Phase 0 only). Re-invoke from Phase 1 — but in loop mode, Phase 1 always uses `state.task` (no re-brainstorm).
-   - `exhausted`: push `{phase: 6, completedAt, status: "exhausted"}`, exit 3.
+   - `exhausted`: write the handoff, push `{phase: 6, completedAt, status: "exhausted"}`, exit 3.
+   - `blocked`: write the handoff, push `{phase: 6, completedAt, status: "blocked"}`, exit 4.
+   - `interrupted`: write the handoff, push `{phase: 6, completedAt, status: "interrupted"}`, exit 130.
 
 ## Output to user
 

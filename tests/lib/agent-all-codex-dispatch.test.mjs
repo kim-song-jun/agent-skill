@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 
@@ -29,6 +29,7 @@ import {
 import {
   resolveSkillPath,
   buildSkillPrompt,
+  buildReviewPrompt,
   buildSequentialInvocation,
   buildSequentialShellCommand,
   parseSkillResult,
@@ -48,13 +49,13 @@ test("dispatch-strategy: defaultCodexConfigPath ends with ~/.codex/config.toml",
   assert.match(p, /\.codex\/config\.toml$/);
 });
 
-test("dispatch-strategy: hasAgentHookInToml detects agent-all wave matcher", () => {
+test("dispatch-strategy: hasAgentHookInToml rejects legacy agent-all hook matcher", () => {
   const toml = `
 [[hooks.agent]]
 matcher = "agent-all/wave/.*"
 command = "codex-agent-dispatch"
 `;
-  assert.equal(hasAgentHookInToml(toml), true);
+  assert.equal(hasAgentHookInToml(toml), false);
 });
 
 test("dispatch-strategy: hasAgentHookInToml rejects non-agent-all hook", () => {
@@ -74,12 +75,12 @@ matcher = "agent-all/wave/.*"
   assert.equal(hasAgentHookInToml(toml), false);
 });
 
-test("dispatch-strategy: hasAgentHookInToml accepts single-quoted matcher", () => {
+test("dispatch-strategy: hasAgentHookInToml rejects single-quoted legacy matcher", () => {
   const toml = `
 [[hooks.agent]]
 matcher = 'agent-all/wave/.*'
 `;
-  assert.equal(hasAgentHookInToml(toml), true);
+  assert.equal(hasAgentHookInToml(toml), false);
 });
 
 test("dispatch-strategy: hasAgentHookInToml handles empty/null input", () => {
@@ -102,6 +103,13 @@ test("dispatch-strategy: invalid override throws", () => {
   );
 });
 
+test("dispatch-strategy: agent-hook override is unsupported on current Codex", () => {
+  assert.throws(
+    () => detectDispatchStrategy({ override: "agent-hook" }),
+    /unsupported.*current Codex hooks/i,
+  );
+});
+
 test("dispatch-strategy: missing config falls back to sequential", () => {
   const t = makeTmp();
   try {
@@ -115,7 +123,7 @@ test("dispatch-strategy: missing config falls back to sequential", () => {
   }
 });
 
-test("dispatch-strategy: present hook yields agent-hook", () => {
+test("dispatch-strategy: legacy agent hook still falls back to sequential", () => {
   const t = makeTmp();
   try {
     const p = join(t, "config.toml");
@@ -124,8 +132,9 @@ test("dispatch-strategy: present hook yields agent-hook", () => {
       `[[hooks.agent]]\nmatcher = "agent-all/wave/.*"\ncommand = "codex-agent-dispatch"\n`,
     );
     const r = detectDispatchStrategy({ configPath: p });
-    assert.equal(r.strategy, "agent-hook");
+    assert.equal(r.strategy, "sequential");
     assert.equal(r.probedPath, p);
+    assert.match(r.reason, /unsupported.*current Codex hooks/i);
   } finally {
     rmSync(t, { recursive: true, force: true });
   }
@@ -349,6 +358,107 @@ test("sequential-dispatch: buildSkillPrompt includes task metadata", () => {
   assert.match(prompt, /End with a JSON line/);
 });
 
+test("sequential-dispatch: buildSkillPrompt includes the dispatch contract", () => {
+  const prompt = buildSkillPrompt({
+    task: {
+      id: "t-1",
+      title: "Fix login",
+      files: ["src/auth.js"],
+      forbiddenFiles: ["src/billing.js"],
+      body: "Detailed description",
+    },
+    plan: { path: "docs/plan.md" },
+    workingDirectory: "/repo",
+    skillPath: "/repo/.codex/skills/dev/SKILL.md",
+  });
+
+  assert.match(prompt, /## Dispatch Contract/);
+  assert.match(prompt, /Working directory:\s*\/repo/);
+  assert.match(prompt, /Owned files or line ranges:[\s\S]*src\/auth\.js/);
+  assert.match(prompt, /Forbidden files or areas:[\s\S]*src\/billing\.js/);
+  assert.match(prompt, /DO NOT:[\s\S]*destructive commands/i);
+  assert.match(prompt, /DO NOT:[\s\S]*self-commit/i);
+  assert.match(prompt, /Self-Audit/);
+  assert.match(prompt, /Do not self-commit/i);
+});
+
+test("sequential-dispatch: buildSkillPrompt asks implementers for changed files, not self-created commits", () => {
+  const prompt = buildSkillPrompt({
+    task: { id: "t-1", title: "Fix login", files: ["src/auth.js"] },
+    plan: { path: "docs/plan.md" },
+  });
+
+  assert.match(prompt, /changedFiles/);
+  assert.match(prompt, /coordinator will create scoped commits/i);
+  assert.doesNotMatch(prompt, /"commits": \["<sha>"/);
+});
+
+test("sequential-dispatch: buildReviewPrompt includes reviewer dispatch contract", () => {
+  const prompt = buildReviewPrompt({
+    review: {
+      id: "wave-1-review",
+      title: "Review wave 1",
+      persona: "verification-reviewer",
+      changedFiles: ["src/auth.js"],
+      forbiddenFiles: ["src/billing.js"],
+      diffRange: "abc..def",
+      mode: "quality",
+      requiredAudit: "VERIFICATION_AUDIT: passed|failed|skipped",
+      gateReason: "Feature work requires verification evidence.",
+      passCriteria: [
+        "VERIFICATION_AUDIT: passed or skipped.",
+        "No blocking verification-evidence issues.",
+      ],
+    },
+    plan: { path: "docs/plan.md", section: "Task 1" },
+    workingDirectory: "/repo",
+    skillPath: "/repo/.codex/skills/verification-reviewer/SKILL.md",
+  });
+
+  assert.match(prompt, /# Sequential review dispatch/);
+  assert.match(prompt, /Working directory:\s*\/repo/);
+  assert.match(prompt, /Owned files or line ranges:[\s\S]*src\/auth\.js/);
+  assert.match(prompt, /Diff range:\s*abc\.\.def/);
+  assert.match(prompt, /Forbidden files or areas:[\s\S]*src\/billing\.js/);
+  assert.match(prompt, /DO NOT:[\s\S]*self-commit/i);
+  assert.match(prompt, /verdict, issues by severity, audit token/i);
+  assert.match(prompt, /Self-Audit/);
+  assert.match(prompt, /Required audit:\s*VERIFICATION_AUDIT: passed\|failed\|skipped/);
+  assert.match(prompt, /Gate reason:\s*Feature work requires verification evidence/);
+  assert.match(prompt, /## Gate Pass Criteria[\s\S]*No blocking verification-evidence issues/);
+  assert.match(prompt, /audit.*VERIFICATION_AUDIT: passed\|failed\|skipped/);
+  assert.match(prompt, /Do not self-commit/i);
+  assert.doesNotMatch(prompt, /"commits": \["<sha>"/);
+
+  const orchestrationPrompt = buildReviewPrompt({
+    review: {
+      id: "wave-1-orchestration",
+      title: "Review orchestration",
+      persona: "orchestrator",
+      kind: "coordinator",
+      changedFiles: ["package.json"],
+      diffRange: "abc..def",
+      gateReason: "Changed-file classifier selected HOT/shared files.",
+      passCriteria: ["ORCHESTRATION_AUDIT: passed or skipped."],
+    },
+    plan: { path: "docs/plan.md" },
+  });
+  assert.match(orchestrationPrompt, /Required audit:\s*ORCHESTRATION_AUDIT: passed\|failed\|skipped/);
+  assert.match(orchestrationPrompt, /Changed-file classifier selected HOT\/shared files/);
+  assert.match(orchestrationPrompt, /audit.*ORCHESTRATION_AUDIT: passed\|failed\|skipped/);
+});
+
+test("sequential-dispatch: buildSkillPrompt embeds role skill body when provided", () => {
+  const prompt = buildSkillPrompt({
+    task: { id: "t-1", title: "Fix login" },
+    skillPath: "/repo/.codex/skills/dev/SKILL.md",
+    skillBody: "---\nname: dev\n---\nFollow TDD strictly.",
+  });
+  assert.match(prompt, /## Role Skill/);
+  assert.match(prompt, /Path: \/repo\/\.codex\/skills\/dev\/SKILL\.md/);
+  assert.match(prompt, /Follow TDD strictly/);
+});
+
 test("sequential-dispatch: buildSkillPrompt requires task fields", () => {
   assert.throws(() => buildSkillPrompt({}), /task object required/);
   assert.throws(() => buildSkillPrompt({ task: { id: "", title: "x" } }), /id/);
@@ -362,6 +472,10 @@ test("sequential-dispatch: buildSequentialInvocation defaults role to dev", () =
   assert.match(inv.skillPath, /\/repo\/\.codex\/skills\/dev\/SKILL\.md$/);
   assert.equal(inv.argv[0], "codex");
   assert.equal(inv.argv[1], "exec");
+  assert.equal(inv.argv.length, 3);
+  assert.equal(inv.argv.includes("--skill"), false);
+  assert.equal(inv.argv.includes("--prompt"), false);
+  assert.match(inv.argv[2], /Task ID: t-1/);
 });
 
 test("sequential-dispatch: buildSequentialInvocation honours custom role", () => {
@@ -372,12 +486,26 @@ test("sequential-dispatch: buildSequentialInvocation honours custom role", () =>
   assert.match(inv.skillPath, /\/reviewer\/SKILL\.md$/);
 });
 
+test("sequential-dispatch: buildSequentialInvocation resolves stack-specific implementer roles", () => {
+  for (const role of ["frontend-dev", "backend-dev"]) {
+    const inv = buildSequentialInvocation({
+      task: { id: `t-${role}`, title: "x", role },
+      projectRoot: "/repo",
+    });
+    assert.equal(inv.skillPath, `/repo/.codex/skills/${role}/SKILL.md`);
+    assert.match(inv.prompt, new RegExp(`Role skill: /repo/\\.codex/skills/${role}/SKILL\\.md`));
+    assert.equal(inv.argv.includes("--skill"), false);
+    assert.equal(inv.argv.includes("--prompt"), false);
+  }
+});
+
 test("sequential-dispatch: buildSequentialShellCommand shell-quotes", () => {
   const { command, skillPath } = buildSequentialShellCommand({
     task: { id: "t1", title: "X", role: "dev" },
     projectRoot: "/r",
   });
   assert.match(command, /^'codex' 'exec'/);
+  assert.doesNotMatch(command, /'--skill'|'--prompt'/);
   assert.match(skillPath, /SKILL\.md$/);
 });
 
@@ -390,6 +518,15 @@ test("sequential-dispatch: parseSkillResult finds JSON tail", () => {
   const r = parseSkillResult(stdout);
   assert.equal(r.status, "completed");
   assert.deepEqual(r.commits, ["sha1", "sha2"]);
+});
+
+test("sequential-dispatch: parseSkillResult captures changedFiles for coordinator commits", () => {
+  const r = parseSkillResult(
+    `{"status":"completed","changedFiles":["src/auth.js"],"errors":[]}`,
+  );
+  assert.equal(r.status, "completed");
+  assert.deepEqual(r.changedFiles, ["src/auth.js"]);
+  assert.deepEqual(r.commits, []);
 });
 
 test("sequential-dispatch: parseSkillResult tolerates noise after JSON", () => {
@@ -417,7 +554,7 @@ test("sequential-dispatch: parseSkillResult handles empty/null input", () => {
 
 test("sequential-dispatch: dispatchSequential happy path returns unified shape", async () => {
   const runner = async () => ({
-    stdout: `{"status":"completed","commits":["sha-x"],"errors":[]}`,
+    stdout: `{"status":"completed","commits":["sha-x"],"changedFiles":["src/auth.js"],"verification":"node --test passed","errors":[]}`,
     stderr: "", status: 0,
   });
   const r = await dispatchSequential({
@@ -429,7 +566,38 @@ test("sequential-dispatch: dispatchSequential happy path returns unified shape",
   assert.equal(r.taskId, "t1");
   assert.equal(r.status, "completed");
   assert.deepEqual(r.commits, ["sha-x"]);
+  assert.deepEqual(r.changedFiles, ["src/auth.js"]);
+  assert.equal(r.verification, "node --test passed");
   assert.equal(r.costUSD, 0);
+});
+
+test("sequential-dispatch: dispatchSequential inlines the role skill file into the prompt", async () => {
+  const t = makeTmp();
+  try {
+    const skillDir = join(t, ".codex", "skills", "dev");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: dev\n---\nUse the project TDD protocol.",
+    );
+    const runner = async (cmd) => {
+      assert.match(cmd, /^'codex' 'exec'/);
+      assert.doesNotMatch(cmd, /'--skill'|'--prompt'/);
+      assert.match(cmd, /Use the project TDD protocol/);
+      return {
+        stdout: `{"status":"completed","commits":[],"errors":[]}`,
+        stderr: "",
+        status: 0,
+      };
+    };
+    const r = await dispatchSequential({
+      task: { id: "t1", title: "X", role: "dev" },
+      projectRoot: t,
+    }, runner);
+    assert.equal(r.status, "completed");
+  } finally {
+    rmSync(t, { recursive: true, force: true });
+  }
 });
 
 test("sequential-dispatch: dispatchSequential captures shell failure as blocked", async () => {

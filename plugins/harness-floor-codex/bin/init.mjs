@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 // harness-floor-codex install — emits visual-qa-codex + agent-all-codex
 // config seeds into the target project. Also prints the Playwright MCP
-// snippet (TOML) and the optional [[hooks.agent]] matcher snippets for
-// the user to merge into ~/.codex/config.toml.
+// snippet (TOML) for the user to merge into ~/.codex/config.toml.
+// Codex agent-dispatch hooks are not emitted because current Codex hooks
+// do not expose that command surface; the Codex floor port uses
+// sequential dispatch.
 //
 // Usage:
 //   node plugins/harness-floor-codex/bin/init.mjs <target> [--ctx ctx.json] [--force] [--only=visual-qa|agent-all]
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, rmSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { render } from "./lib/render.mjs";
@@ -18,9 +20,19 @@ const pluginRoot = resolve(here, "..");
 const INSTALL_MAP = {
   "visual-qa": [
     { src: "skills/visual-qa-codex/templates/visual-qa.config.json.hbs", dst: ".visual-qa.json" },
+    { src: "skills/visual-qa-codex/templates/skills/visual-qa-page/SKILL.md.hbs", dst: ".codex/skills/visual-qa-page/SKILL.md" },
   ],
   "agent-all": [
     { src: "skills/agent-all-codex/templates/agent-all.config.json.hbs", dst: ".agent-all.json" },
+  ],
+};
+
+const SKILL_DIR_MAP = {
+  "visual-qa": [
+    { srcDir: "skills/visual-qa-codex", dstDir: ".codex/skills/visual-qa-codex" },
+  ],
+  "agent-all": [
+    { srcDir: "skills/agent-all-codex", dstDir: ".codex/skills/agent-all-codex" },
   ],
 };
 
@@ -57,6 +69,7 @@ function loadCtx(ctxPath) {
     maxCostUSD: 5,
     waveSize: "medium",
     breakCondition: "npm test --silent",
+    language: "auto",
   };
   if (ctxPath) {
     const file = JSON.parse(readFileSync(ctxPath, "utf-8"));
@@ -66,6 +79,7 @@ function loadCtx(ctxPath) {
     const envKey = k.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`).toUpperCase();
     if (process.env[envKey]) base[k] = process.env[envKey];
   }
+  if (process.env.AGENT_INIT_LANG) base.language = process.env.AGENT_INIT_LANG;
   return base;
 }
 
@@ -92,6 +106,20 @@ function main() {
       mkdirSync(dirname(dstPath), { recursive: true });
       const tpl = readFileSync(srcPath, "utf-8");
       writeFileSync(dstPath, render(tpl, ctx));
+      installed.push(dstPath);
+      console.log(`wrote ${dstPath}`);
+    }
+
+    for (const t of SKILL_DIR_MAP[bucket] ?? []) {
+      const srcPath = resolve(pluginRoot, t.srcDir);
+      const dstPath = resolve(target, t.dstDir);
+      if (existsSync(dstPath) && !args.force) {
+        console.error(`Refusing to overwrite ${dstPath} (use --force)`);
+        process.exit(2);
+      }
+      if (args.force) rmSync(dstPath, { recursive: true, force: true });
+      mkdirSync(dirname(dstPath), { recursive: true });
+      cpSync(srcPath, dstPath, { recursive: true });
       installed.push(dstPath);
       console.log(`wrote ${dstPath}`);
     }

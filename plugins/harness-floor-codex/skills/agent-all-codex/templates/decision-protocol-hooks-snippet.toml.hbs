@@ -1,12 +1,4 @@
-# Append to ~/.codex/config.toml — wires decision-surfacing + verification hooks for Codex.
-# Required for hard-enforcement of the protocol on Codex CLI.
-
-[[hooks.agent]]
-event = "pre_tool_use"
-match = { tool = "Task" }
-command = "node {{targetDir}}/.codex/agent-all/lib/floor-policy-hook.mjs PreToolUse"
-
-[[hooks.agent]]
-event = "post_tool_use"
-match = { tool = "Task" }
-command = "node {{targetDir}}/.codex/agent-all/lib/floor-policy-hook.mjs PostToolUse"
+# No hard decision-protocol hook snippet is emitted for agent-all-codex.
+# Current Codex command hooks do not expose a Task-like subagent tool
+# surface for this pipeline. Sequential dispatch must include the
+# decision, verification, and reviewer directives in prompt text.

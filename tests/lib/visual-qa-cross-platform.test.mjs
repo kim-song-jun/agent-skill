@@ -61,7 +61,7 @@ for (const platform of PLATFORMS) {
     const expectations = {
       cursor: ["is_background", "visual-qa-page", "@visual-qa-page"],
       copilot: ["task(", "list_agents", "subagentStop"],
-      codex: ["agent-hook", "codex agent dispatch", "codex agent wait"],
+      codex: ["sequential", ".codex/skills/visual-qa-page/SKILL.md"],
       gemini: ["run_shell_command", "gemini chat", "background: true"],
     }[platform];
     for (const needle of expectations) {

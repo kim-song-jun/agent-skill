@@ -2,14 +2,21 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { classifyChangedFiles as classifyClaudeChangedFiles } from "../../plugins/harness-floor/skills/agent-all/lib/changed-file-classifier.mjs";
+import { buildGatePlan as buildClaudeGatePlan } from "../../plugins/harness-floor/skills/agent-all/lib/gate-plan.mjs";
+import { classifyChangedFiles as classifyCodexChangedFiles } from "../../plugins/harness-floor-codex/skills/agent-all-codex/lib/changed-file-classifier.mjs";
+import { buildGatePlan as buildCodexGatePlan } from "../../plugins/harness-floor-codex/skills/agent-all-codex/lib/gate-plan.mjs";
 
 const SKILL_ROOT = "plugins/harness-floor-codex/skills/agent-all-codex";
+const POSCO_MDS_DJANGO_VUE = JSON.parse(
+  readFileSync(resolve("tests/fixtures/project-shapes/posco-mds-django-vue.json"), "utf-8"),
+);
 
 test("agent-all-codex: SKILL.md exists with name frontmatter", () => {
   const md = readFileSync(resolve(SKILL_ROOT, "SKILL.md"), "utf-8");
   assert.match(md, /^---\nname: agent-all-codex/);
   assert.ok(md.includes("Codex CLI port"));
-  assert.ok(md.includes("`agent` hook"));
+  assert.ok(md.includes("current Codex hooks"));
   assert.ok(md.includes("sequential"));
 });
 
@@ -46,18 +53,127 @@ test("agent-all-codex: phase headings match contract", () => {
   }
 });
 
-test("agent-all-codex: phase 3 documents both dispatch strategies", () => {
+test("agent-all-codex: phase 3 documents sequential dispatch", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "phases/3-dispatch.md"), "utf-8");
-  assert.ok(body.includes("agent-hook"), "agent-hook strategy");
-  assert.ok(body.includes("sequential"), "sequential fallback");
-  assert.ok(body.includes("codex agent dispatch"), "dispatch command shape");
-  assert.ok(body.includes("codex agent wait"), "wait command shape");
+  assert.ok(body.includes("sequential"), "sequential dispatch");
+  assert.ok(body.includes(".codex/skills/<role>/SKILL.md"), "role skill invocation");
+  assert.ok(!body.includes("[[hooks.agent]]"), "must not document legacy agent hook");
 });
 
 test("agent-all-codex: phase 0 detects dispatch strategy", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "phases/0-preflight.md"), "utf-8");
   assert.ok(body.includes("Detect dispatch strategy"));
-  assert.ok(body.includes("[hooks]"));
+  assert.ok(body.includes("current Codex hooks"));
+});
+
+test("agent-all-codex: phase 4 uses changed-file classifier persona gates", () => {
+  const body = readFileSync(resolve(SKILL_ROOT, "phases/4-gate.md"), "utf-8");
+
+  assert.match(body, /changed-file-classifier\.mjs/);
+  assert.match(body, /gate-plan\.mjs/);
+  assert.match(body, /buildGatePlan/);
+  assert.match(body, /classifyChangedFiles\(files\)/);
+  assert.match(body, /coordinators/);
+  assert.match(body, /orchestrator/);
+  assert.match(body, /HOT files|HOT-file/);
+  assert.match(body, /\.codex\/skills\/<persona>\/SKILL\.md/);
+  assert.match(body, /verification-reviewer/);
+  assert.match(body, /qa-reviewer/);
+  assert.match(body, /design-reviewer/);
+  assert.match(body, /security-reviewer/);
+  assert.match(body, /data-reviewer/);
+  assert.match(body, /integration-dev/);
+  assert.match(body, /ORCHESTRATION_AUDIT: passed\|failed\|skipped/);
+  assert.match(body, /QA_AUDIT: passed\|failed\|skipped/);
+  assert.match(body, /VERIFICATION_AUDIT: passed\|failed\|skipped/);
+  assert.match(body, /Tech success ≠ user-flow success|Tech success != user-flow success/);
+});
+
+test("agent-all-codex: changed-file classifier matches Claude source of truth", () => {
+  const cases = [
+    ["frontend/src/LoginForm.tsx", "backend/api/views.py", "backend/db/migrations/001.sql"],
+    ["docs/README.md"],
+    ["server/auth/session.ts", "fixtures/users.json"],
+    ["src/router/index.ts", "apps/users/viewsets.py", "apps/billing/celery.py"],
+    ["package.json", "pnpm-lock.yaml", ".github/workflows/test.yml"],
+    POSCO_MDS_DJANGO_VUE.changedFiles,
+  ];
+
+  for (const files of cases) {
+    assert.deepEqual(
+      classifyCodexChangedFiles(files),
+      classifyClaudeChangedFiles(files),
+      `classifier mismatch for ${files.join(", ")}`,
+    );
+  }
+});
+
+test("agent-all-codex: gate plan matches Claude source of truth", () => {
+  const cases = [
+    ["package.json", "pnpm-lock.yaml", ".github/workflows/test.yml"],
+    ["src/components/Button.tsx"],
+    ["src/api/http-client.ts", "apps/users/views.py", "backend/users/models.py"],
+    POSCO_MDS_DJANGO_VUE.changedFiles,
+  ];
+
+  for (const files of cases) {
+    assert.deepEqual(
+      buildCodexGatePlan({ files, gates: { specReview: true, qualityReview: true }, taskId: "9", title: "Gate" }),
+      buildClaudeGatePlan({ files, gates: { specReview: true, qualityReview: true }, taskId: "9", title: "Gate" }),
+      `gate plan mismatch for ${files.join(", ")}`,
+    );
+  }
+});
+
+test("agent-all-codex: POSCO MDS-style Django and Vue fixture preserves persona gate order", () => {
+  const claudePlan = buildClaudeGatePlan({
+    files: POSCO_MDS_DJANGO_VUE.changedFiles,
+    gates: { specReview: true, qualityReview: true },
+    taskId: "42",
+    title: "POSCO MDS workflow",
+  });
+  const codexPlan = buildCodexGatePlan({
+    files: POSCO_MDS_DJANGO_VUE.changedFiles,
+    gates: { specReview: true, qualityReview: true },
+    taskId: "42",
+    title: "POSCO MDS workflow",
+  });
+  const projectedDispatches = codexPlan.dispatches.map(({ role, kind, mode, auditToken }) => ({
+    role,
+    kind,
+    mode,
+    auditToken,
+  }));
+
+  assert.deepEqual(codexPlan, claudePlan);
+  assert.deepEqual(codexPlan.coordinators, POSCO_MDS_DJANGO_VUE.expectedCoordinators);
+  assert.deepEqual(codexPlan.reviewers, POSCO_MDS_DJANGO_VUE.expectedGateReviewers);
+  assert.deepEqual(projectedDispatches, POSCO_MDS_DJANGO_VUE.expectedDispatches);
+});
+
+test("agent-all-codex: changed-file classifier routes POSCO-style Django and Vue gates", () => {
+  const result = classifyCodexChangedFiles([
+    "src/stores/auth.ts",
+    "src/composables/useSession.ts",
+    "apps/users/admin.py",
+    "apps/users/views.py",
+  ]);
+  assert.deepEqual(
+    result.reviewers,
+    [
+      "design-reviewer",
+      "integration-dev",
+      "qa-reviewer",
+      "reviewer",
+      "security-reviewer",
+      "verification-reviewer",
+    ],
+  );
+  assert.deepEqual(result.coordinators, []);
+  assert.deepEqual(
+    classifyCodexChangedFiles(["package.json", "pnpm-lock.yaml", ".github/workflows/test.yml"]).coordinators,
+    ["orchestrator"],
+  );
 });
 
 test("agent-all-codex: all template files exist", () => {
@@ -70,18 +186,28 @@ test("agent-all-codex: all template files exist", () => {
   }
 });
 
-test("agent-all-codex: hooks snippet registers agent hook", () => {
+test("agent-all-codex: hook snippet does not emit unsupported agent hook", () => {
   const body = readFileSync(
     resolve(SKILL_ROOT, "templates/codex-hooks-snippet.toml.hbs"),
     "utf-8",
   );
-  assert.ok(body.includes("[[hooks.agent]]"));
-  assert.ok(body.includes("agent-all/wave/"));
+  assert.ok(body.includes("current Codex hooks"));
+  assert.ok(body.includes("sequential dispatch"));
+  assert.ok(!body.includes("[[hooks.agent]]"));
+  assert.ok(!body.includes("timeout_seconds"));
 });
 
-test("agent-all-codex: porting-notes flags unconfirmed hook schema", () => {
+test("agent-all-codex: user prompt invoker surface has no unimplemented exec_command path", () => {
+  for (const rel of ["lib/host-invoker.mjs", "lib/ask-user-adapter.mjs"]) {
+    const body = readFileSync(resolve(SKILL_ROOT, rel), "utf-8");
+    assert.ok(body.includes("exec_command") || body.includes("ask_user"), `${rel} should document prompt primitives`);
+    assert.doesNotMatch(body, /not yet implemented|not implemented here/i);
+  }
+});
+
+test("agent-all-codex: porting-notes flags unsupported legacy hook schema", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "references/porting-notes.md"), "utf-8");
-  assert.ok(body.includes("research spike"));
-  assert.ok(body.includes("Open questions"));
-  assert.ok(body.includes("sequential fallback"));
+  assert.ok(body.includes("current Codex hooks"));
+  assert.ok(body.includes("unsupported"));
+  assert.ok(body.includes("sequential"));
 });

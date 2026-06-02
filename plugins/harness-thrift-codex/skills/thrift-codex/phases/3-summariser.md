@@ -19,28 +19,29 @@ paste the summary path.
    (`thrift-posttool-summariser-trigger.mjs`) fires `shouldFireSummariser`
    after each tool call. When threshold hit, the hook writes a
    notification file and emits a stderr system reminder.
-2. **Manual trigger**: `/thrift-codex summarise` from the Codex chat.
+2. **Manual trigger**: `run /thrift summarise` from the Codex chat.
 
 ## Steps (when actually generating)
 
 1. Load `.thrift.json` config.
 2. Read `.thrift-state.json`.
-3. Read conversation history. **Sandbox limitation**: Codex has no
-   official transcript API exposed to plugins in v1. The summariser
-   reads from a user-supplied `--history <path>` flag (markdown or
-   JSON dump from `codex export` if that command exists; otherwise the
-   user pastes a transcript). When Codex ships a programmatic
-   transcript API, this becomes automatic.
+3. Read conversation history. **Host API boundary**: Codex does not
+   expose an official plugin transcript API in the current release
+   surface. The summariser reads from a user-supplied `--history <path>`
+   flag (markdown or JSON dump from `codex export` if that command
+   exists; otherwise the user pastes a transcript).
 4. Call `summarise({turns, preserveLastTurns, preserveSpecPaths,
    summariseFn})` (vendored from CC `lib/summariser.mjs` if needed; this
    plugin uses the heuristic-only path by default and does NOT depend
    on cross-plugin imports).
 5. For `summariseFn`:
-   - **v1 default**: `heuristicSummariseFn()` — extracts first sentence
-     per turn. Dependency-free, no model call.
-   - **v1 advanced (opt-in)**: `--use-cheap-model` flag — calls
-     `config.summariser.model` (e.g. `gpt-5-nano`) via the OpenAI SDK
-     if available in `node_modules`. Skip if SDK missing.
+   - **Release default**: `heuristicSummariseFn()` — extracts first
+     sentence per turn. This is the dependency-free, no model call path,
+     so release installs do not require an OpenAI SDK peer dependency.
+   - **Model-backed extension point**: local automation may provide a
+     model-backed `summariseFn` and use `config.summariser.model` (for
+     example `gpt-5-nano`) as its deployment model setting. The packaged
+     Codex release remains valid without that optional integration.
 6. Write the summary to `.thrift/summaries/<YYYY-MM-DD>-turn<N>.md`
    via `apply_patch`.
 7. Append `{at, reason, tokensBefore, tokensAfter}` to
@@ -62,24 +63,20 @@ paste the summary path.
   (or the equivalent), do nothing.
 - Summariser produces empty body (turns ≤ preserveLastTurns):
   print `no summarisation needed at this size` and exit.
-- OpenAI SDK missing AND `--use-cheap-model` passed: warn + fall back
-  to `heuristicSummariseFn`.
+- Model-backed `summariseFn` unavailable: warn + fall back to
+  `heuristicSummariseFn`.
 
-## Future (v2)
+## API-gated extension path
 
-When Codex ships a programmatic transcript / compact API:
+If Codex exposes a stable programmatic transcript / compact API:
 1. Replace step 3 with native transcript query.
 2. Replace step 8 with a programmatic compact call that injects the
    summary as a system message and drops the compressed turns.
 3. Drop the stderr / notification-file delivery (no longer needed).
 
-## Summariser model TBD
+## Summariser model release contract
 
-Codex's cheap-summariser slot has no clear winner as of 2026-05.
-Candidates (verify against `codex models list`):
-
-- `gpt-5-nano` (placeholder default)
-- `o4-mini`
-- `gpt-4o-mini`
-
-The exact slot will be re-evaluated each quarterly rate-table refresh.
+`gpt-5-nano` is the packaged deployment default. Teams can override
+`.thrift.json` `summariser.model` when their Codex model roster differs.
+Re-evaluate this default during the quarterly rate-table refresh
+alongside `lib/cost-estimator.mjs`.

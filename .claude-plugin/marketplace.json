@@ -4,7 +4,7 @@
     "name": "kim-song-jun",
     "url": "https://github.com/kim-song-jun"
   },
-  "description": "Harness builder + visual-QA + (future) optimisation skills for Claude Code",
+  "description": "Harness builder, visual-QA, thrift, exploration, and debugging skills for Claude Code plus platform ports",
   "plugins": [
     {
       "name": "harness-builder",
@@ -75,6 +75,11 @@
       "name": "harness-thrift-codex",
       "source": "./plugins/harness-thrift-codex",
       "description": "Theme B port for Codex CLI — TOML-aware ~/.codex/config.toml patcher + OpenAI rate table"
+    },
+    {
+      "name": "harness-debug-codex",
+      "source": "./plugins/harness-debug-codex",
+      "description": "Theme E port for Codex CLI — prompt-level systematic debugging with structured error parsing, .debug-state.json persistence, and git/input bisection"
     },
     {
       "name": "harness-thrift-gemini",

@@ -1,20 +1,12 @@
 // sequential-dispatch.mjs — fallback dispatcher for agent-all-codex.
 //
-// When `[[hooks.agent]]` is not registered (or the user passes
-// `--dispatch=sequential`), we cannot fan-out via `codex agent dispatch`.
-// Instead we invoke `.codex/skills/<role>/SKILL.md` one task at a time
-// via Codex's CLI surface.
+// Current Codex hooks do not expose the older agent-dispatch surface,
+// so this module provides the stable sequential path.
 //
-// The exact invocation that triggers a skill in a non-interactive Codex
-// session is still unverified — see Open Question #7 in the impl spec
-// ("Skill-roster path for sequential dispatch"). For now we shell out
-// to `codex exec` with the skill body as the prompt, which matches the
-// scaffold's phase docs. Callers swap `codexBin` / `subcommand` to adapt
-// if the live CLI uses different argv.
-//
-// TODO: requires live Codex CLI to verify (1) that `codex exec` is the
-// correct non-interactive entry-point and (2) that the skill-resolution
-// path includes `<repo>/.codex/skills/` by default.
+// Verified against Codex CLI 0.135.0: `codex exec` is the supported
+// non-interactive entry point and it accepts the initial instructions as
+// a positional prompt. It does not expose `--skill` or `--prompt`, so
+// this dispatcher embeds the role SKILL.md content into that prompt.
 
 import { existsSync, readFileSync } from "node:fs";
 
@@ -28,6 +20,28 @@ function assertNonEmpty(name, value) {
 
 function shellQuote(value) {
   return `'${String(value).replace(/'/g, "'\\''")}'`;
+}
+
+function requiredAuditForReview(review, persona) {
+  if (typeof review.requiredAudit === "string" && review.requiredAudit.trim()) {
+    return review.requiredAudit.trim();
+  }
+  if (typeof review.auditToken === "string" && review.auditToken.trim()) {
+    return `${review.auditToken.trim()}: passed|failed|skipped`;
+  }
+  if (review.kind === "coordinator" || persona === "orchestrator") {
+    return "ORCHESTRATION_AUDIT: passed|failed|skipped";
+  }
+  if (persona === "qa-reviewer") {
+    return "QA_AUDIT: passed|failed|skipped";
+  }
+  return "VERIFICATION_AUDIT: passed|failed|skipped";
+}
+
+function listLines(values, fallback) {
+  return Array.isArray(values) && values.length > 0
+    ? values.map((value) => `  - ${value}`).join("\n")
+    : `  - ${fallback}`;
 }
 
 /**
@@ -55,29 +69,82 @@ export function resolveSkillPath(role, projectRoot) {
  * @param {string} args.task.id
  * @param {string} args.task.title
  * @param {string[]} [args.task.files=[]]
+ * @param {string[]} [args.task.forbiddenFiles=[]]
  * @param {string} [args.task.body=""]
  * @param {object} [args.plan]      — context (path, summary)
+ * @param {string} [args.workingDirectory]
  * @returns {string}
  */
 export function buildSkillPrompt(args) {
-  const { task, plan } = args;
+  const { task, plan, skillPath, skillBody } = args;
   if (!task || typeof task !== "object") {
     throw new Error("buildSkillPrompt: task object required");
   }
   assertNonEmpty("task.id", task.id);
   assertNonEmpty("task.title", task.title);
   const files = Array.isArray(task.files) ? task.files : [];
+  const forbiddenFiles = Array.isArray(task.forbiddenFiles) ? task.forbiddenFiles : [];
   const bodyText = task.body || "(no body provided)";
   const planRef = plan?.path ? `Plan: ${plan.path}` : "Plan: (inline)";
+  const workingDirectory = args.workingDirectory || plan?.workingDirectory || process.cwd();
+  const roleSkill = skillBody
+    ? [
+        "## Role Skill",
+        "",
+        `Path: ${skillPath || "(inline)"}`,
+        "",
+        "Follow this role skill for the task:",
+        "",
+        "```markdown",
+        skillBody,
+        "```",
+        "",
+      ]
+    : skillPath
+      ? [
+          "## Role Skill",
+          "",
+          `Path: ${skillPath}`,
+          "",
+          "The dispatcher could not inline the skill body; load and follow this role skill before editing.",
+          "",
+        ]
+      : [];
   return [
     "# Sequential dispatch (agent-all-codex fallback)",
     "",
+    ...roleSkill,
     `Task ID: ${task.id}`,
     `Title:   ${task.title}`,
     planRef,
     "",
     "## Files in scope",
     files.length ? files.map((f) => `- ${f}`).join("\n") : "(none declared)",
+    "",
+    "## Dispatch Contract",
+    "",
+    `- Working directory: ${workingDirectory}`,
+    "- Owned files or line ranges:",
+    files.length
+      ? files.map((f) => `  - ${f}`).join("\n")
+      : "  - (none declared; ask the orchestrator before broad edits)",
+    "- Forbidden files or areas:",
+    forbiddenFiles.length
+      ? forbiddenFiles.map((f) => `  - ${f}`).join("\n")
+      : "  - Any file outside the owned set unless the task explicitly requires it and you report the expansion.",
+    "- DO NOT:",
+    "  - Do not run destructive commands or force-push commands.",
+    "  - Do not stage broad changes, amend shared history, or self-commit.",
+    "  - Do not revert unrelated user or other-agent edits.",
+    "- Expected output:",
+    "  - Include a concise Self-Audit covering requested scope, files changed, verification run, unprocessed items, and shortcuts.",
+    "  - End with the required JSON line.",
+    "- Reusable references:",
+    `  - ${planRef}`,
+    `  - Role skill: ${skillPath || "(inline)"}`,
+    "",
+    "Do not self-commit. Report changed files, verification evidence, and blockers back to the orchestrator.",
+    "The coordinator will create scoped commits after inspecting the changed files and verification evidence.",
     "",
     "## Task body",
     "",
@@ -86,13 +153,136 @@ export function buildSkillPrompt(args) {
     "## Required output",
     "",
     "End with a JSON line:",
-    '`{"status": "completed"|"blocked", "commits": ["<sha>", ...], "errors": ["..."]}`',
+    '`{"status": "completed"|"blocked", "changedFiles": ["<path>", ...], "verification": "<command/result>", "errors": ["..."]}`',
   ].join("\n");
 }
 
 /**
- * Build argv for the sequential skill invocation. We invoke the role's
- * SKILL.md by passing its full content as the prompt to `codex exec`.
+ * Build a reviewer prompt for Phase 4 sequential fallback. This intentionally
+ * differs from the implementer prompt: reviewers produce verdicts and audit
+ * evidence, not commits.
+ *
+ * @param {object} args
+ * @param {object} args.review
+ * @param {string} [args.review.id]
+ * @param {string} [args.review.title]
+ * @param {string} [args.review.persona]
+ * @param {string[]} [args.review.changedFiles=[]]
+ * @param {string[]} [args.review.forbiddenFiles=[]]
+ * @param {string} [args.review.diffRange]
+ * @param {string} [args.review.diff]
+ * @param {string} [args.review.mode]
+ * @param {object} [args.plan]      — context (path, section, summary)
+ * @param {string} [args.skillPath]
+ * @param {string} [args.skillBody]
+ * @param {string} [args.workingDirectory]
+ * @returns {string}
+ */
+export function buildReviewPrompt(args) {
+  const { review, plan, skillPath, skillBody } = args;
+  if (!review || typeof review !== "object") {
+    throw new Error("buildReviewPrompt: review object required");
+  }
+  const persona = review.persona || review.role || "reviewer";
+  const id = review.id || `review/${persona}`;
+  const title = review.title || `Review ${persona}`;
+  assertNonEmpty("review.id", id);
+  assertNonEmpty("review.title", title);
+  const changedFiles = Array.isArray(review.changedFiles) ? review.changedFiles : [];
+  const forbiddenFiles = Array.isArray(review.forbiddenFiles) ? review.forbiddenFiles : [];
+  const planRef = plan?.path ? `Plan: ${plan.path}` : "Plan: (inline)";
+  const planSection = plan?.section ? `Plan section: ${plan.section}` : "Plan section: (not provided)";
+  const workingDirectory = args.workingDirectory || plan?.workingDirectory || process.cwd();
+  const diffRange = review.diffRange || "(not provided)";
+  const diffBody = review.diff || "(diff not inlined; use the provided diff command/range)";
+  const requiredAudit = requiredAuditForReview(review, persona);
+  const gateReason = review.gateReason || "Classifier-selected reviewer gate.";
+  const roleSkill = skillBody
+    ? [
+        "## Reviewer Skill",
+        "",
+        `Path: ${skillPath || "(inline)"}`,
+        "",
+        "Follow this reviewer skill for the gate:",
+        "",
+        "```markdown",
+        skillBody,
+        "```",
+        "",
+      ]
+    : skillPath
+      ? [
+          "## Reviewer Skill",
+          "",
+          `Path: ${skillPath}`,
+          "",
+          "The dispatcher could not inline the skill body; load and follow this reviewer skill before auditing.",
+          "",
+        ]
+      : [];
+
+  return [
+    "# Sequential review dispatch (agent-all-codex fallback)",
+    "",
+    ...roleSkill,
+    `Review ID: ${id}`,
+    `Title:     ${title}`,
+    `Persona:   ${persona}`,
+    `Mode:      ${review.mode || "quality"}`,
+    planRef,
+    planSection,
+    `Required audit: ${requiredAudit}`,
+    `Gate reason: ${gateReason}`,
+    "",
+    "## Gate Pass Criteria",
+    "",
+    listLines(review.passCriteria, `${requiredAudit} and no blocking findings for this persona.`),
+    "",
+    "## Dispatch Contract",
+    "",
+    `- Working directory: ${workingDirectory}`,
+    "- Owned files or line ranges:",
+    changedFiles.length
+      ? changedFiles.map((f) => `  - ${f}`).join("\n")
+      : "  - (none declared; review only the supplied diff range)",
+    `- Diff range: ${diffRange}`,
+    "- Forbidden files or areas:",
+    forbiddenFiles.length
+      ? forbiddenFiles.map((f) => `  - ${f}`).join("\n")
+      : "  - Files outside the wave diff unless needed to explain the review verdict.",
+    "- DO NOT:",
+    "  - Do not run destructive commands or force-push commands.",
+    "  - Do not rewrite implementation code unless this is an explicit retry-fix invocation.",
+    "  - Do not stage broad changes, amend shared history, or self-commit.",
+    "  - Do not revert unrelated user or other-agent edits.",
+    "- Expected output:",
+    "  - Include verdict, issues by severity, audit token, verification evidence checked, and a concise Self-Audit.",
+    "  - End with the required JSON line.",
+    "- Reusable references:",
+    `  - ${planRef}`,
+    `  - ${planSection}`,
+    `  - Reviewer skill: ${skillPath || "(inline)"}`,
+    "",
+    "Do not self-commit. Report findings, verification evidence, and blockers back to the coordinator.",
+    "",
+    "## Diff",
+    "",
+    "```diff",
+    diffBody,
+    "```",
+    "",
+    "## Required output",
+    "",
+    `The \`audit\` field MUST contain exactly one ${requiredAudit} line.`,
+    "",
+    "End with a JSON line:",
+    `\`{"status": "passed"|"failed"|"blocked", "issues": [{"severity": "critical"|"major"|"minor", "file": "<path>", "message": "..."}], "audit": "${requiredAudit}", "errors": ["..."]}\``,
+  ].join("\n");
+}
+
+/**
+ * Build argv for the sequential skill invocation. Current Codex CLI
+ * accepts the prompt as the positional argument to `codex exec`.
  *
  * @param {object} opts
  * @param {object} opts.task
@@ -101,6 +291,8 @@ export function buildSkillPrompt(args) {
  * @param {string} [opts.codexBin="codex"]
  * @param {string} [opts.subcommand="exec"]
  * @param {string} [opts.skillPath] — pre-resolved override; otherwise derived from task.role
+ * @param {string} [opts.skillBody] — optional inlined SKILL.md content
+ * @param {string} [opts.workingDirectory]
  * @returns {{argv: string[], skillPath: string, prompt: string}}
  */
 export function buildSequentialInvocation(opts) {
@@ -111,15 +303,20 @@ export function buildSequentialInvocation(opts) {
   const skillPath = opts.skillPath || resolveSkillPath(role, opts.projectRoot);
   const codexBin = opts.codexBin || "codex";
   const subcommand = opts.subcommand || DEFAULT_SUBCOMMAND;
-  const prompt = buildSkillPrompt({ task: opts.task, plan: opts.plan });
+  const prompt = buildSkillPrompt({
+    task: opts.task,
+    plan: opts.plan,
+    skillPath,
+    skillBody: opts.skillBody,
+    workingDirectory: opts.workingDirectory,
+  });
   return {
     skillPath,
     prompt,
     argv: [
       codexBin,
       subcommand,
-      "--skill", skillPath,
-      "--prompt", prompt,
+      prompt,
     ],
   };
 }
@@ -127,7 +324,7 @@ export function buildSequentialInvocation(opts) {
 /**
  * Build the single-string `shell_command` form. Phase 3 doc shape:
  *
- *   shell_command("codex exec --skill <path> --prompt <body>")
+ *   shell_command("codex exec <inlined skill + task prompt>")
  *
  * @param {Parameters<typeof buildSequentialInvocation>[0]} opts
  * @returns {{command: string, skillPath: string}}
@@ -143,11 +340,11 @@ export function buildSequentialShellCommand(opts) {
  * scan from the bottom to be resilient to interleaved log output.
  *
  * @param {string} stdout
- * @returns {{status: string, commits: string[], errors: string[]}}
+ * @returns {{status: string, commits: string[], changedFiles: string[], errors: string[], verification?: string}}
  */
 export function parseSkillResult(stdout) {
   if (!stdout || typeof stdout !== "string") {
-    return { status: "unknown", commits: [], errors: ["empty skill output"] };
+    return { status: "unknown", commits: [], changedFiles: [], errors: ["empty skill output"] };
   }
   const lines = stdout.trim().split(/\r?\n/);
   for (let i = lines.length - 1; i >= 0; i--) {
@@ -158,6 +355,8 @@ export function parseSkillResult(stdout) {
       return {
         status: parsed.status ?? "unknown",
         commits: Array.isArray(parsed.commits) ? parsed.commits : [],
+        changedFiles: Array.isArray(parsed.changedFiles) ? parsed.changedFiles : [],
+        verification: typeof parsed.verification === "string" ? parsed.verification : undefined,
         errors: Array.isArray(parsed.errors) ? parsed.errors : [],
       };
     } catch {
@@ -167,6 +366,7 @@ export function parseSkillResult(stdout) {
   return {
     status: "unknown",
     commits: [],
+    changedFiles: [],
     errors: ["no JSON result line found in skill output"],
   };
 }
@@ -179,26 +379,34 @@ export function parseSkillResult(stdout) {
  * @param {Parameters<typeof buildSequentialInvocation>[0]} opts
  * @param {(command: string) => Promise<{stdout: string, stderr: string, status: number}>} shellRunner
  * @returns {Promise<{agentId: string, taskId: string, status: string,
- *                    commits: string[], costUSD: number, errors: string[]}>}
+ *                    commits: string[], changedFiles: string[], verification?: string,
+ *                    costUSD: number, errors: string[]}>}
  */
 export async function dispatchSequential(opts, shellRunner) {
   if (typeof shellRunner !== "function") {
     throw new Error("dispatchSequential: shellRunner must be a function");
   }
-  const { command, skillPath } = buildSequentialShellCommand(opts);
+  const { skillPath } = buildSequentialInvocation(opts);
   if (opts.requireSkillExists !== false && !existsSync(skillPath)) {
     throw new Error(`sequential-dispatch: skill file missing: ${skillPath}`);
   }
-  // Read the skill file for the side-effect of asserting it's a valid
-  // SKILL.md (cheap precondition for callers that want to fail fast).
-  if (opts.assertSkillFrontmatter && existsSync(skillPath)) {
-    const head = readFileSync(skillPath, "utf-8").slice(0, 200);
+  let skillBody = opts.skillBody;
+  if (existsSync(skillPath)) {
+    skillBody = readFileSync(skillPath, "utf-8");
+  }
+  if (opts.assertSkillFrontmatter && skillBody) {
+    const head = skillBody.slice(0, 200);
     if (!head.startsWith("---")) {
       throw new Error(
         `sequential-dispatch: ${skillPath} missing YAML front-matter`,
       );
     }
   }
+  const { command } = buildSequentialShellCommand({
+    ...opts,
+    skillPath,
+    skillBody,
+  });
   const result = await shellRunner(command);
   const stdout = result?.stdout || "";
   const parsed = parseSkillResult(stdout);
@@ -207,6 +415,8 @@ export async function dispatchSequential(opts, shellRunner) {
     taskId: opts.task.id,
     status: result?.status === 0 ? parsed.status : "blocked",
     commits: parsed.commits,
+    changedFiles: parsed.changedFiles,
+    verification: parsed.verification,
     costUSD: 0, // sequential mode has no per-task cost report; coordinator estimates
     errors: result?.status === 0
       ? parsed.errors

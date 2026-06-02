@@ -1,14 +1,18 @@
-# Stub Codex config produced by /codex-init.
-# Merge with your existing ~/.codex/config.toml or use as a starting point.
+# Codex config snippet produced by /codex-init.
+# Review and merge this into ~/.codex/config.toml manually.
 
-[hooks]
-PreToolUse = [
-  { matcher = "apply_patch", hooks = [{ type = "command", command = "{{hook_command_pretool}}" }] }
-]
-SessionStart = [
-  { hooks = [{ type = "command", command = "{{hook_command_sessionstart}}" }] }
-]
+# agent-skill:codex-config:start
+[[hooks.PreToolUse]]
+matcher = "^Bash$"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = {{hook_command_pretool_toml}}
+command_windows = {{hook_command_pretool_windows_toml}}
+timeout = 30
+statusMessage = "Checking Bash command policy"
 {{#if mcp_servers_block}}
 
 {{mcp_servers_block}}
 {{/if}}
+# agent-skill:codex-config:end

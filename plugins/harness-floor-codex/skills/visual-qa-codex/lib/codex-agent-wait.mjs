@@ -1,9 +1,11 @@
-// codex-agent-wait.mjs — wraps `codex agent wait --task-prefix ...` for
-// visual-qa-codex. Sibling of agent-all-codex's codex-agent-wait.mjs;
-// differs only in the prefix.
+// codex-agent-wait.mjs — legacy wrapper for `codex agent wait
+// --task-prefix ...` for visual-qa-codex. Sibling of agent-all-codex's
+// codex-agent-wait.mjs; differs only in the prefix.
 //
-// TODO: requires live Codex CLI to verify `codex agent wait` argv and
-// response schema. Phase 3 assumes:
+// Verified against Codex CLI 0.135.0: `codex agent wait` is not exposed by Codex CLI 0.135.0.
+// Production phases use sequential-dispatch.mjs. The retained legacy argv
+// shape mirrors Phase 3, so future CLI support can be re-evaluated in one
+// module:
 //
 //   codex agent wait --task-prefix 'visual-qa/page/' --timeout 1800 --json
 //

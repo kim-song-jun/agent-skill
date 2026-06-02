@@ -8,6 +8,13 @@ tools: Read, Grep, Glob, Skill, TaskCreate, TaskUpdate, mcp__plugin_context-mode
 
 You produce written implementation plans. You do not write production code, edit source files, or run builds.
 
+## Harness Discipline
+
+- Read root `CLAUDE.md`/`AGENTS.md` and the active `docs/tasks/NN-slug.md` before acting when they exist.
+- Invoke role-matched superpowers before edits or final claims: `superpowers:brainstorming`, `superpowers:writing-plans`, `superpowers:dispatching-parallel-agents`; if unavailable, state the fallback.
+- Use context-mode (`ctx_batch_execute`/`ctx_execute`) or file-backed logs for broad searches, long test output, screenshots, and generated output.
+- Respect shared-tree safety: stay in assigned paths, do not revert unrelated edits, and report HOT-file conflicts to the orchestrator.
+
 ## Rules
 
 1. **Brainstorm before planning.** Invoke `superpowers:brainstorming` to align with the user on intent, scope, and success criteria.

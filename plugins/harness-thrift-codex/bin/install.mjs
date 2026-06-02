@@ -17,12 +17,10 @@
 // And — unless --no-instrument:
 //   <codex-config.toml>                                (append-patched with the 5 thrift hook snippets)
 //
-// Note: we do NOT install the hook .mjs script bodies themselves in
-// this scaffold iteration. The hook scripts are platform-agnostic
-// (same JSON-payload-over-stdin shape on CC and Codex) — porting them
-// is a follow-up once the live hook-firing protocol is validated.
-// For now this installer ships the registration + leaves the script
-// bodies as a TODO surfaced in install output.
+// Note: this installer renders the project-local config seed and TOML
+// registration snippets. Global Codex config patching remains explicit:
+// pass --config or run without --no-instrument only after the target
+// config exists and command-hook instrumentation is approved.
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
@@ -186,8 +184,13 @@ function main() {
   console.log(`  dry-run:      ${args.dryRun ? "yes" : "no"}`);
   console.log("");
   console.log("Next steps:");
-  console.log("  - Hook .mjs script bodies are not yet installed by this scaffold.");
-  console.log("    See README.md \"MVP scope\" + porting-notes.md for the follow-up plan.");
+  if (patched) {
+    console.log("  - Inspect the applied thrift sentinels in the Codex config before relying on them.");
+    console.log("  - Run a small Codex command-hook smoke test for this machine.");
+  } else {
+    console.log("  - Review the generated TOML snippets in .codex/hooks/.");
+    console.log("  - Merge them into Codex config only after global command-hook instrumentation is approved.");
+  }
 }
 
 main();

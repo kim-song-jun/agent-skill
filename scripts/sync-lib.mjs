@@ -10,7 +10,7 @@
 // The shared lib lives in harness-builder by convention. If a future iteration
 // promotes it to a top-level _core/ package, update SOURCE_LIB below.
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { resolve, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,9 +43,10 @@ const VENDORED_RENDER_ONLY = [
   "plugins/harness-thrift-gemini/bin/lib",
   "plugins/harness-explore/bin/lib",
   "plugins/harness-debug/bin/lib",
+  "plugins/harness-debug-codex/bin/lib",
 ].map((p) => resolve(repoRoot, p));
 
-const FILES = ["render.mjs", "detect-stack.mjs"];
+const FILES = ["render.mjs", "detect-stack.mjs", "sentinel-merge.mjs", "folder-guides.mjs"];
 const RENDER_ONLY_FILES = ["render.mjs"];
 
 // Phase D config-loader.mjs propagation: canonical lives in harness-floor;
@@ -59,6 +60,72 @@ const CONFIG_LOADER_TARGETS = [
   "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/config-loader.mjs",
   "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/config-loader.mjs",
 ].map((p) => resolve(repoRoot, p));
+
+// Codex keeps its own agent-all-codex skill path, but the changed-file
+// classifier should remain line-for-line compatible with Claude agent-all.
+const CHANGED_FILE_CLASSIFIER_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/changed-file-classifier.mjs",
+);
+const CHANGED_FILE_CLASSIFIER_TARGETS = [
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/changed-file-classifier.mjs",
+].map((p) => resolve(repoRoot, p));
+
+const GATE_PLAN_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/gate-plan.mjs",
+);
+const GATE_PLAN_TARGETS = [
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/gate-plan.mjs",
+].map((p) => resolve(repoRoot, p));
+
+const COORDINATOR_AUDIT_VALIDATOR_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/policy/coordinator-audit-validator.mjs",
+);
+const COORDINATOR_AUDIT_VALIDATOR_TARGETS = [
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/policy/coordinator-audit-validator.mjs",
+].map((p) => resolve(repoRoot, p));
+
+const FOUNDATION_CHECK_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-builder/skills/agent-init/lib/foundation-check.mjs",
+);
+const FOUNDATION_CHECK_TARGETS = [
+  "plugins/harness-builder-codex/skills/codex-init/lib/foundation-check.mjs",
+].map((p) => resolve(repoRoot, p));
+
+const DOCTOR_CORE_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-builder/skills/agent-init/lib/doctor-core.mjs",
+);
+const DOCTOR_CORE_TARGETS = [
+  "plugins/harness-builder-codex/skills/codex-init/lib/doctor-core.mjs",
+].map((p) => resolve(repoRoot, p));
+
+const HARNESS_CLEANER_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-builder/skills/agent-init/lib/harness-cleaner.mjs",
+);
+const HARNESS_CLEANER_TARGETS = [
+  "plugins/harness-builder-codex/skills/codex-init/lib/harness-cleaner.mjs",
+].map((p) => resolve(repoRoot, p));
+
+const DEBUG_SKILL_LIB_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-debug/skills/debug/lib",
+);
+const DEBUG_SKILL_LIB_TARGETS = [
+  "plugins/harness-debug-codex/skills/debug-codex/lib",
+].map((p) => resolve(repoRoot, p));
+const DEBUG_SKILL_LIB_FILES = [
+  "bisector.mjs",
+  "debug-artifacts.mjs",
+  "error-parser.mjs",
+  "hypothesis-tracker.mjs",
+  "repro-suggester.mjs",
+  "state-checkpoint.mjs",
+];
 
 function readOrNull(path) {
   return existsSync(path) ? readFileSync(path, "utf-8") : null;
@@ -103,13 +170,122 @@ function collectDrift() {
       drift.push({ file: "config-loader.mjs", dest: destPath, reason: "diverged", sourceContent: cfgSrc });
     }
   }
+  // agent-all changed-file-classifier.mjs (Claude source → Codex vendored copy).
+  const classifierSrc = readOrNull(CHANGED_FILE_CLASSIFIER_SOURCE);
+  if (classifierSrc == null) {
+    console.error(`Source missing: ${CHANGED_FILE_CLASSIFIER_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of CHANGED_FILE_CLASSIFIER_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "changed-file-classifier.mjs", dest: destPath, reason: "missing", sourceContent: classifierSrc });
+    } else if (destContent !== classifierSrc) {
+      drift.push({ file: "changed-file-classifier.mjs", dest: destPath, reason: "diverged", sourceContent: classifierSrc });
+    }
+  }
+  // agent-all gate-plan.mjs (Claude source → Codex vendored copy).
+  const gatePlanSrc = readOrNull(GATE_PLAN_SOURCE);
+  if (gatePlanSrc == null) {
+    console.error(`Source missing: ${GATE_PLAN_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of GATE_PLAN_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "gate-plan.mjs", dest: destPath, reason: "missing", sourceContent: gatePlanSrc });
+    } else if (destContent !== gatePlanSrc) {
+      drift.push({ file: "gate-plan.mjs", dest: destPath, reason: "diverged", sourceContent: gatePlanSrc });
+    }
+  }
+  // agent-all coordinator audit validator (Claude source → Codex vendored copy).
+  const coordinatorAuditSrc = readOrNull(COORDINATOR_AUDIT_VALIDATOR_SOURCE);
+  if (coordinatorAuditSrc == null) {
+    console.error(`Source missing: ${COORDINATOR_AUDIT_VALIDATOR_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of COORDINATOR_AUDIT_VALIDATOR_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "coordinator-audit-validator.mjs", dest: destPath, reason: "missing", sourceContent: coordinatorAuditSrc });
+    } else if (destContent !== coordinatorAuditSrc) {
+      drift.push({ file: "coordinator-audit-validator.mjs", dest: destPath, reason: "diverged", sourceContent: coordinatorAuditSrc });
+    }
+  }
+  // foundation-check.mjs (Claude source → Codex init copy).
+  const foundationSrc = readOrNull(FOUNDATION_CHECK_SOURCE);
+  if (foundationSrc == null) {
+    console.error(`Source missing: ${FOUNDATION_CHECK_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of FOUNDATION_CHECK_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "foundation-check.mjs", dest: destPath, reason: "missing", sourceContent: foundationSrc });
+    } else if (destContent !== foundationSrc) {
+      drift.push({ file: "foundation-check.mjs", dest: destPath, reason: "diverged", sourceContent: foundationSrc });
+    }
+  }
+  // doctor-core.mjs (Claude source → Codex init copy).
+  const doctorCoreSrc = readOrNull(DOCTOR_CORE_SOURCE);
+  if (doctorCoreSrc == null) {
+    console.error(`Source missing: ${DOCTOR_CORE_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of DOCTOR_CORE_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "doctor-core.mjs", dest: destPath, reason: "missing", sourceContent: doctorCoreSrc });
+    } else if (destContent !== doctorCoreSrc) {
+      drift.push({ file: "doctor-core.mjs", dest: destPath, reason: "diverged", sourceContent: doctorCoreSrc });
+    }
+  }
+  // harness-cleaner.mjs (Claude source → Codex init copy).
+  const cleanerSrc = readOrNull(HARNESS_CLEANER_SOURCE);
+  if (cleanerSrc == null) {
+    console.error(`Source missing: ${HARNESS_CLEANER_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of HARNESS_CLEANER_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "harness-cleaner.mjs", dest: destPath, reason: "missing", sourceContent: cleanerSrc });
+    } else if (destContent !== cleanerSrc) {
+      drift.push({ file: "harness-cleaner.mjs", dest: destPath, reason: "diverged", sourceContent: cleanerSrc });
+    }
+  }
+  // debug skill runtime libs (Claude source → Codex debug copy).
+  for (const file of DEBUG_SKILL_LIB_FILES) {
+    const sourcePath = resolve(DEBUG_SKILL_LIB_SOURCE, file);
+    const sourceContent = readOrNull(sourcePath);
+    if (sourceContent == null) {
+      console.error(`Source missing: ${sourcePath}`);
+      process.exit(2);
+    }
+    for (const dest of DEBUG_SKILL_LIB_TARGETS) {
+      const destPath = resolve(dest, file);
+      const destContent = readOrNull(destPath);
+      if (destContent == null) {
+        drift.push({ file, dest: destPath, reason: "missing", sourceContent });
+      } else if (destContent !== sourceContent) {
+        drift.push({ file, dest: destPath, reason: "diverged", sourceContent });
+      }
+    }
+  }
   return drift;
 }
 
 function totalChecked() {
   return FILES.length * VENDORED_LIBS.length
     + RENDER_ONLY_FILES.length * VENDORED_RENDER_ONLY.length
-    + CONFIG_LOADER_TARGETS.length;
+    + CONFIG_LOADER_TARGETS.length
+    + CHANGED_FILE_CLASSIFIER_TARGETS.length
+    + GATE_PLAN_TARGETS.length
+    + COORDINATOR_AUDIT_VALIDATOR_TARGETS.length
+    + FOUNDATION_CHECK_TARGETS.length
+    + DOCTOR_CORE_TARGETS.length
+    + HARNESS_CLEANER_TARGETS.length
+    + DEBUG_SKILL_LIB_FILES.length * DEBUG_SKILL_LIB_TARGETS.length;
 }
 
 function checkMode() {
@@ -132,6 +308,7 @@ function syncMode() {
     return;
   }
   for (const d of drift) {
+    mkdirSync(dirname(d.dest), { recursive: true });
     writeFileSync(d.dest, d.sourceContent);
     console.log(`synced ${d.dest}`);
   }

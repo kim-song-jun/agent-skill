@@ -140,7 +140,7 @@ plugins/harness-floor/skills/agent-all/phases/
 |---|---|---|---|
 | Claude Code | `.claude/settings.local.json` hooks | `AskUserQuestion` MCP-style 도구 | 🟢 Hard |
 | Copilot CLI | `.github/hooks/*.json` | stdin prompt | 🟢 Hard |
-| Codex CLI | `~/.codex/config.toml`의 `[[hooks.agent]]` | stdin prompt | 🟢 Hard (수동 config merge 후) |
+| Codex CLI | `~/.codex/config.toml`의 `[[hooks.PreToolUse]]` shell/policy 이벤트; floor 워크플로는 프롬프트/순차 dispatch | stdin prompt | 🟡 혼합: shell policy는 hard, floor orchestration은 prompt-level |
 | Cursor | `.cursor/rules/decision-protocol.mdc` (always-loaded rule) | 채팅 prompt | 🟡 Soft (prompt-only) |
 | Gemini CLI | `GEMINI.md` 섹션 | 채팅 prompt | 🟡 Soft (prompt-only) |
 | VS Code Copilot | `.github/copilot-instructions.md` | 채팅 prompt | 🟡 Soft (prompt-only) |
@@ -192,7 +192,7 @@ plugins/harness-floor/skills/agent-all/phases/
 - Cross-plugin isolation: 기존 테스트 그대로 통과해야.
 - Smoke: end-to-end `/agent-all "trivial task" --yes` non-TTY 흐름.
 
-목표: 1246/1246 → 1279/1279 (+33 새 tests).
+목표: 1769/1769 green 유지. 새 lib/hook surface에는 focused tests 추가.
 
 ## 15. Out of scope (v1)
 

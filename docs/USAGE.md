@@ -15,18 +15,30 @@ mkdir my-app && cd my-app && git init
 
 Produces:
 - `CLAUDE.md` with operating principles + agent index + Floor Theme section
-- `.claude/agents/*.md` — 3 to 9 role files (small/medium/large)
-- `.claude/hooks/*.mjs` — context-mode-router, session-summary, cache-heal
-- `.claude/settings.local.json` — registers the 3 hooks
+- `.claude/agents/*.md` — base size roster plus operational roles: orchestrator, frontend-dev, backend-dev, integration-dev, verification-reviewer, qa-reviewer, design-reviewer, security-reviewer, data-reviewer
+- `.claude/hooks/*.mjs` — context-mode-router, session-summary, cache-heal, and operational policy hook
+- `.claude/settings.local.json` — registers the core hooks and policy hook
 - `.visual-qa.json` + `.agent-all.json` — Floor configs
 
 ### Minimal harness (lite)
 
 ```
-/agent-init --theme=lite
+/agent-init --lite
 ```
 
-Skips `.visual-qa.json`, `.agent-all.json`, and the Floor section in CLAUDE.md.
+Skips task ledger files, policy hooks, `.visual-qa.json`, `.agent-all.json`, and the Floor section in CLAUDE.md.
+
+### Persistent language
+
+```
+/agent-init --lang=ko
+/agent-init --lang=auto
+```
+
+Records the selected interaction language in `CLAUDE.md` and keeps
+`.agent-all.json` `language` aligned so downstream `/agent-all` prompts inherit it.
+Use `--lang=auto` to resolve from `$AGENT_INIT_LANG`, `$LANG`, `$LC_ALL`,
+`$LC_MESSAGES`, or locale before persisting the resolved `ko`/`en` value.
 
 ### Existing project (preserve existing CLAUDE.md)
 
@@ -136,17 +148,70 @@ The session won't end until either:
 /agent-all "Feature A" && /agent-all "Feature B" && /agent-all "Feature C" && /agent-all "Bugfix" --loop
 ```
 
-## Codex / non-Claude-Code integration
+## Claude/Codex / non-Claude-Code integration
 
-The `codex@openai-codex` plugin pairs well with `harness-floor`:
+For Codex CLI projects, use the Codex-specific builder and floor ports:
 
 ```
-/agent-all "Hard refactor that needs second-opinion" --wave-size=medium
-# When a wave subagent reports BLOCKED, invoke:
-/codex:rescue
+/codex-init
+/codex-init --lite
+/codex-init --lang=ko
+/codex-init --update-foundations
+run /agent-all for "Hard refactor that needs second-opinion"
 ```
 
-For pure Codex CLI usage (no Claude Code), the lib modules are portable Node.js:
+`/codex-init` writes `AGENTS.md`, `.codex/skills/*`, `.codex/hooks/agent-policy-hook.mjs`, and prints a current `~/.codex/config.toml` snippet using Codex command hooks such as `[[hooks.PreToolUse]]`. `/codex-init --lite` writes only the root `AGENTS.md` plus planner/dev/reviewer skills. Codex floor workflows run prompt-level/sequential dispatch because current Codex command hooks do not expose the Task-style subagent dispatch surface used by Claude Code.
+
+`/codex-init --lang=ko` records Korean as the Codex interaction language in `AGENTS.md`; keep `.agent-all.json` `language` aligned when the floor bundle is installed. `/codex-init --update-foundations` refreshes only the approved foundations (`superpowers@claude-plugins-official`, `context-mode@context-mode`) and does not patch global Codex config.
+
+For a shell-driven install into a target repo, use the platform renderer. Claude uses the same project-local bootstrapper as `/agent-init`; Codex and other tools use their platform-specific renderers:
+
+```bash
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --theme=builder
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --lite
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lang=ko
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lite
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --no-update-foundations
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --update-foundations  # strict foundation refresh
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --theme=debug
+```
+
+The default renderer path installs the operational scaffold. Non-Claude platforms install the heavy builder + floor + thrift bundle by default, and Codex `all` also installs the debug skill. `--theme=debug` installs only `.codex/skills/debug-codex/`, `.debug-artifacts/`, and `docs/debug/` for `run /debug "<failing command>"`. Claude `--theme=builder` installs the heavy builder scaffold without `.visual-qa.json` or `.agent-all.json`. `--lang=ko|en|auto` keeps generated root guidance aligned and, when floor config is installed, keeps `.agent-all.json` language aligned too. The `--lite` path is builder-only and skips floor/thrift/debug files plus global Codex config snippets. Claude/Codex operational installs auto-update only the approved foundations (`superpowers@claude-plugins-official`, `context-mode@context-mode`) when possible; when `claude` is missing or the approved foundation update fails, the renderer prints a degraded foundation warning and continues. Lite skips that automatic foundation update by default; combine `--lite --update-foundations` when you want the strict approved foundation refresh without installing heavy artifacts. Use `--update-foundations` to make that update strict, `--no-update-foundations` to opt out, and `--dry-run` to print the approved plan without calling `claude`. Claude and Codex `all`, `builder`, `--lite`, and Codex `--theme=debug` installs run the post-install doctor automatically; pass `--no-doctor` only when intentionally deferring validation.
+
+Manual doctor re-run:
+
+```bash
+node /path/to/harness-builder/bin/doctor.mjs --target=/path/to/my-project --platform=claude
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=builder
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=lite
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=debug
+```
+
+From a source checkout, `node /path/to/agent-skill/scripts/doctor.mjs ...` is the equivalent compatibility wrapper. The doctor validates the project-local Claude/Codex scaffold, auto-detects operational, builder, lite, or Codex debug profile when `--profile=auto`, exits non-zero for missing required artifacts, prints actionable `fix:` commands for missing or stale generated files, and prints `next:` foundation install commands when `superpowers` or `context-mode` are not installed.
+
+Claude/Codex uninstall and cleanup:
+
+```bash
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --uninstall
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --uninstall --force-root-clean
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --uninstall
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --uninstall --force-root-clean
+node /path/to/harness-builder/bin/clean.mjs --target=/path/to/my-project --platform=claude --dry-run
+node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/my-project --platform=codex --dry-run
+```
+
+The conservative cleanup removes generated Claude/Codex role files, hooks,
+floor/thrift config files, the Codex debug skill directory, task templates,
+and helper scripts. It preserves debug evidence in `docs/debug/` and
+`.debug-artifacts/`. Root `CLAUDE.md`/`AGENTS.md` guidance is preserved
+unless it has an agent-skill sentinel; pass `--force-root-clean` through
+`install-platform.sh --uninstall` when intentionally removing generated-looking
+root guidance.
+
+For direct library usage, the core modules are portable Node.js:
 
 ```bash
 node -e "
@@ -235,9 +300,8 @@ The protocol skips entirely. Verification + reviewer-audit hook validation conti
 | Platform | Mechanism | Strength |
 |---|---|---|
 | Claude Code | `floor-policy` hook (PreToolUse + PostToolUse on Task) | 🟢 Hard |
-| Copilot CLI | `.github/hooks/decision-protocol.json` | 🟢 Hard |
-| Codex CLI | `[[hooks.agent]]` in `~/.codex/config.toml` (manual merge) | 🟢 Hard |
+| Copilot CLI | `.github/agent-all/decision-protocol.md`; optional hook helper after manual hook review | 🟡 Prompt-level |
+| Codex CLI | Prompt-level/sequential floor workflow; command hooks only for shell/policy events | 🟡 Prompt-level |
 | Cursor | `.cursor/rules/decision-protocol.mdc` (always-loaded rule) | 🟡 Soft |
 | Gemini CLI | `.gemini/agent-all-decision-protocol.md` (referenced from GEMINI.md) | 🟡 Soft |
 | VS Code Copilot | `.github/agent-all/decision-protocol.md` (from copilot-instructions.md) | 🟡 Soft |
-

@@ -68,16 +68,39 @@ test("templates: config + audit + 5 TOML hook templates exist", () => {
     assert.ok(body.includes(`# thrift: ${name}`), `${f} missing start sentinel`);
     assert.ok(body.includes(`# end thrift: ${name}`), `${f} missing end sentinel`);
     assert.ok(body.includes("[[hooks."), `${f} should use TOML array-of-tables`);
+    assert.ok(body.includes(".hooks]]"), `${f} should use nested Codex command hooks`);
+    assert.ok(body.includes(`type = "command"`), `${f} should register a command hook`);
+    assert.ok(!body.includes("timeout_seconds"), `${f} should use current Codex timeout key`);
   }
 });
 
-test("porting-notes flags TBD items + decomposition rationale", () => {
+test("porting-notes document release caveats without placeholder language", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "references/porting-notes.md"), "utf-8");
   assert.ok(body.includes("TOML"));
   assert.ok(body.includes("sentinel"));
-  assert.ok(body.includes("Open questions"));
+  assert.ok(body.includes("Release caveats"));
   assert.ok(body.includes("gpt-5-nano"));
   assert.ok(body.includes("exec_command"));
+  assert.doesNotMatch(body, /TBD|placeholder|remaining work/i);
+});
+
+test("thrift-codex release docs describe model default as overrideable, not placeholder", () => {
+  for (const rel of [
+    "README.md",
+    "skills/thrift-codex/phases/1-config.md",
+    "skills/thrift-codex/phases/3-summariser.md",
+    "skills/thrift-codex/lib/config-loader.mjs",
+  ]) {
+    const body = readFileSync(resolve(PLUGIN_ROOT, rel), "utf-8");
+    assert.match(body, /gpt-5-nano/);
+    assert.doesNotMatch(body, /TBD|placeholder|Future \(v2\)|when Codex ships/i, rel);
+  }
+
+  const phase3 = readFileSync(resolve(SKILL_ROOT, "phases/3-summariser.md"), "utf-8");
+  assert.match(phase3, /Release default[\s\S]{0,180}heuristicSummariseFn/);
+  assert.match(phase3, /dependency-free[\s\S]{0,160}no model call/i);
+  assert.match(phase3, /Model-backed extension point/i);
+  assert.match(phase3, /gpt-5-nano` is the packaged deployment default/i);
 });
 
 // ---------- config-loader ----------
@@ -93,7 +116,8 @@ test("config-loader: missing path returns DEFAULTS with warning", () => {
   assert.equal(r.ok, true);
   assert.equal(r.config.summariser.everyNTurns, 25);
   assert.match(r.warning, /not found/);
-  assert.match(r.warning, /thrift-codex/);
+  assert.match(r.warning, /Run \/thrift to seed/);
+  assert.doesNotMatch(r.warning, /Run \/thrift-codex/);
 });
 
 test("config-loader: rejects field-level errors", () => {
@@ -245,7 +269,7 @@ test("settings-patcher: unpatch removes only thrift blocks, preserves user conte
   const dir = tmp();
   const cp = join(dir, "config.toml");
   try {
-    const seed = `# user config\nmodel = "gpt-5"\n\n[hooks]\n\n[[hooks.pre_tool_use]]\nmatcher = "user_tool"\ncommand = "node user-hook.mjs"\n`;
+    const seed = `# user config\nmodel = "gpt-5"\n\n[[hooks.PreToolUse]]\nmatcher = "^Bash$"\n\n[[hooks.PreToolUse.hooks]]\ntype = "command"\ncommand = "node user-hook.mjs"\n`;
     writeFileSync(cp, seed);
     const hooks = buildStandardThriftCodexHooks({ hooksDir: "/abs/.codex/hooks" });
     patchCodexConfig({ configPath: cp, hooksToAdd: hooks });
@@ -257,7 +281,7 @@ test("settings-patcher: unpatch removes only thrift blocks, preserves user conte
     assert.ok(!after.includes("# end thrift:"));
     // User content preserved
     assert.ok(after.includes(`model = "gpt-5"`));
-    assert.ok(after.includes("user_tool"));
+    assert.ok(after.includes("[[hooks.PreToolUse]]"));
     assert.ok(after.includes("user-hook.mjs"));
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -273,12 +297,23 @@ test("buildStandardThriftCodexHooks: snippets carry sentinels + Codex event name
   const hooks = buildStandardThriftCodexHooks({ hooksDir: "/h" });
   assert.equal(Object.keys(hooks).length, 5);
   const allBodies = Object.values(hooks).join("\n");
-  // Codex's snake_case event names — NOT CC PascalCase
-  assert.ok(allBodies.includes("[[hooks.pre_tool_use]]"));
-  assert.ok(allBodies.includes("[[hooks.post_tool_use]]"));
-  assert.ok(allBodies.includes("[[hooks.session_start]]"));
-  assert.ok(allBodies.includes("[[hooks.session_end]]"));
-  assert.ok(!allBodies.includes("PreToolUse"), "should not use CC PascalCase event names");
+  assert.ok(allBodies.includes("[[hooks.PreToolUse]]"));
+  assert.ok(allBodies.includes("[[hooks.PreToolUse.hooks]]"));
+  assert.ok(allBodies.includes("[[hooks.PostToolUse]]"));
+  assert.ok(allBodies.includes("[[hooks.PostToolUse.hooks]]"));
+  assert.ok(allBodies.includes("[[hooks.SessionStart]]"));
+  assert.ok(allBodies.includes("[[hooks.SessionStart.hooks]]"));
+  assert.ok(allBodies.includes("[[hooks.Stop]]"));
+  assert.ok(allBodies.includes("[[hooks.Stop.hooks]]"));
+  assert.ok(allBodies.includes(`type = "command"`));
+  assert.ok(allBodies.includes("timeout = 10"));
+  assert.ok(allBodies.includes("timeout = 15"));
+  assert.ok(allBodies.includes("timeout = 30"));
+  assert.ok(!allBodies.includes("[[hooks.pre_tool_use]]"));
+  assert.ok(!allBodies.includes("[[hooks.post_tool_use]]"));
+  assert.ok(!allBodies.includes("[[hooks.session_start]]"));
+  assert.ok(!allBodies.includes("[[hooks.session_end]]"));
+  assert.ok(!allBodies.includes("timeout_seconds"));
 });
 
 // ---------- install.mjs script ----------

@@ -1,7 +1,3 @@
-# Append to ~/.codex/config.toml or merge into project-level .codex/config.toml.
-# Registers the `agent` hook matcher for visual-qa Phase 3 parallel dispatch.
-
-[[hooks.agent]]
-matcher = "visual-qa/page/.*"
-command = "codex-agent-dispatch"
-timeout_seconds = 1800
+# No hook snippet is emitted for visual-qa-codex parallel dispatch.
+# current Codex hooks do not expose an agent-dispatch command surface.
+# Use sequential dispatch via .codex/skills/visual-qa-page/SKILL.md.

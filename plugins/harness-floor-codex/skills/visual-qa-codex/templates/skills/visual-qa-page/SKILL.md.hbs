@@ -1,0 +1,26 @@
+---
+name: visual-qa-page
+description: Capture and analyze one page for the Codex visual-qa sequential fallback.
+---
+
+# Visual QA Page Worker
+
+Use this skill only when `visual-qa-codex` dispatches a single page. The prompt supplies `PAGE_NAME`, `PAGE_PATH`, `BASE_URL`, and `OUTPUT_DIR`.
+
+## Contract
+
+1. Navigate to `BASE_URL + PAGE_PATH` with Playwright MCP.
+2. Run any provided auth flow before capture.
+3. For every requested breakpoint, component, and state, capture screenshots under `OUTPUT_DIR`.
+4. Analyze each screenshot with the provided analysis prompt and write `<image>.analysis.json` plus `<image>.analysis.md`.
+5. Continue after per-capture failures and record them in `errors`.
+
+## Output
+
+End with one JSON line:
+
+```json
+{"page":"<PAGE_NAME>","status":"completed","captures":["<png>"],"analyses":["<json>"],"errors":[]}
+```
+
+Use `"status":"incomplete"` when any required capture or analysis could not be completed.

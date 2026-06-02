@@ -18,6 +18,12 @@ const LIBS = [
 ];
 
 const PLATFORMS = ["cursor", "copilot", "codex", "gemini"];
+const CODEX_CORE_LIBS = [
+  "config-loader.mjs",
+  "matrix-builder.mjs",
+  "cost-estimator.mjs",
+  "diff-runs.mjs",
+];
 
 function sourcePath(lib) {
   return resolve("plugins/harness-floor/skills/visual-qa/lib", lib);
@@ -34,4 +40,12 @@ for (const platform of PLATFORMS) {
       assert.equal(ven, src, `visual-qa-${platform}/lib/${lib} drifted from source`);
     });
   }
+}
+
+for (const lib of CODEX_CORE_LIBS) {
+  test(`visual-qa-codex/lib/${lib} carries the source-of-truth runtime helper`, () => {
+    const src = readFileSync(sourcePath(lib), "utf-8");
+    const ven = readFileSync(vendoredPath("codex", lib), "utf-8");
+    assert.equal(ven, src, `visual-qa-codex/lib/${lib} missing or drifted from source`);
+  });
 }

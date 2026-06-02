@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { validateVerification } from "../skills/agent-all/lib/policy/verification-validator.mjs";
 import { validateReviewerAudit } from "../skills/agent-all/lib/policy/reviewer-audit-validator.mjs";
 import { validateQaAudit } from "../skills/agent-all/lib/policy/qa-audit-validator.mjs";
+import { validateCoordinatorAudit } from "../skills/agent-all/lib/policy/coordinator-audit-validator.mjs";
 import { resolveLanguage } from "../skills/agent-all/lib/config-loader.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -21,6 +22,11 @@ const REVIEWER_DIRECTIVES = {
 const QA_DIRECTIVES = {
   en: `\n\n---\nYou are the **QA team** — your audit is the **user-side** flow, NOT technical correctness. Walk the change through the persona's perspective: are scenarios complete, do edge cases land well, would the user understand what happened?\n\nAt the END of your review, output one literal line:\n\`QA_AUDIT: passed\` if the user-facing flow holds up,\n\`QA_AUDIT: failed\` if it does not,\n\`QA_AUDIT: skipped\` only if no user-visible change exists (e.g. internal refactor).\n\nTech-level verification is a separate Verification-team concern (\`VERIFICATION_AUDIT\`). Do not duplicate it here.\n`,
   ko: `\n\n---\n당신은 **QA 팀**입니다 — audit은 **사용자 측면** 흐름이지 기술적 정확성이 아닙니다. persona의 관점으로 변경을 따라가세요: 시나리오가 완결인가, 엣지 케이스가 잘 처리되는가, 사용자가 무슨 일이 일어났는지 이해할까?\n\n리뷰 마지막에 다음 중 한 줄을 정확히 출력하세요 (토큰은 머신 파싱이므로 영문 그대로):\n\`QA_AUDIT: passed\` — 사용자 측면 흐름 OK\n\`QA_AUDIT: failed\` — 사용자 측면 흐름 깨짐\n\`QA_AUDIT: skipped\` — 사용자에게 보이는 변경 없음 (내부 리팩터 등)\n\n기술 verification은 별도 Verification 팀의 \`VERIFICATION_AUDIT\` 책임 — 여기서 중복하지 마세요.\n`,
+};
+
+const COORDINATOR_DIRECTIVES = {
+  en: `\n\n---\nYou are the **orchestration gate**. Inspect shared files, HOT-file ownership, retry sequencing, and pathspec commit risk before reviewer dispatch.\n\nAt the END of your review, output one literal line:\n\`ORCHESTRATION_AUDIT: passed\` if ownership and sequencing are safe,\n\`ORCHESTRATION_AUDIT: failed\` if there is a blocking coordination risk,\n\`ORCHESTRATION_AUDIT: skipped\` only if orchestration review is not applicable.\n`,
+  ko: `\n\n---\n당신은 **orchestration gate**입니다. reviewer dispatch 전에 shared file, HOT-file ownership, retry sequencing, pathspec commit risk를 점검하세요.\n\n리뷰 마지막에 다음 중 한 줄을 정확히 출력하세요 (토큰은 머신 파싱이므로 영문 그대로):\n\`ORCHESTRATION_AUDIT: passed\` — ownership/sequencing 안전\n\`ORCHESTRATION_AUDIT: failed\` — 차단해야 할 coordination risk 있음\n\`ORCHESTRATION_AUDIT: skipped\` — orchestration review 적용 불가\n`,
 };
 
 const VERIFICATION_DIRECTIVES = {
@@ -46,12 +52,16 @@ function isImplementerDispatch(params) {
 function isQaReviewerDispatch(params) {
   return typeof params?.description === "string" && /^qa review task/i.test(params.description);
 }
+function isCoordinatorDispatch(params) {
+  return typeof params?.description === "string" && /^orchestration gate task\b/i.test(params.description);
+}
 function isReviewerDispatch(params) {
   // Technical (spec/quality) reviewer. Exclude QA-prefixed ones so the
-  // hook routes them to QA-only handling.
+  // hook routes them to QA-only handling. Phase 4 may prefix review tasks
+  // with persona names such as "Verification" or "Security".
   if (typeof params?.description !== "string") return false;
-  if (/^qa review task/i.test(params.description)) return false;
-  return /^review task/i.test(params.description);
+  if (/^qa review task\b/i.test(params.description)) return false;
+  return /^(?:review task|.+\sreview task)\b/i.test(params.description);
 }
 
 async function readStdin() {
@@ -76,7 +86,8 @@ async function main() {
   const isImpl = isImplementerDispatch(params);
   const isRev = isReviewerDispatch(params);
   const isQa = isQaReviewerDispatch(params);
-  if (!isImpl && !isRev && !isQa) {
+  const isCoord = isCoordinatorDispatch(params);
+  if (!isImpl && !isRev && !isQa && !isCoord) {
     process.stdout.write(JSON.stringify(payload));
     process.exit(0);
   }
@@ -87,8 +98,11 @@ async function main() {
     const verifDir = VERIFICATION_DIRECTIVES[lang] || VERIFICATION_DIRECTIVES.en;
     const reviewerDir = REVIEWER_DIRECTIVES[lang] || REVIEWER_DIRECTIVES.en;
     const qaDir = QA_DIRECTIVES[lang] || QA_DIRECTIVES.en;
+    const coordinatorDir = COORDINATOR_DIRECTIVES[lang] || COORDINATOR_DIRECTIVES.en;
     if (isImpl) {
       params.prompt = `${params.prompt || ""}\n\n${addendum}${verifDir}`;
+    } else if (isCoord) {
+      params.prompt = `${params.prompt || ""}${coordinatorDir}`;
     } else if (isQa) {
       // QA reviewer: user-side audit only; verification is a separate role.
       params.prompt = `${params.prompt || ""}${qaDir}`;
@@ -110,6 +124,12 @@ async function main() {
     }
     if (isQa) {
       const v = validateQaAudit(text);
+      if (!v.ok) {
+        process.stderr.write(v.reason);
+        process.exit(2);
+      }
+    } else if (isCoord) {
+      const v = validateCoordinatorAudit(text);
       if (!v.ok) {
         process.stderr.write(v.reason);
         process.exit(2);

@@ -1,22 +1,10 @@
-// dispatch-strategy.mjs — Phase 0 preflight detection of the `agent` hook
-// for visual-qa-codex. Parallel sibling of agent-all-codex's
-// dispatch-strategy.mjs; differs only in the matcher prefix
-// (`visual-qa/page/` vs `agent-all/wave/`).
+// dispatch-strategy.mjs — Phase 0 dispatch selection for visual-qa-codex.
 //
 // Decides between two dispatch strategies (see SKILL.md "Pipeline" + Phase 3):
 //
-//   "agent-hook" — Codex's `[[hooks.agent]]` matcher is registered for
-//                  the `visual-qa/page/.*` task prefix, so we can fan-out
-//                  one subagent per page via `codex agent dispatch` +
-//                  `codex agent wait`.
-//
-//   "sequential" — Hook absent. We invoke `.codex/skills/visual-qa-page/SKILL.md`
-//                  one page at a time.
-//
-// TODO: requires live Codex CLI to verify [[hooks.agent]] schema. The
-// detection probes the *string shape* of the registered matcher block —
-// if Codex's TOML accepts a different form (e.g. `[hooks] agent = [...]`),
-// the regex below needs updating after the research spike completes.
+// Current Codex hooks expose command events such as PreToolUse and
+// PostToolUse. The legacy agent-dispatch hook assumed by early scaffold
+// notes is not available, so auto-detection always selects sequential.
 
 import { readFileSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
@@ -24,42 +12,23 @@ import { resolve } from "node:path";
 
 export const VISUAL_QA_MATCHER_PREFIX = "visual-qa/page/";
 
-const VALID_STRATEGIES = new Set(["agent-hook", "sequential"]);
+const VALID_STRATEGIES = new Set(["sequential"]);
+const UNSUPPORTED_AGENT_HOOK_REASON = "agent-hook dispatch is unsupported by current Codex hooks; sequential dispatch is used";
 
 export function defaultCodexConfigPath() {
   return resolve(homedir(), ".codex", "config.toml");
 }
 
 /**
- * Probe TOML text for `[[hooks.agent]]` with a visual-qa matcher.
- *
- * Implementation note: we deliberately avoid pulling in a TOML parser
- * dependency here (Phase 0 spec calls for a `grep`-equivalent probe).
- * The `bin/install-hook.mjs` installer is where full TOML semantics live.
+ * Current Codex has no supported agent-dispatch hook table. Legacy
+ * snippets are ignored so stale config cannot select a broken path.
  *
  * @param {string} tomlText
  * @returns {boolean}
  */
 export function hasAgentHookInToml(tomlText) {
-  if (typeof tomlText !== "string" || tomlText.length === 0) return false;
-  const lines = tomlText.split(/\r?\n/);
-  let inAgentHook = false;
-  let sectionHasMatch = false;
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (/^\[\[?[^\]]+\]\]?$/.test(line)) {
-      if (inAgentHook && sectionHasMatch) return true;
-      inAgentHook = /^\[\[hooks\.agent\]\]$/.test(line);
-      sectionHasMatch = false;
-      continue;
-    }
-    if (!inAgentHook) continue;
-    const matcherMatch = line.match(/^matcher\s*=\s*(['"])(.*)\1\s*$/);
-    if (matcherMatch && matcherMatch[2].includes(VISUAL_QA_MATCHER_PREFIX)) {
-      sectionHasMatch = true;
-    }
-  }
-  return inAgentHook && sectionHasMatch;
+  void tomlText;
+  return false;
 }
 
 /**
@@ -75,6 +44,9 @@ export function detectDispatchStrategy(opts = {}) {
   const override = opts.override ?? null;
   if (override) {
     if (!VALID_STRATEGIES.has(override)) {
+      if (override === "agent-hook") {
+        throw new Error(`dispatch-strategy: ${UNSUPPORTED_AGENT_HOOK_REASON}`);
+      }
       throw new Error(
         `dispatch-strategy: invalid --dispatch override "${override}" `
         + `(expected one of: ${[...VALID_STRATEGIES].join(", ")})`,
@@ -99,15 +71,15 @@ export function detectDispatchStrategy(opts = {}) {
   const tomlText = readFileSync(configPath, "utf-8");
   if (hasAgentHookInToml(tomlText)) {
     return {
-      strategy: "agent-hook",
-      reason: `[[hooks.agent]] matcher for ${VISUAL_QA_MATCHER_PREFIX} found in ${configPath}`,
+      strategy: "sequential",
+      reason: UNSUPPORTED_AGENT_HOOK_REASON,
       probedPath: configPath,
       override: false,
     };
   }
   return {
     strategy: "sequential",
-    reason: `[[hooks.agent]] not registered in ${configPath}; falling back`,
+    reason: UNSUPPORTED_AGENT_HOOK_REASON,
     probedPath: configPath,
     override: false,
   };

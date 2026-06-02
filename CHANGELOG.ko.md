@@ -4,6 +4,37 @@
 
 모든 주요 변경 사항. 각 릴리스 후보에 대한 날짜 스탬프 태그가 존재합니다.
 
+## 미출시
+
+- Claude/Codex harness 요구사항을 authoritative gate에 직접 매핑하는 release-audited User Objective Release Matrix 추가: heavy 기본값 + lite opt-out, 승인된 foundation 자동 갱신, superpowers/context-mode 활성화, persona 세분화, orchestration gate, POSCO MDS-style Django/Vue routing, Codex current-CLI parity, doctor/cleanup, HOME config 안전성, deployable release gate 포함.
+- clean SHA 증거, 버전/changelog 정렬, live CLI probe 캡처, date-stamped release-candidate tag, rollout/update 경로, 이전 verified tag/SHA rollback을 다루는 release-audited Release Candidate Lifecycle 추가.
+- clean SHA 준비 상태, marketplace/manifest 정렬, README/README.ko Versioning 일치, changelog 준비 상태, stale release wording, 권장 date-stamped RC tag 이름, 필수 Claude/Codex gate 명령을 tag claim 전에 검증하는 release-candidate evidence generator `scripts/release-candidate.mjs` 추가.
+- `harness-debug-codex` 추가: Codex CLI용 `/debug` 포트. `debug-codex` skill 계약, `run /debug` 공개 진입점, 구조화된 오류 파싱, 가설 상태 유지, superpowers fallback 포함.
+- Claude/Codex `/agent-all` Phase 4에 deterministic gate plan 추가: `buildGatePlan`, coordinator-first `orchestrator` dispatch, `ORCHESTRATION_AUDIT`, release-audited Codex mirror parity 포함.
+- Claude/Codex orchestrator persona에 role gate matrix를 직접 포함해, 루트 메모리에만 기대지 않고 dispatch 계획과 최종 handoff 양쪽에서 필수 reviewer gate를 선택하도록 강화.
+- classifier gate reason과 dispatch별 pass criteria를 Claude/Codex Phase 4 문서 및 Codex sequential review prompt에 연결하고, coordinator gate의 `ORCHESTRATION_AUDIT` 출력 계약을 명시적으로 고정.
+- 터미널 Claude project bootstrap 경로에 release fixture coverage를 추가해 `install-platform.sh --platform=claude`가 operational 및 `--lite` scaffold를 만들고 post-install doctor를 실행하며 HOME을 패치하지 않음을 증명.
+- Codex release fixture를 강화해 operational/default-heavy와 `--lite` 설치가 post-install doctor 실행 및 성공을 직접 증명하도록 하고, 해당 smoke 계약을 release audit에도 고정.
+- Codex `install-platform.sh --theme=builder|floor|thrift` release fixture coverage 추가: 각 단일 theme 설치가 예상 project-local 산출물만 쓰고 global Codex config를 건드리지 않으며, floor sequential helper/runtime 및 thrift no-instrument 증거를 보존함을 증명.
+- Claude/Codex install→uninstall release fixture 추가: `install-platform.sh --uninstall`이 dry-run에서는 변경하지 않고, 실제 실행에서는 root guidance, Codex debug evidence, global config를 보존하면서 생성된 project-local agent/skill/hook/config를 제거함을 증명.
+- 무거운 Claude/Codex 운영 scaffold에 stack-specific 구현 persona를 승격: 기본 프로젝트 설치가 `frontend-dev`, `backend-dev`를 포함하고, Codex sequential dispatch가 `.codex/skills/<role>/SKILL.md`로 직접 타겟팅할 수 있으며, root/orchestrator guidance가 implementation routing matrix를 포함하도록 doctor와 release fixture로 고정.
+- Fresh Claude/Codex 설치가 implementation routing matrix를 root/orchestrator guidance에 렌더링하고 실제 `frontend-dev`/`backend-dev` persona 본문을 포함함을 release fixture가 증명하도록 강화했으며, 이 fixture 계약을 release audit에도 고정.
+- Codex operational release fixture를 확장해 sequential `agent-all-codex` dispatch가 설치된 `frontend-dev`/`backend-dev` role skill을 읽어 prompt에 inline해야 통과하도록 하고, Claude 터미널 설치 fixture도 root guidance뿐 아니라 orchestrator 및 stack-specific persona 본문을 검증하도록 강화.
+- `scripts/release-smoke.sh` 자체를 Claude/Codex release readiness audit에 추가해, 최종 gate 계약이 live CLI probe, fresh fixture, marketplace dry-run, focused release contract, vendored-lib sync, full-suite mode 연결을 release claim 전에 증명하도록 고정.
+- public CLI script의 shebang 및 executable bit를 release-audit packaging coverage로 추가하고, 직접 실행 가능한 release gate script까지 포함.
+- 생성되는 Claude/Codex hook 및 task-ledger checker script가 존재하는 프로필에서는 executable bit와 함께 쓰도록 하고, fresh install release fixture가 shebang/mode packaging을 증명하도록 강화.
+- Codex 기본 reviewer와 전문 reviewer persona에 Phase 4 `VERIFICATION_AUDIT` 출력 계약을 명시하고, fresh operational/builder 설치의 release fixture/audit가 해당 token surface를 증명하도록 강화.
+- Claude QA, 기본 reviewer, 전문 reviewer persona도 Codex와 같은 Phase 4 machine-token 출력 계약을 release fixture와 release audit에서 증명하도록 강화.
+- Claude 터미널 `install-platform.sh --theme=builder`가 이제 진짜 builder-only heavy scaffold를 설치하고, floor config를 생략하며, builder-profile doctor를 실행하도록 고정. release fixture도 이를 증명.
+- Codex builder/lite 루트 `AGENTS.md`가 이제 floor가 설치된 경우에만 `.agent-all.json` language 정렬을 안내하도록 변경. builder-only 설치가 없는 floor config를 암시하지 않도록 release fixture와 release audit에서 고정.
+- Codex debug 포트를 마켓플레이스, Codex 설치 그룹, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, 공개 검증 문서에 등록. 현재 suite: 1769/1769 통과; fast release smoke: 438/438 통과.
+- Claude/Codex 터미널 operational bootstrap이 `claude` 사용 가능 시 승인된 foundation(`superpowers`, `context-mode`)만 자동 갱신하도록 변경. `--update-foundations` strict 모드와 `--no-update-foundations` opt-out 포함.
+- 기본 foundation auto-refresh에서 승인된 갱신이 실패해도 Claude/Codex bootstrap은 degraded foundation mode로 계속 진행하도록 강화. strict 실패는 `--update-foundations`에서만 유지.
+- `/agent-init` 기본값을 운영형/무거운 scaffold로 변경하고, 최소 경로는 `/agent-init --lite`로 제공.
+- task ledger 스캐폴딩, sentinel 병합 정책, Claude hard policy 산출물, Codex command-policy 산출물, Gemini soft rules, 변경 파일 기반 reviewer classifier 추가.
+- superpowers와 context-mode를 위한 foundation 감지/업데이트 가이드 추가.
+- 현재 Codex command-hook schema와 프롬프트/순차 Codex floor 워크플로에 맞게 릴리즈 문서 갱신.
+
 ## Visual-QA runtime wiring + agent-init i18n — 2026-05-22  (`harness-floor` v0.5.1)
 
 ### 수정 — visual-qa v0.4.0의 wiring 실제로 작동
@@ -161,15 +192,6 @@ Suite **1280 → 1292 통과** (+12 새 tests: renderer prefix 테이블, langua
 
 - Task 11은 `loadAgentAllConfig(dir)` 새로 만드는 대신 기존 `loadConfig(path)` API 재사용. 효과 동일, API 중복 없음.
 - Task 13 (`sync-lib.mjs`가 `decisions/` + `policy/` libs vendoring) 보류. Soft prompt-only 포트는 vendored runtime libs 불필요; hard-enforce 포트는 canonical hook script 직접 참조.
-
-## [미출시]
-- `harness-thrift` v2 summariser — Claude Code programmatic compact API
-  출시 시 도입 (현재 v1 advisory).
-- 라이브 CC + 플랫폼별 CLI 검증
-  (`2026-05-18-cli-runtime-verification-checklist.md` +
-  `2026-05-18-hook-precedence-integration.md`).
-- Anthropic SDK / OpenAI SDK / Vertex SDK 실제 API 연결 (현재 mock
-  toolCaller 사용).
 
 ## README 전반 개선 — 2026-05-19
 
@@ -1038,7 +1060,7 @@ full 6-phase 파이프라인으로 졸업.
 ## harness-builder v0.2.0 / harness-floor v0.2.0 — 2026-05-18
 ### 주요 변경 사항
 - **`/harness-init` → `/agent-init`로 이름 변경**. 이전 이름 제거됨. 플러그인/상태 이름 따름: `.harness-state.json` → `.agent-init-state.json` (하위 호환성: 이전 파일 이름은 여전히 gitignored).
-- **`/agent-init --theme=floor`가 이제 기본값입니다.** `--theme=lite`로 옵트아웃합니다.
+- **`/agent-init --theme=floor`가 이제 기본값입니다.** `/agent-init --lite`로 옵트아웃합니다 (`--theme=lite`는 호환 alias로 유지).
 
 ### 추가됨
 - `/agent-init --theme=thrift` 플래그 — Theme B를 위한 예약된 스텁 (아직 동작 없음).

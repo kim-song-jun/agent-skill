@@ -1,11 +1,11 @@
 // codex-agent-dispatch.mjs — wraps `codex agent dispatch` for visual-qa-codex.
 //
-// Phase 3 (Strategy A) issues one dispatch per page-group. The registered
-// `[[hooks.agent]]` matcher in `~/.codex/config.toml` (template:
-// `templates/codex-hooks-snippet.toml.hbs`) handles the spawn.
+// Legacy experimental helper for a Codex agent-dispatch CLI surface.
+// Verified against Codex CLI 0.135.0: `codex agent dispatch` is not exposed by Codex CLI 0.135.0.
+// Production phases use sequential-dispatch.mjs.
 //
-// TODO: requires live Codex CLI to verify `codex agent dispatch` argv
-// schema. The shape below mirrors Phase 3:
+// The retained legacy argv shape mirrors Phase 3, so future CLI support can
+// be re-evaluated in one module:
 //
 //   codex agent dispatch \
 //     --role visual-qa-page \
@@ -77,7 +77,7 @@ export function buildDispatchShellCommand(inv) {
 }
 
 /**
- * Default dispatcher. See agent-all-codex's sibling for response-shape notes.
+ * Default dispatcher for the legacy experimental surface.
  *
  * @param {Parameters<typeof buildDispatchArgs>[0]} inv
  * @param {(command: string) => Promise<{stdout: string, stderr: string, status: number}>} shellRunner

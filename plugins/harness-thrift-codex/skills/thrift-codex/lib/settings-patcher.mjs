@@ -1,8 +1,8 @@
 // Minimal TOML-aware patcher for ~/.codex/config.toml.
 //
-// Codex stores hook registrations under a top-level [hooks] section in
-// TOML (per the existing harness-builder-codex / harness-floor-codex
-// templates). This module appends thrift hook stanzas to the file and
+// Codex stores hook registrations as TOML table arrays such as
+// [[hooks.PreToolUse]] with nested [[hooks.PreToolUse.hooks]] command
+// handlers. This module appends thrift hook stanzas to the file and
 // removes them via sentinel comment markers.
 //
 // SIMPLIFICATION: we do NOT parse TOML. The patcher operates on the
@@ -10,7 +10,7 @@
 //   1. Each thrift hook snippet is bracketed by two sentinel comment
 //      lines:
 //          # thrift: <name>
-//          ...snippet body (one or more [[hooks.<event>]] tables)...
+//          ...snippet body (one or more [[hooks.<Event>]] tables)...
 //          # end thrift: <name>
 //   2. The patcher detects "already installed" by string-matching the
 //      `# thrift: <name>` start sentinel.
@@ -90,36 +90,57 @@ export function buildStandardThriftCodexHooks({ hooksDir }) {
   return {
     "thrift-pretool-bash-telemetry": make(
       "thrift-pretool-bash-telemetry",
-      `[[hooks.pre_tool_use]]
-matcher = "shell_command"
+      `[[hooks.PreToolUse]]
+matcher = "^Bash$"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
 command = "${cmd("thrift-pretool-bash-telemetry")}"
-timeout_seconds = 10`,
+timeout = 10
+statusMessage = "Recording Bash thrift telemetry"`,
     ),
     "thrift-pretool-read-coerce": make(
       "thrift-pretool-read-coerce",
-      `[[hooks.pre_tool_use]]
-matcher = "read_file"
+      `[[hooks.PreToolUse]]
+matcher = "^(read_file|mcp__.*__read_file)$"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
 command = "${cmd("thrift-pretool-read-coerce")}"
-timeout_seconds = 10`,
+timeout = 10
+statusMessage = "Checking read-size thrift policy"`,
     ),
     "thrift-posttool-summariser-trigger": make(
       "thrift-posttool-summariser-trigger",
-      `[[hooks.post_tool_use]]
+      `[[hooks.PostToolUse]]
 matcher = ".*"
+
+[[hooks.PostToolUse.hooks]]
+type = "command"
 command = "${cmd("thrift-posttool-summariser-trigger")}"
-timeout_seconds = 15`,
+timeout = 15
+statusMessage = "Checking thrift summary threshold"`,
     ),
     "thrift-sessionstart-cache-prime": make(
       "thrift-sessionstart-cache-prime",
-      `[[hooks.session_start]]
+      `[[hooks.SessionStart]]
+matcher = "startup|resume|clear|compact"
+
+[[hooks.SessionStart.hooks]]
+type = "command"
 command = "${cmd("thrift-sessionstart-cache-prime")}"
-timeout_seconds = 15`,
+timeout = 15
+statusMessage = "Priming thrift cache context"`,
     ),
     "thrift-sessionend-audit": make(
       "thrift-sessionend-audit",
-      `[[hooks.session_end]]
+      `[[hooks.Stop]]
+
+[[hooks.Stop.hooks]]
+type = "command"
 command = "${cmd("thrift-sessionend-audit")}"
-timeout_seconds = 30`,
+timeout = 30
+statusMessage = "Writing thrift audit"`,
     ),
   };
 }

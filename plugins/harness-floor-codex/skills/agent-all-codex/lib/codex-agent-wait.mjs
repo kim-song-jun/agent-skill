@@ -1,9 +1,10 @@
-// codex-agent-wait.mjs — wraps Codex CLI's `agent wait --task-prefix ...`
-// blocking call. Used by Phase 3 (agent-hook strategy) to await all
-// in-flight wave dispatches.
+// codex-agent-wait.mjs — legacy wrapper for a Codex CLI
+// `agent wait --task-prefix ...` blocking call.
 //
-// TODO: requires live Codex CLI to verify `codex agent wait` argv +
-// response schema. The phase doc assumes:
+// Verified against Codex CLI 0.135.0: `codex agent wait` is not exposed by Codex CLI 0.135.0.
+// Production phases use sequential-dispatch.mjs. The retained legacy argv
+// shape mirrors what the phase docs originally assumed, so future CLI
+// support can be re-evaluated in one module:
 //
 //   codex agent wait --task-prefix '<prefix>' --timeout <seconds> [--json]
 //
@@ -11,7 +12,8 @@
 //
 //   [{agentId, taskId, status, commits, costUSD, errors?}]
 //
-// If the live CLI emits a different shape, only this module changes.
+// If a future CLI exposes this surface with a different shape, only this
+// module should need to change.
 
 import { AGENT_ALL_MATCHER_PREFIX } from "./dispatch-strategy.mjs";
 
@@ -84,9 +86,8 @@ export function buildWaitShellCommand(opts) {
 /**
  * Parse the `codex agent wait --json` response into a normalized array.
  *
- * Accepts both `{results: [...]}` and bare-array forms — the live CLI's
- * envelope is unverified. Missing fields default to safe values so the
- * coordinator can still compute wave status.
+ * Accepts both `{results: [...]}` and bare-array forms. Missing fields
+ * default to safe values so the coordinator can still compute wave status.
  *
  * @param {string} stdout
  * @returns {Array<{agentId: string|null, taskId: string|null, status: string,

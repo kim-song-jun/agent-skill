@@ -6,13 +6,47 @@
 
 go
 
+## Language
+
+- Interaction language: `en`
+
 ## Operating Principles
 
 These apply to the main agent and to every role in `.claude/agents/`:
 
-1. **Brainstorm first.** Before any deliverable (code, doc, design), invoke `superpowers:brainstorming` to align on intent.
-2. **Parallel via superpowers.** When fanning out 2+ independent subtasks, invoke `superpowers:dispatching-parallel-agents` or `subagent-driven-development`.
-3. **context-mode over Bash.** For commands whose output may exceed ~20 lines, use `mcp__plugin_context-mode_context-mode__ctx_batch_execute`.
+1. **Brainstorm first.** Before any deliverable, invoke `superpowers:brainstorming` unless the user explicitly asks for direct execution.
+2. **Plan before implementation.** Multi-step work uses `superpowers:writing-plans` and stores plans in `docs/superpowers/plans/`.
+3. **Parallel through orchestration.** Use `superpowers:dispatching-parallel-agents` or `superpowers:subagent-driven-development` when tasks do not share files.
+4. **Verify before completion.** Use `superpowers:verification-before-completion` before claiming success.
+5. **Use context-mode for bulk context.** Store or index large logs, broad searches, and bulky browser snapshots outside the main conversation.
+6. **Protect shared worktrees.** Never use `git add -A`, `git commit -a`, `git reset --hard`, `git checkout --`, or force push unless the user explicitly approves the exact command.
+7. **Commit with pathspecs.** Use `git commit -m "message" -- path/one path/two`.
+
+## Execution Discipline
+
+1. **No scope retreat.** If the user asks for an exhaustive pass, all files, all pages, or a fixed `N` items, establish the count up front, process every item, and report `processed M/N` before handoff. Stop only for a real blocker, an explicit user scope change, or a documented ambiguity.
+2. **Plan vs execute.** If the request is to fix, build, change, or verify something, finish the file edits and verification. Do not stop at a proposal unless the user asked only for analysis.
+3. **Self-Audit before handoff.** For multi-file changes, long-running task docs, or all-item sweeps, include a concise `Self-Audit` covering requested scope, processed count, unprocessed items, unverified gates, any shortcuts, and next action.
+4. **Tech-Debt Grep.** Before completion, check touched code paths for `TODO`, `FIXME`, `HACK`, and `XXX`. Resolve in-scope debt in the same change; if it is out of scope, state why.
+5. **Decision Matrix.** When two or more reasonable choices remain, or multiple user decisions are needed, present a `Decision Matrix` with option, impact, recommendation, and whether confirmation is required.
+
+
+## Subagent Dispatch Contract
+
+Every delegated role prompt must include:
+
+- Working directory.
+- Owned files or line ranges.
+- Forbidden files or areas owned by other active agents.
+- A `DO NOT` list covering destructive commands, unrelated edits, broad staging, and self-commit behavior.
+- Expected output format with a concise `Self-Audit`.
+- Reusable references, files, functions, commands, or task-doc sections.
+
+Do not self-commit from a delegated subagent unless the orchestrator explicitly asks for that. Report changed files and verification evidence back to the orchestrator for pathspec commit review.
+
+
+
+
 
 ## Agent Roster
 
@@ -22,20 +56,7 @@ These apply to the main agent and to every role in `.claude/agents/`:
 | dev |  | `.claude/agents/dev.md` |
 | reviewer |  | `.claude/agents/reviewer.md` |
 
-
-## Hooks
-
-- `PreToolUse` (Bash) → `context-mode-router.mjs` — suggests context-mode for likely-large commands
-- `Stop` → `session-summary.mjs` — appends key decisions to `docs/decisions/`
-- `SessionStart` → `cache-heal.mjs` — self-heals plugin cache symlinks
-
 ## Work Folders
 
-- `docs/superpowers/specs/` — brainstorming output (design specs)
-- `docs/superpowers/plans/` — writing-plans output (implementation plans)
-- `docs/decisions/` — session-summary logs
-- `docs/tasks/` — long-running task tracking
-
-
-
-
+- `docs/superpowers/specs/` - brainstorming output.
+- `docs/superpowers/plans/` - implementation plans.

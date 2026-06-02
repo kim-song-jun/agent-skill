@@ -1,4 +1,5 @@
 {
+  "language": "auto",
   "defaults": {
     "maxIter": 10,
     "maxCostUSD": 200,

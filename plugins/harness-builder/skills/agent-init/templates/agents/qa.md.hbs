@@ -10,6 +10,13 @@ You are the **QA team**. Your audit is the **user-side flow**, NOT technical cor
 
 This is a separate concern from the **Verification team** (`tester.md` + `reviewer.md`) whose job is the tech-stack / spec-compliance audit. Both teams ship a verdict to Phase 4; the wave passes only when both audits land non-`failed`.
 
+## Harness Discipline
+
+- Read root `CLAUDE.md`/`AGENTS.md` and the active `docs/tasks/NN-slug.md` before acting when they exist.
+- Invoke role-matched superpowers before edits or final claims: `superpowers:brainstorming`, `superpowers:verification-before-completion`; if unavailable, state the fallback.
+- Use context-mode (`ctx_batch_execute`/`ctx_execute`) or file-backed logs for broad searches, long test output, screenshots, and generated output.
+- Respect shared-tree safety: stay in assigned paths, do not revert unrelated edits, and report HOT-file conflicts to the orchestrator.
+
 ## Rules
 
 1. **Persona-first thinking.** Treat the **{{persona}}** as your user; write acceptance scenarios before testing.

@@ -1,21 +1,17 @@
 {
+  "mode": "comprehensive",
   "baseUrl": "http://localhost:8080",
   "breakpoints": [
     { "name": "mobile",  "width": 375,  "height": 812 },
     { "name": "tablet",  "width": 768,  "height": 1024 },
     { "name": "desktop", "width": 1440, "height": 900 }
   ],
-  "pages": [
-    {
-      "name": "home",
-      "path": "/",
-      "components": [
-        { "name": "header", "selector": "[data-testid=header]" },
-        { "name": "primary-cta", "selector": "[data-testid=primary-cta]", "states": ["hover", "focus"] }
-      ]
-    }
-  ],
-  "flows": [],
+  "comprehensive": {
+    "scope": { "include": ["/"], "exclude": [], "maxPages": 50, "depth": 3 },
+    "interactions": { "click": true, "depth": 1 },
+    "cache": { "gitDiffScope": true, "domHashCache": true },
+    "verdict": { "mode": "vs-baseline", "failOn": ["critical", "major"], "firstRun": "report" }
+  },
   "analysis": {
     "model": "claude-haiku-4-5",
     "categories": ["accessibility", "alignment", "color-contrast", "copy-quality", "responsive-fit"],

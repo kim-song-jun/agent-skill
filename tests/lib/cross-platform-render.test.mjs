@@ -11,6 +11,8 @@ const CTX = {
   services_str: "postgres, redis",
   deploy_targets: "fly.io",
   constraints: "",
+  language: "auto",
+  qa_personas: ["admin", "field operator"],
   agents: [
     { name: "planner",  when: "all planning" },
     { name: "dev",      when: "implementation" },
@@ -26,7 +28,19 @@ const CTX = {
 const CASES = [
   {
     tpl: "plugins/harness-builder-codex/skills/codex-init/templates/AGENTS.md.hbs",
-    contains: ["typescript (on docker: postgres, redis) — deploys to fly.io", "Project memory for Codex CLI"],
+    contains: [
+      "typescript (on docker: postgres, redis) - deploys to fly.io",
+      "Project memory for Codex CLI",
+      "## Orchestration Contract",
+      "## Role Gate Matrix",
+      "superpowers:brainstorming",
+      "superpowers:writing-plans",
+      "superpowers:verification-before-completion",
+      "context-mode for bulk context",
+      "- admin",
+      "- field operator",
+    ],
+    extraCtx: { operationalProfile: true },
   },
   {
     tpl: "plugins/harness-builder-copilot/skills/copilot-init/templates/copilot-instructions.md.hbs",
@@ -42,13 +56,31 @@ const CASES = [
   },
   {
     tpl: "plugins/harness-builder-codex/skills/codex-init/templates/codex-config.toml.hbs",
-    contains: ["[hooks]", "PreToolUse", "SessionStart"],
-    extraCtx: { hook_command_pretool: "echo pre", hook_command_sessionstart: "echo start", mcp_servers_block: "" },
+    contains: [
+      "[[hooks.PreToolUse]]",
+      "matcher = \"^Bash$\"",
+      "[[hooks.PreToolUse.hooks]]",
+      "type = \"command\"",
+      "timeout = 30",
+      "command_windows",
+    ],
+    notContains: [
+      "[[hooks.pre_tool_use]]",
+      "matcher = \"shell_command\"",
+      "timeout_seconds",
+      "SessionStart",
+    ],
+    extraCtx: {
+      hook_command_pretool_toml: "\"echo pre\"",
+      hook_command_pretool_windows_toml: "\"echo pre\"",
+      mcp_servers_block: "",
+    },
   },
   {
     tpl: "plugins/harness-builder-gemini/skills/gemini-init/templates/gemini-settings.json.hbs",
-    contains: ["\"BeforeTool\"", "\"SessionStart\"", "\"mcpServers\""],
-    extraCtx: { hook_command_beforetool: "echo bt", hook_command_sessionstart: "echo ss", mcp_servers_json_body: "" },
+    contains: ["\"mcpServers\""],
+    notContains: ["\"BeforeTool\"", "\"SessionStart\""],
+    extraCtx: { mcp_servers_json_body: "" },
   },
   {
     tpl: "plugins/harness-builder-copilot/skills/copilot-init/templates/mcp-config.json.hbs",
@@ -109,7 +141,8 @@ const CASES = [
   },
   {
     tpl: "plugins/harness-floor-codex/skills/agent-all-codex/templates/codex-hooks-snippet.toml.hbs",
-    contains: ["[[hooks.agent]]", "agent-all/wave/", "codex-agent-dispatch"],
+    contains: ["current Codex hooks", "sequential dispatch"],
+    notContains: ["[[hooks.agent]]", "timeout_seconds", "codex-agent-dispatch"],
   },
   {
     tpl: "plugins/harness-floor-gemini/skills/agent-all-gemini/templates/agent-all.config.json.hbs",
@@ -142,7 +175,8 @@ const CASES = [
   },
   {
     tpl: "plugins/harness-floor-codex/skills/visual-qa-codex/templates/codex-hooks-snippet.toml.hbs",
-    contains: ["[[hooks.agent]]", "visual-qa/page/", "codex-agent-dispatch"],
+    contains: ["current Codex hooks", "sequential dispatch"],
+    notContains: ["[[hooks.agent]]", "timeout_seconds", "codex-agent-dispatch"],
   },
   {
     tpl: "plugins/harness-floor-gemini/skills/visual-qa-gemini/templates/page-prompt.md.hbs",
@@ -156,6 +190,9 @@ for (const c of CASES) {
     const out = render(tpl, { ...CTX, ...(c.extraCtx ?? {}) });
     for (const needle of c.contains) {
       assert.ok(out.includes(needle), `Expected "${needle}" in render output of ${c.tpl}`);
+    }
+    for (const needle of c.notContains ?? []) {
+      assert.ok(!out.includes(needle), `Did not expect "${needle}" in render output of ${c.tpl}`);
     }
   });
 }

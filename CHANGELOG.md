@@ -4,6 +4,37 @@
 
 All notable changes to this project. Date-stamped tags exist for each release candidate.
 
+## Unreleased
+
+- Added a release-audited User Objective Release Matrix mapping the Claude/Codex harness requirements to authoritative gates: heavy default + lite opt-out, approved foundation auto-update, superpowers/context-mode activation, persona segmentation, orchestration gates, POSCO MDS-style Django/Vue routing, Codex current-CLI parity, doctor/cleanup, HOME config safety, and the deployable release gate.
+- Added a release-audited Release Candidate Lifecycle covering clean-SHA evidence, version/changelog alignment, live CLI probe capture, date-stamped release-candidate tagging, rollout/update paths, and rollback to a previous verified tag/SHA.
+- Added `scripts/release-candidate.mjs`, a release-candidate evidence generator that verifies clean-SHA readiness, marketplace/manifest alignment, README/README.ko Versioning agreement, changelog readiness, stale release wording, recommended date-stamped RC tag names, and required Claude/Codex gate commands before a tag claim.
+- Added `harness-debug-codex`, a Codex CLI port of `/debug` with the `debug-codex` skill contract, `run /debug` public entrypoint, structured error parsing, hypothesis state persistence, and superpowers fallback.
+- Added deterministic Phase 4 gate planning for Claude/Codex `/agent-all`: `buildGatePlan`, coordinator-first `orchestrator` dispatch, `ORCHESTRATION_AUDIT`, and release-audited Codex mirror parity.
+- Embedded the role gate matrix directly in Claude and Codex orchestrator personas so dispatch planning and final handoff both select the required reviewer gates before relying on root memory alone.
+- Threaded classifier gate reasons and per-dispatch pass criteria into Claude/Codex Phase 4 docs and Codex sequential review prompts, including explicit `ORCHESTRATION_AUDIT` output contracts for coordinator gates.
+- Added release-fixture coverage for the terminal Claude project bootstrap path, proving `install-platform.sh --platform=claude` produces both operational and `--lite` scaffolds, runs the post-install doctor, and leaves HOME unpatched.
+- Hardened Codex release fixtures so operational/default-heavy and `--lite` installs must prove post-install doctor execution and success, with release-audit coverage for the smoke contract.
+- Added release-fixture coverage for Codex `install-platform.sh --theme=builder|floor|thrift`, proving each single-theme install writes only its expected project-local artifacts, keeps global Codex config untouched, and preserves floor sequential helper/runtime and thrift no-instrument evidence.
+- Added Claude/Codex install→uninstall release fixtures, proving `install-platform.sh --uninstall` dry-runs without mutation and then removes generated project-local agents/skills/hooks/configs while preserving root guidance, Codex debug evidence, and global config.
+- Promoted stack-specific implementer personas to the heavy Claude/Codex operational scaffold: `frontend-dev` and `backend-dev` now ship in default project installs, Codex sequential dispatch can target their `.codex/skills/<role>/SKILL.md` files, and root/orchestrator guidance includes an implementation routing matrix with release-audited doctor and fixture coverage.
+- Hardened release fixtures to prove fresh Claude/Codex installs render the implementation routing matrix into root/orchestrator guidance and ship usable `frontend-dev`/`backend-dev` persona bodies, with release-audit coverage for the fixture contract.
+- Extended the Codex operational release fixture so sequential `agent-all-codex` dispatch must load and inline installed `frontend-dev`/`backend-dev` role skills, while the Claude terminal installer fixture now checks orchestrator and stack-specific persona bodies as well as root guidance.
+- Added `scripts/release-smoke.sh` itself to the Claude/Codex release readiness audit, so the final gate contract now proves live CLI probes, fresh fixtures, marketplace dry-runs, focused release contracts, vendored-lib sync, and full-suite mode are still wired before a release claim.
+- Added release-audit packaging coverage for public CLI script shebangs and executable bits, including direct release gate scripts.
+- Generated Claude/Codex hook and task-ledger checker scripts are now written with executable bits when present, and release fixtures prove their shebang/mode packaging in fresh installs.
+- Codex base and specialized reviewer personas now carry explicit Phase 4 `VERIFICATION_AUDIT` output contracts, and release fixtures/audits prove fresh operational and builder installs preserve those token surfaces.
+- Claude QA, base, and specialized reviewer personas now have the same Phase 4 machine-token output contract coverage in release fixtures and release audit as Codex.
+- Claude terminal `install-platform.sh --theme=builder` now installs a true builder-only heavy scaffold, skips floor configs, runs the builder-profile doctor, and is covered by release fixtures.
+- Codex builder/lite root `AGENTS.md` now uses floor-conditional `.agent-all.json` language guidance so builder-only installs no longer imply a missing floor config exists; release fixtures and release audit pin the contract.
+- Registered the Codex debug port in the marketplace, Codex plugin install group, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, and public verification docs. Current suite: 1769/1769 passing; fast release smoke: 438/438 passing.
+- Made Claude/Codex terminal operational bootstrap auto-refresh only approved foundations (`superpowers`, `context-mode`) when `claude` is available, with `--update-foundations` strict mode and `--no-update-foundations` opt-out.
+- Hardened foundation auto-refresh so default Claude/Codex bootstrap continues in degraded foundation mode if the approved update fails; strict failure remains opt-in through `--update-foundations`.
+- Changed `/agent-init` default to operational/heavy scaffold with `/agent-init --lite` as the minimal path.
+- Added task ledger scaffolding, sentinel merge policy, Claude hard policy artifacts, Codex command-policy artifacts, Gemini soft rules, and changed-file reviewer classifier.
+- Added foundation detection/update guidance for superpowers and context-mode.
+- Updated release docs to reflect current Codex command-hook schema and prompt-level/sequential Codex floor workflows.
+
 ## QA team vs Verification team — 2026-05-22  (`harness-floor` v0.5.0)
 
 Formal split of the two review concerns the harness used to conflate as "reviewer".
@@ -155,15 +186,6 @@ Suite **1246 → 1279 passing** (+33 new tests across `decisions/`, `policy/`, s
 
 - Task 11 reused existing `loadConfig(path)` API instead of introducing `loadAgentAllConfig(dir)`. Same effect, no API duplication.
 - Task 13 (`sync-lib.mjs` vendoring of `decisions/` + `policy/` libs) deferred. Soft prompt-only ports don't require vendored runtime libs; hard-enforce ports reference the canonical hook script directly. Future work if cross-platform runtime parity becomes required.
-
-## [Unreleased]
-- `harness-thrift` v2 summariser using Claude Code programmatic compact
-  API (once surfaced) — currently v1 advisory.
-- Live CC + per-platform CLI verification per
-  `2026-05-18-cli-runtime-verification-checklist.md` and
-  `2026-05-18-hook-precedence-integration.md`.
-- Anthropic SDK / OpenAI SDK / Vertex SDK actual API hookups (currently
-  mock toolCallers used in tests).
 
 ## README overall improvement — 2026-05-19
 
@@ -1170,12 +1192,12 @@ scaffold). Completes the 4-platform matrix. Adds 10th plugin to marketplace.
 ## harness-builder v0.2.0 / harness-floor v0.2.0 — 2026-05-18
 ### Breaking
 - **Renamed `/harness-init` → `/agent-init`**. Old name removed. Plugin/state names follow: `.harness-state.json` → `.agent-init-state.json` (backward-compat: old filename still gitignored).
-- **`/agent-init --theme=floor` is now the DEFAULT.** Opt-out with `--theme=lite`.
+- **`/agent-init --theme=floor` is now the DEFAULT.** Opt out with `/agent-init --lite` (`--theme=lite` remains a compatibility alias).
 
 ### Added
 - `/agent-init --theme=thrift` flag — RESERVED stub for Theme B (no behaviour yet).
 - `/agent-all` skill in `harness-floor` (Theme C-2): 7-phase pipeline wrapping superpowers brainstorming + writing-plans + subagent-driven-development, with optional `--loop` (Theme C-3 ralph-pattern absorbed as flag).
-- `/harness-init --theme=floor` integration (now default): seeds `.agent-all.json` alongside `.visual-qa.json` and adds Floor section to generated CLAUDE.md.
+- `/agent-init --theme=floor` integration (now default): seeds `.agent-all.json` alongside `.visual-qa.json` and adds Floor section to generated CLAUDE.md.
 - Korean documentation siblings (`*.ko.md`).
 - Cost-unrestricted defaults: `maxIter=10`, `maxCostUSD=500`, `waveSize=large`. Visual-QA confirm threshold raised 500→5000 captures.
 - Render lib: nested same-type blocks now supported (balance-counter parser).

@@ -1,18 +1,65 @@
 # harness-builder-codex
 
-Run an `agent-init`-style scaffold inside Codex CLI. Emits:
+Run an operational `agent-init`-style scaffold inside Codex CLI. The default
+profile is heavy; pass `--lite` for the minimal scaffold.
+
+Emits:
 
 - `AGENTS.md` at project root
+- folder-level `AGENTS.md` guides for detected app/package directories
 - `.codex/skills/<role>/SKILL.md` per role
-- `AGENTS.md` as the cross-platform fallback
+- `.codex/hooks/agent-policy-hook.mjs`
+- task-ledger files under `docs/tasks/`
+- operational workspace directories under `docs/superpowers/specs/`,
+  `docs/superpowers/plans/`, and `docs/decisions/`
+- a current `~/.codex/config.toml` snippet on stdout using command-hook tables
+  such as `[[hooks.PreToolUse]]`
 
 ## Install
 
 ```bash
-codex plugins install <repo-url>
+./scripts/install-platform.sh --platform=codex --target=/path/to/project
+./scripts/install-platform.sh --platform=codex --target=/path/to/project --update-foundations
+./scripts/install-platform.sh --platform=codex --target=/path/to/project --theme=debug
 ```
 
-Note: confirm exact install command with your Codex CLI version — best-effort instruction.
+Use `--force` when intentionally replacing generated artifacts in an existing
+project. `--update-foundations` refreshes only the approved foundation plugins
+through `scripts/update.sh --foundations-only`; combine it with `--dry-run` to
+print the exact plan without calling `claude`. Codex `all`, `builder`,
+`--lite`, and `--theme=debug` installs run the post-install doctor
+automatically; pass `--no-doctor` only when intentionally deferring validation.
+
+Manual doctor re-run from the plugin bundle:
+
+```bash
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/project --platform=codex
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/project --platform=codex --profile=debug
+```
+
+From a source checkout, `node scripts/doctor.mjs ...` is the equivalent
+compatibility wrapper.
+
+## Uninstall
+
+Preview the project-local cleanup first:
+
+```bash
+node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/project --platform=codex --dry-run
+```
+
+From a source checkout, `install-platform.sh` exposes the conservative Codex
+cleanup path:
+
+```bash
+./scripts/install-platform.sh --platform=codex --target=/path/to/project --uninstall
+./scripts/install-platform.sh --platform=codex --target=/path/to/project --uninstall --force-root-clean
+```
+
+The default cleanup removes generated `.codex/skills`, `.codex/hooks`, floor and
+thrift config files, task templates, and generated helper scripts. Root
+`AGENTS.md` is preserved unless it carries a complete agent-skill sentinel;
+`--force-root-clean` removes generated-looking root guidance too.
 
 ## Usage
 
@@ -22,9 +69,44 @@ Run `/codex-init` inside Codex CLI. The skill scaffolds:
 - Size (small/medium/large)
 - QA personas
 - Deploy targets
+- Operational task ledger and role roster
+- Policy hook files
 
-## Out of scope (MVP)
+Lite mode:
 
-This iteration renders memory + role files only. Hooks, MCP wiring, brainstorm integration come in follow-ups.
+```
+/codex-init --lite
+```
 
-See `docs/superpowers/specs/2026-05-18-cross-platform-plugins-design.md`.
+Lite mode keeps root guidance and the minimal skill roster, and skips task
+ledger, policy hooks, and config patch prompts.
+
+Language:
+
+```
+/codex-init --lang=ko
+```
+
+Records the selected interaction language in `AGENTS.md`. Keep `.agent-all.json`
+`language` aligned when installing the floor bundle so downstream workflow
+prompts use the same language.
+
+Foundation updates:
+
+```
+/codex-init --update-foundations
+/codex-init --dry-run --update-foundations
+```
+
+This prints the approved foundation update plan and updates/installs only
+`superpowers@claude-plugins-official` and `context-mode@context-mode` when not
+in dry-run mode. It does not patch global Codex config files.
+
+## Codex Hook Surface
+
+Codex command hooks are used for shell/policy events only. The floor pipeline's
+agent-level decision and reviewer protocol is prompt-level because current
+Codex command hooks do not expose Claude Code's Task-style subagent dispatch
+surface.
+
+See `docs/superpowers/specs/2026-06-01-operational-agent-init-agent-all-design.md`.

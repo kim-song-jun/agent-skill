@@ -1,12 +1,13 @@
 // sequential-dispatch.mjs — fallback dispatcher for visual-qa-codex.
 //
-// When `[[hooks.agent]]` is not registered for `visual-qa/page/.*`, we
-// invoke `.codex/skills/visual-qa-page/SKILL.md` once per page-group via
-// Codex's CLI surface (e.g. `codex exec --skill <path> --prompt <body>`).
+// Current Codex hooks do not expose the older agent-dispatch surface, so
+// we invoke `.codex/skills/visual-qa-page/SKILL.md` once per page-group via
+// Codex's CLI surface.
 //
-// TODO: requires live Codex CLI to verify (1) `codex exec` is the right
-// non-interactive subcommand and (2) per-page MCP browser state is reset
-// between sequential invocations (see Open Question #6 in the impl spec).
+// Verified against Codex CLI 0.135.0: `codex exec` is the supported
+// non-interactive entry point and it accepts the initial instructions as
+// a positional prompt. It does not expose `--skill` or `--prompt`, so
+// this dispatcher embeds the page SKILL.md content into that prompt.
 
 import { existsSync, readFileSync } from "node:fs";
 
@@ -54,9 +55,33 @@ export function buildPagePrompt(args) {
   assertNonEmpty("slugDir", args.slugDir);
   assertNonEmpty("baseUrl", args.baseUrl);
   const outDir = `${args.slugDir.replace(/\/+$/, "")}/${args.page.name}/`;
+  const pageSkill = args.skillBody
+    ? [
+        "## Page Skill",
+        "",
+        `Path: ${args.skillPath || DEFAULT_SKILL_PATH}`,
+        "",
+        "Follow this page skill for the capture:",
+        "",
+        "```markdown",
+        args.skillBody,
+        "```",
+        "",
+      ]
+    : args.skillPath
+      ? [
+          "## Page Skill",
+          "",
+          `Path: ${args.skillPath}`,
+          "",
+          "The dispatcher could not inline the skill body; load and follow this page skill before capturing.",
+          "",
+        ]
+      : [];
   return [
     "# Sequential dispatch (visual-qa-codex fallback)",
     "",
+    ...pageSkill,
     `PAGE_NAME: ${args.page.name}`,
     `PAGE_PATH: ${args.page.path ?? "/"}`,
     `BASE_URL:  ${args.baseUrl}`,
@@ -86,6 +111,7 @@ export function buildPagePrompt(args) {
  * @param {string} [opts.codexBin="codex"]
  * @param {string} [opts.subcommand="exec"]
  * @param {string} [opts.skillPath]
+ * @param {string} [opts.skillBody]
  * @returns {{argv: string[], skillPath: string, prompt: string}}
  */
 export function buildSequentialPageInvocation(opts) {
@@ -98,6 +124,8 @@ export function buildSequentialPageInvocation(opts) {
     slugDir: opts.slugDir,
     baseUrl: opts.baseUrl,
     config: opts.config,
+    skillPath,
+    skillBody: opts.skillBody,
   });
   return {
     skillPath,
@@ -105,8 +133,7 @@ export function buildSequentialPageInvocation(opts) {
     argv: [
       codexBin,
       subcommand,
-      "--skill", skillPath,
-      "--prompt", prompt,
+      prompt,
     ],
   };
 }
@@ -169,18 +196,27 @@ export async function dispatchPageSequential(opts, shellRunner) {
   if (typeof shellRunner !== "function") {
     throw new Error("dispatchPageSequential: shellRunner must be a function");
   }
-  const { command, skillPath } = buildSequentialPageShellCommand(opts);
+  const { skillPath } = buildSequentialPageInvocation(opts);
   if (opts.requireSkillExists !== false && !existsSync(skillPath)) {
     throw new Error(`sequential-dispatch: skill file missing: ${skillPath}`);
   }
-  if (opts.assertSkillFrontmatter && existsSync(skillPath)) {
-    const head = readFileSync(skillPath, "utf-8").slice(0, 200);
+  let skillBody = opts.skillBody;
+  if (existsSync(skillPath)) {
+    skillBody = readFileSync(skillPath, "utf-8");
+  }
+  if (opts.assertSkillFrontmatter && skillBody) {
+    const head = skillBody.slice(0, 200);
     if (!head.startsWith("---")) {
       throw new Error(
         `sequential-dispatch: ${skillPath} missing YAML front-matter`,
       );
     }
   }
+  const { command } = buildSequentialPageShellCommand({
+    ...opts,
+    skillPath,
+    skillBody,
+  });
   const result = await shellRunner(command);
   const stdout = result?.stdout || "";
   const parsed = parsePageResult(stdout);

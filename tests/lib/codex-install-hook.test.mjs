@@ -24,13 +24,13 @@ function makeTmp() {
 // hookSectionContainsMatcher
 // ---------------------------------------------------------------------------
 
-test("install-hook: hookSectionContainsMatcher detects exact prefix", () => {
+test("install-hook: hookSectionContainsMatcher rejects legacy agent hook prefix", () => {
   const toml = `
 [[hooks.agent]]
 matcher = "agent-all/wave/.*"
 command = "x"
 `;
-  assert.equal(hookSectionContainsMatcher(toml, "agent-all/wave/"), true);
+  assert.equal(hookSectionContainsMatcher(toml, "agent-all/wave/"), false);
   assert.equal(hookSectionContainsMatcher(toml, "visual-qa/page/"), false);
 });
 
@@ -42,7 +42,7 @@ matcher = "agent-all/wave/.*"
   assert.equal(hookSectionContainsMatcher(toml, "agent-all/wave/"), false);
 });
 
-test("install-hook: hookSectionContainsMatcher walks multiple sections", () => {
+test("install-hook: hookSectionContainsMatcher rejects multiple legacy sections", () => {
   const toml = `
 [[hooks.agent]]
 matcher = "agent-all/wave/.*"
@@ -50,8 +50,8 @@ matcher = "agent-all/wave/.*"
 [[hooks.agent]]
 matcher = "visual-qa/page/.*"
 `;
-  assert.equal(hookSectionContainsMatcher(toml, "agent-all/wave/"), true);
-  assert.equal(hookSectionContainsMatcher(toml, "visual-qa/page/"), true);
+  assert.equal(hookSectionContainsMatcher(toml, "agent-all/wave/"), false);
+  assert.equal(hookSectionContainsMatcher(toml, "visual-qa/page/"), false);
 });
 
 test("install-hook: hookSectionContainsMatcher handles empty input", () => {
@@ -63,32 +63,33 @@ test("install-hook: hookSectionContainsMatcher handles empty input", () => {
 // planMerge (pure function)
 // ---------------------------------------------------------------------------
 
-test("install-hook: planMerge creates content from empty config", () => {
+test("install-hook: planMerge is a no-op while Codex agent hooks are unsupported", () => {
   const snippets = buildSnippetsForMatcher("both");
   const { merged, applied, skipped } = planMerge("", snippets);
-  assert.deepEqual(applied, ["agent-all", "visual-qa"]);
-  assert.deepEqual(skipped, []);
-  assert.ok(merged.includes("[[hooks.agent]]"));
-  assert.ok(merged.includes("agent-all/wave/"));
-  assert.ok(merged.includes("visual-qa/page/"));
+  assert.deepEqual(applied, []);
+  assert.deepEqual(skipped, ["agent-all", "visual-qa"]);
+  assert.equal(merged, "");
 });
 
 test("install-hook: planMerge preserves existing user content", () => {
   const existing = `# user's existing config
-[[hooks.preToolUse]]
-matcher = "Bash.*"
+[[hooks.PreToolUse]]
+matcher = "^Bash$"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
 command = "my-shell-checker"
 `;
   const snippets = buildSnippetsForMatcher("agent-all");
   const { merged, applied } = planMerge(existing, snippets);
-  assert.deepEqual(applied, ["agent-all"]);
-  assert.ok(merged.includes("[[hooks.preToolUse]]"),
-    "existing preToolUse section must survive");
+  assert.deepEqual(applied, []);
+  assert.equal(merged, existing);
+  assert.ok(merged.includes("[[hooks.PreToolUse]]"),
+    "existing PreToolUse section must survive");
   assert.ok(merged.includes("my-shell-checker"));
-  assert.ok(merged.includes("agent-all/wave/"));
 });
 
-test("install-hook: planMerge is idempotent when matcher already present", () => {
+test("install-hook: planMerge skips legacy matcher instead of preserving support", () => {
   const existing = `[[hooks.agent]]
 matcher = "agent-all/wave/.*"
 command = "codex-agent-dispatch"
@@ -97,27 +98,25 @@ command = "codex-agent-dispatch"
   const { merged, applied, skipped } = planMerge(existing, snippets);
   assert.deepEqual(applied, []);
   assert.deepEqual(skipped, ["agent-all"]);
-  // Merged content should be unchanged when nothing applied.
   assert.equal(merged, existing);
 });
 
-test("install-hook: planMerge applies only the missing matcher in mixed state", () => {
+test("install-hook: planMerge skips all requested matchers", () => {
   const existing = `[[hooks.agent]]
 matcher = "agent-all/wave/.*"
 command = "codex-agent-dispatch"
 `;
   const snippets = buildSnippetsForMatcher("both");
   const { merged, applied, skipped } = planMerge(existing, snippets);
-  assert.deepEqual(skipped, ["agent-all"]);
-  assert.deepEqual(applied, ["visual-qa"]);
-  assert.ok(merged.includes("agent-all/wave/"));
-  assert.ok(merged.includes("visual-qa/page/"));
+  assert.deepEqual(applied, []);
+  assert.deepEqual(skipped, ["agent-all", "visual-qa"]);
+  assert.equal(merged, existing);
 });
 
-test("install-hook: planMerge marker comment present", () => {
+test("install-hook: planMerge does not add managed marker when disabled", () => {
   const snippets = buildSnippetsForMatcher("agent-all");
   const { merged } = planMerge("", snippets);
-  assert.ok(merged.includes("Managed by harness-floor-codex/bin/install-hook.mjs"));
+  assert.equal(merged, "");
 });
 
 // ---------------------------------------------------------------------------
@@ -129,8 +128,10 @@ test("install-hook: buildSnippetsForMatcher both returns 2 entries", () => {
   assert.equal(s.length, 2);
   assert.equal(s[0].name, "agent-all");
   assert.equal(s[1].name, "visual-qa");
-  assert.ok(s[0].snippet.includes("agent-all/wave/"));
-  assert.ok(s[1].snippet.includes("visual-qa/page/"));
+  assert.equal(s[0].supported, false);
+  assert.equal(s[1].supported, false);
+  assert.match(s[0].snippet, /current Codex hooks/i);
+  assert.match(s[1].snippet, /current Codex hooks/i);
 });
 
 test("install-hook: buildSnippetsForMatcher single matcher", () => {
@@ -150,27 +151,26 @@ test("install-hook: SNIPPETS table has both matchers", () => {
 // installHook (programmatic — writes to tmpdir)
 // ---------------------------------------------------------------------------
 
-test("install-hook: installHook creates new config", () => {
+test("install-hook: installHook does not create config while hooks unsupported", () => {
   const dir = makeTmp();
   try {
     const cfg = join(dir, "config.toml");
     const r = installHook({ configPath: cfg, matcher: "both" });
-    assert.deepEqual(r.applied, ["agent-all", "visual-qa"]);
+    assert.deepEqual(r.applied, []);
+    assert.deepEqual(r.skipped, ["agent-all", "visual-qa"]);
     assert.equal(r.existed, false);
-    const content = readFileSync(cfg, "utf-8");
-    assert.ok(content.includes("agent-all/wave/"));
-    assert.ok(content.includes("visual-qa/page/"));
+    assert.equal(existsSync(cfg), false);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });
 
-test("install-hook: installHook idempotent on second call", () => {
+test("install-hook: installHook preserves existing config unchanged", () => {
   const dir = makeTmp();
   try {
     const cfg = join(dir, "config.toml");
-    installHook({ configPath: cfg, matcher: "both" });
-    const first = readFileSync(cfg, "utf-8");
+    const first = `model = "gpt-5"\n`;
+    writeFileSync(cfg, first);
     const r2 = installHook({ configPath: cfg, matcher: "both" });
     assert.deepEqual(r2.applied, []);
     assert.deepEqual(r2.skipped, ["agent-all", "visual-qa"]);
@@ -188,31 +188,22 @@ test("install-hook: installHook preserves existing user TOML", () => {
     const userToml = `# my config
 model = "claude-sonnet-4-6"
 
-[[hooks.preToolUse]]
-matcher = "Bash.*"
+[[hooks.PreToolUse]]
+matcher = "^Bash$"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
 command = "my-checker"
 `;
     writeFileSync(cfg, userToml);
     const r = installHook({ configPath: cfg, matcher: "both" });
-    assert.deepEqual(r.applied, ["agent-all", "visual-qa"]);
+    assert.deepEqual(r.applied, []);
+    assert.deepEqual(r.skipped, ["agent-all", "visual-qa"]);
     const merged = readFileSync(cfg, "utf-8");
+    assert.equal(merged, userToml);
     assert.ok(merged.includes("my-checker"), "user content preserved");
     assert.ok(merged.includes('model = "claude-sonnet-4-6"'),
       "user model setting preserved");
-    assert.ok(merged.includes("agent-all/wave/"));
-    assert.ok(merged.includes("visual-qa/page/"));
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
-
-test("install-hook: installHook creates parent directory", () => {
-  const dir = makeTmp();
-  try {
-    const cfg = join(dir, "nested/deep/.codex/config.toml");
-    const r = installHook({ configPath: cfg, matcher: "agent-all" });
-    assert.equal(r.applied.length, 1);
-    assert.ok(existsSync(cfg));
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -223,7 +214,8 @@ test("install-hook: installHook dryRun does not write", () => {
   try {
     const cfg = join(dir, "config.toml");
     const r = installHook({ configPath: cfg, matcher: "both", dryRun: true });
-    assert.deepEqual(r.applied, ["agent-all", "visual-qa"]);
+    assert.deepEqual(r.applied, []);
+    assert.deepEqual(r.skipped, ["agent-all", "visual-qa"]);
     assert.equal(existsSync(cfg), false, "file must NOT be created in dry-run");
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -261,14 +253,14 @@ test("install-hook CLI: --dry-run prints preview", () => {
     );
     assert.equal(res.status, 0, res.stderr);
     assert.match(res.stdout, /dry-run/);
-    assert.match(res.stdout, /agent-all/);
+    assert.match(res.stdout, /unsupported/i);
     assert.equal(existsSync(cfg), false);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });
 
-test("install-hook CLI: end-to-end install writes file", () => {
+test("install-hook CLI: end-to-end install is no-op while unsupported", () => {
   const dir = makeTmp();
   try {
     const cfg = join(dir, "config.toml");
@@ -278,10 +270,9 @@ test("install-hook CLI: end-to-end install writes file", () => {
       { encoding: "utf-8" },
     );
     assert.equal(res.status, 0, res.stderr);
-    assert.match(res.stdout, /applied:.*agent-all.*visual-qa/);
-    const content = readFileSync(cfg, "utf-8");
-    assert.ok(content.includes("agent-all/wave/"));
-    assert.ok(content.includes("visual-qa/page/"));
+    assert.match(res.stdout, /unsupported/i);
+    assert.match(res.stdout, /skipped:.*agent-all.*visual-qa/);
+    assert.equal(existsSync(cfg), false);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -300,6 +291,7 @@ test("install-hook CLI: idempotent rerun reports skipped", () => {
     );
     assert.equal(res.status, 0, res.stderr);
     assert.match(res.stdout, /skipped:.*agent-all.*visual-qa/);
+    assert.equal(existsSync(cfg), false);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

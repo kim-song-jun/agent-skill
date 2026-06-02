@@ -10,7 +10,7 @@
 //
 // Usage:
 //   node plugins/harness-thrift-cursor/bin/install.mjs <target> \
-//        [--ctx ctx.json] [--force] [--dry-run]
+//        [--ctx ctx.json] [--force] [--dry-run] [--uninstall]
 //
 // What gets installed to <target>:
 //   .thrift.json                       (config seed; no `cache` section)
@@ -22,7 +22,7 @@
 //   - `.claude/hooks/lib/*.mjs`        (no hook scripts to import lib)
 //   - `audit-report.md.hbs` runtime    (recap is narrative; template stays in plugin)
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { render } from "./lib/render.mjs";
@@ -43,12 +43,14 @@ function parseArgs(argv) {
     ctxPath: null,
     force: false,
     dryRun: false,
+    uninstall: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--ctx") args.ctxPath = argv[++i];
     else if (a === "--force") args.force = true;
     else if (a === "--dry-run") args.dryRun = true;
+    else if (a === "--uninstall") args.uninstall = true;
     else if (!a.startsWith("--") && !args.target) args.target = a;
     else {
       console.error(`Unknown argument: ${a}`);
@@ -65,7 +67,7 @@ function parseArgs(argv) {
 
 function printUsage() {
   console.error(
-    "Usage: install.mjs <target> [--ctx ctx.json] [--force] [--dry-run]",
+    "Usage: install.mjs <target> [--ctx ctx.json] [--force] [--dry-run] [--uninstall]",
   );
 }
 
@@ -108,6 +110,31 @@ function main() {
     console.error(`Error: target directory does not exist: ${target}`);
     process.exit(1);
   }
+
+  if (args.uninstall) {
+    const artifacts = [
+      resolve(target, ".thrift.json"),
+      resolve(target, ".cursor/rules/thrift.mdc"),
+    ];
+    let removed = 0;
+    for (const path of artifacts) {
+      if (!existsSync(path)) continue;
+      removed++;
+      if (args.dryRun) {
+        console.log(`would remove ${path}`);
+      } else {
+        rmSync(path, { force: true });
+        console.log(`removed ${path}`);
+      }
+    }
+    console.log("");
+    console.log("Thrift uninstall summary (Cursor):");
+    console.log(`  target:       ${target}`);
+    console.log(`  removed:      removed=${removed}`);
+    console.log(`  dry-run:      ${args.dryRun ? "yes" : "no"}`);
+    return;
+  }
+
   const ctx = loadCtx(args.ctxPath);
 
   // 1. Render config seed

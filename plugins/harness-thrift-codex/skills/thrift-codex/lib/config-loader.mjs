@@ -2,8 +2,7 @@
 //
 // Codex port of harness-thrift's config-loader. Schema is the same as
 // the CC version (`.thrift.json` is platform-agnostic); only the
-// DEFAULTS differ (cheap-summariser-model is a Codex-roster guess; the
-// audit baseline label is "naive-codex" instead of "naive-claude-code").
+// DEFAULTS differ (Codex summariser model + "naive-codex" audit baseline).
 //
 // Contract:
 //   loadConfig(path) → { ok: true, config, warning? } | { ok: false, errors: [{field, message}] }
@@ -19,8 +18,8 @@ export const DEFAULTS = {
     everyMTokensOutput: 30000,
     preserveLastTurns: 6,
     preserveSpecPaths: true,
-    // TBD: probe current Codex roster; "gpt-5-nano" is a placeholder
-    // for the cheapest summariser-tier model. Override via .thrift.json.
+    // Packaged summariser default. Override via .thrift.json when a
+    // local Codex install requires a different allowed model.
     model: "gpt-5-nano",
   },
   cache: {
@@ -102,7 +101,7 @@ function validate(config) {
 
 export function loadConfig(path) {
   if (!path || !existsSync(path)) {
-    return { ok: true, config: structuredClone(DEFAULTS), warning: ".thrift.json not found; using built-ins. Run /thrift-codex to seed." };
+    return { ok: true, config: structuredClone(DEFAULTS), warning: ".thrift.json not found; using built-ins. Run /thrift to seed." };
   }
   let raw;
   try {

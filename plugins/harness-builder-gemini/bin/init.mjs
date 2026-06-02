@@ -9,8 +9,7 @@
 //                                               ~/.gemini/settings.json or
 //                                               <target>/.gemini/settings.json)
 //
-// Quirk: Gemini's settings file holds BOTH hooks and mcpServers in a single
-// JSON object — there is no separate per-feature config. We render to stdout
+// Gemini's settings snippet currently contains only mcpServers. We render to stdout
 // rather than writing because users typically have an existing
 // ~/.gemini/settings.json they need to merge into.
 //
@@ -66,9 +65,6 @@ function loadCtx(ctxPath, target) {
       { name: "dev",      when: "implementation" },
       { name: "reviewer", when: "final review" },
     ],
-    // Default no-op hook commands; rendered into the gemini-settings.json stub.
-    hook_command_beforetool:   "echo 'before write_file'",
-    hook_command_sessionstart: "echo 'session start'",
     mcp_servers_json_body:     "",
   };
 }

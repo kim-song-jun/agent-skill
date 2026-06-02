@@ -180,14 +180,47 @@ test("codex: normalizes alternate response keys", async () => {
   }
 });
 
-test("codex: codexExecCommandInvoker stub throws not-yet-implemented", async () => {
+test("codex: codexExecCommandInvoker maps numeric stdout to selected choice", async () => {
   const { codexExecCommandInvoker } = await import(INVOKERS.codex);
   assert.equal(typeof codexExecCommandInvoker, "function");
-  const invoker = codexExecCommandInvoker({ execCommand: async () => "" });
-  await assert.rejects(
-    () => invoker({ prompt: "x" }),
-    /not yet implemented/,
-  );
+  let received = null;
+  const invoker = codexExecCommandInvoker({
+    execCommand: async (call) => {
+      received = call;
+      return { stdout: "2\n", stderr: "", status: 0 };
+    },
+  });
+
+  const out = await invoker({ prompt: "Pick", choices: ["alpha", "beta"], multi: false });
+
+  assert.equal(received.prompt, "Pick");
+  assert.deepEqual(received.choices, ["alpha", "beta"]);
+  assert.match(received.command, /read -r answer <\/dev\/tty/);
+  assert.match(received.command, /1\. alpha/);
+  assert.deepEqual(out, { selected: "beta" });
+});
+
+test("codex: codexExecCommandInvoker maps multi-select stdout", async () => {
+  const { codexExecCommandInvoker } = await import(INVOKERS.codex);
+  const invoker = codexExecCommandInvoker({
+    execCommand: async () => ({ stdout: "1, gamma\n", stderr: "", status: 0 }),
+  });
+
+  const out = await invoker({ prompt: "Pick", choices: ["alpha", "beta", "gamma"], multi: true });
+
+  assert.deepEqual(out, { selected: ["alpha", "gamma"] });
+});
+
+test("codex: codexExecCommandInvoker returns free-form stdout when no choices exist", async () => {
+  const { codexExecCommandInvoker } = await import(INVOKERS.codex);
+  const invoker = codexExecCommandInvoker({
+    execCommand: async () => "typed answer\n",
+  });
+
+  assert.deepEqual(await invoker({ prompt: "Describe" }), {
+    selected: null,
+    freeForm: "typed answer",
+  });
 });
 
 test("codex: codexExecCommandInvoker requires execCommand function", async () => {

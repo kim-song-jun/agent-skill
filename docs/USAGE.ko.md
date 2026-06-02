@@ -15,18 +15,30 @@ mkdir my-app && cd my-app && git init
 
 생성:
 - `CLAUDE.md` (운영 원칙 + 에이전트 인덱스 + Floor 테마 섹션 포함)
-- `.claude/agents/*.md` — 3개에서 9개 역할 파일 (작음/중간/큼)
-- `.claude/hooks/*.mjs` — context-mode-router, session-summary, cache-heal
-- `.claude/settings.local.json` — 3개 훅 등록
+- `.claude/agents/*.md` — 크기별 기본 역할 + 운영 역할: orchestrator, frontend-dev, backend-dev, integration-dev, verification-reviewer, qa-reviewer, design-reviewer, security-reviewer, data-reviewer
+- `.claude/hooks/*.mjs` — context-mode-router, session-summary, cache-heal, 운영 정책 훅
+- `.claude/settings.local.json` — 핵심 훅과 정책 훅 등록
 - `.visual-qa.json` + `.agent-all.json` — Floor 구성
 
 ### 최소 하네스 (lite)
 
 ```
-/agent-init --theme=lite
+/agent-init --lite
 ```
 
-`.visual-qa.json`, `.agent-all.json`, 및 CLAUDE.md의 Floor 섹션을 건너뜁니다.
+task ledger, 정책 훅, `.visual-qa.json`, `.agent-all.json`, 및 CLAUDE.md의 Floor 섹션을 건너뜁니다.
+
+### 언어 유지
+
+```
+/agent-init --lang=ko
+/agent-init --lang=auto
+```
+
+선택한 상호작용 언어를 `CLAUDE.md`에 기록하고 `.agent-all.json` `language`를
+같은 값으로 유지해 이후 `/agent-all` 프롬프트가 상속하게 합니다.
+`--lang=auto`는 `$AGENT_INIT_LANG`, `$LANG`, `$LC_ALL`, `$LC_MESSAGES`,
+또는 로케일을 해석한 뒤 확정된 `ko`/`en` 값을 기록합니다.
 
 ### 기존 프로젝트 (기존 CLAUDE.md 유지)
 
@@ -136,17 +148,69 @@ npm run dev                                       # dev 서버 :3000에서
 /agent-all "Feature A" && /agent-all "Feature B" && /agent-all "Feature C" && /agent-all "Bugfix" --loop
 ```
 
-## Codex / Claude Code가 아닌 통합
+## Claude/Codex / Claude Code가 아닌 통합
 
-`codex@openai-codex` 플러그인은 `harness-floor`와 잘 작동합니다:
+Codex CLI 프로젝트에서는 Codex 전용 builder/floor 포트를 사용합니다:
 
 ```
-/agent-all "Hard refactor that needs second-opinion" --wave-size=medium
-# 웨이브 서브에이전트가 BLOCKED를 보고할 때, 호출:
-/codex:rescue
+/codex-init
+/codex-init --lite
+/codex-init --lang=ko
+/codex-init --update-foundations
+run /agent-all for "Hard refactor that needs second-opinion"
 ```
 
-순수 Codex CLI 사용 (Claude Code 없음)의 경우, lib 모듈은 이식 가능한 Node.js입니다:
+`/codex-init`은 `AGENTS.md`, `.codex/skills/*`, `.codex/hooks/agent-policy-hook.mjs`를 쓰고, `[[hooks.PreToolUse]]` 같은 현재 Codex command hook 형식의 `~/.codex/config.toml` 스니펫을 출력합니다. `/codex-init --lite`는 루트 `AGENTS.md`와 planner/dev/reviewer 스킬만 쓰는 Codex 경량 경로입니다. Codex floor 워크플로는 현재 Codex command hook이 Claude Code의 Task-style subagent dispatch 표면을 제공하지 않기 때문에 프롬프트/순차 dispatch로 동작합니다.
+
+`/codex-init --lang=ko`는 Codex 상호작용 언어를 `AGENTS.md`에 기록합니다. floor 번들을 설치할 때 `.agent-all.json` `language`도 같은 값으로 유지하세요. `/codex-init --update-foundations`는 승인된 foundation(`superpowers@claude-plugins-official`, `context-mode@context-mode`)만 갱신하며 전역 Codex config를 패치하지 않습니다.
+
+대상 저장소에 shell로 설치할 때는 platform renderer를 사용합니다. Claude는 `/agent-init`과 같은 project-local bootstrapper를 쓰고, Codex 및 다른 도구는 각 플랫폼 전용 renderer를 사용합니다:
+
+```bash
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --theme=builder
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --lite
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lang=ko
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lite
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --no-update-foundations
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --update-foundations  # foundation 갱신 strict 모드
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --theme=debug
+```
+
+기본 renderer 경로는 operational scaffold를 설치합니다. Claude가 아닌 플랫폼은 기본으로 무거운 builder + floor + thrift 번들을 설치하며, Codex `all`은 debug skill도 함께 설치합니다. `--theme=debug`는 `run /debug "<failing command>"`용 `.codex/skills/debug-codex/`, `.debug-artifacts/`, `docs/debug/`만 설치합니다. Claude `--theme=builder`는 `.visual-qa.json`/`.agent-all.json` 없이 무거운 builder scaffold만 설치합니다. `--lang=ko|en|auto`는 생성된 루트 지침을 맞추고, floor config가 설치될 때는 `.agent-all.json` language 값도 함께 맞춥니다. `--lite`는 builder-only 경로이며 floor/thrift/debug 파일과 전역 Codex config 스니펫을 건너뜁니다. Claude/Codex operational 설치는 가능할 때 승인된 foundation(`superpowers@claude-plugins-official`, `context-mode@context-mode`)만 자동 갱신하고, `claude` CLI가 없거나 승인된 foundation 갱신이 실패하면 degraded foundation 경고를 출력한 뒤 계속 진행합니다. Lite는 기본 자동 foundation 갱신을 건너뛰며, 무거운 artifact 설치 없이 strict foundation 갱신이 필요하면 `--lite --update-foundations`를 함께 사용하세요. `--update-foundations`는 갱신 실패를 strict 실패로 만들 때, `--no-update-foundations`는 opt-out할 때, `--dry-run`은 `claude` 호출 없이 승인된 계획만 볼 때 사용하세요. Claude와 Codex `all`, `builder`, `--lite`, 그리고 Codex `--theme=debug` 설치는 post-install doctor를 자동 실행하며, 검증을 의도적으로 미룰 때만 `--no-doctor`를 넘기세요.
+
+수동 doctor 재실행:
+
+```bash
+node /path/to/harness-builder/bin/doctor.mjs --target=/path/to/my-project --platform=claude
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=builder
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=lite
+node /path/to/harness-builder-codex/bin/doctor.mjs --target=/path/to/my-project --platform=codex --profile=debug
+```
+
+source checkout에서 실행할 때는 `node /path/to/agent-skill/scripts/doctor.mjs ...` compatibility wrapper가 같은 검사를 수행합니다. doctor는 project-local Claude/Codex scaffold를 검증하고, `--profile=auto`일 때 operational/builder/lite 또는 Codex debug profile을 자동 감지하며, 필수 artifact 누락은 non-zero exit로 보고합니다. 누락되었거나 오래된 생성 파일에는 실행 가능한 `fix:` 명령을 출력하고, `superpowers` 또는 `context-mode`가 없으면 foundation 설치용 `next:` 명령도 함께 출력합니다.
+
+Claude/Codex uninstall과 cleanup:
+
+```bash
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --uninstall
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --uninstall --force-root-clean
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --uninstall
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --uninstall --force-root-clean
+node /path/to/harness-builder/bin/clean.mjs --target=/path/to/my-project --platform=claude --dry-run
+node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/my-project --platform=codex --dry-run
+```
+
+보수적 cleanup은 생성된 Claude/Codex 역할 파일, hook, floor/thrift config,
+Codex debug skill 디렉터리, task template, helper script를 제거합니다.
+Debug 증거인 `docs/debug/`와 `.debug-artifacts/`는 보존합니다. 루트
+`CLAUDE.md`/`AGENTS.md` 가이드는 agent-skill sentinel이 있을 때만 정리하며,
+생성된 루트 가이드까지 의도적으로 제거하려면 `install-platform.sh --uninstall`에
+`--force-root-clean`을 같이 넘기세요.
+
+직접 라이브러리로 사용할 때, 핵심 모듈은 이식 가능한 Node.js입니다:
 
 ```bash
 node -e "
@@ -234,9 +298,8 @@ Protocol 전체 스킵. Verification + reviewer-audit hook은 별도로 계속.
 | 플랫폼 | 메커니즘 | 강도 |
 |---|---|---|
 | Claude Code | `floor-policy` hook (PreToolUse + PostToolUse on Task) | 🟢 Hard |
-| Copilot CLI | `.github/hooks/decision-protocol.json` | 🟢 Hard |
-| Codex CLI | `~/.codex/config.toml`의 `[[hooks.agent]]` (수동 merge) | 🟢 Hard |
+| Copilot CLI | `.github/agent-all/decision-protocol.md`; 수동 hook 검토 후 선택적 hook helper | 🟡 프롬프트 |
+| Codex CLI | 프롬프트/순차 floor 워크플로; command hook은 shell/policy 이벤트만 담당 | 🟡 프롬프트 |
 | Cursor | `.cursor/rules/decision-protocol.mdc` (always-loaded rule) | 🟡 Soft |
 | Gemini CLI | `.gemini/agent-all-decision-protocol.md` (GEMINI.md에서 참조) | 🟡 Soft |
 | VS Code Copilot | `.github/agent-all/decision-protocol.md` (copilot-instructions.md에서) | 🟡 Soft |
-

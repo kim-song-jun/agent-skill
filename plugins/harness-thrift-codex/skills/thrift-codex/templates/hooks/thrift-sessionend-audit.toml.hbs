@@ -1,7 +1,11 @@
 # thrift: thrift-sessionend-audit
-# Writes Phase 5 audit report at session_end. Always runs (audit always
-# matters — even on Ctrl-C the audit hook fires).
-[[hooks.session_end]]
+# Writes Phase 5 audit report on Codex Stop. Current Codex hooks expose
+# Stop rather than a session_end event.
+[[hooks.Stop]]
+
+[[hooks.Stop.hooks]]
+type = "command"
 command = "node \"{{hooksDir}}/thrift-sessionend-audit.mjs\""
-timeout_seconds = 30
+timeout = 30
+statusMessage = "Writing thrift audit"
 # end thrift: thrift-sessionend-audit

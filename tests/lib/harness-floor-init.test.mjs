@@ -93,20 +93,22 @@ test("harness-floor-cursor: --only=agent-all skips visual-qa kit", () => {
 
 test("harness-floor-cursor: --ctx supplies template variables", () => {
   const target = makeTmp();
-  const ctxPath = join(target, "..", "ctx.json");
+  const ctxPath = resolve(target, "ctx.json");
   try {
     writeFileSync(ctxPath, JSON.stringify({
       baseUrl: "https://staging.example.com",
       maxIter: 25,
       breakCondition: "pytest -q",
+      language: "ko",
     }));
     const res = runInit("cursor", [target, "--ctx", ctxPath]);
     assert.equal(res.status, 0, res.stderr);
     const vqa = readFileSync(resolve(target, ".visual-qa.json"), "utf-8");
     assert.ok(vqa.includes("https://staging.example.com"));
-    const aa = readFileSync(resolve(target, ".agent-all.json"), "utf-8");
-    assert.ok(aa.includes("\"maxIter\": 25"));
-    assert.ok(aa.includes("pytest -q"));
+    const aa = JSON.parse(readFileSync(resolve(target, ".agent-all.json"), "utf-8"));
+    assert.equal(aa.defaults.maxIter, 25);
+    assert.equal(aa.loop.breakCondition, "pytest -q");
+    assert.equal(aa.language, "ko");
   } finally {
     rmSync(target, { recursive: true, force: true });
     try { rmSync(ctxPath); } catch {}
@@ -150,17 +152,33 @@ for (const plugin of ["copilot", "codex", "gemini"]) {
       rmSync(target, { recursive: true, force: true });
     }
   });
+
+  test(`harness-floor-${plugin}: --ctx language persists to .agent-all.json`, () => {
+    const target = makeTmp();
+    const ctxPath = resolve(target, `${plugin}-ctx-lang.json`);
+    try {
+      writeFileSync(ctxPath, JSON.stringify({ language: "ko" }));
+      const res = runInit(plugin, [target, "--only=agent-all", "--ctx", ctxPath]);
+      assert.equal(res.status, 0, res.stderr);
+
+      const agentAll = JSON.parse(readFileSync(resolve(target, ".agent-all.json"), "utf-8"));
+      assert.equal(agentAll.language, "ko");
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+      try { rmSync(ctxPath); } catch {}
+    }
+  });
 }
 
-test("harness-floor-codex: prints [[hooks.agent]] snippets in install output", () => {
+test("harness-floor-codex: prints MCP snippet without legacy agent hooks", () => {
   const target = makeTmp();
   try {
     const res = runInit("codex", [target]);
     assert.equal(res.status, 0, res.stderr);
-    assert.match(res.stdout, /\[\[hooks\.agent\]\]/);
-    assert.match(res.stdout, /visual-qa\/page\//);
-    assert.match(res.stdout, /agent-all\/wave\//);
     assert.match(res.stdout, /\[mcp_servers\.playwright\]/);
+    assert.match(res.stdout, /sequential dispatch/i);
+    assert.doesNotMatch(res.stdout, /\[\[hooks\.agent\]\]/);
+    assert.doesNotMatch(res.stdout, /timeout_seconds/);
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

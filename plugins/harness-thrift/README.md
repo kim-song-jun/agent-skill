@@ -58,26 +58,31 @@ Then in your project:
 }
 ```
 
-## MVP scope (this iteration)
+## Release surface
 
-- ✅ thrift-core (config-loader, threshold-evaluator, cost-estimator)
-- ✅ thrift-audit (Phase 5 audit report)
-- ✅ thrift-instrument (hook templates + Phase 2 patcher)
-- ✅ thrift-summariser (Phase 3 advisory summary writer)
-- ✅ thrift-cache (Phase 4 prime, disabled by default)
+- [x] thrift-core (config-loader, threshold-evaluator, cost-estimator)
+- [x] thrift-audit (Phase 5 audit report)
+- [x] thrift-instrument (hook templates + Phase 2 patcher)
+- [x] thrift-summariser (Phase 3 advisory summary writer)
+- [x] thrift-cache (Phase 4 prime, disabled by default)
 
-## Status
+## Runtime validation
 
-v0.1 — implementation matches the design spec
-(`docs/superpowers/specs/2026-05-18-harness-thrift-design.md`) with
-the v1-advisory-summariser pathway documented in
+v0.1 implements the design spec
+(`docs/superpowers/specs/2026-05-18-harness-thrift-design.md`) and
+the v1 advisory summariser pathway documented in
 `docs/superpowers/research-notes/2026-05-18-cc-compact-api-spike.md`.
-Live Claude Code verification deferred (sandbox lacks running CC).
+Before treating hooks as enforcement on a specific machine, run a small
+Claude Code smoke test that exercises `PreToolUse`, `PostToolUse`,
+`SessionStart`, and `SessionEnd` hooks after `/thrift` installs them.
 
-## Future work
+## Release caveats
 
-- v2 summariser using Claude Code's programmatic compact API once
-  surfaced.
-- Per-platform ports (`harness-thrift-{codex,copilot,gemini,cursor}`)
-  — decomposition spec deferred.
-- Token counting accuracy improvements (current: byte-count heuristic).
+- Programmatic compact is not exposed by Claude Code yet, so summariser
+  output remains advisory and suggests manual compact behavior.
+- Platform ports live in their own plugins (`harness-thrift-codex`,
+  `harness-thrift-copilot`, `harness-thrift-gemini`,
+  `harness-thrift-cursor`) and should be installed through the matching
+  platform renderer.
+- Token counting uses the current byte-count heuristic; cost audit remains
+  conservative telemetry rather than billing-grade accounting.

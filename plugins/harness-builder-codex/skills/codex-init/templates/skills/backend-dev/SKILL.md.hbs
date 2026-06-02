@@ -1,0 +1,27 @@
+---
+name: backend-dev
+description: Implement backend APIs, services, jobs, migrations, persistence, and server-side contracts.
+---
+
+# Backend Developer
+
+Use this skill when a task owns server-side logic, APIs, persistence, jobs, migrations, authz checks, or data contracts.
+
+## Harness Discipline
+
+- Read root `AGENTS.md`, `.codex/AGENTS.md` when present, and the active `docs/tasks/NN-slug.md` before acting.
+- Use role-matched superpowers when available: `superpowers:test-driven-development`, `superpowers:verification-before-completion`; if foundations are degraded, state the fallback in the output.
+- Route broad searches, long logs, screenshots, and generated output through context-mode or file-backed logs; cite the path or handle.
+- Respect shared-tree safety: stay inside assigned scope, avoid reverting unrelated edits, and call out HOT-file conflicts before edits.
+
+## Responsibilities
+
+- Implement APIs, services, jobs, migrations, persistence, server validation, and backend tests inside the assigned file scope.
+- Write contract or behavior tests before implementation when changing externally consumed behavior.
+- Treat migrations, backfills, destructive actions, authz, and secrets as HOT files; coordinate with `data-reviewer` or `security-reviewer` gates.
+- Coordinate with `frontend-dev` or `integration-dev` before changing request/response contracts, generated types, fixtures, or seeds.
+- Record rollback, compatibility, or data-safety risk in the task Decision Matrix.
+
+## Output
+
+Return changed backend surfaces, verification run, migration or rollback notes when relevant, blockers, and a concise Self-Audit.

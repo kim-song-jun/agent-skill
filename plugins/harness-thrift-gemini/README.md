@@ -26,17 +26,35 @@ Theme C (`harness-floor-gemini`, cost-unrestricted runtime).
 
 ## Install
 
-```
-/plugin install harness-thrift-gemini@<marketplace>
-```
-
-Then in your project (one-time setup):
+From this repo, install the Gemini thrift surface into a project with:
 
 ```
-node plugins/harness-thrift-gemini/bin/install.mjs <target-project>
+./scripts/install-platform.sh --platform=gemini --theme=thrift --target=/path/to/project
 ```
 
-Optional flags: `--ctx ctx.json`, `--force`, `--dry-run`, `--no-instrument`.
+The platform installer writes project-local files and runs the Gemini thrift
+renderer with `--no-instrument`, so it does not patch `~/.gemini/settings.json`.
+It prints the hooks JSON to merge manually after review.
+
+For direct renderer use, run:
+
+```
+node plugins/harness-thrift-gemini/bin/install.mjs /path/to/project [--force]
+```
+
+Direct renderer flags: `--ctx ctx.json`, `--force`, `--dry-run`,
+`--no-instrument`.
+
+## Release surface
+
+- `.thrift.json` with Gemini summariser, Vertex cache, context-mode, and audit
+  settings.
+- `.gemini/hooks/thrift-beforetool-bash-telemetry.mjs` and related hook
+  support files under the target project.
+- Manual hook snippet for `~/.gemini/settings.json` when installed through
+  `install-platform.sh`.
+- Gemini-specific cost estimation for Vertex prompt cache thresholds,
+  storage-time cost, and free-tier guardrails.
 
 ## Configuration
 
@@ -88,18 +106,24 @@ Optional flags: `--ctx ctx.json`, `--force`, `--dry-run`, `--no-instrument`.
   call consumes request budget and is generally counterproductive; the ROI
   gate refuses to prime.
 
+## Settings
+
+When installed through `install-platform.sh`, merge the printed `hooks` object
+into `~/.gemini/settings.json` only after reviewing the commands. Direct
+renderer runs without `--no-instrument` can patch Gemini settings with
+append-only sentinels and can uninstall only the thrift entries.
+
 ## Status
 
-v0.1 — scaffolded per
-`docs/superpowers/specs/2026-05-18-harness-thrift-per-platform-decomposition.md`
-(Gemini section). Vertex rate values are documented as
-**TODO verify against current Google Vertex pricing**.
+The Gemini port ships as a project-local Theme B surface. Vertex rate values
+are documented in the estimator and should be checked against Google's current
+pricing page during release audits.
 
-## What's NOT yet ported
+## Known limits
 
 - Programmatic `/compress` invocation (advisory in v1).
-- Live verification of `BeforeTool` / `AfterTool` event-shape against the
-  current Gemini CLI release.
+- Runtime confirmation of `BeforeTool` / `AfterTool` event shape depends on
+  the installed Gemini CLI release.
 - Free-tier auto-detection — current version reads `cache.vertex.tier` from
   config; future versions may consult `gemini auth list`.
 - `gemini-flash` summariser SDK integration (heuristic summariser only in v1).

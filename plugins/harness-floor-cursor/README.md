@@ -1,40 +1,55 @@
 # harness-floor-cursor
 
-> **Decision-surfacing enforcement: 🟡 Soft.** Cursor does not have a tool-call hook system today. The decision-protocol is prompt-only via `.cursor/rules/decision-protocol.mdc` (always-loaded rule emitted by install). A non-compliant subagent cannot be blocked at the harness layer — compliance is best-effort. Hard enforcement (PostToolUse rejection) is only available on Claude Code, Copilot CLI, and Codex CLI.
+> **Decision-surfacing enforcement: 🟡 Soft.** Cursor does not expose a
+> tool-call hook system today. The decision protocol is prompt-only through
+> `.cursor/rules/decision-protocol.mdc`, so non-compliant subagents are surfaced
+> by the coordinator and reviewers rather than blocked by the harness layer.
 
-Scaffold-level visual-qa support for Cursor. Emits:
+Operational floor support for Cursor. This port installs a prompt-template kit:
+Cursor's coordinator agent reads the phase files sequentially, then delegates
+wave work to background implementer/reviewer/page agents.
 
-- `.visual-qa.json` at project root (capture matrix configuration)
-- Playwright MCP snippet printed to stdout — merge into `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global)
+Emits:
+
+- `.visual-qa.json` at project root
+- `.agent-all.json` at project root
+- `.cursor/rules/agent-all.mdc`
+- `.cursor/rules/decision-protocol.mdc`
+- `.cursor/agents/visual-qa-page.md`
+- `.cursor/agents/agent-all-coordinator.md`
+- `.cursor/agents/agent-all-implementer.md`
+- `.cursor/agents/agent-all-reviewer.md`
+- `.cursor/visual-qa/lib/` runtime helpers
+- `.cursor/agent-all/lib/` runtime helpers
+- Playwright MCP snippet printed to stdout for `.cursor/mcp.json`
 
 ## Install
 
-Cursor has no plugin loader. Use the bundled renderer:
-
-```
-node plugins/harness-floor-cursor/bin/init.mjs /path/to/your/project [--force]
+```bash
+./scripts/install-platform.sh --platform=cursor --theme=floor --target=/path/to/project
 ```
 
-Or copy the templates manually from `plugins/harness-floor-cursor/skills/visual-qa-cursor/templates/`.
+The default platform install (`--theme=all`) also installs Cursor builder and
+thrift artifacts. Use `--force` when intentionally refreshing existing config
+files such as `.visual-qa.json` or `.agent-all.json`.
 
 ## Usage
 
-The skill is documentation. In a Cursor chat, ask Cursor to follow
-`plugins/harness-floor-cursor/skills/visual-qa-cursor/SKILL.md`, which:
+Open Cursor chat in the target repository and invoke the coordinator:
 
-1. Confirms before overwriting an existing `.visual-qa.json`.
-2. Renders the config template to `.visual-qa.json` in the workspace root.
-3. Prints the Playwright MCP entry for you to merge into `.cursor/mcp.json`.
+```text
+@agent-all-coordinator run /agent-all for "add user signup form"
+@agent-all-coordinator run /agent-all using docs/tasks/12-fix-login.md --loop --max-iter=5
+```
 
-## MVP scope
+For visual checks, ask Cursor to follow `visual-qa-cursor`; the installed
+`visual-qa-page` background agent handles page-level capture and analysis.
 
-This iteration is **scaffold-only**. The full 6-phase visual-qa pipeline
-(preflight → config → discover → capture → aggregate → summary) lives in
-`plugins/harness-floor/skills/visual-qa/SKILL.md` (Claude Code). Porting
-the orchestrator to Cursor is tracked as a future per-platform spec —
-Cursor delegates to subagents via prompt routing (`.cursor/agents/*.md`
-with `is_background: true`), so the port is a prompt template rather than
-a programmatic runner.
+## Runtime Shape
 
-For now, run Playwright commands manually in Cursor's chat and analyze
-captured images via Cursor's vision-capable model directly.
+`agent-all-cursor` runs intent -> plan -> background implementer dispatch ->
+review gate -> PR summary. `visual-qa-cursor` runs config -> discover ->
+capture -> aggregate -> summary. Cursor handles parallelism by matching
+`.cursor/agents/*.md` descriptions and using `is_background: true`; the
+installed libs handle config loading, state, report rendering, and result
+collection.

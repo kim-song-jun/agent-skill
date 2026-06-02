@@ -1,28 +1,31 @@
 # harness-builder-gemini
 
-Run an `agent-init`-style scaffold inside Gemini CLI. Emits:
+Operational builder scaffold for Gemini CLI. The renderer writes the Gemini
+root guidance and role skills into the target project, then prints the settings
+snippet for manual merge.
 
-- `GEMINI.md` at project root
-- `.gemini/skills/<role>/SKILL.md` per role
-- `AGENTS.md` as the cross-platform fallback
+Emits:
+
+- `GEMINI.md`
+- `.gemini/skills/planner/SKILL.md`
+- `.gemini/skills/dev/SKILL.md`
+- `.gemini/skills/reviewer/SKILL.md`
+- MCP snippet printed to stdout for `~/.gemini/settings.json`
 
 ## Install
 
 ```bash
-gemini extensions install <repo-url>
+./scripts/install-platform.sh --platform=gemini --theme=builder --target=/path/to/project
 ```
+
+Use the default platform install (`--theme=all`) when you also want floor and
+thrift artifacts.
 
 ## Usage
 
-Run `/gemini-init` inside Gemini CLI. The skill scaffolds:
+Open Gemini CLI in the target repository. Gemini loads `GEMINI.md` plus the
+generated `.gemini/skills/` role guidance, so you can ask it to plan, implement,
+or review work using the installed personas.
 
-- Project purpose
-- Size (small/medium/large)
-- QA personas
-- Deploy targets
-
-## Out of scope (MVP)
-
-This iteration renders memory + role files only. Hooks, MCP wiring, brainstorm integration come in follow-ups.
-
-See `docs/superpowers/specs/2026-05-18-cross-platform-plugins-design.md`.
+`install-platform.sh` writes project-local files only. Merge the printed
+`mcpServers` snippet into `~/.gemini/settings.json` after review.

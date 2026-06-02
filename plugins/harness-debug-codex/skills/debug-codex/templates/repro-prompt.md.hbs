@@ -1,0 +1,33 @@
+# Reproduce request
+
+You started `/debug` without supplying a failing command. The skill
+needs an exact command that *deterministically* reproduces the
+failure. The Phase 1 reproduce step will run this command and parse
+its output.
+
+## Vague report
+
+> {{vague}}
+
+## Candidate commands found in this project
+
+{{#each candidates}}
+- `{{command}}` — {{why}} (source: `{{source}}`)
+{{/each}}
+
+## Clarifying questions
+
+{{#each questions}}
+- {{this}}
+{{/each}}
+
+## Pick one
+
+Reply with **one** of:
+
+- A number `1`–`{{candidateCount}}` to use that candidate.
+- A full shell command string to use your own.
+- `abort` to exit `/debug`.
+
+If the command takes >60s, prefix it with `timeout 120` to keep the
+session responsive.

@@ -24,11 +24,11 @@
 
 2. Build waves: `const waves = buildWaves(tasks, config.waves[waveSize])` from `lib/wave-builder.mjs`.
 
-3. For each wave, run sub-phases **3a → 3b → 3c**:
+3. For each wave, capture `baseCommit` before implementation with `git rev-parse HEAD`, then run sub-phases **3a → 3b → 3c**. Persist this pre-wave commit on the wave record so Phase 4 can include the first wave commit in gate diffs.
 
 ### 3a — Scoping (parallel)
 
-a. Dispatch one Task subagent per task in the wave with description `Implement Task N: <title>` and a prompt containing the mini-plan ONLY (no addendum text — the `floor-policy` PreToolUse hook injects the scoping addendum + verification directive automatically).
+a. Dispatch one Task subagent per task in the wave with description `Implement Task N: <title>` and a prompt containing the mini-plan plus the mandatory Dispatch Prompt Contract below. Do not duplicate the scoping addendum or verification directive; the `floor-policy` PreToolUse hook injects those automatically.
 b. Collect each return as a JSON payload between ` ```decision-payload ` fences. Parse with `lib/decisions/schema.mjs` `validateDecisionPayload`. If `result.ok === false`, treat as `NO_DECISIONS` and log a warning.
 
 ### 3b — Ask (sequential UI per task)
@@ -41,11 +41,12 @@ c. Persist `state.decisions` to `.agent-all-state.json` after every individual a
 
 ### 3c — Implementation (parallel re-dispatch)
 
-a. For each task, build a fresh prompt: the original mini-plan PLUS a section `## User Decisions for This Task` listing `decision.title → chosen option label + description`.
+a. For each task, build a fresh prompt: the original mini-plan PLUS the mandatory Dispatch Prompt Contract below PLUS a section `## User Decisions for This Task` listing `decision.title → chosen option label + description`.
 b. Re-dispatch implementer subagent. PostToolUse hook validates `STATUS: DONE` came with `verification_passed` line.
-c. Phase 4 (Gate) reviewer subagents likewise get the `Review Task N: <title>` description; PreToolUse hook injects the `VERIFICATION_AUDIT` directive; PostToolUse hook validates the token's presence.
+c. After each implementer returns, the orchestrator MUST inspect the reported changed files and `git diff`, stage only task-owned pathspecs, create the task commit, and record the orchestrator-created commit SHA on that task. If the diff includes unreported or forbidden files, do not commit; re-dispatch or escalate.
+d. Phase 4 (Gate) reviewer subagents likewise get the `Review Task N: <title>` description; PreToolUse hook injects the `VERIFICATION_AUDIT` directive; PostToolUse hook validates the token's presence.
 
-4. Capture wave result: `{index: i, tasks: [{id, status, commits, decisions: state.decisions[id]}], status: "completed"|"incomplete"}`.
+4. Capture wave result: `{index: i, baseCommit, startCommit, endCommit, tasks: [{id, status, changedFiles, commits, decisions: state.decisions[id]}], status: "completed"|"incomplete"}`. `commits` are orchestrator-created pathspec commits, not subagent self-commits. Derive `startCommit` and `endCommit` from the first and last entries in `wave.tasks[].commits`.
 
 5. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
 
@@ -54,6 +55,23 @@ c. Phase 4 (Gate) reviewer subagents likewise get the `Review Task N: <title>` d
 - If a 3a scoping subagent returns invalid JSON or a payload that fails schema validation: treat as `NO_DECISIONS` for that task and log a warning to `state.warnings`.
 - If a 3c implementer reports BLOCKED for >1 task in a wave: mark wave `incomplete`. Phase 4 will decide whether to retry or abort.
 - If `tasks.length === 0`: abort with `plan has no '### Task N' headings`.
+
+## Dispatch Prompt Contract (mandatory)
+
+Every 3a scoping and 3c implementation Task prompt MUST include:
+
+- Working directory: the repository root where commands must run.
+- Owned files or line ranges: the task's declared files, or an explicit note that no files were declared and the subagent must ask before broad edits.
+- Forbidden files or areas: files owned by other active wave tasks plus any out-of-scope paths.
+- DO NOT:
+  - Do not run destructive commands, force-push, or reset shared state.
+  - Do not edit outside the owned files without reporting the expansion.
+  - Do not stage broad changes or self-commit.
+  - Do not revert unrelated user or other-agent edits.
+- Expected output: `STATUS`, changed files, verification evidence, blockers, and a concise `Self-Audit` covering requested scope, processed items, unprocessed items, shortcuts, and next action.
+- Reusable references: task doc, plan path, relevant root guidance, and any files/functions/commands the orchestrator already identified.
+
+Do not self-commit from an implementer subagent. The orchestrator owns pathspec commit review after it inspects changed files and verification evidence.
 
 ## Per-subagent verification (safety net)
 

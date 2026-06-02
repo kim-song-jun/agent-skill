@@ -36,6 +36,7 @@ for (const p of SKILL_PATHS) {
 
 const PHASE_1_PATHS = [
   "plugins/harness-floor/skills/visual-qa/phases/1-config.md",
+  "plugins/harness-floor-codex/skills/visual-qa-codex/phases/1-config.md",
 ];
 
 for (const p of PHASE_1_PATHS) {
@@ -51,6 +52,7 @@ for (const p of PHASE_1_PATHS) {
 
 const PHASE_4_PATHS = [
   "plugins/harness-floor/skills/visual-qa/phases/4-aggregate.md",
+  "plugins/harness-floor-codex/skills/visual-qa-codex/phases/4-aggregate.md",
 ];
 
 for (const p of PHASE_4_PATHS) {
@@ -64,6 +66,7 @@ for (const p of PHASE_4_PATHS) {
 
 const PHASE_5_PATHS = [
   "plugins/harness-floor/skills/visual-qa/phases/5-summary.md",
+  "plugins/harness-floor-codex/skills/visual-qa-codex/phases/5-summary.md",
 ];
 
 for (const p of PHASE_5_PATHS) {

@@ -2,31 +2,36 @@
 
 ## Graduation
 
-Initial scaffold (commit `ea3155a`-ish) shipped config + MCP snippet only.
-This iteration ports the **full 6-phase orchestrator** using Codex's
-`agent` hook (preferred) or sequential `.codex/skills/visual-qa-page` invocation (fallback).
+Initial scaffold shipped config plus a Playwright MCP snippet. This
+iteration ports the full 6-phase orchestrator using sequential
+`.codex/skills/visual-qa-page` dispatch.
 
-## Phase contract preserved
+## Current Codex Hook Limitation
+
+Current Codex hooks support command handlers for events such as
+`PreToolUse`, `PostToolUse`, and `SessionStart`. They do not expose the
+older agent-dispatch hook surface that early scaffold notes assumed.
+
+For that reason, visual-qa-codex now uses sequential page dispatch:
+
+- Phase 0 always selects `dispatch = "sequential"`.
+- `--dispatch=sequential` is accepted as an explicit no-op override.
+- `--dispatch=agent-hook` aborts with an unsupported-current-hooks error.
+- The hook snippet template is documentation-only and emits no TOML hook
+  registration.
+
+## Phase Contract Preserved
 
 | Aspect | Claude Code | Codex |
 |---|---|---|
-| Page dispatch | `Skill: dispatching-parallel-agents` + `Task` per page | `agent` hook fan-out OR sequential `.codex/skills/visual-qa-page` |
-| Awaiter | `await` per Task | `codex agent wait --task-prefix visual-qa/page/` |
+| Page dispatch | `Skill: dispatching-parallel-agents` + `Task` per page | sequential `.codex/skills/visual-qa-page` |
 | Plan persistence | in-process | `apply_patch` to state file |
 | LLM call | claude-sonnet-4-6 via Task | Codex's configured model |
-| Browser MCP | `mcp__plugin_playwright_playwright__*` | `mcp__playwright__*` (via `[mcp_servers.playwright]` in config.toml) |
+| Browser MCP | `mcp__plugin_playwright_playwright__*` | `mcp__playwright__*` via `[mcp_servers.playwright]` |
 
-## Open research questions
+## Future Work
 
-Same as `agent-all-codex` porting-notes:
-1. `[[hooks.agent]]` syntax confirmation.
-2. `codex agent dispatch` and `codex agent wait` command shape verification.
-3. Per-agent cost reporting via wait response payload.
-
-Until the hook is verified, sequential fallback runs automatically.
-
-## Future work
-
-- Live CLI research spike for `agent` hook schema.
-- `bin/init.mjs` to install hook snippet into config.toml with merge semantics.
-- Cost-tracking integration once wait-response is confirmed.
+- Revisit parallel page dispatch only if Codex exposes an official
+  command surface for spawning and awaiting subagents.
+- Keep the sequential path as the stable baseline even if a future
+  parallel strategy is added.

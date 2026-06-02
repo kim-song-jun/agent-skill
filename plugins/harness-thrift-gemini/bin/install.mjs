@@ -133,6 +133,12 @@ function copyFile({ srcPath, dstPath, dryRun }) {
   console.log(`copied ${dstPath}`);
 }
 
+function printManualHooksSnippet(hooks) {
+  console.log("");
+  console.log("# Merge the following into ~/.gemini/settings.json (hooks):");
+  console.log(JSON.stringify({ hooks }, null, 2));
+}
+
 function rewriteHookImports(src) {
   return src
     .replace(/"\.\.\/\.\.\/lib\//g, '"./lib/')
@@ -222,6 +228,9 @@ function main() {
       console.log(`patched ${settingsPath}: applied=${applied}, skipped=${skipped}`);
     }
     patched = true;
+  } else {
+    const hooks = buildStandardThriftGeminiHooks({ hooksDir });
+    printManualHooksSnippet(hooks);
   }
 
   console.log("");

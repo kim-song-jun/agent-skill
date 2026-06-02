@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 
@@ -51,13 +51,13 @@ test("vqa dispatch-strategy: defaultCodexConfigPath ends with ~/.codex/config.to
   assert.match(defaultCodexConfigPath(), /\.codex\/config\.toml$/);
 });
 
-test("vqa dispatch-strategy: hasAgentHookInToml detects visual-qa matcher", () => {
+test("vqa dispatch-strategy: hasAgentHookInToml rejects legacy visual-qa matcher", () => {
   const toml = `
 [[hooks.agent]]
 matcher = "visual-qa/page/.*"
 command = "codex-agent-dispatch"
 `;
-  assert.equal(hasAgentHookInToml(toml), true);
+  assert.equal(hasAgentHookInToml(toml), false);
 });
 
 test("vqa dispatch-strategy: hasAgentHookInToml rejects agent-all matcher", () => {
@@ -69,7 +69,7 @@ command = "codex-agent-dispatch"
   assert.equal(hasAgentHookInToml(toml), false);
 });
 
-test("vqa dispatch-strategy: hasAgentHookInToml handles multiple [[hooks.agent]] sections", () => {
+test("vqa dispatch-strategy: hasAgentHookInToml rejects multiple legacy agent sections", () => {
   const toml = `
 [[hooks.agent]]
 matcher = "agent-all/wave/.*"
@@ -77,7 +77,7 @@ matcher = "agent-all/wave/.*"
 [[hooks.agent]]
 matcher = "visual-qa/page/.*"
 `;
-  assert.equal(hasAgentHookInToml(toml), true);
+  assert.equal(hasAgentHookInToml(toml), false);
 });
 
 test("vqa dispatch-strategy: missing config falls back to sequential", () => {
@@ -92,19 +92,21 @@ test("vqa dispatch-strategy: missing config falls back to sequential", () => {
   }
 });
 
-test("vqa dispatch-strategy: explicit override honoured", () => {
-  const r = detectDispatchStrategy({ override: "agent-hook" });
-  assert.equal(r.strategy, "agent-hook");
-  assert.equal(r.override, true);
+test("vqa dispatch-strategy: agent-hook override is unsupported on current Codex", () => {
+  assert.throws(
+    () => detectDispatchStrategy({ override: "agent-hook" }),
+    /unsupported.*current Codex hooks/i,
+  );
 });
 
-test("vqa dispatch-strategy: present hook yields agent-hook", () => {
+test("vqa dispatch-strategy: legacy agent hook still falls back to sequential", () => {
   const t = makeTmp();
   try {
     const p = join(t, "config.toml");
     writeFileSync(p, `[[hooks.agent]]\nmatcher = "visual-qa/page/.*"\n`);
     const r = detectDispatchStrategy({ configPath: p });
-    assert.equal(r.strategy, "agent-hook");
+    assert.equal(r.strategy, "sequential");
+    assert.match(r.reason, /unsupported.*current Codex hooks/i);
   } finally {
     rmSync(t, { recursive: true, force: true });
   }
@@ -258,6 +260,19 @@ test("vqa sequential-dispatch: buildPagePrompt embeds env vars", () => {
   assert.match(prompt, /End with a JSON line/);
 });
 
+test("vqa sequential-dispatch: buildPagePrompt embeds page skill body when provided", () => {
+  const prompt = buildPagePrompt({
+    page: { name: "home", path: "/" },
+    slugDir: "docs/visual-qa/run-1/",
+    baseUrl: "http://localhost:3000",
+    skillPath: "/repo/.codex/skills/visual-qa-page/SKILL.md",
+    skillBody: "---\nname: visual-qa-page\n---\nCapture every visible state.",
+  });
+  assert.match(prompt, /## Page Skill/);
+  assert.match(prompt, /Path: \/repo\/\.codex\/skills\/visual-qa-page\/SKILL\.md/);
+  assert.match(prompt, /Capture every visible state/);
+});
+
 test("vqa sequential-dispatch: buildSequentialPageInvocation builds full argv", () => {
   const inv = buildSequentialPageInvocation({
     page: { name: "home" },
@@ -268,8 +283,10 @@ test("vqa sequential-dispatch: buildSequentialPageInvocation builds full argv", 
   assert.match(inv.skillPath, /\.codex\/skills\/visual-qa-page\/SKILL\.md$/);
   assert.equal(inv.argv[0], "codex");
   assert.equal(inv.argv[1], "exec");
-  assert.ok(inv.argv.includes("--skill"));
-  assert.ok(inv.argv.includes("--prompt"));
+  assert.equal(inv.argv.length, 3);
+  assert.equal(inv.argv.includes("--skill"), false);
+  assert.equal(inv.argv.includes("--prompt"), false);
+  assert.match(inv.argv[2], /PAGE_NAME: home/);
 });
 
 test("vqa sequential-dispatch: buildSequentialPageShellCommand shell-quotes", () => {
@@ -280,6 +297,7 @@ test("vqa sequential-dispatch: buildSequentialPageShellCommand shell-quotes", ()
     projectRoot: "/r",
   });
   assert.match(command, /^'codex' 'exec'/);
+  assert.doesNotMatch(command, /'--skill'|'--prompt'/);
   assert.match(skillPath, /visual-qa-page/);
 });
 
@@ -315,6 +333,37 @@ test("vqa sequential-dispatch: dispatchPageSequential happy path", async () => {
   assert.equal(r.taskId, "visual-qa/page/home");
   assert.equal(r.status, "completed");
   assert.deepEqual(r.captures, ["a.png"]);
+});
+
+test("vqa sequential-dispatch: dispatchPageSequential inlines the page skill file into the prompt", async () => {
+  const t = makeTmp();
+  try {
+    const skillDir = join(t, ".codex", "skills", "visual-qa-page");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: visual-qa-page\n---\nCapture every visible state.",
+    );
+    const runner = async (cmd) => {
+      assert.match(cmd, /^'codex' 'exec'/);
+      assert.doesNotMatch(cmd, /'--skill'|'--prompt'/);
+      assert.match(cmd, /Capture every visible state/);
+      return {
+        stdout: `{"page":"home","status":"completed","captures":[],"analyses":[],"errors":[]}`,
+        stderr: "",
+        status: 0,
+      };
+    };
+    const r = await dispatchPageSequential({
+      page: { name: "home" },
+      slugDir: "out/",
+      baseUrl: "http://x",
+      projectRoot: t,
+    }, runner);
+    assert.equal(r.status, "completed");
+  } finally {
+    rmSync(t, { recursive: true, force: true });
+  }
 });
 
 test("vqa sequential-dispatch: dispatchPageSequential failure flagged incomplete", async () => {

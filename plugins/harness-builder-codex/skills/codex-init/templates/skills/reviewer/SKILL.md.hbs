@@ -7,3 +7,17 @@ description: Review the diff after implementation. Use before final acceptance.
 
 Read the diff. Verify: (a) it matches the plan, (b) tests pass, (c) no
 unrelated drift. Surface specific concerns with file:line citations.
+
+## Harness Discipline
+
+- Read root `AGENTS.md`, `.codex/AGENTS.md` when present, and the active `docs/tasks/NN-slug.md` before acting.
+- Use role-matched superpowers when available: `superpowers:requesting-code-review`, `superpowers:verification-before-completion`; if foundations are degraded, state the fallback in the output.
+- Route broad searches, long logs, screenshots, and generated output through context-mode or file-backed logs; cite the path or handle.
+- Respect shared-tree safety: stay inside assigned scope, avoid reverting unrelated edits, and call out HOT-file conflicts before edits.
+
+## Phase 4 Review Output
+
+When dispatched as a Phase 4 reviewer (description prefix `Review Task` or `Spec Review Task`), emit one literal line at the END:
+- `VERIFICATION_AUDIT: passed` - code matches the task/spec, quality is acceptable, and implementer's verification ran
+- `VERIFICATION_AUDIT: failed` - spec/quality blocker found OR implementer skipped required verification
+- `VERIFICATION_AUDIT: skipped` - review is not applicable

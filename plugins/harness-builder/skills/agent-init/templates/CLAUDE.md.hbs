@@ -4,50 +4,171 @@
 
 ## Stack
 
-{{stack}}{{#if runtime}} (on {{runtime}}{{#if services_str}}: {{services_str}}{{/if}}){{/if}}{{#if deploy_targets}} — deploys to {{deploy_targets}}{{/if}}
+{{stack}}{{#if runtime}} (on {{runtime}}{{#if services_str}}: {{services_str}}{{/if}}){{/if}}{{#if deploy_targets}} - deploys to {{deploy_targets}}{{/if}}
+
+## Language
+
+- Interaction language: `{{interactionLang}}`{{#if floorTheme}}
+- Downstream `/agent-all` config keeps `.agent-all.json` `language` aligned with this value.{{/if}}{{#if liteProfile}}
+- Lite mode does not seed downstream `/agent-all` config; if you add it later, keep its language aligned with this value.{{/if}}{{#if builderProfile}}
+- Builder theme does not seed downstream `/agent-all` config; add the floor bundle later if you want `/agent-all` defaults.{{/if}}
 
 ## Operating Principles
 
 These apply to the main agent and to every role in `.claude/agents/`:
 
-1. **Brainstorm first.** Before any deliverable (code, doc, design), invoke `superpowers:brainstorming` to align on intent.
-2. **Parallel via superpowers.** When fanning out 2+ independent subtasks, invoke `superpowers:dispatching-parallel-agents` or `subagent-driven-development`.
-3. **context-mode over Bash.** For commands whose output may exceed ~20 lines, use `mcp__plugin_context-mode_context-mode__ctx_batch_execute`.
+1. **Brainstorm first.** Before any deliverable, invoke `superpowers:brainstorming` unless the user explicitly asks for direct execution.
+2. **Plan before implementation.** Multi-step work uses `superpowers:writing-plans` and stores plans in `docs/superpowers/plans/`.
+3. **Parallel through orchestration.** Use `superpowers:dispatching-parallel-agents` or `superpowers:subagent-driven-development` when tasks do not share files.
+4. **Verify before completion.** Use `superpowers:verification-before-completion` before claiming success.
+5. **Use context-mode for bulk context.** Store or index large logs, broad searches, and bulky browser snapshots outside the main conversation.
+6. **Protect shared worktrees.** Never use `git add -A`, `git commit -a`, `git reset --hard`, `git checkout --`, or force push unless the user explicitly approves the exact command.
+7. **Commit with pathspecs.** Use `git commit -m "message" -- path/one path/two`.
+
+## Execution Discipline
+
+1. **No scope retreat.** If the user asks for an exhaustive pass, all files, all pages, or a fixed `N` items, establish the count up front, process every item, and report `processed M/N` before handoff. Stop only for a real blocker, an explicit user scope change, or a documented ambiguity.
+2. **Plan vs execute.** If the request is to fix, build, change, or verify something, finish the file edits and verification. Do not stop at a proposal unless the user asked only for analysis.
+3. **Self-Audit before handoff.** For multi-file changes, long-running task docs, or all-item sweeps, include a concise `Self-Audit` covering requested scope, processed count, unprocessed items, unverified gates, any shortcuts, and next action.
+4. **Tech-Debt Grep.** Before completion, check touched code paths for `TODO`, `FIXME`, `HACK`, and `XXX`. Resolve in-scope debt in the same change; if it is out of scope, state why.
+5. **Decision Matrix.** When two or more reasonable choices remain, or multiple user decisions are needed, present a `Decision Matrix` with option, impact, recommendation, and whether confirmation is required.
+{{#if operationalProfile}}6. **Task-ledger gate.** If a task ledger document is active, do not call the work complete while required sections, in-scope checkboxes, acceptance criteria, or verification evidence are missing.
+{{/if}}
+
+## Subagent Dispatch Contract
+
+Every delegated role prompt must include:
+
+- Working directory.
+- Owned files or line ranges.
+- Forbidden files or areas owned by other active agents.
+- A `DO NOT` list covering destructive commands, unrelated edits, broad staging, and self-commit behavior.
+- Expected output format with a concise `Self-Audit`.
+- Reusable references, files, functions, commands, or task-doc sections.
+
+Do not self-commit from a delegated subagent unless the orchestrator explicitly asks for that. Report changed files and verification evidence back to the orchestrator for pathspec commit review.
+
+{{#if operationalProfile}}
+## Operational Harness
+
+- Default mode is heavy. Use `/agent-init --lite` only for small repositories that do not need task ledger or hooks.
+- Every `/agent-all` run must resolve to a task document under `docs/tasks/`.
+- Keep `Decision Matrix`, `Ambiguity Log`, `Progress Snapshot`, and `Verification` current.
+- Phase handoffs belong in the task doc or `_handoff-template.md` output, not in raw chat logs.
+- Existing local instructions outside the generated sentinel section take precedence.
+
+## Task Ledger
+
+- `docs/tasks/index.md` tracks active tasks.
+- `docs/tasks/_template.md` is the required shape for new tasks.
+- `scripts/agent-task-ledger-check.mjs` gates completion and PR creation.
+- Checkboxes under `Backlog` and `Follow-up` are not completion blockers.
+
+## Reviewer Gates
+
+Use reviewer personas based on changed files:
+
+- UI/CSS/frontend components: `design-reviewer`, `qa-reviewer`
+- auth, permissions, API views, serializers, destructive actions: `security-reviewer`
+- models, migrations, seeds, fixtures, backfills: `data-reviewer`
+- tests, CI, build config: `verification-reviewer`
+- cross-stack frontend and backend changes: `integration-dev`, `verification-reviewer`
+
+## Role Routing
+
+- `orchestrator`: wave ownership, HOT-file detection, shared-tree safety, pathspec commits, and escalation after 3 failed cycles.
+- `planner`: ambiguity control, Decision Matrix updates, task slicing, and plan files before implementation.
+- `frontend-dev` / `backend-dev`: stack-specific implementation after the task doc and ownership boundaries are clear.
+- `integration-dev`: cross-stack wiring, API contracts, and frontend/backend coordination points.
+- `design-reviewer` + `qa-reviewer`: UI hierarchy, visual state, accessibility, and user-flow validation.
+- `security-reviewer` + `data-reviewer`: authz, secrets, destructive actions, migrations, seeds, fixtures, and backfills.
+- `verification-reviewer`: tests, typecheck, lint, diff scope, and completion evidence.
+
+Keep each active task's Progress Snapshot current with owner, files, validation, blockers, and next action.
+
+## Implementation Routing Matrix
+
+| Work type | Primary implementer | Required verification |
+|-----------|---------------------|-----------------------|
+| UI, routes, client state, browser behavior | `frontend-dev` | component/browser/a11y checks + `design-reviewer` when user-visible |
+| API, services, jobs, persistence | `backend-dev` | unit/contract tests + `verification-reviewer` |
+| Frontend plus backend/API contract | `integration-dev` with `frontend-dev` and `backend-dev` serialized on shared files | contract/e2e check + `verification-reviewer` |
+| Generic implementation or small fix | `dev` | task-specific test/lint/typecheck + `verification-reviewer` |
+| Docs or release guidance only | `doc-writer` or `dev` | docs contract or snapshot test when available |
+
+## Orchestration Contract
+
+- Main thread/orchestrator owns task docs, user decisions, HOT-file serialization, final diff review, and pathspec commits.
+- Implementer roles own only their assigned file scope and must return changed files, commands run, verification result, blockers, and Self-Audit.
+- Reviewer roles are independent gates. They inspect the diff and evidence; they do not repair code unless explicitly re-dispatched for a retry.
+- Use `superpowers:dispatching-parallel-agents` only for disjoint ownership, `superpowers:subagent-driven-development` for implement/review loops, and context-mode for broad reads or long outputs.
+- If superpowers or context-mode is unavailable, record the degraded fallback in the task ledger before continuing.
+
+## Role Gate Matrix
+
+| Trigger | Required gate | Evidence |
+|---------|---------------|----------|
+| Feature or bug fix | implementer + `verification-reviewer` | tests/typecheck/lint or task-specific verification |
+| UI or user-visible flow | `design-reviewer` + `qa-reviewer` | UX findings plus `QA_AUDIT` |
+| Auth, permissions, secrets, destructive actions | `security-reviewer` | risk review with blocking issues first |
+| Models, migrations, seeds, fixtures, backfills | `data-reviewer` | data safety, rollback, and migration evidence |
+| Frontend + backend/API contract | `integration-dev` + `verification-reviewer` | contract or end-to-end evidence |
+
+{{#if qa_personas}}
+## Configured QA Personas
+
+QA review should explicitly walk these perspectives:
+{{#each qa_personas}}- {{this}}
+{{/each}}
+{{/if}}
+{{/if}}
+
+{{#if liteProfile}}
+## Lite Harness
+
+Lite mode keeps only root memory and the minimal role roster.
+{{/if}}
 
 ## Agent Roster
 
 | Role | When to use | File |
 |------|-------------|------|
 {{#each agents}}| {{name}} | {{when}} | `.claude/agents/{{name}}.md` |
-{{/each}}
+{{/each}}{{#if operationalProfile}}
 
 ## Hooks
 
-- `PreToolUse` (Bash) → `context-mode-router.mjs` — suggests context-mode for likely-large commands
-- `Stop` → `session-summary.mjs` — appends key decisions to `docs/decisions/`
-- `SessionStart` → `cache-heal.mjs` — self-heals plugin cache symlinks
-
+- `PreToolUse` (Bash) -> `context-mode-router.mjs` and operational policy checks.
+- `Stop` -> concise handoff/session summary.
+- `SessionStart` -> cache and foundation checks.
+{{/if}}
 ## Work Folders
 
-- `docs/superpowers/specs/` — brainstorming output (design specs)
-- `docs/superpowers/plans/` — writing-plans output (implementation plans)
-- `docs/decisions/` — session-summary logs
-- `docs/tasks/` — long-running task tracking
+- `docs/superpowers/specs/` - brainstorming output.
+- `docs/superpowers/plans/` - implementation plans.{{#if operationalProfile}}
+- `docs/tasks/` - task ledger.
+- `docs/decisions/` - concise decision records.{{/if}}{{#if degradedFoundations}}
 
-{{#if constraints}}
+## Foundation Status
+
+This harness is in degraded mode because superpowers or context-mode is missing. Install or update the recommended foundations before long-running work.{{#if foundationUpdateCommand}}
+
+Run the approved foundation updater first:
+- `{{foundationUpdateCommand}}`
+{{/if}}{{#if foundationInstructions}}
+
+Manual fallback:
+{{#each foundationInstructions}}- `{{this}}`
+{{/each}}{{/if}}{{/if}}{{#if constraints}}
+
 ## Special Constraints
 
-{{constraints}}
-{{/if}}
+{{constraints}}{{/if}}{{#if floorTheme}}
 
-{{#if floorTheme}}
 ## Floor Theme
 
 Cost-unrestricted parallel pattern enabled. Commands:
 
-- `/visual-qa` — visual regression with LLM analysis (see `.visual-qa.json`)
-- `/agent-all "task description"` — multi-wave pipeline (see `.agent-all.json`)
-- `/agent-all <task-path> --loop` — iterate until the break-condition succeeds
-
-Read `plugins/harness-floor/skills/{visual-qa,agent-all}/SKILL.md` for full flag references.
-{{/if}}
+- `/visual-qa` - visual regression with LLM analysis.
+- `/agent-all "task description"` - task-ledger-driven multi-wave pipeline.
+- `/agent-all <task-path> --loop` - iterate until the break-condition succeeds.{{/if}}

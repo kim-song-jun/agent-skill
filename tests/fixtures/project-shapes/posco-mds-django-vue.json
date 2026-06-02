@@ -1,0 +1,49 @@
+{
+  "name": "posco-mds-django-vue",
+  "description": "POSCO MDS-style Django plus Vue monorepo change set: user-visible frontend, API/security, data/migration, and shared orchestration files.",
+  "changedFiles": [
+    "frontend/src/views/mds/ShipmentList.vue",
+    "frontend/src/router/modules/mds.ts",
+    "frontend/src/stores/auth.ts",
+    "frontend/src/api/mds.ts",
+    "backend/apps/mds/views.py",
+    "backend/apps/mds/viewsets.py",
+    "backend/apps/mds/serializers.py",
+    "backend/apps/mds/models.py",
+    "backend/apps/mds/migrations/0042_sync_status.py",
+    "backend/apps/mds/fixtures/mds_status_codes.json",
+    "docker-compose.yml"
+  ],
+  "expectedReviewers": [
+    "data-reviewer",
+    "design-reviewer",
+    "integration-dev",
+    "qa-reviewer",
+    "reviewer",
+    "security-reviewer",
+    "verification-reviewer"
+  ],
+  "expectedCoordinators": [
+    "orchestrator"
+  ],
+  "expectedGateReviewers": [
+    "reviewer",
+    "verification-reviewer",
+    "qa-reviewer",
+    "design-reviewer",
+    "security-reviewer",
+    "data-reviewer",
+    "integration-dev"
+  ],
+  "expectedDispatches": [
+    { "role": "orchestrator", "kind": "coordinator", "mode": "orchestration", "auditToken": "ORCHESTRATION_AUDIT" },
+    { "role": "reviewer", "kind": "reviewer", "mode": "spec", "auditToken": "VERIFICATION_AUDIT" },
+    { "role": "reviewer", "kind": "reviewer", "mode": "quality", "auditToken": "VERIFICATION_AUDIT" },
+    { "role": "verification-reviewer", "kind": "reviewer", "mode": "quality", "auditToken": "VERIFICATION_AUDIT" },
+    { "role": "qa-reviewer", "kind": "reviewer", "mode": "quality", "auditToken": "QA_AUDIT" },
+    { "role": "design-reviewer", "kind": "reviewer", "mode": "quality", "auditToken": "VERIFICATION_AUDIT" },
+    { "role": "security-reviewer", "kind": "reviewer", "mode": "quality", "auditToken": "VERIFICATION_AUDIT" },
+    { "role": "data-reviewer", "kind": "reviewer", "mode": "quality", "auditToken": "VERIFICATION_AUDIT" },
+    { "role": "integration-dev", "kind": "reviewer", "mode": "quality", "auditToken": "VERIFICATION_AUDIT" }
+  ]
+}

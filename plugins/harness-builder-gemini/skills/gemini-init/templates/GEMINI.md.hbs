@@ -13,6 +13,18 @@
 3. **Shell via `run_shell_command`.**
 4. **Skills load via `activate_skill`.**
 
+## Operational Soft Rules
+
+Gemini does not get hard hook blocking in this release. This is soft enforcement: follow these rules as prompt-level policy:
+
+- Use task docs under `docs/tasks/` for `/agent-all` work.
+- Keep Decision Matrix, Ambiguity Log, Progress Snapshot, and Verification current.
+- On interruption, blocked state, or compact/resume, write a handoff summary with active task, completed items, remaining items, blockers, validation evidence, git state, and next action.
+- Use pathspec commits: `git commit -m "message" -- path/one path/two`.
+- Avoid `git add -A`, `git commit -a`, `git commit --amend`, force push, `git reset --hard`, and `git checkout --` unless the user explicitly approves the exact command.
+- Use superpowers-style planning and verification where available.
+- Route large logs and broad searches through context-mode or file-backed artifacts where available.
+
 ## Roles
 
 | Role | When | Skill file |

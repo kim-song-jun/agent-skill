@@ -55,6 +55,7 @@ function loadCtx(ctxPath) {
     maxCostUSD: 5,
     waveSize: "medium",
     breakCondition: "npm test --silent",
+    language: "auto",
   };
   if (ctxPath) {
     const file = JSON.parse(readFileSync(ctxPath, "utf-8"));
@@ -64,6 +65,7 @@ function loadCtx(ctxPath) {
     const envKey = k.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`).toUpperCase();
     if (process.env[envKey]) base[k] = process.env[envKey];
   }
+  if (process.env.AGENT_INIT_LANG) base.language = process.env.AGENT_INIT_LANG;
   return base;
 }
 

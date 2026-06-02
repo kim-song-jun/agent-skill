@@ -17,7 +17,7 @@
 // repo.
 //
 // Usage:
-//   init.mjs <target-project-dir> [--ctx <ctx.json>] [--force]
+//   init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--vscode-only]
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -32,14 +32,15 @@ const templatesDir = resolve(pluginRoot, "skills/copilot-init/templates");
 const STDOUT_TEMPLATES = new Set(["mcp-config.json.hbs"]);
 
 function parseArgs(argv) {
-  const args = { target: null, ctxPath: null, force: false };
+  const args = { target: null, ctxPath: null, force: false, vscodeOnly: false };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--ctx") args.ctxPath = argv[++i];
     else if (argv[i] === "--force") args.force = true;
+    else if (argv[i] === "--vscode-only") args.vscodeOnly = true;
     else if (!args.target) args.target = argv[i];
   }
   if (!args.target) {
-    console.error("Usage: init.mjs <target-project-dir> [--ctx <ctx.json>] [--force]");
+    console.error("Usage: init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--vscode-only]");
     process.exit(1);
   }
   return args;
@@ -113,7 +114,8 @@ function main() {
     process.exit(1);
   }
   const ctx = loadCtx(args.ctxPath, target);
-  const templates = listTemplates(templatesDir);
+  const templates = listTemplates(templatesDir)
+    .filter((t) => !args.vscodeOnly || t.rel === "copilot-instructions.md.hbs");
   const stdoutChunks = [];
   for (const t of templates) {
     const raw = readFileSync(t.full, "utf-8");
@@ -136,7 +138,8 @@ function main() {
     console.log(`\n# ----- ${chunk.name} (merge into ~/.copilot/mcp-config.json) -----`);
     console.log(chunk.body);
   }
-  console.log(`done — detected ${ctx.stack}${ctx.runtime ? ` (on ${ctx.runtime})` : ""}`);
+  const mode = args.vscodeOnly ? "VS Code instructions-only" : "Copilot CLI";
+  console.log(`done — ${mode}; detected ${ctx.stack}${ctx.runtime ? ` (on ${ctx.runtime})` : ""}`);
 }
 
 main();
