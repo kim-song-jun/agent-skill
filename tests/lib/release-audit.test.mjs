@@ -18,10 +18,10 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.ok, true);
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
-  assert.equal(result.platforms.claude.checks.length, 52);
-  assert.equal(result.platforms.codex.checks.length, 58);
-  assert.match(result.platforms.claude.summary, /Claude: ok \(52\/52 checks\)/);
-  assert.match(result.platforms.codex.summary, /Codex: ok \(58\/58 checks\)/);
+  assert.equal(result.platforms.claude.checks.length, 53);
+  assert.equal(result.platforms.codex.checks.length, 59);
+  assert.match(result.platforms.claude.summary, /Claude: ok \(53\/53 checks\)/);
+  assert.match(result.platforms.codex.summary, /Codex: ok \(59\/59 checks\)/);
   for (const platform of Object.values(result.platforms)) {
     const names = platform.checks.map((check) => check.name);
     const duplicateNames = names.filter((name, index) => names.indexOf(name) !== index);
@@ -41,6 +41,9 @@ test("release audit reports Claude and Codex as independently ready", () => {
     result.platforms.claude.checks.some((check) => check.name === "plugins/harness-builder/skills/agent-init/templates/agents/verification-reviewer.md.hbs matches release contract"),
   );
   assert.ok(
+    result.platforms.claude.checks.some((check) => check.name === "plugins/harness-builder/skills/agent-init/lib/doctor-core.mjs matches release contract"),
+  );
+  assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh matches release contract"),
   );
   assert.ok(
@@ -58,6 +61,9 @@ test("release audit reports Claude and Codex as independently ready", () => {
   );
   assert.ok(
     result.platforms.codex.checks.some((check) => check.name === "plugins/harness-builder-codex/skills/codex-init/templates/skills/design-reviewer/SKILL.md.hbs matches release contract"),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some((check) => check.name === "plugins/harness-builder-codex/skills/codex-init/lib/doctor-core.mjs matches release contract"),
   );
   assert.ok(
     result.platforms.codex.checks.some((check) => check.name === "plugins/harness-builder-codex/skills/codex-init/templates/AGENTS.md.hbs matches release contract (floor language guidance)"),

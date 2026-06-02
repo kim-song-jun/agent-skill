@@ -86,6 +86,21 @@ const PLATFORM_CONTRACTS = {
         ],
       },
       {
+        file: "plugins/harness-builder/skills/agent-init/lib/doctor-core.mjs",
+        patterns: [
+          /function recoveryInstallCommand/,
+          /missingArtifactFix/,
+          /generatedGuidanceFix/,
+          /--theme=builder/,
+          /--theme=debug/,
+          /--force/,
+          /repair JSON syntax/,
+          /printInstructions/,
+          /next: \$\{instruction\}/,
+          /instructions: warning\.instructions/,
+        ],
+      },
+      {
         file: "plugins/harness-floor/skills/agent-all/SKILL.md",
         patterns: [
           /^---\nname: agent-all\n/m,
@@ -338,6 +353,21 @@ const PLATFORM_CONTRACTS = {
           /--dry-run/,
           /--lang=en\|ko\|auto/,
           /When done[\s\S]{0,220}Codex config snippet/i,
+        ],
+      },
+      {
+        file: "plugins/harness-builder-codex/skills/codex-init/lib/doctor-core.mjs",
+        patterns: [
+          /function recoveryInstallCommand/,
+          /missingArtifactFix/,
+          /generatedGuidanceFix/,
+          /--theme=builder/,
+          /--theme=debug/,
+          /--force/,
+          /repair JSON syntax/,
+          /printInstructions/,
+          /next: \$\{instruction\}/,
+          /instructions: warning\.instructions/,
         ],
       },
       {
