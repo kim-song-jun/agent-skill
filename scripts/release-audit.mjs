@@ -153,6 +153,21 @@ const PLATFORM_CONTRACTS = {
         ],
       },
       {
+        file: "plugins/harness-builder/skills/agent-init/templates/AGENTS.md.hbs",
+        label: "companion root guidance",
+        patterns: [
+          /CLAUDE\.md` remains the Claude Code primary guide/i,
+          /superpowers:brainstorming/i,
+          /superpowers:writing-plans/i,
+          /superpowers:dispatching-parallel-agents/i,
+          /superpowers:subagent-driven-development/i,
+          /superpowers:verification-before-completion/i,
+          /context-mode[\s\S]{0,220}(file-backed logs|bulk context|broad searches|long outputs)/i,
+          /Orchestration Contract/i,
+          /Role Gate Matrix/i,
+        ],
+      },
+      {
         file: "plugins/harness-builder/skills/agent-init/templates/agents/orchestrator.md.hbs",
         patterns: [
           /Implementation Routing Matrix/i,

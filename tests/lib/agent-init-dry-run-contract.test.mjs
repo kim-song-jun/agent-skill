@@ -249,6 +249,12 @@ test("agent-init root guidance carries domain-neutral execution discipline", () 
     assert.match(body, /Tech-Debt Grep/);
     assert.match(body, /Decision Matrix/);
     assert.match(body, /## Subagent Dispatch Contract/);
+    assert.match(body, /superpowers:brainstorming/);
+    assert.match(body, /superpowers:writing-plans/);
+    assert.match(body, /superpowers:dispatching-parallel-agents/);
+    assert.match(body, /superpowers:subagent-driven-development/);
+    assert.match(body, /superpowers:verification-before-completion/);
+    assert.match(body, /context-mode[\s\S]{0,160}(file-backed logs|bulk context|broad searches|long outputs)/i);
     assert.match(body, /working directory/i);
     assert.match(body, /owned files/i);
     assert.match(body, /forbidden files/i);

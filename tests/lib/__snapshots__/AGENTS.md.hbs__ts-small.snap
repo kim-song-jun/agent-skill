@@ -15,11 +15,14 @@ typescript - deploys to vercel
 These rules mirror the Claude Code harness so non-Claude agents can participate safely:
 
 1. Read `CLAUDE.md` first when present; it is the primary operating index.
-2. Plan before edits and keep plans in `docs/superpowers/plans/` for multi-step work.
-3. Use context-mode or file-backed logs for broad searches, test output, screenshots, and noisy generated output when available.
-4. Never use destructive git, docker, database, or force-push commands without explicit user approval.
-5. Commit with explicit pathspecs: `git commit -m "message" -- path/one path/two`.
-6. Do not revert unrelated user or other-agent edits.
+2. Invoke `superpowers:brainstorming` before ambiguous or multi-step deliverables unless the user explicitly asks for direct execution.
+3. Use `superpowers:writing-plans` for non-trivial changes and keep plans in `docs/superpowers/plans/`.
+4. Use `superpowers:dispatching-parallel-agents` or `superpowers:subagent-driven-development` as the planning protocol for multi-role work.
+5. Use `superpowers:verification-before-completion` before claiming success.
+6. Use context-mode or file-backed logs for broad searches, test output, screenshots, and noisy generated output when available.
+7. Never use destructive git, docker, database, or force-push commands without explicit user approval.
+8. Commit with explicit pathspecs: `git commit -m "message" -- path/one path/two`.
+9. Do not revert unrelated user or other-agent edits.
 
 ## Execution Discipline
 

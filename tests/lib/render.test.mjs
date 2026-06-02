@@ -165,6 +165,11 @@ test("operational Claude root and QA reviewer templates publish orchestration ga
     assert.match(out, /## Orchestration Contract/);
     assert.match(out, /Main thread\/orchestrator owns task docs/);
     assert.match(out, /## Role Gate Matrix/);
+    assert.match(out, /superpowers:brainstorming/);
+    assert.match(out, /superpowers:writing-plans/);
+    assert.match(out, /superpowers:dispatching-parallel-agents/);
+    assert.match(out, /superpowers:subagent-driven-development/);
+    assert.match(out, /superpowers:verification-before-completion/);
     assert.match(out, /UI or user-visible flow \| `design-reviewer` \+ `qa-reviewer`/);
     assert.match(out, /## Configured QA Personas/);
     assert.match(out, /- admin/);

@@ -396,7 +396,8 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /public CLI script executable\/shebang packaging/i);
   assert.match(plan, /generated hook\/task-checker executable packaging/i);
   assert.match(plan, /Claude\/Codex QA and base\/specialized reviewer audit-token contracts/i);
-  assert.match(plan, /Claude 53\/53 and Codex 59\/59 readiness checks passing/i);
+  assert.match(plan, /Claude 54\/54 and Codex 59\/59 readiness checks passing/i);
+  assert.match(plan, /Claude companion root guidance/i);
   assert.match(plan, /doctor recovery guidance/i);
   assert.match(plan, /Codex floor-conditional language guidance/i);
   assert.match(plan, /POSCO MDS-style Django\/Vue monorepo routing/i);

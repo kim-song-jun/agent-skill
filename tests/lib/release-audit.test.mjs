@@ -18,9 +18,9 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.ok, true);
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
-  assert.equal(result.platforms.claude.checks.length, 53);
+  assert.equal(result.platforms.claude.checks.length, 54);
   assert.equal(result.platforms.codex.checks.length, 59);
-  assert.match(result.platforms.claude.summary, /Claude: ok \(53\/53 checks\)/);
+  assert.match(result.platforms.claude.summary, /Claude: ok \(54\/54 checks\)/);
   assert.match(result.platforms.codex.summary, /Codex: ok \(59\/59 checks\)/);
   for (const platform of Object.values(result.platforms)) {
     const names = platform.checks.map((check) => check.name);
@@ -39,6 +39,9 @@ test("release audit reports Claude and Codex as independently ready", () => {
   );
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "plugins/harness-builder/skills/agent-init/templates/agents/verification-reviewer.md.hbs matches release contract"),
+  );
+  assert.ok(
+    result.platforms.claude.checks.some((check) => check.name === "plugins/harness-builder/skills/agent-init/templates/AGENTS.md.hbs matches release contract (companion root guidance)"),
   );
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "plugins/harness-builder/skills/agent-init/lib/doctor-core.mjs matches release contract"),
