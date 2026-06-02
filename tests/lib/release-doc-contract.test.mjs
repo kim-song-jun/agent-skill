@@ -80,6 +80,7 @@ test("readme files describe the current Codex config surface and current test co
     assert.match(body, /Codex CLI[\s\S]{0,320}(prompt-level|sequential|프롬프트|순차)/i);
     assert.match(body, /scripts\/release-smoke\.sh --fast/);
     assert.match(body, /scripts\/release-smoke\.sh --fast --with-live-cli/);
+    assert.match(body, /with-live-cli[\s\S]{0,260}(Claude plugin marketplace\/install|Claude plugin marketplace\/install 명령 표면)/i);
     assert.match(body, /scripts\/release-audit\.mjs/);
     assert.match(body, /scripts\/release-fixture-smoke\.mjs/);
     assert.match(
@@ -341,6 +342,7 @@ test("Codex floor runtime comments reflect the verified CLI surface", () => {
 test("Codex runtime specs describe the current sequential surface instead of stale agent hooks", () => {
   const runtimeChecklist = read("docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md");
   assert.match(runtimeChecklist, /release-smoke\.sh --fast --with-live-cli/);
+  assert.match(runtimeChecklist, /Claude plugin marketplace\/install/i);
   assert.match(runtimeChecklist, /release fixture smoke[\s\S]{0,260}installed fixture[\s\S]{0,260}sequential agent-all-codex prompt helper/i);
   assert.match(runtimeChecklist, /stack-specific Codex sequential role dispatch proof/i);
   assert.match(runtimeChecklist, /frontend-dev\/backend-dev role-skill inlining/i);
@@ -481,7 +483,7 @@ test("manual release checklist is mapped to automated gates and Claude/Codex liv
   assert.match(body, /Automated release gate/i);
   assert.match(body, /release-audit\.mjs/);
   assert.match(body, /release-fixture-smoke\.mjs/);
-  assert.match(body, /Release smoke gate coverage[\s\S]{0,220}live CLI probes[\s\S]{0,220}focused release contracts/i);
+  assert.match(body, /Release smoke gate coverage[\s\S]{0,220}live Claude plugin marketplace\/install and Codex exec probes[\s\S]{0,220}focused release contracts/i);
   assert.match(body, /Public CLI packaging coverage[\s\S]{0,160}shebangs[\s\S]{0,160}executable bits/i);
   assert.match(body, /release-command-surface\.test\.mjs/);
   assert.match(body, /agent-init-dry-run-contract\.test\.mjs/);
@@ -526,6 +528,8 @@ test("CLI runtime checklist points at the release readiness audit gate", () => {
   assert.match(body, /Codex builder\/floor\/thrift\/debug git fixtures/i);
   assert.match(body, /operational, lite, builder, floor, thrift, and debug profiles/i);
   assert.match(body, /release-smoke\.sh --fast --with-live-cli/);
+  assert.match(body, /Claude CLI live probe[\s\S]{0,160}plugin marketplace\/install command surfaces/i);
+  assert.match(body, /Codex CLI live probe[\s\S]{0,160}codex exec \[OPTIONS\] \[PROMPT\]/i);
   assert.match(body, /run \/agent-all for "smoke task"/);
   assert.match(body, /run \/visual-qa for the configured project/);
   assert.match(body, /Run `run \/thrift`, `run \/thrift summarise`, and `run \/thrift audit`/);

@@ -63,8 +63,33 @@ if [ "$WITH_LIVE_CLI" -eq 1 ]; then
       fi
       echo "codex exec: positional prompt interface"
     }
+    probe_claude_plugin_surface() {
+      local plugin_help marketplace_help install_help
+      plugin_help="$(claude plugin --help 2>&1)"
+      if ! grep -Eq "Usage: claude plugin\\|plugins" <<<"$plugin_help" \
+        || ! grep -Eq "\\bmarketplace\\b" <<<"$plugin_help" \
+        || ! grep -Eq "install\\|i" <<<"$plugin_help"; then
+        echo "Claude plugin command surface changed; expected plugin marketplace and install commands." >&2
+        return 1
+      fi
+      marketplace_help="$(claude plugin marketplace --help 2>&1)"
+      if ! grep -Eq "Usage: claude plugin marketplace" <<<"$marketplace_help" \
+        || ! grep -Eq "\\badd\\b.*<source>" <<<"$marketplace_help" \
+        || ! grep -Eq "\\bupdate\\b.*\\[name\\]" <<<"$marketplace_help"; then
+        echo "Claude marketplace command surface changed; expected add/update commands." >&2
+        return 1
+      fi
+      install_help="$(claude plugin install --help 2>&1)"
+      if ! grep -Eq "Usage: claude plugin install\\|i .*<plugin>" <<<"$install_help" \
+        || ! grep -Eq -- "--scope <scope>" <<<"$install_help"; then
+        echo "Claude plugin install command surface changed; expected plugin argument and scope option." >&2
+        return 1
+      fi
+      echo "claude plugin: marketplace/install surface"
+    }
     probe_cli claude
     probe_cli codex
+    probe_claude_plugin_surface
     probe_codex_exec_surface
   '
 fi

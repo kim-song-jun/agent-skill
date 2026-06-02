@@ -23,6 +23,8 @@ const RELEASE_SMOKE_CONTRACT = {
   patterns: [
     /release gate for the Claude Code native plugins[\s\S]{0,160}Claude\/Codex project renderers/,
     /--fast --with-live-cli/,
+    /probe_claude_plugin_surface/,
+    /claude plugin: marketplace\/install surface/,
     /probe_codex_exec_surface/,
     /release-audit\.mjs/,
     /release-fixture-smoke\.mjs/,

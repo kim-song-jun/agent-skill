@@ -61,7 +61,36 @@ test("release-smoke --fast --with-live-cli probes Claude and Codex binaries", ()
   const binDir = mkdtempSync(resolve(tmpdir(), "agent-skill-live-cli-"));
   const claude = resolve(binDir, "claude");
   const codex = resolve(binDir, "codex");
-  writeFileSync(claude, "#!/usr/bin/env bash\necho '2.1.158 (Claude Code)'\n");
+  writeFileSync(claude, [
+    "#!/usr/bin/env bash",
+    "case \"$*\" in",
+    "  \"--version\")",
+    "    echo '2.1.158 (Claude Code)'",
+    "    ;;",
+    "  \"plugin --help\")",
+    "    echo 'Usage: claude plugin|plugins [options] [command]'",
+    "    echo 'Commands:'",
+    "    echo '  install|i [options] <plugin>         Install a plugin from available marketplaces'",
+    "    echo '  marketplace                          Manage Claude Code marketplaces'",
+    "    ;;",
+    "  \"plugin marketplace --help\")",
+    "    echo 'Usage: claude plugin marketplace [options] [command]'",
+    "    echo 'Commands:'",
+    "    echo '  add [options] <source>      Add a marketplace from a URL, path, or GitHub repo'",
+    "    echo '  update [options] [name]     Update marketplace(s) from their source'",
+    "    ;;",
+    "  \"plugin install --help\")",
+    "    echo 'Usage: claude plugin install|i [options] <plugin>'",
+    "    echo 'Options:'",
+    "    echo '  -s, --scope <scope>   Installation scope: user, project, or local'",
+    "    ;;",
+    "  *)",
+    "    echo \"unexpected claude args: $*\" >&2",
+    "    exit 64",
+    "    ;;",
+    "esac",
+    "",
+  ].join("\n"));
   writeFileSync(codex, [
     "#!/usr/bin/env bash",
     "if [ \"$1\" = \"exec\" ] && [ \"$2\" = \"--help\" ]; then",
@@ -95,5 +124,6 @@ test("release-smoke --fast --with-live-cli probes Claude and Codex binaries", ()
   assert.match(output, /release smoke: live Claude\/Codex CLI probes/);
   assert.match(output, /claude: 2\.1\.158 \(Claude Code\)/);
   assert.match(output, /codex: codex-cli 0\.135\.0/);
+  assert.match(output, /claude plugin: marketplace\/install surface/);
   assert.match(output, /codex exec: positional prompt interface/);
 });

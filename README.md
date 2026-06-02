@@ -720,7 +720,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 | Project install renderers (Claude + 5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
 | Marketplace registration | ✅ 18 plugins listed | sync between local + origin |
 | Claude/Codex skills | ✅ ship today | Claude core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug`; Codex adds `harness-debug-codex` |
-| Claude/Codex CLI runtime | ✅ live smoke probe available | `./scripts/release-smoke.sh --fast --with-live-cli` probes installed `claude`/`codex` versions and verifies Codex `exec [PROMPT]` support; release fixture smoke also validates the Claude terminal `install-platform.sh --platform=claude` operational/builder/`--lite` paths, Codex operational/lite/builder/floor/thrift/debug fresh installs, Claude/Codex install→uninstall and `--force-root-clean` roundtrips, installed Codex `agent-all-codex` and `visual-qa-codex` sequential helpers, and Codex debug-only fixtures |
+| Claude/Codex CLI runtime | ✅ live smoke probe available | `./scripts/release-smoke.sh --fast --with-live-cli` probes installed `claude`/`codex` versions, Claude plugin marketplace/install command surface, and Codex `exec [PROMPT]` support; release fixture smoke also validates the Claude terminal `install-platform.sh --platform=claude` operational/builder/`--lite` paths, Codex operational/lite/builder/floor/thrift/debug fresh installs, Claude/Codex install→uninstall and `--force-root-clean` roundtrips, installed Codex `agent-all-codex` and `visual-qa-codex` sequential helpers, and Codex debug-only fixtures |
 | Other CLI runtimes | ⚠️ manual verification remains | Cursor/Copilot/Gemini runtime checks stay on the checklist in `docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md` |
 | `/thrift` v2 programmatic compact | ⏳ deferred | Waits on Claude Code's programmatic compact API |
 | Anthropic/OpenAI/Vertex SDK hookup | ⏳ deferred | Currently mock toolCallers; production hookup needs peer deps |
@@ -761,7 +761,7 @@ MIT License. PRs welcome — open an issue first for design discussion on anythi
 Before submitting:
 ```bash
 ./scripts/release-smoke.sh --fast        # Claude/Codex release smoke gate
-./scripts/release-smoke.sh --fast --with-live-cli  # also probe installed Claude/Codex CLIs
+./scripts/release-smoke.sh --fast --with-live-cli  # also probe installed Claude/Codex CLIs and command surfaces
 node scripts/release-audit.mjs           # Claude/Codex release readiness matrix
 node scripts/release-fixture-smoke.mjs   # fresh Claude/Codex release fixtures
 node --test                              # 1766/1766 must pass
