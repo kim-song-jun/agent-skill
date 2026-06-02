@@ -399,6 +399,9 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /Codex floor-conditional language guidance/i);
   assert.match(plan, /POSCO MDS-style Django\/Vue monorepo routing/i);
   assert.match(plan, /release-fixture smoke proves/i);
+  assert.match(plan, /complete persona foundation\/orchestration matrix/i);
+  assert.match(plan, /every operational Claude agent and Codex skill/i);
+  assert.match(plan, /Claude\/Codex complete persona foundation\/orchestration matrix checks/i);
   assert.match(plan, /release-fixture evidence[\s\S]{0,160}auto-update only approved `superpowers`\/`context-mode` foundations/i);
   assert.match(plan, /Claude\/Codex approved foundation auto-update fixtures/i);
   assert.match(plan, /node --test[\s\S]{0,120}1766\/1766/);

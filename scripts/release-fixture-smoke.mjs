@@ -314,6 +314,25 @@ const CODEX_FORCE_ROOT_REMOVED = [
   "AGENTS.md",
 ];
 
+const OPERATIONAL_ROLE_SUPERPOWERS = {
+  planner: ["brainstorming", "writing-plans", "dispatching-parallel-agents"],
+  dev: ["test-driven-development", "verification-before-completion"],
+  "frontend-dev": ["brainstorming", "test-driven-development", "verification-before-completion"],
+  "backend-dev": ["test-driven-development", "verification-before-completion"],
+  "integration-dev": ["test-driven-development", "verification-before-completion"],
+  reviewer: ["requesting-code-review", "verification-before-completion"],
+  orchestrator: [
+    "dispatching-parallel-agents",
+    "subagent-driven-development",
+    "verification-before-completion",
+  ],
+  "verification-reviewer": ["requesting-code-review", "verification-before-completion"],
+  "qa-reviewer": ["requesting-code-review", "verification-before-completion"],
+  "design-reviewer": ["requesting-code-review", "verification-before-completion"],
+  "security-reviewer": ["requesting-code-review", "verification-before-completion"],
+  "data-reviewer": ["requesting-code-review", "verification-before-completion"],
+};
+
 export function runReleaseFixtureSmoke({ root = ROOT } = {}) {
   const checks = {
     claudeMarketplace: checkClaudeMarketplace(root),
@@ -537,6 +556,7 @@ function checkClaudePlatformInstall(root) {
     const frontendDev = readIfExists(resolve(target, ".claude/agents/frontend-dev.md"));
     const backendDev = readIfExists(resolve(target, ".claude/agents/backend-dev.md"));
     const qaReviewer = readIfExists(resolve(target, ".claude/agents/qa-reviewer.md"));
+    const roleBodies = readClaudeOperationalRoleBodies(target);
     const verificationAuditReviewers = {
       "reviewer": readIfExists(resolve(target, ".claude/agents/reviewer.md")),
       "verification-reviewer": readIfExists(resolve(target, ".claude/agents/verification-reviewer.md")),
@@ -553,6 +573,7 @@ function checkClaudePlatformInstall(root) {
       ["CLAUDE.md includes role gate matrix", /Role Gate Matrix/.test(claude)],
       ...implementationRoutingChecks("CLAUDE.md", claude),
       ...implementationRoutingChecks(".claude platform orchestrator", orchestrator),
+      ...personaFoundationMatrixChecks("Claude", "agent", roleBodies, /CLAUDE\.md[\s\S]{0,160}docs\/tasks/),
       ...poscoMdsDjangoVueRoutingChecks("Claude", classifyClaudeChangedFiles, buildClaudeGatePlan),
       [".claude platform frontend-dev embeds frontend discipline", /frontend layer[\s\S]{0,120}UI components[\s\S]{0,80}client-side logic[\s\S]{0,80}styles/.test(frontendDev)],
       [".claude platform backend-dev embeds backend discipline", /backend layer[\s\S]{0,120}APIs[\s\S]{0,80}business logic[\s\S]{0,80}migrations/.test(backendDev)],
@@ -575,7 +596,7 @@ function checkClaudePlatformInstall(root) {
       ok,
       summary: `Claude platform fixture: ${ok ? "ok" : "failed"} (${CLAUDE_RENDER_PRESENT.length - missing.length}/${CLAUDE_RENDER_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh terminal install-platform Claude fixture produced operational scaffold, executable generated hooks and task checker, QA and base/specialized reviewer audit tokens, post-install Claude platform doctor coverage, role gate matrix, POSCO MDS Django/Vue routing proof, QA persona propagation, and no HOME patching"
+        ? "fresh terminal install-platform Claude fixture produced operational scaffold, executable generated hooks and task checker, QA and base/specialized reviewer audit tokens, post-install Claude platform doctor coverage, role gate matrix, complete persona foundation/orchestration matrix, POSCO MDS Django/Vue routing proof, QA persona propagation, and no HOME patching"
         : compactFailure(res, [...missing, ...failed]),
     };
   });
@@ -834,6 +855,7 @@ function checkCodexOperational(root) {
     const frontendDev = readIfExists(resolve(target, ".codex/skills/frontend-dev/SKILL.md"));
     const backendDev = readIfExists(resolve(target, ".codex/skills/backend-dev/SKILL.md"));
     const qaReviewer = readIfExists(resolve(target, ".codex/skills/qa-reviewer/SKILL.md"));
+    const roleBodies = readCodexOperationalRoleBodies(target);
     const verificationAuditReviewers = {
       "reviewer": readIfExists(resolve(target, ".codex/skills/reviewer/SKILL.md")),
       "verification-reviewer": readIfExists(resolve(target, ".codex/skills/verification-reviewer/SKILL.md")),
@@ -854,6 +876,7 @@ function checkCodexOperational(root) {
       ["policy hook includes context-mode/file-backed output guidance", /context-mode[\s\S]{0,180}redirect output to a file/.test(policyHook)],
       ...implementationRoutingChecks("AGENTS.md", agents),
       ...implementationRoutingChecks(".codex orchestrator skill", orchestrator),
+      ...personaFoundationMatrixChecks("Codex", "skill", roleBodies, /AGENTS\.md[\s\S]{0,160}docs\/tasks/),
       ...poscoMdsDjangoVueRoutingChecks("Codex", classifyCodexChangedFiles, buildCodexGatePlan),
       [".codex frontend-dev skill embeds frontend responsibilities", /Implement UI components, routes, styles, client state/.test(frontendDev)],
       [".codex frontend-dev skill references role-matched superpowers", /superpowers:brainstorming[\s\S]{0,120}superpowers:test-driven-development[\s\S]{0,120}superpowers:verification-before-completion/.test(frontendDev)],
@@ -877,7 +900,7 @@ function checkCodexOperational(root) {
       ok,
       summary: `Codex operational fixture: ${ok ? "ok" : "failed"} (${CODEX_OPERATIONAL_PRESENT.length - missing.length}/${CODEX_OPERATIONAL_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh git fixture received operational builder, role gate matrix, QA personas, POSCO MDS Django/Vue routing proof, base/specialized reviewer audit tokens, floor, thrift, debug, executable hooks/task checker, configs, post-install operational doctor coverage, and sequential agent-all-codex prompt helper runs from the installed fixture with stack-specific frontend/backend role dispatch; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
+        ? "fresh git fixture received operational builder, role gate matrix, QA personas, complete persona foundation/orchestration matrix, POSCO MDS Django/Vue routing proof, base/specialized reviewer audit tokens, floor, thrift, debug, executable hooks/task checker, configs, post-install operational doctor coverage, and sequential agent-all-codex prompt helper runs from the installed fixture with stack-specific frontend/backend role dispatch; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
         : compactFailure(res, [...missing, ...failedStdout, ...executableScriptErrors(target, CODEX_EXECUTABLE_GENERATED), agentAllRuntime.ok ? null : agentAllRuntime.details, visualQaRuntime.ok ? null : visualQaRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
@@ -1598,6 +1621,24 @@ function existingFiles(root, files) {
   return files.filter((file) => existsSync(resolve(root, file)));
 }
 
+function readClaudeOperationalRoleBodies(target) {
+  return Object.fromEntries(
+    Object.keys(OPERATIONAL_ROLE_SUPERPOWERS).map((role) => [
+      role,
+      readIfExists(resolve(target, ".claude/agents", `${role}.md`)),
+    ]),
+  );
+}
+
+function readCodexOperationalRoleBodies(target) {
+  return Object.fromEntries(
+    Object.keys(OPERATIONAL_ROLE_SUPERPOWERS).map((role) => [
+      role,
+      readIfExists(resolve(target, ".codex/skills", role, "SKILL.md")),
+    ]),
+  );
+}
+
 function executableScriptErrors(root, files) {
   const errors = [];
   for (const file of files) {
@@ -1682,6 +1723,23 @@ function projectDispatches(dispatches) {
 
 function sameJson(actual, expected) {
   return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+function personaFoundationMatrixChecks(platform, noun, roleBodies, rootContextPattern) {
+  const checks = [];
+  for (const [role, skills] of Object.entries(OPERATIONAL_ROLE_SUPERPOWERS)) {
+    const body = roleBodies[role] || "";
+    const label = `${platform} ${role} ${noun}`;
+    checks.push([`${label} reads root and active task context`, rootContextPattern.test(body)]);
+    checks.push([`${label} avoids generic superpowers placeholder`, !/superpowers:\*/.test(body)]);
+    for (const skill of skills) {
+      checks.push([`${label} names superpowers:${skill}`, body.includes(`superpowers:${skill}`)]);
+    }
+    checks.push([`${label} routes bulk output through context-mode or file-backed logs`, /context-mode/i.test(body) && /(file-backed logs|ctx_batch_execute|ctx_execute)/i.test(body)]);
+    checks.push([`${label} preserves shared-tree safety`, /shared-tree|unrelated edits|HOT-file/i.test(body)]);
+    checks.push([`${label} states degraded foundation fallback`, /if unavailable, state the fallback|if foundations are degraded, state the fallback/i.test(body)]);
+  }
+  return checks;
 }
 
 function poscoMdsDjangoVueRoutingChecks(label, classifyChangedFiles, buildGatePlan) {
