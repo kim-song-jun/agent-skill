@@ -7,7 +7,7 @@ function read(path) {
   return readFileSync(resolve(path), "utf-8");
 }
 
-test("usage docs present --lite as canonical and retire Codex agent-hook hard-enforcement claims", () => {
+test("usage docs present --lite as canonical and document uninstall cleanup symmetry", () => {
   for (const path of ["docs/USAGE.md", "docs/USAGE.ko.md"]) {
     const body = read(path);
     assert.match(body, /agent-init --lite/);
@@ -18,6 +18,10 @@ test("usage docs present --lite as canonical and retire Codex agent-hook hard-en
     assert.match(body, /\.claude\/agents\/\*\.md[\s\S]{0,300}(orchestrator|오케스트레이터)/i);
     assert.match(body, /\.claude\/agents\/\*\.md[\s\S]{0,420}(security-reviewer|보안)/i);
     assert.match(body, /\.claude\/agents\/\*\.md[\s\S]{0,420}(data-reviewer|데이터)/i);
+    assert.match(body, /^\.\/scripts\/install-platform\.sh --platform=claude --target=\/path\/to\/my-project --uninstall$/m);
+    assert.match(body, /^\.\/scripts\/install-platform\.sh --platform=claude --target=\/path\/to\/my-project --uninstall --force-root-clean$/m);
+    assert.match(body, /^\.\/scripts\/install-platform\.sh --platform=codex --target=\/path\/to\/my-project --uninstall$/m);
+    assert.match(body, /^\.\/scripts\/install-platform\.sh --platform=codex --target=\/path\/to\/my-project --uninstall --force-root-clean$/m);
   }
 
   const usageEn = read("docs/USAGE.md");
@@ -152,8 +156,10 @@ test("readme files describe VS Code Copilot as instructions-only", () => {
 
     const uninstallBlock = body.match(/Uninstall per platform[\s\S]{0,1600}|플랫폼별 제거[\s\S]{0,1600}/);
     assert.ok(uninstallBlock, `${path} must document per-platform uninstall`);
-    assert.match(uninstallBlock[0], /install-platform\.sh --platform=codex --target=\/path\/to\/project --uninstall/);
-    assert.match(uninstallBlock[0], /--force-root-clean/);
+    assert.match(uninstallBlock[0], /^\.\/scripts\/install-platform\.sh --platform=claude --target=\/path\/to\/project --uninstall$/m);
+    assert.match(uninstallBlock[0], /^\.\/scripts\/install-platform\.sh --platform=claude --target=\/path\/to\/project --uninstall --force-root-clean$/m);
+    assert.match(uninstallBlock[0], /^\.\/scripts\/install-platform\.sh --platform=codex --target=\/path\/to\/project --uninstall$/m);
+    assert.match(uninstallBlock[0], /^\.\/scripts\/install-platform\.sh --platform=codex --target=\/path\/to\/project --uninstall --force-root-clean$/m);
     assert.match(uninstallBlock[0], /harness-builder(?:-codex)?\/bin\/clean\.mjs/);
     assert.doesNotMatch(uninstallBlock[0], /\.visual-qa\.json \+ \.agent-all\.json \+ \.thrift\.json \(all platforms\)|\(모든 플랫폼\)/);
     assert.doesNotMatch(uninstallBlock[0], /future `install-platform\.sh --uninstall`|향후 `install-platform\.sh --uninstall`/i);

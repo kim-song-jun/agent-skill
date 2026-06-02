@@ -196,7 +196,9 @@ Claude/Codex uninstall and cleanup:
 
 ```bash
 ./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --uninstall
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --uninstall --force-root-clean
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --uninstall
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --uninstall --force-root-clean
 node /path/to/harness-builder/bin/clean.mjs --target=/path/to/my-project --platform=claude --dry-run
 node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/my-project --platform=codex --dry-run
 ```
@@ -204,9 +206,10 @@ node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/my-project -
 The conservative cleanup removes generated Claude/Codex role files, hooks,
 floor/thrift config files, the Codex debug skill directory, task templates,
 and helper scripts. It preserves debug evidence in `docs/debug/` and
-`.debug-artifacts/`. Root guidance is preserved unless it has an agent-skill
-sentinel; pass `--force-root-clean` through `install-platform.sh --uninstall`
-when intentionally removing generated-looking root guidance.
+`.debug-artifacts/`. Root `CLAUDE.md`/`AGENTS.md` guidance is preserved
+unless it has an agent-skill sentinel; pass `--force-root-clean` through
+`install-platform.sh --uninstall` when intentionally removing generated-looking
+root guidance.
 
 For direct library usage, the core modules are portable Node.js:
 

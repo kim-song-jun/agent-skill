@@ -196,16 +196,19 @@ Claude/Codex uninstall과 cleanup:
 
 ```bash
 ./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --uninstall
+./scripts/install-platform.sh --platform=claude --target=/path/to/my-project --uninstall --force-root-clean
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --uninstall
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --uninstall --force-root-clean
 node /path/to/harness-builder/bin/clean.mjs --target=/path/to/my-project --platform=claude --dry-run
 node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/my-project --platform=codex --dry-run
 ```
 
 보수적 cleanup은 생성된 Claude/Codex 역할 파일, hook, floor/thrift config,
 Codex debug skill 디렉터리, task template, helper script를 제거합니다.
-Debug 증거인 `docs/debug/`와 `.debug-artifacts/`는 보존합니다. 루트 가이드는
-agent-skill sentinel이 있을 때만 정리하며, 생성된 루트 가이드까지 의도적으로
-제거하려면 `install-platform.sh --uninstall`에 `--force-root-clean`을 같이 넘기세요.
+Debug 증거인 `docs/debug/`와 `.debug-artifacts/`는 보존합니다. 루트
+`CLAUDE.md`/`AGENTS.md` 가이드는 agent-skill sentinel이 있을 때만 정리하며,
+생성된 루트 가이드까지 의도적으로 제거하려면 `install-platform.sh --uninstall`에
+`--force-root-clean`을 같이 넘기세요.
 
 직접 라이브러리로 사용할 때, 핵심 모듈은 이식 가능한 Node.js입니다:
 

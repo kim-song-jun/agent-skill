@@ -550,6 +550,7 @@ These platforms don't have plugin marketplaces for AI workflows yet. Use `./scri
 ```bash
 # Claude/Codex project-local harness cleanup
 ./scripts/install-platform.sh --platform=claude --target=/path/to/project --uninstall
+./scripts/install-platform.sh --platform=claude --target=/path/to/project --uninstall --force-root-clean
 ./scripts/install-platform.sh --platform=codex --target=/path/to/project --uninstall
 ./scripts/install-platform.sh --platform=codex --target=/path/to/project --uninstall --force-root-clean
 
@@ -561,7 +562,7 @@ node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/project --pl
 node plugins/harness-thrift-cursor/bin/install.mjs /path/to/project --uninstall
 ```
 
-Claude cleanup strips generated sentinel sections and generated hook/agent/settings registrations while preserving root guidance without sentinels unless `--force-root-clean` is explicit. Codex cleanup removes generated `.codex/skills`, `.codex/hooks`, floor/thrift config files, the debug skill directory, task templates, and helper scripts. It preserves debug evidence in `docs/debug/` and `.debug-artifacts/`. By default it preserves root `AGENTS.md` unless an agent-skill sentinel is present; `--force-root-clean` also removes generated-looking root `AGENTS.md`. Cursor, Copilot, Gemini, and VS Code Copilot still use plugin-specific cleanup or manual review for now.
+Claude cleanup strips generated sentinel sections and generated hook/agent/settings registrations while preserving root `CLAUDE.md`/`AGENTS.md` guidance without sentinels unless `--force-root-clean` is explicit. Codex cleanup removes generated `.codex/skills`, `.codex/hooks`, floor/thrift config files, the debug skill directory, task templates, and helper scripts. It preserves debug evidence in `docs/debug/` and `.debug-artifacts/`. By default it preserves root `AGENTS.md` unless an agent-skill sentinel is present; `--force-root-clean` also removes generated-looking root guidance. Cursor, Copilot, Gemini, and VS Code Copilot still use plugin-specific cleanup or manual review for now.
 
 ---
 
