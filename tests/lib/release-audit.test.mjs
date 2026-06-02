@@ -18,10 +18,10 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.ok, true);
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
-  assert.equal(result.platforms.claude.checks.length, 54);
-  assert.equal(result.platforms.codex.checks.length, 60);
-  assert.match(result.platforms.claude.summary, /Claude: ok \(54\/54 checks\)/);
-  assert.match(result.platforms.codex.summary, /Codex: ok \(60\/60 checks\)/);
+  assert.equal(result.platforms.claude.checks.length, 55);
+  assert.equal(result.platforms.codex.checks.length, 61);
+  assert.match(result.platforms.claude.summary, /Claude: ok \(55\/55 checks\)/);
+  assert.match(result.platforms.codex.summary, /Codex: ok \(61\/61 checks\)/);
   for (const platform of Object.values(result.platforms)) {
     const names = platform.checks.map((check) => check.name);
     const duplicateNames = names.filter((name, index) => names.indexOf(name) !== index);
@@ -33,6 +33,11 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.ok(result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh exists"));
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "scripts/release-smoke.sh matches release contract"),
+  );
+  assert.ok(
+    result.platforms.claude.checks.some(
+      (check) => check.name === "tests/manual-checklist.md matches release contract (user objective release matrix)",
+    ),
   );
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "plugins/harness-builder/skills/agent-init/templates/agents/qa-reviewer.md.hbs matches release contract"),
@@ -61,6 +66,11 @@ test("release audit reports Claude and Codex as independently ready", () => {
   );
   assert.ok(
     result.platforms.codex.checks.some((check) => check.name === "scripts/release-smoke.sh matches release contract"),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some(
+      (check) => check.name === "tests/manual-checklist.md matches release contract (user objective release matrix)",
+    ),
   );
   assert.ok(
     result.platforms.codex.checks.some((check) => check.name === "plugins/harness-builder-codex/skills/codex-init/templates/skills/reviewer/SKILL.md.hbs matches release contract"),

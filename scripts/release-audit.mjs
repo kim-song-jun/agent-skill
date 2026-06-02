@@ -37,6 +37,25 @@ const RELEASE_SMOKE_CONTRACT = {
   ],
 };
 
+const USER_OBJECTIVE_RELEASE_MATRIX = {
+  file: "tests/manual-checklist.md",
+  label: "user objective release matrix",
+  patterns: [
+    /User Objective Release Matrix/,
+    /Claude \+ Codex ship together/,
+    /Heavy operational default, lite opt-out/,
+    /Approved foundation auto-update[\s\S]{0,180}superpowers`\/`context-mode/,
+    /Superpowers\/context-mode activation[\s\S]{0,260}superpowers:\*/,
+    /Persona segmentation[\s\S]{0,260}orchestrator[\s\S]{0,160}frontend-dev[\s\S]{0,160}backend-dev/,
+    /Orchestration gates[\s\S]{0,260}ORCHESTRATION_AUDIT[\s\S]{0,160}QA_AUDIT[\s\S]{0,160}VERIFICATION_AUDIT/,
+    /POSCO MDS-style Django\/Vue routing[\s\S]{0,260}Django\/Vue monorepo routing/,
+    /Codex current-CLI parity[\s\S]{0,260}prompt-level\/sequential floor/,
+    /Doctor, recovery, and cleanup[\s\S]{0,260}install→uninstall roundtrips/,
+    /No HOME\/global config mutation[\s\S]{0,260}do not patch HOME\/global CLI config files/,
+    /Deployable release gate[\s\S]{0,360}release-smoke\.sh --fast --with-live-cli[\s\S]{0,220}node scripts\/sync-lib\.mjs --check/,
+  ],
+};
+
 const PLATFORM_CONTRACTS = {
   claude: {
     label: "Claude",
@@ -74,6 +93,7 @@ const PLATFORM_CONTRACTS = {
     ],
     textChecks: [
       RELEASE_SMOKE_CONTRACT,
+      USER_OBJECTIVE_RELEASE_MATRIX,
       {
         file: "plugins/harness-builder/skills/agent-init/SKILL.md",
         patterns: [
@@ -369,6 +389,7 @@ const PLATFORM_CONTRACTS = {
     ],
     textChecks: [
       RELEASE_SMOKE_CONTRACT,
+      USER_OBJECTIVE_RELEASE_MATRIX,
       {
         file: "plugins/harness-builder-codex/skills/codex-init/SKILL.md",
         patterns: [

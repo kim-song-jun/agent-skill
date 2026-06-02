@@ -31,6 +31,26 @@ The gate covers:
 - Doctor coverage for project-local Claude/Codex operational, lite, and Codex debug-only scaffolds, missing artifact failures, and foundation warnings.
 - `/agent-init` dry-run and Phase 5 post-install doctor ordering before the bootstrap commit.
 
+## User Objective Release Matrix
+
+This matrix is the release-readiness proof surface for the user-requested
+Claude + Codex harness. A release candidate is not deployable until every row
+is covered by the automated gate above and the short live host probes below.
+
+| Requirement | Authoritative evidence |
+| --- | --- |
+| Claude + Codex ship together | `node scripts/release-audit.mjs` must pass independent Claude and Codex readiness checks; `scripts/release-fixture-smoke.mjs` must prove both marketplace/render paths and install→uninstall roundtrips. |
+| Heavy operational default, lite opt-out | `agent-init-dry-run-contract.test.mjs`, `release-install-scripts.test.mjs`, and release fixtures must prove default operational/heavy installs plus `/agent-init --lite`, `/codex-init --lite`, and `install-platform.sh --platform=codex --lite`. |
+| Approved foundation auto-update | Release fixtures and docs contracts must prove default operational installs auto-update only approved `superpowers`/`context-mode` foundations, while lite installs require explicit `--update-foundations`; `scripts/update.sh --foundations-only` remains the manual recovery path. |
+| Superpowers/context-mode activation | `release-audit.mjs` must prove root Claude/Codex guidance names the required `superpowers:*` workflows and context-mode/file-backed handling for broad searches, large logs, and bulk context. |
+| Persona segmentation | Release fixtures and release-audit contracts must prove operational and builder-heavy Claude agents and Codex skills include orchestrator, frontend-dev, backend-dev, integration-dev, design-reviewer, security-reviewer, data-reviewer, QA, and verification personas with required audit tokens. |
+| Orchestration gates | Gate-plan tests, policy validators, installed sequential-dispatch helpers, and release-audit contracts must prove coordinator-first `orchestrator` review, `ORCHESTRATION_AUDIT`, `QA_AUDIT`, `VERIFICATION_AUDIT`, pass criteria, and retry limits. |
+| POSCO MDS-style Django/Vue routing | Classifier/gate-plan tests and release fixtures must keep Django/Vue monorepo routing explicit: Vue route/client-state changes route to frontend-dev, Django API/service/persistence changes route to backend-dev, and cross-boundary work routes through integration/security/data/QA/design/verification gates. |
+| Codex current-CLI parity | `release-smoke.sh --fast --with-live-cli`, Codex exec probes, command-surface tests, and Codex runtime specs must prove the supported prompt-level/sequential floor instead of unsupported legacy agent hooks. |
+| Doctor, recovery, and cleanup | Doctor tests, release fixtures, and install→uninstall roundtrips must prove post-install doctor, actionable recovery commands, conservative cleanup, and `--force-root-clean` behavior for Claude/Codex. |
+| No HOME/global config mutation | Release fixtures and docs contracts must prove project renderers do not patch HOME/global CLI config files by default; Codex/Gemini/Copilot global snippets remain manual merge surfaces. |
+| Deployable release gate | Before shipping, run `node scripts/release-audit.mjs`, `node scripts/release-fixture-smoke.mjs`, `./scripts/release-smoke.sh --fast --with-live-cli`, `node --test`, and `node scripts/sync-lib.mjs --check`. |
+
 ## Claude Code live session
 
 Use a fresh git fixture and observe only the host runtime behavior that unit

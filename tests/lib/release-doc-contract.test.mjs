@@ -401,7 +401,7 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /public CLI script executable\/shebang packaging/i);
   assert.match(plan, /generated hook\/task-checker executable packaging/i);
   assert.match(plan, /Claude\/Codex QA and base\/specialized reviewer audit-token contracts/i);
-  assert.match(plan, /Claude 54\/54 and Codex 60\/60 readiness checks passing/i);
+  assert.match(plan, /Claude 55\/55 and Codex 61\/61 readiness checks passing/i);
   assert.match(plan, /Claude companion root guidance/i);
   assert.match(plan, /Codex thrift advisory summariser contract/i);
   assert.match(plan, /doctor recovery guidance/i);
@@ -488,6 +488,18 @@ test("manual release checklist is mapped to automated gates and Claude/Codex liv
   const body = read("tests/manual-checklist.md");
 
   assert.match(body, /Automated release gate/i);
+  assert.match(body, /User Objective Release Matrix/i);
+  assert.match(body, /Claude \+ Codex ship together/i);
+  assert.match(body, /Heavy operational default, lite opt-out/i);
+  assert.match(body, /Approved foundation auto-update[\s\S]{0,220}superpowers`\/`context-mode/i);
+  assert.match(body, /Superpowers\/context-mode activation[\s\S]{0,260}superpowers:\*/i);
+  assert.match(body, /Persona segmentation[\s\S]{0,260}orchestrator[\s\S]{0,180}frontend-dev[\s\S]{0,180}backend-dev/i);
+  assert.match(body, /Orchestration gates[\s\S]{0,280}ORCHESTRATION_AUDIT[\s\S]{0,180}QA_AUDIT[\s\S]{0,180}VERIFICATION_AUDIT/i);
+  assert.match(body, /POSCO MDS-style Django\/Vue routing[\s\S]{0,280}Django\/Vue monorepo routing/i);
+  assert.match(body, /Codex current-CLI parity[\s\S]{0,280}prompt-level\/sequential floor/i);
+  assert.match(body, /Doctor, recovery, and cleanup[\s\S]{0,280}install→uninstall roundtrips/i);
+  assert.match(body, /No HOME\/global config mutation[\s\S]{0,280}do not patch HOME\/global CLI config files/i);
+  assert.match(body, /Deployable release gate[\s\S]{0,380}release-smoke\.sh --fast --with-live-cli[\s\S]{0,260}node scripts\/sync-lib\.mjs --check/i);
   assert.match(body, /release-audit\.mjs/);
   assert.match(body, /release-fixture-smoke\.mjs/);
   assert.match(body, /Release smoke gate coverage[\s\S]{0,220}live Claude plugin marketplace\/install and Codex exec probes[\s\S]{0,220}focused release contracts/i);
