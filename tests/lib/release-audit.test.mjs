@@ -217,6 +217,56 @@ test("release audit fails incomplete shared Claude/Codex project installer contr
   assert.match(codexInstaller.details, /--no-instrument/);
 });
 
+test("release audit fails doctor cores without recovery guidance", () => {
+  const root = mkdtempSync(resolve(tmpdir(), "release-audit-doctor-core-"));
+  writeRel(
+    root,
+    ".claude-plugin/marketplace.json",
+    JSON.stringify({
+      plugins: [
+        { name: "harness-builder" },
+        { name: "harness-floor" },
+        { name: "harness-thrift" },
+        { name: "harness-explore" },
+        { name: "harness-debug" },
+        { name: "harness-builder-codex" },
+        { name: "harness-floor-codex" },
+        { name: "harness-thrift-codex" },
+        { name: "harness-debug-codex" },
+      ],
+    }),
+  );
+  writeRel(
+    root,
+    "plugins/harness-builder/skills/agent-init/lib/doctor-core.mjs",
+    "export function runDoctor() { return { ok: true }; }\n",
+  );
+  writeRel(
+    root,
+    "plugins/harness-builder-codex/skills/codex-init/lib/doctor-core.mjs",
+    "export function runDoctor() { return { ok: true }; }\n",
+  );
+
+  const result = runReleaseAudit({ root, platforms: ["claude", "codex"] });
+
+  assert.equal(result.ok, false);
+  const claudeDoctor = result.platforms.claude.checks.find(
+    (check) => !check.ok && check.name === "plugins/harness-builder/skills/agent-init/lib/doctor-core.mjs matches release contract",
+  );
+  assert.ok(claudeDoctor, JSON.stringify(result.platforms.claude.checks, null, 2));
+  assert.match(claudeDoctor.details, /missingArtifactFix/);
+  assert.match(claudeDoctor.details, /repair JSON syntax/);
+  assert.match(claudeDoctor.details, /printInstructions/);
+
+  const codexDoctor = result.platforms.codex.checks.find(
+    (check) => !check.ok && check.name === "plugins/harness-builder-codex/skills/codex-init/lib/doctor-core.mjs matches release contract",
+  );
+  assert.ok(codexDoctor, JSON.stringify(result.platforms.codex.checks, null, 2));
+  assert.match(codexDoctor.details, /missingArtifactFix/);
+  assert.match(codexDoctor.details, /repair JSON syntax/);
+  assert.match(codexDoctor.details, /printInstructions/);
+});
+
 test("release audit fails incomplete Claude slash-command skill surfaces", () => {
   const root = mkdtempSync(resolve(tmpdir(), "release-audit-claude-command-"));
   writeRel(
