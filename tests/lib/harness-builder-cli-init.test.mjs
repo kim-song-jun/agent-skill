@@ -946,20 +946,43 @@ test("harness-builder-codex: refuses late conflicts before writing any scaffold 
   }
 });
 
-test("harness-builder-codex: generated hook ignores destructive non-Bash PreToolUse payloads", () => {
-  const target = mkTarget("codex-hook-non-bash");
+test("harness-builder-codex: generated hook ignores non-Bash and guides large safe Bash output", () => {
+  const target = mkTarget("codex-hook-context-guidance");
   try {
     const res = runInit(PLUGINS.codex.bin, [target]);
     assert.equal(res.status, 0, res.stderr);
     const hookPath = resolve(target, ".codex/hooks/agent-policy-hook.mjs");
-    const hookRes = spawnSync("node", [hookPath], {
+    const nonBash = spawnSync("node", [hookPath], {
       encoding: "utf-8",
       input: JSON.stringify({
         tool_name: "apply_patch",
         tool_input: { command: "git reset --hard" },
       }),
     });
-    assert.equal(hookRes.status, 0, hookRes.stderr);
+    assert.equal(nonBash.status, 0, nonBash.stderr);
+    assert.equal(nonBash.stdout, "");
+
+    const largeSafeBash = spawnSync("node", [hookPath], {
+      encoding: "utf-8",
+      input: JSON.stringify({
+        tool_name: "Bash",
+        tool_input: { command: "git status --short" },
+      }),
+    });
+    assert.equal(largeSafeBash.status, 0, largeSafeBash.stderr);
+    assert.match(largeSafeBash.stdout, /context_guidance/);
+    assert.match(largeSafeBash.stdout, /context-mode/);
+    assert.match(largeSafeBash.stdout, /redirect output to a file/);
+
+    const smallSafeBash = spawnSync("node", [hookPath], {
+      encoding: "utf-8",
+      input: JSON.stringify({
+        tool_name: "Bash",
+        tool_input: { command: "pwd" },
+      }),
+    });
+    assert.equal(smallSafeBash.status, 0, smallSafeBash.stderr);
+    assert.equal(smallSafeBash.stdout, "");
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

@@ -49,6 +49,22 @@ const COMMIT_LONG_OPTIONS_WITH_VALUES = new Set([
 
 const COMMIT_SHORT_OPTIONS_WITH_VALUES = new Set(["C", "F", "c", "m", "t"]);
 
+const LIKELY_LARGE = [
+  /\bgit\s+(log|diff|status|show|grep|ls-files)\b/,
+  /\bnpm\s+(test|run|install)\b/,
+  /\bcat\b/,
+  /\bls\s+-/,
+  /\bgrep\b/,
+  /\brg\b/,
+  /\bfind\b/,
+  /\bjq\b/,
+  /\bdocker\s+(ps|images|logs)\b/,
+  /\bcurl\b/,
+  /\bgh\s+/,
+];
+
+const CONTEXT_GUIDANCE = "<context_guidance>This command may exceed 20 lines. Prefer context-mode when available so raw output stays out of the main conversation; otherwise redirect output to a file and cite the path.</context_guidance>";
+
 function shellTokens(command) {
   const tokens = [];
   let token = "";
@@ -342,6 +358,11 @@ function analyzeShellCommand(command, options = {}) {
   return { blocked: false, reason: null };
 }
 
+function shouldEmitContextGuidance(command) {
+  const text = String(command || "");
+  return LIKELY_LARGE.some((pattern) => pattern.test(text));
+}
+
 function stringArray(value) {
   return Array.isArray(value) ? value.filter((entry) => typeof entry === "string" && entry.length > 0) : [];
 }
@@ -408,6 +429,15 @@ const result = analyzeShellCommand(command, loadPolicyOptions());
 if (result.blocked) {
   console.error(`codex policy blocked command: ${result.reason}`);
   process.exit(2);
+}
+
+if (shouldEmitContextGuidance(command)) {
+  process.stdout.write(JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      additionalContext: CONTEXT_GUIDANCE,
+    },
+  }));
 }
 
 process.exit(0);

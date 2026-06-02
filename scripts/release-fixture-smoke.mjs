@@ -784,6 +784,7 @@ function checkCodexOperational(root) {
     const visualQaRuntime = checkCodexVisualQaSequentialRuntime(target);
     const homeConfig = resolve(home, ".codex/config.toml");
     const agents = readIfExists(resolve(target, "AGENTS.md"));
+    const policyHook = readIfExists(resolve(target, ".codex/hooks/agent-policy-hook.mjs"));
     const orchestrator = readIfExists(resolve(target, ".codex/skills/orchestrator/SKILL.md"));
     const frontendDev = readIfExists(resolve(target, ".codex/skills/frontend-dev/SKILL.md"));
     const backendDev = readIfExists(resolve(target, ".codex/skills/backend-dev/SKILL.md"));
@@ -805,6 +806,7 @@ function checkCodexOperational(root) {
       ["does not emit legacy agent hook snippet", !/\[\[hooks\.agent\]\]/.test(res.stdout)],
       ["AGENTS.md includes orchestration contract", /Orchestration Contract/.test(agents)],
       ["AGENTS.md includes role gate matrix", /Role Gate Matrix/.test(agents)],
+      ["policy hook includes context-mode/file-backed output guidance", /context-mode[\s\S]{0,180}redirect output to a file/.test(policyHook)],
       ...implementationRoutingChecks("AGENTS.md", agents),
       ...implementationRoutingChecks(".codex orchestrator skill", orchestrator),
       [".codex frontend-dev skill embeds frontend responsibilities", /Implement UI components, routes, styles, client state/.test(frontendDev)],
