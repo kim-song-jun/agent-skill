@@ -56,6 +56,20 @@ const USER_OBJECTIVE_RELEASE_MATRIX = {
   ],
 };
 
+const RELEASE_CANDIDATE_LIFECYCLE = {
+  file: "tests/manual-checklist.md",
+  label: "release candidate lifecycle",
+  patterns: [
+    /Release Candidate Lifecycle/,
+    /clean worktree[\s\S]{0,180}git rev-parse HEAD/,
+    /plugin[\s\S]{0,80}manifests[\s\S]{0,180}\.claude-plugin\/marketplace\.json[\s\S]{0,220}README\/README\.ko[\s\S]{0,180}CHANGELOG\.md\/CHANGELOG\.ko\.md/,
+    /no stale deferred\/mock[\s\S]{0,120}release wording/,
+    /release-smoke\.sh --fast --with-live-cli[\s\S]{0,240}claude`\/`codex` versions[\s\S]{0,180}Codex `exec \[PROMPT\]` support/,
+    /date-stamped release-candidate tag[\s\S]{0,160}verified SHA/,
+    /Roll back only to a previous verified tag\/SHA[\s\S]{0,260}install-platform\.sh --uninstall[\s\S]{0,220}doctor after rollback/,
+  ],
+};
+
 const PLATFORM_CONTRACTS = {
   claude: {
     label: "Claude",
@@ -94,6 +108,7 @@ const PLATFORM_CONTRACTS = {
     textChecks: [
       RELEASE_SMOKE_CONTRACT,
       USER_OBJECTIVE_RELEASE_MATRIX,
+      RELEASE_CANDIDATE_LIFECYCLE,
       {
         file: "plugins/harness-builder/skills/agent-init/SKILL.md",
         patterns: [
@@ -390,6 +405,7 @@ const PLATFORM_CONTRACTS = {
     textChecks: [
       RELEASE_SMOKE_CONTRACT,
       USER_OBJECTIVE_RELEASE_MATRIX,
+      RELEASE_CANDIDATE_LIFECYCLE,
       {
         file: "plugins/harness-builder-codex/skills/codex-init/SKILL.md",
         patterns: [

@@ -720,6 +720,15 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 
 버전: `harness-floor` `v0.5.1` (visual-qa 런타임 wiring + agent-init i18n patch), 나머지 Claude Code 코어 플러그인 `v0.2.0`, 플랫폼별 포트 `v0.1.0`.
 
+### 릴리즈 후보 라이프사이클
+
+[tests/manual-checklist.md](tests/manual-checklist.md)를 release map으로 봅니다. Claude/Codex 릴리즈 후보는 하나의 clean commit에 아래 증거가 모두 묶일 때만 배포 가능합니다.
+
+- Clean worktree에서 `git rev-parse HEAD`를 기록하고, plugin manifest, `.claude-plugin/marketplace.json`, README/README.ko Versioning, CHANGELOG.md/CHANGELOG.ko.md가 일치해야 함.
+- `node scripts/release-audit.mjs`, `node scripts/release-fixture-smoke.mjs`, `./scripts/release-smoke.sh --fast --with-live-cli`, `node --test`, `node scripts/sync-lib.mjs --check`가 모두 통과해야 함.
+- live probe 출력이 같은 SHA에 대해 설치된 `claude`/`codex` 버전, Claude plugin marketplace/install 명령 표면, Codex `exec [PROMPT]` 지원을 기록해야 함.
+- 릴리즈 후보 태그는 date-stamped 형식으로 verified SHA를 가리켜야 함. rollback은 이전 verified tag/SHA와 문서화된 update/install 경로 및 post-rollback doctor를 사용하며, 생성 파일을 직접 손으로 고치는 방식은 금지.
+
 ### 언어
 
 Decision-surfacing prompt와 패널이 다국어 지원. `.agent-all.json` `language`를 `"auto"` (기본 — `$LANG` 읽음), `"en"`, 또는 `"ko"`로 설정. 기계 파싱 토큰 (`STATUS: DONE`, `verification_passed`, `VERIFICATION_AUDIT:` 등)은 영문 고정. 언어 추가하려면 `lib/decisions/renderer.mjs`의 `LABELS`에 항목 + 동봉 `addendum.<lang>.md` 추가.
@@ -742,7 +751,7 @@ Decision-surfacing prompt와 패널이 다국어 지원. `.agent-all.json` `lang
 
 - Cursor/Copilot/Gemini live runtime 검증 (런타임 체크리스트 따르기)
 - `/thrift` v2 summariser, Claude Code의 programmatic compact API 사용
-- 실제 Anthropic/OpenAI/Vertex SDK 연결 (mock toolCaller 대체)
+- 릴리즈 범위 밖 포트를 위한 provider-backed thrift summarizer adapter 추가
 - `/explore` 플랫폼별 포트 및 Cursor/Copilot/Gemini용 `/debug` 포트
 - Cursor `is_background: true` awaiter용 subagent transcript-listener bridge
 - thrift audit telemetry opt-in (어느 강제가 실제 발사됐는지, 실제 비용 절감)

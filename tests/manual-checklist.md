@@ -51,6 +51,40 @@ is covered by the automated gate above and the short live host probes below.
 | No HOME/global config mutation | Release fixtures and docs contracts must prove project renderers do not patch HOME/global CLI config files by default; Codex/Gemini/Copilot global snippets remain manual merge surfaces. |
 | Deployable release gate | Before shipping, run `node scripts/release-audit.mjs`, `node scripts/release-fixture-smoke.mjs`, `./scripts/release-smoke.sh --fast --with-live-cli`, `node --test`, and `node scripts/sync-lib.mjs --check`. |
 
+## Release Candidate Lifecycle
+
+Use this sequence for every Claude/Codex release candidate. The release is not
+deployable until the lifecycle evidence points at one verified commit.
+
+1. Start from a clean worktree on the intended release commit. Record
+   `git rev-parse HEAD`; do not tag a dirty tree or uncommitted generated
+   output.
+2. Verify public version and changelog surfaces before tagging: plugin
+   manifests, `.claude-plugin/marketplace.json`, README/README.ko Versioning,
+   and CHANGELOG.md/CHANGELOG.ko.md must agree, with no stale deferred/mock
+   release wording.
+3. Run the full deployable gate: `node scripts/release-audit.mjs`,
+   `node scripts/release-fixture-smoke.mjs`,
+   `./scripts/release-smoke.sh --fast --with-live-cli`, `node --test`,
+   and `node scripts/sync-lib.mjs --check`.
+4. Capture the live host probe output from
+   `./scripts/release-smoke.sh --fast --with-live-cli`; it must record
+   `claude`/`codex` versions, Claude plugin marketplace/install command
+   surfaces, and Codex `exec [PROMPT]` support for the same verified SHA.
+5. Create a date-stamped release-candidate tag that points only at the
+   verified SHA, then push the branch/tag after gate output is captured in
+   release notes.
+6. Roll out by refreshing the Claude marketplace and running the documented
+   update/install paths: `/plugin marketplace update agent-skill`,
+   `scripts/update.sh`, `scripts/update.sh --cli=codex`, or the project-local
+   `install-platform.sh` paths. Re-run the post-install doctor for target
+   Claude/Codex projects.
+7. Roll back only to a previous verified tag/SHA. Restore the marketplace/repo
+   pointer to that SHA, force reinstall with the documented update path, or for
+   project-local scaffolds run `install-platform.sh --uninstall` and reinstall
+   from the previous checkout. Run doctor after rollback; do not hand-edit
+   generated files as a rollback.
+
 ## Claude Code live session
 
 Use a fresh git fixture and observe only the host runtime behavior that unit

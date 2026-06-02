@@ -6,6 +6,8 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+- Added a release-audited User Objective Release Matrix mapping the Claude/Codex harness requirements to authoritative gates: heavy default + lite opt-out, approved foundation auto-update, superpowers/context-mode activation, persona segmentation, orchestration gates, POSCO MDS-style Django/Vue routing, Codex current-CLI parity, doctor/cleanup, HOME config safety, and the deployable release gate.
+- Added a release-audited Release Candidate Lifecycle covering clean-SHA evidence, version/changelog alignment, live CLI probe capture, date-stamped release-candidate tagging, rollout/update paths, and rollback to a previous verified tag/SHA.
 - Added `harness-debug-codex`, a Codex CLI port of `/debug` with the `debug-codex` skill contract, `run /debug` public entrypoint, structured error parsing, hypothesis state persistence, and superpowers fallback.
 - Added deterministic Phase 4 gate planning for Claude/Codex `/agent-all`: `buildGatePlan`, coordinator-first `orchestrator` dispatch, `ORCHESTRATION_AUDIT`, and release-audited Codex mirror parity.
 - Embedded the role gate matrix directly in Claude and Codex orchestrator personas so dispatch planning and final handoff both select the required reviewer gates before relying on root memory alone.
@@ -24,7 +26,7 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Claude QA, base, and specialized reviewer personas now have the same Phase 4 machine-token output contract coverage in release fixtures and release audit as Codex.
 - Claude terminal `install-platform.sh --theme=builder` now installs a true builder-only heavy scaffold, skips floor configs, runs the builder-profile doctor, and is covered by release fixtures.
 - Codex builder/lite root `AGENTS.md` now uses floor-conditional `.agent-all.json` language guidance so builder-only installs no longer imply a missing floor config exists; release fixtures and release audit pin the contract.
-- Registered the Codex debug port in the marketplace, Codex plugin install group, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, and public verification docs. Current suite: 1760/1760 passing; fast release smoke: 429/429 passing.
+- Registered the Codex debug port in the marketplace, Codex plugin install group, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, and public verification docs. Current suite: 1766/1766 passing; fast release smoke: 435/435 passing.
 - Made Claude/Codex terminal operational bootstrap auto-refresh only approved foundations (`superpowers`, `context-mode`) when `claude` is available, with `--update-foundations` strict mode and `--no-update-foundations` opt-out.
 - Hardened foundation auto-refresh so default Claude/Codex bootstrap continues in degraded foundation mode if the approved update fails; strict failure remains opt-in through `--update-foundations`.
 - Changed `/agent-init` default to operational/heavy scaffold with `/agent-init --lite` as the minimal path.
@@ -183,15 +185,6 @@ Suite **1246 → 1279 passing** (+33 new tests across `decisions/`, `policy/`, s
 
 - Task 11 reused existing `loadConfig(path)` API instead of introducing `loadAgentAllConfig(dir)`. Same effect, no API duplication.
 - Task 13 (`sync-lib.mjs` vendoring of `decisions/` + `policy/` libs) deferred. Soft prompt-only ports don't require vendored runtime libs; hard-enforce ports reference the canonical hook script directly. Future work if cross-platform runtime parity becomes required.
-
-## [Unreleased]
-- `harness-thrift` v2 summariser using Claude Code programmatic compact
-  API (once surfaced) — currently v1 advisory.
-- Live CC + per-platform CLI verification per
-  `2026-05-18-cli-runtime-verification-checklist.md` and
-  `2026-05-18-hook-precedence-integration.md`.
-- Anthropic SDK / OpenAI SDK / Vertex SDK actual API hookups (currently
-  mock toolCallers used in tests).
 
 ## README overall improvement — 2026-05-19
 

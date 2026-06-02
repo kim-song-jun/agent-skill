@@ -727,6 +727,15 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 Versioning: `harness-floor` at `v0.5.1` (visual-qa runtime wiring + agent-init i18n patch), other Claude Code core plugins at `v0.2.0`, per-platform ports at `v0.1.0`.
 
+### Release Candidate Lifecycle
+
+Treat [tests/manual-checklist.md](tests/manual-checklist.md) as the release map. A Claude/Codex release candidate is deployable only when one clean commit has all of this evidence:
+
+- Clean worktree with `git rev-parse HEAD` recorded, plus plugin manifests, `.claude-plugin/marketplace.json`, README/README.ko Versioning, and CHANGELOG.md/CHANGELOG.ko.md aligned.
+- `node scripts/release-audit.mjs`, `node scripts/release-fixture-smoke.mjs`, `./scripts/release-smoke.sh --fast --with-live-cli`, `node --test`, and `node scripts/sync-lib.mjs --check` all pass.
+- The live probe output records the installed `claude`/`codex` versions, Claude plugin marketplace/install command surfaces, and Codex `exec [PROMPT]` support for that same SHA.
+- The release candidate tag is date-stamped and points at the verified SHA. Rollback uses a previous verified tag/SHA plus the documented update/install path and post-rollback doctor, never hand-edited generated files.
+
 ### Language
 
 Decision-surfacing prompts and panels are localized. Set `.agent-all.json` `language` to `"auto"` (default — reads `$LANG`), `"en"`, or `"ko"`. Machine-parsed tokens (`STATUS: DONE`, `verification_passed`, `VERIFICATION_AUDIT:` etc.) stay English by design. Add more languages by adding entries to `lib/decisions/renderer.mjs` `LABELS` + a sibling `addendum.<lang>.md`.
@@ -749,7 +758,7 @@ Decision-surfacing prompts and panels are localized. Set `.agent-all.json` `lang
 
 - Cursor/Copilot/Gemini live runtime verification (follow the runtime checklist)
 - `/thrift` v2 summariser using Claude Code's programmatic compact API
-- Real Anthropic/OpenAI/Vertex SDK hookups (replace mock toolCallers)
+- Additional provider-backed thrift summarizer adapters for non-release ports
 - `/explore` per-platform ports and `/debug` ports for Cursor/Copilot/Gemini
 - Subagent transcript-listener bridge for Cursor's `is_background: true` awaiter
 - Telemetry opt-in for thrift audit (which coercions actually fired, real-world cost savings)

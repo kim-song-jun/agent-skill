@@ -86,6 +86,13 @@ test("readme files describe the current Codex config surface and current test co
     assert.match(body, /@anthropic-ai\/sdk[\s\S]{0,220}(implemented and tested|구현\/테스트 완료)/i);
     assert.match(body, /Codex[\s\S]{0,260}(dependency-free heuristic summarizer|dependency-free heuristic summarizer)/i);
     assert.doesNotMatch(body, /Anthropic\/OpenAI\/Vertex SDK (?:hookup|연결)[\s\S]{0,120}(?:deferred|연기)|Currently mock toolCallers|현재 mock toolCaller/i);
+    assert.doesNotMatch(body, /Real Anthropic\/OpenAI\/Vertex SDK hookups \(replace mock toolCallers\)|실제 Anthropic\/OpenAI\/Vertex SDK 연결 \(mock toolCaller 대체\)/i);
+    assert.match(body, /(Release Candidate Lifecycle|릴리즈 후보 라이프사이클)/i);
+    assert.match(body, /clean worktree[\s\S]{0,220}git rev-parse HEAD/i);
+    assert.match(body, /README\/README\.ko Versioning[\s\S]{0,220}CHANGELOG\.md\/CHANGELOG\.ko\.md/i);
+    assert.match(body, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,240}(claude`\/`codex` versions|`claude`\/`codex` 버전)/i);
+    assert.match(body, /date-stamped[\s\S]{0,160}verified SHA/i);
+    assert.match(body, /(Rollback|rollback)[\s\S]{0,220}(previous verified tag\/SHA|이전 verified tag\/SHA)[\s\S]{0,220}doctor/i);
     assert.match(body, /scripts\/release-audit\.mjs/);
     assert.match(body, /scripts\/release-fixture-smoke\.mjs/);
     assert.match(
@@ -401,7 +408,7 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /public CLI script executable\/shebang packaging/i);
   assert.match(plan, /generated hook\/task-checker executable packaging/i);
   assert.match(plan, /Claude\/Codex QA and base\/specialized reviewer audit-token contracts/i);
-  assert.match(plan, /Claude 55\/55 and Codex 61\/61 readiness checks passing/i);
+  assert.match(plan, /Claude 56\/56 and Codex 62\/62 readiness checks passing/i);
   assert.match(plan, /Claude companion root guidance/i);
   assert.match(plan, /Codex thrift advisory summariser contract/i);
   assert.match(plan, /doctor recovery guidance/i);
@@ -413,6 +420,7 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /Claude\/Codex operational and builder-heavy complete persona foundation\/orchestration matrix checks/i);
   assert.match(plan, /release-fixture evidence[\s\S]{0,160}auto-update only approved `superpowers`\/`context-mode` foundations/i);
   assert.match(plan, /Claude\/Codex approved foundation auto-update fixtures/i);
+  assert.match(plan, /release candidate lifecycle/i);
   assert.match(plan, /node --test[\s\S]{0,120}1766\/1766/);
   assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}435\/435/);
   assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|1758\/1758|1759\/1759|1760\/1760|1761\/1761|1762\/1762|1763\/1763|1764\/1764|57\/57|412\/412|418\/418|421\/421|424\/424|425\/425|427\/427|428\/428|429\/429|430\/430|431\/431|432\/432|433\/433/);
@@ -431,6 +439,24 @@ test("operational hardening docs record implemented release-audited status", () 
   const spec = read("docs/superpowers/specs/2026-06-01-operational-agent-init-agent-all-design.md");
   assert.match(spec, /\*\*Status:\*\* Implemented and release-audited/i);
   assert.doesNotMatch(spec, /pending written-spec review/i);
+
+  const changelog = read("CHANGELOG.md");
+  assert.equal((changelog.match(/^## Unreleased$/gm) || []).length, 1);
+  assert.doesNotMatch(changelog, /^## \[Unreleased\]$/m);
+  assert.match(changelog, /User Objective Release Matrix/);
+  assert.match(changelog, /Release Candidate Lifecycle/);
+  assert.match(changelog, /1766\/1766 passing/);
+  assert.match(changelog, /435\/435 passing/);
+  assert.doesNotMatch(changelog, /currently\s+mock toolCallers used in tests/i);
+
+  const changelogKo = read("CHANGELOG.ko.md");
+  assert.equal((changelogKo.match(/^## 미출시$/gm) || []).length, 1);
+  assert.doesNotMatch(changelogKo, /^## \[미출시\]$/m);
+  assert.match(changelogKo, /User Objective Release Matrix/);
+  assert.match(changelogKo, /Release Candidate Lifecycle/);
+  assert.match(changelogKo, /1766\/1766 통과/);
+  assert.match(changelogKo, /435\/435 통과/);
+  assert.doesNotMatch(changelogKo, /현재 mock[\s\S]{0,80}toolCaller/i);
 });
 
 test("plugin release docs describe release surfaces without MVP/deferred wording", () => {
@@ -500,6 +526,14 @@ test("manual release checklist is mapped to automated gates and Claude/Codex liv
   assert.match(body, /Doctor, recovery, and cleanup[\s\S]{0,280}install→uninstall roundtrips/i);
   assert.match(body, /No HOME\/global config mutation[\s\S]{0,280}do not patch HOME\/global CLI config files/i);
   assert.match(body, /Deployable release gate[\s\S]{0,380}release-smoke\.sh --fast --with-live-cli[\s\S]{0,260}node scripts\/sync-lib\.mjs --check/i);
+  assert.match(body, /Release Candidate Lifecycle/i);
+  assert.match(body, /clean worktree[\s\S]{0,220}git rev-parse HEAD/i);
+  assert.match(body, /plugin[\s\S]{0,80}manifests[\s\S]{0,220}\.claude-plugin\/marketplace\.json/i);
+  assert.match(body, /README\/README\.ko Versioning[\s\S]{0,180}CHANGELOG\.md\/CHANGELOG\.ko\.md/i);
+  assert.match(body, /no stale deferred\/mock[\s\S]{0,120}release wording/i);
+  assert.match(body, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,260}`claude`\/`codex` versions/i);
+  assert.match(body, /date-stamped release-candidate tag[\s\S]{0,180}verified SHA/i);
+  assert.match(body, /Roll back only to a previous verified tag\/SHA[\s\S]{0,280}install-platform\.sh --uninstall[\s\S]{0,240}doctor after rollback/i);
   assert.match(body, /release-audit\.mjs/);
   assert.match(body, /release-fixture-smoke\.mjs/);
   assert.match(body, /Release smoke gate coverage[\s\S]{0,220}live Claude plugin marketplace\/install and Codex exec probes[\s\S]{0,220}focused release contracts/i);
