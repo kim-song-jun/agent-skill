@@ -6,6 +6,12 @@ import { join, resolve } from "node:path";
 const STALE_RELEASE_COPY = /\b(?:future|MVP|placeholder|follow-up|deferred|TBD)\b/i;
 
 const PLUGINS = [
+  // harness-builder and harness-floor MUST keep their manifest at
+  // .claude-plugin/plugin.json (not the plugin root): Claude Code ignores a
+  // root-level plugin.json, dropping the declared version/hooks. They were the
+  // two that regressed to root; listing them here gates against it recurring.
+  "harness-builder",
+  "harness-floor",
   "harness-builder-codex",
   "harness-builder-copilot",
   "harness-builder-gemini",

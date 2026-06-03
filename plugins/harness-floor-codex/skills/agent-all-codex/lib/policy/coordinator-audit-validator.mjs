@@ -1,4 +1,6 @@
-const TOKEN_RE = /ORCHESTRATION_AUDIT:\s*(passed|failed|skipped)\b/;
+import { AUDIT_TOKENS, auditTokenPattern } from "./audit-tokens.mjs";
+
+const TOKEN_RE = auditTokenPattern(AUDIT_TOKENS.coordinator);
 
 export function validateCoordinatorAudit(text) {
   const match = TOKEN_RE.exec(String(text ?? ""));

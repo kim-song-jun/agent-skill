@@ -18,9 +18,9 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.ok, true);
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
-  assert.equal(result.platforms.claude.checks.length, 60);
+  assert.equal(result.platforms.claude.checks.length, 61);
   assert.equal(result.platforms.codex.checks.length, 66);
-  assert.match(result.platforms.claude.summary, /Claude: ok \(60\/60 checks\)/);
+  assert.match(result.platforms.claude.summary, /Claude: ok \(61\/61 checks\)/);
   assert.match(result.platforms.codex.summary, /Codex: ok \(66\/66 checks\)/);
   for (const platform of Object.values(result.platforms)) {
     const names = platform.checks.map((check) => check.name);
@@ -393,7 +393,7 @@ test("release audit fails incomplete Claude slash-command skill surfaces", () =>
     }),
   );
 
-  writeRel(root, "plugins/harness-builder/plugin.json", '{"name":"harness-builder"}');
+  writeRel(root, "plugins/harness-builder/.claude-plugin/plugin.json", '{"name":"harness-builder"}');
   writeRel(
     root,
     "plugins/harness-builder/skills/agent-init/templates/CLAUDE.md.hbs",

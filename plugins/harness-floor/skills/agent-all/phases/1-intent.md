@@ -33,6 +33,8 @@ Create a durable task ledger entry from the free-form prompt:
 
 ### Branch C — prompt + brainstormFirst true (default)
 
+**0. Orchestrator routing check (do this first).** Judge the deliverable against `references/orchestrator-routing.md`. If the intent is *evidence-producing* — research, an audit across many units, a design/findings report, with no durable code change yet — the built-in `Workflow` (ultracode) tool is the correct orchestrator, **not** `/agent-all`. In that case: recommend it to the user; if they agree, STOP this pipeline and instruct them to run a `Workflow` sweep that writes a `validateTaskDoc`-compliant task doc under `docs/tasks/`, then re-enter with `/agent-all <taskdoc> --no-brainstorm` (resumes at Branch A — no double-planning). Decide at this brainstorming-scale gauge; only continue to step 1 below when the deliverable is a durable, gated code change that ships as a PR.
+
 1. Invoke `Skill` with `superpowers:brainstorming` passing the prompt as `args`. Brainstorming will write its own design doc to `docs/superpowers/specs/`.
 2. After it completes, locate the newest file under `docs/superpowers/specs/` (sort by mtime).
 3. When Phase 0 allowed first-task scaffold creation, create `docs/tasks/`, seed `docs/tasks/index.md`, and seed `docs/tasks/_template.md` from the operational task ledger template before reading the index. Use `plugins/harness-builder/skills/agent-init/templates/task-ledger/index.md.hbs` and `_template.md.hbs` as the source templates.

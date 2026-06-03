@@ -103,6 +103,13 @@ function shellTokens(command) {
     }
 
     if (char === "\\") {
+      // Backslash-newline is a line continuation: drop both characters so the
+      // lines join, instead of emitting a literal newline token. A literal
+      // "\n" token is treated as a command boundary, which would split a
+      // multi-line `git commit ... -- <pathspec>` and wrongly block it.
+      if (command[index + 1] === "\n") { index += 1; continue; }
+      if (command[index + 1] === "\r" && command[index + 2] === "\n") { index += 2; continue; }
+      if (command[index + 1] === "\r") { index += 1; continue; }
       escaped = true;
       hasToken = true;
       continue;
