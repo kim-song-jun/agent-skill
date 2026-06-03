@@ -61,6 +61,7 @@ Runs a complete multi-agent pipeline from a free-form prompt or an existing task
 3. **Delegate, don't reimplement.** Phase 1 calls `superpowers:brainstorming`; Phase 2 calls `superpowers:writing-plans`; Phase 3 calls `superpowers:subagent-driven-development`. Your code is a thin coordinator.
 4. **Loop is opt-in.** Without `--loop`, Phase 6 is a no-op.
 5. **Hard caps:** `--max-iter` clamped to 50 server-side; `--max-cost` enforced after each wave.
+6. **Orchestrator routing.** `/agent-all` is for durable, gated, PR-shipping code changes. Evidence-producing work (research, multi-unit audits, design/findings reports) belongs to the built-in `Workflow` (ultracode) tool instead — they are siblings, never nested. Phase 1 gauges this; the full decision table, the no-nesting constraint, and the governance-across-the-seam rule live in `references/orchestrator-routing.md`.
 
 ## Lib modules
 

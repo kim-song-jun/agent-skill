@@ -52,6 +52,7 @@ Do not self-commit from a delegated subagent unless the orchestrator explicitly 
 ## Operational Harness
 
 - Default mode is heavy. Use `/agent-init --lite` only for small repositories that do not need task ledger or hooks.
+- Pick the orchestrator by deliverable: `/agent-all` ships durable, gated code changes as a PR; evidence-producing work (research, multi-unit audits, design/findings reports) goes to the built-in `Workflow` (ultracode) tool instead — they are siblings, never nested. Mixed work: run `Workflow` first to write a task doc, then `/agent-all <taskdoc> --no-brainstorm`. ("Workflow" here means the built-in ultracode tool, not CI workflows.)
 - Every `/agent-all` run must resolve to a task document under `docs/tasks/`.
 - Keep `Decision Matrix`, `Ambiguity Log`, `Progress Snapshot`, and `Verification` current.
 - Phase handoffs belong in the task doc or `_handoff-template.md` output, not in raw chat logs.
