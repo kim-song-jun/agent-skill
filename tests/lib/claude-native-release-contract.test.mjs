@@ -17,8 +17,8 @@ function readJson(path) {
 }
 
 test("Claude native plugin manifests expose all release skills", () => {
-  assert.equal(readJson("plugins/harness-builder/plugin.json").name, "harness-builder");
-  assert.equal(readJson("plugins/harness-floor/plugin.json").name, "harness-floor");
+  assert.equal(readJson("plugins/harness-builder/.claude-plugin/plugin.json").name, "harness-builder");
+  assert.equal(readJson("plugins/harness-floor/.claude-plugin/plugin.json").name, "harness-floor");
   assert.equal(readJson("plugins/harness-thrift/.claude-plugin/plugin.json").name, "harness-thrift");
 
   for (const rel of [

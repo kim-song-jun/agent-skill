@@ -28,7 +28,7 @@
 
 ### 3a — Scoping (parallel)
 
-a. Dispatch one Task subagent per task in the wave with description `Implement Task N: <title>` and a prompt containing the mini-plan plus the mandatory Dispatch Prompt Contract below. Do not duplicate the scoping addendum or verification directive; the `floor-policy` PreToolUse hook injects those automatically.
+a. Dispatch one Task subagent per task in the wave with description `Implement Task N: <title>` and a prompt containing the mini-plan plus the mandatory Dispatch Prompt Contract below. Do not duplicate the scoping addendum or verification directive; the `agent-policy-hook` PreToolUse hook (installed by `/agent-init`, Task matcher) injects those automatically.
 b. Collect each return as a JSON payload between ` ```decision-payload ` fences. Parse with `lib/decisions/schema.mjs` `validateDecisionPayload`. If `result.ok === false`, treat as `NO_DECISIONS` and log a warning.
 
 ### 3b — Ask (sequential UI per task)
@@ -75,7 +75,7 @@ Do not self-commit from an implementer subagent. The orchestrator owns pathspec 
 
 ## Per-subagent verification (safety net)
 
-Now enforced by the `floor-policy` hook (Pre+Post on `Task`). The hook auto-injects:
+Now enforced by the `agent-policy-hook` (Pre+Post on `Task`, installed by `/agent-init`). The hook auto-injects:
 
 - For implementer dispatches (`description: "Implement Task ..."`): scoping-pass addendum + verification directive.
 - For reviewer dispatches (`description: "Review Task ..."`): `VERIFICATION_AUDIT` directive.

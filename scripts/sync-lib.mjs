@@ -87,6 +87,17 @@ const COORDINATOR_AUDIT_VALIDATOR_TARGETS = [
   "plugins/harness-floor-codex/skills/agent-all-codex/lib/policy/coordinator-audit-validator.mjs",
 ].map((p) => resolve(repoRoot, p));
 
+// Canonical audit-token grammar (the exit(2) governance contract). The Codex
+// coordinator-audit-validator imports it, so the vendored copy must travel
+// with it. Single source of truth for the token names + verdict grammar.
+const AUDIT_TOKENS_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/policy/audit-tokens.mjs",
+);
+const AUDIT_TOKENS_TARGETS = [
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/policy/audit-tokens.mjs",
+].map((p) => resolve(repoRoot, p));
+
 const FOUNDATION_CHECK_SOURCE = resolve(
   repoRoot,
   "plugins/harness-builder/skills/agent-init/lib/foundation-check.mjs",
@@ -212,6 +223,20 @@ function collectDrift() {
       drift.push({ file: "coordinator-audit-validator.mjs", dest: destPath, reason: "diverged", sourceContent: coordinatorAuditSrc });
     }
   }
+  // audit-tokens.mjs canonical governance grammar (Claude source → Codex copy).
+  const auditTokensSrc = readOrNull(AUDIT_TOKENS_SOURCE);
+  if (auditTokensSrc == null) {
+    console.error(`Source missing: ${AUDIT_TOKENS_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of AUDIT_TOKENS_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "audit-tokens.mjs", dest: destPath, reason: "missing", sourceContent: auditTokensSrc });
+    } else if (destContent !== auditTokensSrc) {
+      drift.push({ file: "audit-tokens.mjs", dest: destPath, reason: "diverged", sourceContent: auditTokensSrc });
+    }
+  }
   // foundation-check.mjs (Claude source → Codex init copy).
   const foundationSrc = readOrNull(FOUNDATION_CHECK_SOURCE);
   if (foundationSrc == null) {
@@ -282,6 +307,7 @@ function totalChecked() {
     + CHANGED_FILE_CLASSIFIER_TARGETS.length
     + GATE_PLAN_TARGETS.length
     + COORDINATOR_AUDIT_VALIDATOR_TARGETS.length
+    + AUDIT_TOKENS_TARGETS.length
     + FOUNDATION_CHECK_TARGETS.length
     + DOCTOR_CORE_TARGETS.length
     + HARNESS_CLEANER_TARGETS.length

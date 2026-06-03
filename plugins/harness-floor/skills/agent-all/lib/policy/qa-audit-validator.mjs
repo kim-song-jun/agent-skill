@@ -11,7 +11,9 @@
 // The hook injects the directive in plain language (en or ko); the token
 // itself stays English-only for stable machine matching.
 
-const TOKEN_RE = /QA_AUDIT:\s*(passed|failed|skipped)\b/;
+import { AUDIT_TOKENS, auditTokenPattern } from "./audit-tokens.mjs";
+
+const TOKEN_RE = auditTokenPattern(AUDIT_TOKENS.qa);
 
 export function validateQaAudit(text) {
   if (TOKEN_RE.test(text)) return { ok: true };

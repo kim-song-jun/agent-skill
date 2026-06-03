@@ -144,7 +144,7 @@ const PLATFORM_CONTRACTS = {
     marketplacePlugins: ["harness-builder", "harness-floor", "harness-thrift", "harness-explore", "harness-debug"],
     requiredFiles: [
       "scripts/install-platform.sh",
-      "plugins/harness-builder/plugin.json",
+      "plugins/harness-builder/.claude-plugin/plugin.json",
       "plugins/harness-builder/bin/clean.mjs",
       "plugins/harness-builder/bin/doctor.mjs",
       "plugins/harness-builder/bin/init.mjs",
@@ -165,6 +165,7 @@ const PLATFORM_CONTRACTS = {
       "plugins/harness-builder/skills/agent-init/templates/agents/data-reviewer.md.hbs",
       "plugins/harness-builder/skills/agent-init/templates/settings.local.json.hbs",
       "plugins/harness-builder/skills/agent-init/templates/hooks/agent-policy-hook.mjs",
+      "plugins/harness-floor/skills/agent-all/lib/policy/audit-tokens.mjs",
       "plugins/harness-floor/bin/install-floor-policy.mjs",
       "plugins/harness-floor/bin/floor-policy-hook.mjs",
       "plugins/harness-floor/skills/agent-all/SKILL.md",

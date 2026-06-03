@@ -8,6 +8,8 @@
 
 3. Confirm `.claude/agents/` exists and contains at minimum `planner.md`, `dev.md`, `reviewer.md`. If not: abort `Run /agent-init first to scaffold .claude/agents/.`
 
+3b. Confirm the governance hook is actually **registered**, not just that the roster exists — the pipeline's Pre/PostToolUse gate (scoping-addendum + verification/audit-token enforcement) depends on it. Read `.claude/settings.local.json` and verify both `hooks.PreToolUse` and `hooks.PostToolUse` contain a `"matcher": "Task"` entry whose command references `agent-policy-hook.mjs`. If absent — unless `.agent-all.json` `policy` disables all of `decisionSurfacing`, `verification`, and `reviewerAudit` — abort `Governance hook not registered (settings.local.json has no Task-matcher agent-policy-hook). Run /agent-init (operational profile) before /agent-all.` This turns the gate from assumed-present into verified-present (the prior check only confirmed the roster, not the enforcement hook).
+
 4. Load `.agent-all.json`:
    ```javascript
    import { loadConfig } from "./lib/config-loader.mjs";
