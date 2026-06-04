@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1784%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-18-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1788%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-18-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..." --loop --qa` per feature; the agent brainstorms → plans → writes → tests → **visually QAs every page** → opens the PR — and keeps iterating until tests AND the UI both pass — without you babysitting every turn.
 
@@ -705,7 +705,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 - **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for design docs per plugin.
 - **All 18 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
-- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1784 tests, all green.
+- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1788 tests, all green.
 - **Per-platform porting** — see specs ending in `-impl-spec.md` or `-decomposition.md` under `docs/superpowers/specs/`.
 - **Cross-platform support matrix** — see [docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md](docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md).
 - **Hook precedence (if you're mixing plugins that all register hooks)** — see [docs/superpowers/specs/2026-05-18-hook-precedence-integration.md](docs/superpowers/specs/2026-05-18-hook-precedence-integration.md).
@@ -716,7 +716,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 | Layer | Status | Note |
 |---|---|---|
-| Unit/integration tests | ✅ **1784/1784 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-candidate evidence, release publish preflight, target-project smoke, release-fixture-smoke, command-surface, doctor, cleanup, and visual-qa regressions |
+| Unit/integration tests | ✅ **1788/1788 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-candidate evidence, release publish preflight, target-project smoke, release-fixture-smoke, command-surface, doctor, cleanup, and visual-qa regressions |
 | Release gate | ✅ local deploy gate verified | This branch intentionally ships no `.github/workflows/release.yml`; deployment uses release-candidate evidence, release-audit, fresh fixtures, `./scripts/release-smoke.sh --fast --with-live-cli`, POSCO target smoke, `node --test`, and vendored-lib sync without requiring GitHub `workflow` scope |
 | Project install renderers (Claude + 5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
 | Marketplace registration | ✅ 18 plugins listed | sync between local + origin |
@@ -779,7 +779,7 @@ node scripts/release-audit.mjs           # Claude/Codex release readiness matrix
 node scripts/release-fixture-smoke.mjs   # fresh Claude/Codex release fixtures
 node scripts/release-publish-preflight.mjs --base=origin/main
 node scripts/target-project-smoke.mjs --target=/path/to/project --platform=claude,codex --lang=ko
-node --test                              # 1784/1784 must pass
+node --test                              # 1788/1788 must pass
 node scripts/sync-lib.mjs --check        # vendored shared libs in sync
 ```
 

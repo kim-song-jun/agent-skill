@@ -1,0 +1,62 @@
+#!/usr/bin/env node
+// thrift-sessionend-audit (Codex) — on Stop, write a Phase 5 audit summary to
+// the configured outputPath from accumulated .thrift-state.json metrics.
+// Self-contained (no lib imports): writes markdown directly rather than via the
+// skill's audit-renderer, so no plugin lib needs to ship into the project.
+// Never blocks.
+
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+
+const ROOT = process.env.CODEX_PROJECT_DIR || process.env.PWD || ".";
+const STATE_PATH = resolve(ROOT, ".thrift-state.json");
+const CONFIG_PATH = resolve(ROOT, ".thrift.json");
+
+function readJson(p) {
+  try { return JSON.parse(readFileSync(p, "utf-8")); } catch { return null; }
+}
+
+function main() {
+  const config = readJson(CONFIG_PATH);
+  if (!config) process.exit(0);
+  const state = readJson(STATE_PATH) || {};
+
+  const coercions = Array.isArray(state.coercions) ? state.coercions : [];
+  const cachePrimes = Array.isArray(state.cachePrimes) ? state.cachePrimes : [];
+  const byTool = coercions.reduce((acc, c) => { acc[c.tool] = (acc[c.tool] || 0) + 1; return acc; }, {});
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const outRel = (config.audit?.outputPath || "docs/thrift/audit-<date>.md").replace("<date>", dateStr);
+  const outputPath = resolve(ROOT, outRel);
+
+  const lines = [
+    `# Thrift audit (Codex) — ${dateStr}`,
+    "",
+    "Best-effort session telemetry recorded by the thrift-codex hooks.",
+    "",
+    "## Coercion suggestions",
+    `- Total: ${coercions.length}`,
+    ...Object.entries(byTool).map(([tool, n]) => `- ${tool}: ${n}`),
+    "",
+    "## Cache priming",
+    `- Primes recorded: ${cachePrimes.length}`,
+    `- Session starts: ${state.sessionStarts || 0}`,
+    "",
+    "## Summariser",
+    `- Turns since last summary: ${state.turnsSinceLastSummary || 0}`,
+    `- Tokens since last summary (est.): ${state.tokensSinceLastSummary || 0}`,
+    "",
+    "_Note: Codex baseline cost estimation is naive; treat figures as directional._",
+    "",
+  ];
+
+  try {
+    mkdirSync(dirname(outputPath), { recursive: true });
+    writeFileSync(outputPath, `${lines.join("\n")}`);
+    process.stderr.write(`<system-reminder>thrift audit written: ${outputPath}</system-reminder>\n`);
+  } catch { /* best-effort */ }
+
+  process.exit(0);
+}
+
+main();

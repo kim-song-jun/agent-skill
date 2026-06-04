@@ -136,7 +136,8 @@ run_step "focused release contracts" \
     tests/lib/visual-qa-codex-dispatch.test.mjs \
     tests/lib/harness-builder-cli-init.test.mjs \
     tests/lib/harness-floor-init.test.mjs \
-    tests/lib/thrift-codex.test.mjs
+    tests/lib/thrift-codex.test.mjs \
+    tests/lib/thrift-codex-hooks.test.mjs
 
 run_step "vendored libs" node scripts/sync-lib.mjs --check
 

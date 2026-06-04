@@ -1,0 +1,38 @@
+#!/usr/bin/env node
+// thrift-sessionstart-cache-prime (Codex) — records the SessionStart event for
+// the audit and, when cache priming is enabled, emits a best-effort reminder.
+// Codex cache-prime is exec_command-based and best-effort (see phases/4-cache-prime.md).
+// Self-contained (no lib imports); never blocks.
+
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+
+const ROOT = process.env.CODEX_PROJECT_DIR || process.env.PWD || ".";
+const STATE_PATH = resolve(ROOT, ".thrift-state.json");
+const CONFIG_PATH = resolve(ROOT, ".thrift.json");
+
+function readJson(p) {
+  try { return JSON.parse(readFileSync(p, "utf-8")); } catch { return null; }
+}
+function writeState(p, s) {
+  try { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, `${JSON.stringify(s, null, 2)}\n`); } catch { /* best-effort */ }
+}
+
+function main() {
+  const config = readJson(CONFIG_PATH);
+  if (!config) process.exit(0);
+
+  const state = readJson(STATE_PATH) || {};
+  state.sessionStarts = (state.sessionStarts || 0) + 1;
+
+  if (config.cache?.enabled) {
+    state.cachePrimes = Array.isArray(state.cachePrimes) ? state.cachePrimes : [];
+    state.cachePrimes.push({ cohort: (config.cache.shareCohortAcross || []).join(","), costUSD: 0 });
+    process.stderr.write(`<system-reminder>thrift cache-prime enabled (${config.cache.primingStrategy}, warmInterval=${config.cache.warmInterval}s)</system-reminder>\n`);
+  }
+
+  writeState(STATE_PATH, state);
+  process.exit(0);
+}
+
+main();

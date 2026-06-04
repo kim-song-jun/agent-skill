@@ -1,0 +1,71 @@
+#!/usr/bin/env node
+// thrift-posttool-summariser-trigger (Codex) — after each tool call, accumulate
+// output tokens and emit a stderr system reminder when the summariser threshold
+// is hit (advisory v1; the actual summarise runs via `run /thrift summarise`).
+// Self-contained (no lib imports); never blocks.
+
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+
+const ROOT = process.env.CODEX_PROJECT_DIR || process.env.PWD || ".";
+const STATE_PATH = resolve(ROOT, ".thrift-state.json");
+const CONFIG_PATH = resolve(ROOT, ".thrift.json");
+
+function readJson(p) {
+  try { return JSON.parse(readFileSync(p, "utf-8")); } catch { return null; }
+}
+function writeState(p, s) {
+  try { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, `${JSON.stringify(s, null, 2)}\n`); } catch { /* best-effort */ }
+}
+
+function main() {
+  let payload = {};
+  try {
+    const stdin = readFileSync(0, "utf-8");
+    if (stdin.trim()) payload = JSON.parse(stdin);
+  } catch {
+    process.exit(0);
+  }
+
+  const config = readJson(CONFIG_PATH);
+  const s = config?.summariser;
+  if (!s) process.exit(0);
+
+  const output =
+    payload?.tool_output
+    ?? payload?.tool_response?.output
+    ?? payload?.toolResponse?.output
+    ?? payload?.output
+    ?? "";
+  const outputBytes = typeof output === "string" ? output.length : JSON.stringify(output ?? "").length;
+  const estTokens = Math.ceil(outputBytes / 3); // mixed text/code heuristic
+
+  const state = readJson(STATE_PATH) || {};
+  state.turnsSinceLastSummary = (state.turnsSinceLastSummary || 0) + 1;
+  state.tokensSinceLastSummary = (state.tokensSinceLastSummary || 0) + estTokens;
+
+  let reason = null;
+  if (state.turnsSinceLastSummary >= s.everyNTurns) reason = "turns";
+  else if (state.tokensSinceLastSummary >= s.everyMTokensOutput) reason = "tokens";
+
+  if (reason) {
+    const turns = state.turnsSinceLastSummary;
+    const tokens = state.tokensSinceLastSummary;
+    state.turnsSinceLastSummary = 0;
+    state.tokensSinceLastSummary = 0;
+    writeState(STATE_PATH, state);
+
+    const notify = resolve(ROOT, ".thrift/notifications/summarise.md");
+    try {
+      mkdirSync(dirname(notify), { recursive: true });
+      writeFileSync(notify, `Summariser threshold hit (reason: ${reason}, turns=${turns}, tokens≈${tokens}).\n\nRun \`/thrift summarise\` then compact, and paste the resulting summary path.\n`);
+    } catch { /* best-effort */ }
+    process.stderr.write(`<system-reminder>thrift summariser ready: run /thrift summarise (reason=${reason})</system-reminder>\n`);
+  } else {
+    writeState(STATE_PATH, state);
+  }
+
+  process.exit(0);
+}
+
+main();

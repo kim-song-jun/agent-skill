@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1784%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-18-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1788%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-18-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **스스로 굴러가는 agent-first 워크플로.** 프로젝트당 `/agent-init` 한 번, 기능당 `/agent-all "..." --loop --qa` 한 번 — agent가 brainstorm → 계획 → 구현 → 테스트 → **모든 페이지 visual QA** → PR을 알아서 진행하고, **테스트와 UI 둘 다 통과할 때까지 알아서 반복**합니다. 매 턴 babysitting 필요 없음.
 
@@ -698,7 +698,7 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 
 - **아키텍처 & 레이아웃** — 플러그인별 design 문서는 [docs/superpowers/specs/](docs/superpowers/specs/) 참조.
 - **18개 플러그인 전체 목록** — [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json) 참조.
-- **변경 히스토리** — [CHANGELOG.md](CHANGELOG.md) 참조. 1784 tests, 모두 통과.
+- **변경 히스토리** — [CHANGELOG.md](CHANGELOG.md) 참조. 1788 tests, 모두 통과.
 - **플랫폼별 포팅** — `docs/superpowers/specs/`의 `-impl-spec.md` 또는 `-decomposition.md`로 끝나는 spec 참조.
 - **크로스 플랫폼 지원 매트릭스** — [docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md](docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md) 참조.
 - **Hook precedence (hooks 등록하는 플러그인 여러개 섞을 때)** — [docs/superpowers/specs/2026-05-18-hook-precedence-integration.md](docs/superpowers/specs/2026-05-18-hook-precedence-integration.md) 참조.
@@ -709,7 +709,7 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 
 | 레이어 | 상태 | 비고 |
 |---|---|---|
-| Unit/integration 테스트 | ✅ **1784/1784 통과** | Mock toolCaller + 격리된 lib 테스트; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-candidate evidence, release publish preflight, target-project smoke, release-fixture-smoke, command-surface, doctor, cleanup, visual-qa 회귀 포함 |
+| Unit/integration 테스트 | ✅ **1788/1788 통과** | Mock toolCaller + 격리된 lib 테스트; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-candidate evidence, release publish preflight, target-project smoke, release-fixture-smoke, command-surface, doctor, cleanup, visual-qa 회귀 포함 |
 | Release gate | ✅ local deploy gate 검증 | 이 브랜치는 의도적으로 `.github/workflows/release.yml`을 포함하지 않음; 배포는 release-candidate evidence, release-audit, fresh fixture, `./scripts/release-smoke.sh --fast --with-live-cli`, POSCO target smoke, `node --test`, vendored-lib sync로 검증하며 GitHub `workflow` scope가 필요 없음 |
 | Project install 렌더러 (Claude + 5개 플랫폼) | ✅ end-to-end 검증 | `install-all.sh` + `install-platform.sh` |
 | 마켓플레이스 등록 | ✅ 18 플러그인 등록 | local + origin 동기화 |
@@ -772,7 +772,7 @@ node scripts/release-audit.mjs           # Claude/Codex 릴리즈 준비 상태 
 node scripts/release-fixture-smoke.mjs   # fresh Claude/Codex 릴리즈 fixture
 node scripts/release-publish-preflight.mjs --base=origin/main
 node scripts/target-project-smoke.mjs --target=/path/to/project --platform=claude,codex --lang=ko
-node --test                              # 1784/1784 통과 필수
+node --test                              # 1788/1788 통과 필수
 node scripts/sync-lib.mjs --check        # vendored shared libs 동기화 확인
 ```
 
