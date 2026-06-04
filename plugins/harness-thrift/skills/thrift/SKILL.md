@@ -58,10 +58,10 @@ summariser-trigger loop.
 ## Lib modules
 
 - `lib/config-loader.mjs` — `loadConfig(path)` → `{ok, config | errors, warning?}`.
-- `lib/threshold-evaluator.mjs` — `shouldFireSummariser({turnsSince, tokensSince, config})` → boolean.
-- `lib/cost-estimator.mjs` — `estimateBaseline({tokensIn, tokensOut, cacheHits, model})` → `{actualCost, baselineCost, savedRatio}`.
-- `lib/summariser.mjs` — `summarise({turns, preserveLast, preserveSpecPaths})` → `{summaryText, droppedTurnCount, preservedRefs[]}`.
-- `lib/settings-patcher.mjs` — `patchSettings({settingsPath, hooks, dryRun})` → diff applied.
+- `lib/threshold-evaluator.mjs` — `shouldFireSummariser({turnsSinceLastSummary, tokensSinceLastSummary, config})` → `{fire, reason}` (reason: `"turns"|"tokens"|null`). Also `estimateTokensFromBytes(bytes, contentType?)`.
+- `lib/cost-estimator.mjs` — `estimate({tokensInUncached, tokensInCached, tokensOut, model})` → `{actualUSD, baselineUSD, savedRatio, breakdown}`. Also `estimateSession(records)` for per-session aggregation.
+- `lib/summariser.mjs` — `async summarise({turns, preserveLastTurns?, preserveSpecPaths?, summariseFn})` → `{summaryText, droppedTurnCount, preservedRefs, tokensBefore, tokensAfterEstimate}`. `summariseFn` is required (a caller-supplied model call); `heuristicSummariseFn()` returns a dependency-free fallback.
+- `lib/settings-patcher.mjs` — `patchSettings({settingsPath, hooksToAdd, dryRun})` → diff applied. Also `unpatchSettings(...)` and `buildStandardThriftHooks({hooksDir})`.
 
 ## On error
 

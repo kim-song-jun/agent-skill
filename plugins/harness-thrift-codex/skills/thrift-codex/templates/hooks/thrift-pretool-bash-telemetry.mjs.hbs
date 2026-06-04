@@ -1,0 +1,56 @@
+#!/usr/bin/env node
+// thrift-pretool-bash-telemetry (Codex) — observes Bash/shell tool calls and
+// records coercion telemetry for the Phase 5 audit. Telemetry-only; never blocks.
+//
+// Self-contained (no lib imports): a Codex hook runs from .codex/hooks/ in the
+// target project where the plugin lib is not importable. State shape stays
+// compatible with the skill's metrics-collector conventions.
+
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+
+const ROOT = process.env.CODEX_PROJECT_DIR || process.env.PWD || ".";
+const STATE_PATH = resolve(ROOT, ".thrift-state.json");
+
+const LARGE_BASH = [/^find\b/, /^git\s+log\b/, /^git\s+diff\b/, /^cat\b/, /^ls\s+-[lR]/, /^grep\s+-r\b/, /^npm\s+test\b/, /^tree\b/, /^rg\b/];
+
+function readState(p) {
+  try { return JSON.parse(readFileSync(p, "utf-8")); } catch { return {}; }
+}
+function writeState(p, s) {
+  try { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, `${JSON.stringify(s, null, 2)}\n`); } catch { /* never fail the hook on telemetry */ }
+}
+
+function main() {
+  let payload = {};
+  try {
+    const stdin = readFileSync(0, "utf-8");
+    if (stdin.trim()) payload = JSON.parse(stdin);
+  } catch {
+    process.exit(0);
+  }
+
+  const cmd = (
+    payload?.tool_input?.command
+    ?? payload?.toolInput?.command
+    ?? payload?.input?.command
+    ?? payload?.command
+    ?? ""
+  ).toString();
+  if (!cmd) process.exit(0);
+
+  if (LARGE_BASH.some((re) => re.test(cmd))) {
+    const state = readState(STATE_PATH);
+    state.coercions = Array.isArray(state.coercions) ? state.coercions : [];
+    state.coercions.push({
+      tool: "Bash",
+      suggestion: `ctx_execute(language: "shell", code: ${JSON.stringify(cmd)})`,
+      accepted: false,
+    });
+    writeState(STATE_PATH, state);
+  }
+
+  process.exit(0);
+}
+
+main();

@@ -1,0 +1,58 @@
+#!/usr/bin/env node
+// thrift-pretool-read-coerce (Codex) — for large file reads, suggest routing
+// through context-mode (ctx_execute_file) to keep raw bytes out of context.
+// Emits a stderr system reminder (Codex surfaces hook stderr in the TUI) and
+// records telemetry. Never blocks. Self-contained (no lib imports).
+
+import { readFileSync, writeFileSync, mkdirSync, statSync, existsSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+
+const ROOT = process.env.CODEX_PROJECT_DIR || process.env.PWD || ".";
+const STATE_PATH = resolve(ROOT, ".thrift-state.json");
+const COERCE_THRESHOLD_BYTES = 200 * 80; // ~200 lines × 80 chars/line
+
+function readState(p) {
+  try { return JSON.parse(readFileSync(p, "utf-8")); } catch { return {}; }
+}
+function writeState(p, s) {
+  try { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, `${JSON.stringify(s, null, 2)}\n`); } catch { /* telemetry best-effort */ }
+}
+
+function main() {
+  let payload = {};
+  try {
+    const stdin = readFileSync(0, "utf-8");
+    if (stdin.trim()) payload = JSON.parse(stdin);
+  } catch {
+    process.exit(0);
+  }
+
+  const filePath = (
+    payload?.tool_input?.file_path
+    ?? payload?.toolInput?.file_path
+    ?? payload?.input?.file_path
+    ?? payload?.input?.path
+    ?? payload?.file_path
+    ?? ""
+  ).toString();
+  if (!filePath || !existsSync(filePath)) process.exit(0);
+
+  let bytes = 0;
+  try { bytes = statSync(filePath).size; } catch { process.exit(0); }
+  if (bytes < COERCE_THRESHOLD_BYTES) process.exit(0);
+
+  process.stderr.write(`<system-reminder>thrift: ${filePath} is ${bytes} bytes. If reading to analyze (not edit), prefer ctx_execute_file via context-mode to keep raw contents out of context.</system-reminder>\n`);
+
+  const state = readState(STATE_PATH);
+  state.coercions = Array.isArray(state.coercions) ? state.coercions : [];
+  state.coercions.push({
+    tool: "Read",
+    suggestion: `ctx_execute_file(path: ${JSON.stringify(filePath)})`,
+    accepted: false,
+  });
+  writeState(STATE_PATH, state);
+
+  process.exit(0);
+}
+
+main();

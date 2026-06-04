@@ -138,6 +138,39 @@ const DEBUG_SKILL_LIB_FILES = [
   "state-checkpoint.mjs",
 ];
 
+// summariser.mjs (self-contained) — Claude thrift source → Codex thrift copy,
+// so thrift-codex Phase 3 can call summarise()/heuristicSummariseFn() locally.
+const SUMMARISER_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-thrift/skills/thrift/lib/summariser.mjs",
+);
+const SUMMARISER_TARGETS = [
+  "plugins/harness-thrift-codex/skills/thrift-codex/lib/summariser.mjs",
+].map((p) => resolve(repoRoot, p));
+
+// render.mjs (self-contained handlebars renderer) — builder source → agent-all
+// skill lib, so agent-all Phase 5 renders pr-body.md.hbs via ./lib/render.mjs
+// instead of reaching into the (post-install unreachable) harness-builder dir.
+const AGENT_ALL_RENDER_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-builder/skills/agent-init/lib/render.mjs",
+);
+const AGENT_ALL_RENDER_TARGETS = [
+  "plugins/harness-floor/skills/agent-all/lib/render.mjs",
+].map((p) => resolve(repoRoot, p));
+
+// Task-ledger templates — builder source → agent-all skill templates, so
+// agent-all Phase 1 seeds docs/tasks/ from bundled copies (the harness-builder
+// plugin dir is not reachable from harness-floor on a real install).
+const TASK_LEDGER_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-builder/skills/agent-init/templates/task-ledger",
+);
+const TASK_LEDGER_TARGETS = [
+  "plugins/harness-floor/skills/agent-all/templates/task-ledger",
+].map((p) => resolve(repoRoot, p));
+const TASK_LEDGER_FILES = ["index.md.hbs", "_template.md.hbs"];
+
 function readOrNull(path) {
   return existsSync(path) ? readFileSync(path, "utf-8") : null;
 }
@@ -297,6 +330,52 @@ function collectDrift() {
       }
     }
   }
+  // summariser.mjs (Claude thrift source → Codex thrift copy).
+  const summariserSrc = readOrNull(SUMMARISER_SOURCE);
+  if (summariserSrc == null) {
+    console.error(`Source missing: ${SUMMARISER_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of SUMMARISER_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "summariser.mjs", dest: destPath, reason: "missing", sourceContent: summariserSrc });
+    } else if (destContent !== summariserSrc) {
+      drift.push({ file: "summariser.mjs", dest: destPath, reason: "diverged", sourceContent: summariserSrc });
+    }
+  }
+  // render.mjs (builder source → agent-all skill lib copy).
+  const agentAllRenderSrc = readOrNull(AGENT_ALL_RENDER_SOURCE);
+  if (agentAllRenderSrc == null) {
+    console.error(`Source missing: ${AGENT_ALL_RENDER_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of AGENT_ALL_RENDER_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "render.mjs", dest: destPath, reason: "missing", sourceContent: agentAllRenderSrc });
+    } else if (destContent !== agentAllRenderSrc) {
+      drift.push({ file: "render.mjs", dest: destPath, reason: "diverged", sourceContent: agentAllRenderSrc });
+    }
+  }
+  // task-ledger templates (builder source → agent-all skill templates copy).
+  for (const file of TASK_LEDGER_FILES) {
+    const sourcePath = resolve(TASK_LEDGER_SOURCE, file);
+    const sourceContent = readOrNull(sourcePath);
+    if (sourceContent == null) {
+      console.error(`Source missing: ${sourcePath}`);
+      process.exit(2);
+    }
+    for (const dest of TASK_LEDGER_TARGETS) {
+      const destPath = resolve(dest, file);
+      const destContent = readOrNull(destPath);
+      if (destContent == null) {
+        drift.push({ file, dest: destPath, reason: "missing", sourceContent });
+      } else if (destContent !== sourceContent) {
+        drift.push({ file, dest: destPath, reason: "diverged", sourceContent });
+      }
+    }
+  }
   return drift;
 }
 
@@ -308,6 +387,9 @@ function totalChecked() {
     + GATE_PLAN_TARGETS.length
     + COORDINATOR_AUDIT_VALIDATOR_TARGETS.length
     + AUDIT_TOKENS_TARGETS.length
+    + SUMMARISER_TARGETS.length
+    + AGENT_ALL_RENDER_TARGETS.length
+    + TASK_LEDGER_FILES.length * TASK_LEDGER_TARGETS.length
     + FOUNDATION_CHECK_TARGETS.length
     + DOCTOR_CORE_TARGETS.length
     + HARNESS_CLEANER_TARGETS.length

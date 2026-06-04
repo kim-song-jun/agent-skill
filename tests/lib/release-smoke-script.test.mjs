@@ -43,8 +43,8 @@ test("release-smoke --fast runs Claude and Codex release gates without live CLIs
   assert.match(output, /DRY-RUN: install harness-builder-codex@agent-skill for Codex CLI/);
   assert.match(output, /DRY-RUN: install harness-debug-codex@agent-skill for Codex CLI/);
   assert.match(output, /release smoke: focused release contracts/);
-  assert.match(output, /tests 446/);
-  assert.match(output, /pass 446/);
+  assert.match(output, /tests 450/);
+  assert.match(output, /pass 450/);
   assert.doesNotMatch(output, /tests 424|pass 424|tests 425|pass 425|tests 427|pass 427|tests 428|pass 428|tests 429|pass 429|tests 430|pass 430|tests 431|pass 431|tests 432|pass 432|tests 433|pass 433|tests 435|pass 435/);
   assert.match(output, /Claude native plugin manifests expose all release skills/);
   assert.match(output, /codex-init CLI help documents canonical release flags/);

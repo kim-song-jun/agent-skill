@@ -145,6 +145,21 @@ function main() {
     renderedSnippets[key] = rendered;
   }
 
+  // 2b. Render the executable hook bodies. The TOML snippets register
+  //     `node "<hooksDir>/thrift-*.mjs"`, so these .mjs files must exist or
+  //     every hook fails with "Cannot find module". They are self-contained
+  //     (no plugin-lib imports) so they run from the project's .codex/hooks/.
+  const hookBodies = readdirSync(HOOK_TEMPLATES_DIR).filter((n) => n.endsWith(".mjs.hbs"));
+  for (const f of hookBodies) {
+    writeRendered({
+      srcPath: resolve(HOOK_TEMPLATES_DIR, f),
+      dstPath: resolve(hooksDir, f.replace(/\.hbs$/, "")),
+      ctx,
+      force: args.force,
+      dryRun: args.dryRun,
+    });
+  }
+
   // 3. Patch ~/.codex/config.toml (or --config <path>) with the snippets.
   let patched = false;
   let applied = 0;
@@ -178,7 +193,7 @@ function main() {
   console.log("Thrift-codex install summary:");
   console.log(`  target:       ${target}`);
   console.log(`  config:       .thrift.json`);
-  console.log(`  snippets:     ${hookFiles.length} TOML snippet(s) in .codex/hooks/`);
+  console.log(`  snippets:     ${hookFiles.length} TOML snippet(s) + ${hookBodies.length} hook body .mjs in .codex/hooks/`);
   console.log(`  codex config: ${codexConfigPath}`);
   console.log(`  instrument:   ${patched ? `yes (applied=${applied}, skipped=${skipped})` : "no (--no-instrument)"}`);
   console.log(`  dry-run:      ${args.dryRun ? "yes" : "no"}`);
