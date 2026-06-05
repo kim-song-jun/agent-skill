@@ -1,0 +1,21 @@
+{
+  "name": "agent-skill",
+  "plugins": [
+    {
+      "name": "harness-builder-codex",
+      "source": { "source": "local", "path": "./plugins/harness-builder-codex" }
+    },
+    {
+      "name": "harness-floor-codex",
+      "source": { "source": "local", "path": "./plugins/harness-floor-codex" }
+    },
+    {
+      "name": "harness-thrift-codex",
+      "source": { "source": "local", "path": "./plugins/harness-thrift-codex" }
+    },
+    {
+      "name": "harness-debug-codex",
+      "source": { "source": "local", "path": "./plugins/harness-debug-codex" }
+    }
+  ]
+}
