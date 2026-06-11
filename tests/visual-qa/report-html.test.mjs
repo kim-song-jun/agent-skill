@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { renderHtml } from "../../plugins/harness-floor/skills/visual-qa/lib/report-html.mjs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  renderHtml,
+  renderHtmlArtifact,
+} from "../../plugins/harness-floor/skills/visual-qa/lib/report-html.mjs";
 
 const sample = {
   slug: "loop-iter-3",
@@ -121,4 +127,94 @@ test("self-contained — no external resource references", () => {
 test("empty captures array renders graceful empty state", () => {
   const html = renderHtml({ slug: "empty", generatedAt: "t", baseUrl: "x", captures: [] });
   assert.match(html, /No captures in this run/);
+});
+
+test("redaction masks medium privacy candidates in report HTML", () => {
+  const html = renderHtml({
+    ...sample,
+    captures: [
+      {
+        ...sample.captures[0],
+        notes: "Contact jane.doe@example.com before sharing externally.",
+      },
+    ],
+  });
+
+  assert.match(html, /\[REDACTED:email-address\]/);
+  assert.doesNotMatch(html, /jane\.doe@example\.com/);
+});
+
+test("renderHtmlArtifact can write sanitized redaction audit metadata", () => {
+  const cwd = mkdtempSync(join(tmpdir(), "visual-qa-report-redaction-"));
+  try {
+    const result = renderHtmlArtifact({
+      ...sample,
+      captures: [
+        {
+          ...sample.captures[0],
+          notes: "Contact jane.doe@example.com before sharing externally.",
+        },
+      ],
+    }, {
+      cwd,
+      runId: "vqa-run",
+      artifactPath: ".agent-skill/reports/visual-qa/vqa-run/report.html",
+      writeAudit: true,
+      now: new Date("2026-06-11T00:00:00.000Z"),
+    });
+
+    assert.match(result.html, /\[REDACTED:email-address\]/);
+    assert.ok(result.redactionAudit);
+    const audit = readFileSync(join(cwd, ".agent-skill/runs/vqa-run/redaction-audit.jsonl"), "utf-8");
+    assert.match(audit, /"rule":"email-address"/);
+    assert.match(audit, /"action":"mask"/);
+    assert.doesNotMatch(audit, /jane\.doe@example\.com/);
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test("redaction blocks high severity secrets in report HTML", () => {
+  assert.throws(
+    () => renderHtml({
+      ...sample,
+      captures: [
+        {
+          ...sample.captures[0],
+          notes: "Authorization header: Bearer abcdefghijklmnopqrstuvwxyz123456",
+        },
+      ],
+    }),
+    /redaction gate blocked/,
+  );
+});
+
+test("renderHtmlArtifact records sanitized audit metadata before blocking high severity report HTML", () => {
+  const cwd = mkdtempSync(join(tmpdir(), "visual-qa-report-redaction-block-"));
+  try {
+    assert.throws(
+      () => renderHtmlArtifact({
+        ...sample,
+        captures: [
+          {
+            ...sample.captures[0],
+            notes: "Authorization header: Bearer abcdefghijklmnopqrstuvwxyz123456",
+          },
+        ],
+      }, {
+        cwd,
+        runId: "vqa-secret",
+        artifactPath: ".agent-skill/reports/visual-qa/vqa-secret/report.html",
+        writeAudit: true,
+        now: new Date("2026-06-11T00:00:00.000Z"),
+      }),
+      /redaction gate blocked/,
+    );
+    const audit = readFileSync(join(cwd, ".agent-skill/runs/vqa-secret/redaction-audit.jsonl"), "utf-8");
+    assert.match(audit, /"rule":"bearer-token"/);
+    assert.match(audit, /"blocked":true/);
+    assert.doesNotMatch(audit, /abcdefghijklmnopqrstuvwxyz123456/);
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
 });

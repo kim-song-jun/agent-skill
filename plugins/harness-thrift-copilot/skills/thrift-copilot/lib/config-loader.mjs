@@ -41,7 +41,7 @@ export const DEFAULTS = {
   },
   audit: {
     estimateBaseline: "naive-copilot",
-    outputPath: "docs/thrift/audit-<date>.md",
+    outputPath: ".agent-skill/reports/thrift/audit-<date>.md",
     mirrorToStoreMemory: true,
   },
 };

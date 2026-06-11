@@ -27,7 +27,7 @@ literally a chat message the planner produces. Suggested shape:
 2. For all earlier turns, produce a one-line bullet per turn capturing
    the action taken + the relevant file path(s) touched.
 3. List any open TODOs or unresolved questions.
-4. Write the summary to `docs/thrift/cursor-summary-<YYYY-MM-DD>-<HHMM>.md`.
+4. Write the summary to `.agent-skill/reports/thrift/cursor-summary-<YYYY-MM-DD>-<HHMM>.md`.
 5. Tell the user: "Summary at `<path>`. Consider starting a fresh chat
    with this file in context to reduce token spend going forward."
 

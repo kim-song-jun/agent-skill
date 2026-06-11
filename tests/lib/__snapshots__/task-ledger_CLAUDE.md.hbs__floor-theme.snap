@@ -3,7 +3,7 @@
 <!-- agent-skill:operational:start -->
 Every active `/agent-all` run must have one task document.
 
-Required sections: Goal, Acceptance, Phases, Decision Matrix, Ambiguity Log, Progress Snapshot, Verification.
+Required sections: Goal, Acceptance, Phases, Decision Matrix, Ambiguity Log, Progress Snapshot, Verification, Cost Telemetry.
 
 Completion requires all in-scope checkboxes outside Backlog and Follow-up to be checked.
 <!-- agent-skill:operational:end -->

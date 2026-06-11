@@ -13,3 +13,10 @@ Thumbs.db
 # Per-project agent-init state (only relevant when this repo is itself harnessed)
 .claude/.harness-state.json
 .claude/.agent-init-state.json
+.agent-skill/evals/
+.agent-skill/releases/
+.agent-skill/runs/
+
+# Local QA/debug run artifacts
+/.playwright-mcp/
+/qa-*.png

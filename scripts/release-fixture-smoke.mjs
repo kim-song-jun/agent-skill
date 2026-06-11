@@ -37,14 +37,15 @@ const CLAUDE_RENDER_PRESENT = [
   ".claude/agents/frontend-dev.md",
   ".claude/agents/backend-dev.md",
   ".claude/agents/integration-dev.md",
+  ".claude/agents/quality-debt-reviewer.md",
   ".claude/agents/verification-reviewer.md",
   ".claude/agents/qa-reviewer.md",
   ".claude/agents/design-reviewer.md",
   ".claude/agents/security-reviewer.md",
   ".claude/agents/data-reviewer.md",
-  "docs/tasks/index.md",
-  "docs/tasks/_template.md",
-  "docs/tasks/_handoff-template.md",
+  ".agent-skill/tasks/index.md",
+  ".agent-skill/tasks/_template.md",
+  ".agent-skill/tasks/_handoff-template.md",
   "scripts/agent-task-ledger-check.mjs",
   ".visual-qa.json",
   ".agent-all.json",
@@ -93,14 +94,15 @@ const CLAUDE_LITE_ABSENT = [
   ".claude/agents/frontend-dev.md",
   ".claude/agents/backend-dev.md",
   ".claude/agents/integration-dev.md",
+  ".claude/agents/quality-debt-reviewer.md",
   ".claude/agents/verification-reviewer.md",
   ".claude/agents/qa-reviewer.md",
   ".claude/agents/design-reviewer.md",
   ".claude/agents/security-reviewer.md",
   ".claude/agents/data-reviewer.md",
-  "docs/tasks/index.md",
-  "docs/tasks/_template.md",
-  "docs/tasks/_handoff-template.md",
+  ".agent-skill/tasks/index.md",
+  ".agent-skill/tasks/_template.md",
+  ".agent-skill/tasks/_handoff-template.md",
   "scripts/agent-task-ledger-check.mjs",
   ".visual-qa.json",
   ".agent-all.json",
@@ -115,6 +117,7 @@ const CODEX_OPERATIONAL_PRESENT = [
   ".codex/skills/frontend-dev/SKILL.md",
   ".codex/skills/backend-dev/SKILL.md",
   ".codex/skills/integration-dev/SKILL.md",
+  ".codex/skills/quality-debt-reviewer/SKILL.md",
   ".codex/skills/verification-reviewer/SKILL.md",
   ".codex/skills/qa-reviewer/SKILL.md",
   ".codex/skills/design-reviewer/SKILL.md",
@@ -128,8 +131,8 @@ const CODEX_OPERATIONAL_PRESENT = [
   ".codex/skills/debug-codex/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
   ".codex/hooks/thrift-pretool-bash-telemetry.toml",
-  "docs/tasks/index.md",
-  "docs/debug/index.md",
+  ".agent-skill/tasks/index.md",
+  ".agent-skill/reports/debug/index.md",
   ".visual-qa.json",
   ".agent-all.json",
   ".thrift.json",
@@ -151,9 +154,16 @@ const CODEX_LITE_ABSENT = [
   ".codex/skills/orchestrator/SKILL.md",
   ".codex/skills/frontend-dev/SKILL.md",
   ".codex/skills/backend-dev/SKILL.md",
+  ".codex/skills/integration-dev/SKILL.md",
+  ".codex/skills/quality-debt-reviewer/SKILL.md",
+  ".codex/skills/verification-reviewer/SKILL.md",
+  ".codex/skills/qa-reviewer/SKILL.md",
+  ".codex/skills/design-reviewer/SKILL.md",
+  ".codex/skills/security-reviewer/SKILL.md",
+  ".codex/skills/data-reviewer/SKILL.md",
   ".codex/skills/agent-all-codex/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
-  "docs/tasks/index.md",
+  ".agent-skill/tasks/index.md",
   "scripts/agent-task-ledger-check.mjs",
   ".visual-qa.json",
   ".agent-all.json",
@@ -169,15 +179,16 @@ const CODEX_BUILDER_PRESENT = [
   ".codex/skills/frontend-dev/SKILL.md",
   ".codex/skills/backend-dev/SKILL.md",
   ".codex/skills/integration-dev/SKILL.md",
+  ".codex/skills/quality-debt-reviewer/SKILL.md",
   ".codex/skills/verification-reviewer/SKILL.md",
   ".codex/skills/qa-reviewer/SKILL.md",
   ".codex/skills/design-reviewer/SKILL.md",
   ".codex/skills/security-reviewer/SKILL.md",
   ".codex/skills/data-reviewer/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
-  "docs/tasks/index.md",
-  "docs/tasks/_template.md",
-  "docs/tasks/_handoff-template.md",
+  ".agent-skill/tasks/index.md",
+  ".agent-skill/tasks/_template.md",
+  ".agent-skill/tasks/_handoff-template.md",
   "scripts/agent-task-ledger-check.mjs",
 ];
 
@@ -191,7 +202,7 @@ const CODEX_BUILDER_ABSENT = [
   ".codex/skills/debug-codex/SKILL.md",
   ".codex/hooks/thrift-pretool-bash-telemetry.toml",
   ".debug-artifacts",
-  "docs/debug/index.md",
+  ".agent-skill/reports/debug/index.md",
 ];
 
 const CODEX_FLOOR_PRESENT = [
@@ -215,8 +226,8 @@ const CODEX_FLOOR_ABSENT = [
   ".codex/hooks/agent-policy-hook.mjs",
   ".codex/hooks/thrift-pretool-bash-telemetry.toml",
   ".debug-artifacts",
-  "docs/tasks/index.md",
-  "docs/debug/index.md",
+  ".agent-skill/tasks/index.md",
+  ".agent-skill/reports/debug/index.md",
 ];
 
 const CODEX_THRIFT_PRESENT = [
@@ -240,8 +251,8 @@ const CODEX_THRIFT_ABSENT = [
   ".codex/skills/debug-codex/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
   ".debug-artifacts",
-  "docs/tasks/index.md",
-  "docs/debug/index.md",
+  ".agent-skill/tasks/index.md",
+  ".agent-skill/reports/debug/index.md",
 ];
 
 const CODEX_DEBUG_PRESENT = [
@@ -251,7 +262,7 @@ const CODEX_DEBUG_PRESENT = [
   ".codex/skills/debug-codex/lib/state-checkpoint.mjs",
   ".codex/skills/debug-codex/phases/1-reproduce.md",
   ".debug-artifacts",
-  "docs/debug/index.md",
+  ".agent-skill/reports/debug/index.md",
 ];
 
 const CODEX_DEBUG_ABSENT = [
@@ -263,7 +274,7 @@ const CODEX_DEBUG_ABSENT = [
   ".codex/skills/agent-all-codex/SKILL.md",
   ".codex/skills/visual-qa-codex/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
-  "docs/tasks/index.md",
+  ".agent-skill/tasks/index.md",
   ".visual-qa.json",
   ".agent-all.json",
   ".thrift.json",
@@ -274,12 +285,13 @@ const CLAUDE_UNINSTALL_REMOVED = [
   ".claude/agents/orchestrator.md",
   ".claude/agents/frontend-dev.md",
   ".claude/agents/backend-dev.md",
+  ".claude/agents/quality-debt-reviewer.md",
   ".claude/hooks/context-mode-router.mjs",
   ".claude/hooks/session-summary.mjs",
   ".claude/hooks/cache-heal.mjs",
   ".claude/hooks/agent-policy-hook.mjs",
-  "docs/tasks/_template.md",
-  "docs/tasks/_handoff-template.md",
+  ".agent-skill/tasks/_template.md",
+  ".agent-skill/tasks/_handoff-template.md",
   "scripts/agent-task-ledger-check.mjs",
   ".visual-qa.json",
   ".agent-all.json",
@@ -296,13 +308,14 @@ const CODEX_UNINSTALL_REMOVED = [
   ".codex/skills/orchestrator/SKILL.md",
   ".codex/skills/frontend-dev/SKILL.md",
   ".codex/skills/backend-dev/SKILL.md",
+  ".codex/skills/quality-debt-reviewer/SKILL.md",
   ".codex/skills/agent-all-codex/SKILL.md",
   ".codex/skills/visual-qa-codex/SKILL.md",
   ".codex/skills/debug-codex/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
   ".codex/hooks/thrift-pretool-bash-telemetry.toml",
-  "docs/tasks/_template.md",
-  "docs/tasks/_handoff-template.md",
+  ".agent-skill/tasks/_template.md",
+  ".agent-skill/tasks/_handoff-template.md",
   "scripts/agent-task-ledger-check.mjs",
   ".visual-qa.json",
   ".agent-all.json",
@@ -327,6 +340,7 @@ const OPERATIONAL_ROLE_SUPERPOWERS = {
     "verification-before-completion",
   ],
   "verification-reviewer": ["requesting-code-review", "verification-before-completion"],
+  "quality-debt-reviewer": ["requesting-code-review", "verification-before-completion"],
   "qa-reviewer": ["requesting-code-review", "verification-before-completion"],
   "design-reviewer": ["requesting-code-review", "verification-before-completion"],
   "security-reviewer": ["requesting-code-review", "verification-before-completion"],
@@ -414,6 +428,7 @@ function checkClaudeRendered(root) {
     const qaReviewer = readIfExists(resolve(target, ".claude/agents/qa-reviewer.md"));
     const verificationAuditReviewers = {
       "reviewer": readIfExists(resolve(target, ".claude/agents/reviewer.md")),
+      "quality-debt-reviewer": readIfExists(resolve(target, ".claude/agents/quality-debt-reviewer.md")),
       "verification-reviewer": readIfExists(resolve(target, ".claude/agents/verification-reviewer.md")),
       "integration-dev": readIfExists(resolve(target, ".claude/agents/integration-dev.md")),
       "design-reviewer": readIfExists(resolve(target, ".claude/agents/design-reviewer.md")),
@@ -559,6 +574,7 @@ function checkClaudePlatformInstall(root) {
     const roleBodies = readClaudeOperationalRoleBodies(target);
     const verificationAuditReviewers = {
       "reviewer": readIfExists(resolve(target, ".claude/agents/reviewer.md")),
+      "quality-debt-reviewer": readIfExists(resolve(target, ".claude/agents/quality-debt-reviewer.md")),
       "verification-reviewer": readIfExists(resolve(target, ".claude/agents/verification-reviewer.md")),
       "integration-dev": readIfExists(resolve(target, ".claude/agents/integration-dev.md")),
       "design-reviewer": readIfExists(resolve(target, ".claude/agents/design-reviewer.md")),
@@ -634,6 +650,7 @@ function checkClaudePlatformBuilderInstall(root) {
     const roleBodies = readClaudeOperationalRoleBodies(target);
     const verificationAuditReviewers = {
       "reviewer": readIfExists(resolve(target, ".claude/agents/reviewer.md")),
+      "quality-debt-reviewer": readIfExists(resolve(target, ".claude/agents/quality-debt-reviewer.md")),
       "verification-reviewer": readIfExists(resolve(target, ".claude/agents/verification-reviewer.md")),
       "integration-dev": readIfExists(resolve(target, ".claude/agents/integration-dev.md")),
       "design-reviewer": readIfExists(resolve(target, ".claude/agents/design-reviewer.md")),
@@ -862,6 +879,7 @@ function checkCodexOperational(root) {
     const roleBodies = readCodexOperationalRoleBodies(target);
     const verificationAuditReviewers = {
       "reviewer": readIfExists(resolve(target, ".codex/skills/reviewer/SKILL.md")),
+      "quality-debt-reviewer": readIfExists(resolve(target, ".codex/skills/quality-debt-reviewer/SKILL.md")),
       "verification-reviewer": readIfExists(resolve(target, ".codex/skills/verification-reviewer/SKILL.md")),
       "integration-dev": readIfExists(resolve(target, ".codex/skills/integration-dev/SKILL.md")),
       "design-reviewer": readIfExists(resolve(target, ".codex/skills/design-reviewer/SKILL.md")),
@@ -958,7 +976,7 @@ const implementer = buildSkillPrompt({
     forbiddenFiles: ["src/other.js"],
     body: "Implement the release smoke fixture.",
   },
-  plan: { path: "docs/tasks/001-release-smoke.md" },
+  plan: { path: ".agent-skill/tasks/001-release-smoke.md" },
   skillPath: ".codex/skills/dev/SKILL.md",
   workingDirectory: process.cwd(),
 });
@@ -974,7 +992,7 @@ const reviewer = buildReviewPrompt({
     changedFiles: ["src/app.js"],
     diffRange: "HEAD~1..HEAD",
   },
-  plan: { path: "docs/tasks/001-release-smoke.md", section: "Task 1" },
+  plan: { path: ".agent-skill/tasks/001-release-smoke.md", section: "Task 1" },
   skillPath: ".codex/skills/verification-reviewer/SKILL.md",
   workingDirectory: process.cwd(),
 });
@@ -988,7 +1006,7 @@ const shell = buildSequentialShellCommand({
     role: "dev",
     files: ["src/app.js"],
   },
-  plan: { path: "docs/tasks/001-release-smoke.md" },
+  plan: { path: ".agent-skill/tasks/001-release-smoke.md" },
   codexBin: "codex",
   projectRoot: process.cwd(),
 });
@@ -1004,7 +1022,7 @@ const invocation = buildSequentialInvocation({
     role: "dev",
     files: ["src/app.js"],
   },
-  plan: { path: "docs/tasks/001-release-smoke.md" },
+  plan: { path: ".agent-skill/tasks/001-release-smoke.md" },
   codexBin: "codex",
   projectRoot: process.cwd(),
 });
@@ -1028,7 +1046,7 @@ const frontendDispatch = await dispatchSequential({
     role: "frontend-dev",
     files: ["src/App.tsx"],
   },
-  plan: { path: "docs/tasks/001-release-smoke.md" },
+  plan: { path: ".agent-skill/tasks/001-release-smoke.md" },
   codexBin: "codex",
   projectRoot: process.cwd(),
   assertSkillFrontmatter: true,
@@ -1060,7 +1078,7 @@ const backendDispatch = await dispatchSequential({
     role: "backend-dev",
     files: ["src/server/api.ts"],
   },
-  plan: { path: "docs/tasks/001-release-smoke.md" },
+  plan: { path: ".agent-skill/tasks/001-release-smoke.md" },
   codexBin: "codex",
   projectRoot: process.cwd(),
   assertSkillFrontmatter: true,
@@ -1168,18 +1186,18 @@ const page = {
 };
 const prompt = buildPagePrompt({
   page,
-  slugDir: "docs/visual-qa/release-smoke",
+  slugDir: ".agent-skill/reports/visual-qa/release-smoke",
   baseUrl: "http://localhost:3000",
   skillPath: ".codex/skills/visual-qa-page/SKILL.md",
 });
 requireIncludes("page prompt", prompt, "PAGE_NAME: home");
 requireIncludes("page prompt", prompt, "BASE_URL:  http://localhost:3000");
-requireIncludes("page prompt", prompt, "OUTPUT_DIR: docs/visual-qa/release-smoke/home/");
+requireIncludes("page prompt", prompt, "OUTPUT_DIR: .agent-skill/reports/visual-qa/release-smoke/home/");
 requireIncludes("page prompt", prompt, "End with a JSON line summarizing the page");
 
 const shell = buildSequentialPageShellCommand({
   page,
-  slugDir: "docs/visual-qa/release-smoke",
+  slugDir: ".agent-skill/reports/visual-qa/release-smoke",
   baseUrl: "http://localhost:3000",
   codexBin: "codex",
   projectRoot: process.cwd(),
@@ -1191,7 +1209,7 @@ requireOmits("visual-qa command", shell.command, "--skill");
 
 const invocation = buildSequentialPageInvocation({
   page,
-  slugDir: "docs/visual-qa/release-smoke",
+  slugDir: ".agent-skill/reports/visual-qa/release-smoke",
   baseUrl: "http://localhost:3000",
   codexBin: "codex",
   projectRoot: process.cwd(),
@@ -1206,7 +1224,7 @@ if (invocation.argv.includes("--prompt") || invocation.argv.includes("--skill"))
   throw new Error("visual-qa invocation used unsupported prompt or skill flags");
 }
 requireIncludes("visual-qa invocation prompt", invocation.argv[2], "PAGE_NAME: home");
-requireIncludes("visual-qa invocation prompt", invocation.argv[2], "OUTPUT_DIR: docs/visual-qa/release-smoke/home/");
+requireIncludes("visual-qa invocation prompt", invocation.argv[2], "OUTPUT_DIR: .agent-skill/reports/visual-qa/release-smoke/home/");
 
 const resolvedSkill = resolvePageSkillPath(process.cwd());
 requireIncludes("resolved page skill", resolvedSkill, ".codex/skills/visual-qa-page/SKILL.md");
@@ -1216,8 +1234,8 @@ const parsed = parsePageResult([
   JSON.stringify({
     page: "home",
     status: "completed",
-    captures: ["docs/visual-qa/release-smoke/home/desktop.png"],
-    analyses: ["docs/visual-qa/release-smoke/home/desktop.analysis.json"],
+    captures: [".agent-skill/reports/visual-qa/release-smoke/home/desktop.png"],
+    analyses: [".agent-skill/reports/visual-qa/release-smoke/home/desktop.analysis.json"],
     errors: [],
   }),
 ].join("\\n"));
@@ -1227,10 +1245,10 @@ if (parsed.page !== "home") {
 if (parsed.status !== "completed") {
   throw new Error("parsed status mismatch");
 }
-if (parsed.captures[0] !== "docs/visual-qa/release-smoke/home/desktop.png") {
+if (parsed.captures[0] !== ".agent-skill/reports/visual-qa/release-smoke/home/desktop.png") {
   throw new Error("parsed captures mismatch");
 }
-if (parsed.analyses[0] !== "docs/visual-qa/release-smoke/home/desktop.analysis.json") {
+if (parsed.analyses[0] !== ".agent-skill/reports/visual-qa/release-smoke/home/desktop.analysis.json") {
   throw new Error("parsed analyses mismatch");
 }
 if (parsed.errors.length !== 0) {
@@ -1300,6 +1318,7 @@ function checkCodexBuilder(root) {
     const roleBodies = readCodexOperationalRoleBodies(target);
     const verificationAuditReviewers = {
       "reviewer": readIfExists(resolve(target, ".codex/skills/reviewer/SKILL.md")),
+      "quality-debt-reviewer": readIfExists(resolve(target, ".codex/skills/quality-debt-reviewer/SKILL.md")),
       "verification-reviewer": readIfExists(resolve(target, ".codex/skills/verification-reviewer/SKILL.md")),
       "integration-dev": readIfExists(resolve(target, ".codex/skills/integration-dev/SKILL.md")),
       "design-reviewer": readIfExists(resolve(target, ".codex/skills/design-reviewer/SKILL.md")),
@@ -1467,7 +1486,7 @@ function checkCodexPlatformUninstall(root) {
       ["dry-run reports cleaner without mutation", dryRun.status === 0 && /harness clean: dry-run/i.test(dryRun.stdout) && !dryRunMutated],
       ["uninstall reports cleaner success", uninstall.status === 0 && /harness clean: ok/i.test(uninstall.stdout)],
       ["root AGENTS.md is preserved for manual review", existsSync(resolve(target, "AGENTS.md"))],
-      ["debug docs are preserved as evidence", existsSync(resolve(target, "docs/debug/index.md"))],
+      ["debug docs are preserved as evidence", existsSync(resolve(target, ".agent-skill/reports/debug/index.md"))],
       ["debug artifacts are preserved as evidence", existsSync(resolve(target, ".debug-artifacts"))],
       ["does not patch global Codex config", !existsSync(homeConfig)],
     ];
@@ -1539,7 +1558,7 @@ function checkCodexPlatformForceRootClean(root) {
       ["dry-run reports force-root cleaner without mutation", dryRun.status === 0 && /--force-root/.test(dryRun.stdout) && /harness clean: dry-run/i.test(dryRun.stdout) && !dryRunMutated],
       ["force-root uninstall reports cleaner success", uninstall.status === 0 && /harness clean: ok/i.test(uninstall.stdout)],
       ["root AGENTS.md is removed when force-root-clean is explicit", !existsSync(resolve(target, "AGENTS.md"))],
-      ["debug docs are preserved as evidence", existsSync(resolve(target, "docs/debug/index.md"))],
+      ["debug docs are preserved as evidence", existsSync(resolve(target, ".agent-skill/reports/debug/index.md"))],
       ["debug artifacts are preserved as evidence", existsSync(resolve(target, ".debug-artifacts"))],
       ["does not patch global Codex config", !existsSync(homeConfig)],
     ];

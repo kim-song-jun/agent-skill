@@ -27,9 +27,9 @@ const CONFIG_FIXTURES = [
 ];
 
 const PR_FIXTURES = [
-  { tag: "single-wave-pass", ctx: { task: { title: "Fix login", path: "docs/tasks/12-fix-login.md" }, plan: { path: "docs/superpowers/plans/2026-05-17-fix-login.md" }, waves: [{ status: "completed", tasks: [{ id: 1, title: "Failing test" }, { id: 2, title: "Fix" }] }], loop: { breakCondition: "npm test" }, breakConditionPassed: true, testsPass: true, reviewClean: true, iter: 1, maxIter: 1, costUSD: "2.40", maxCostUSD: 50 } },
-  { tag: "multi-wave-loop", ctx: { task: { title: "Refactor", path: "docs/tasks/13-refactor.md" }, plan: { path: "docs/superpowers/plans/p.md" }, waves: [{ status: "completed", tasks: [{ id: 1, title: "A" }] }, { status: "completed", tasks: [{ id: 2, title: "B" }] }], loop: { breakCondition: "pytest" }, breakConditionPassed: true, testsPass: true, reviewClean: true, iter: 3, maxIter: 5, costUSD: "12.00", maxCostUSD: 50 } },
-  { tag: "incomplete", ctx: { task: { title: "X", path: "docs/tasks/x.md" }, plan: { path: "p.md" }, waves: [{ status: "incomplete", tasks: [{ id: 1, title: "A" }] }], loop: { breakCondition: "true" }, breakConditionPassed: false, testsPass: false, reviewClean: false, iter: 1, maxIter: 1, costUSD: "0.50", maxCostUSD: 50 } },
+  { tag: "single-wave-pass", ctx: { task: { title: "Fix login", path: "docs/tasks/12-fix-login.md" }, plan: { path: "docs/superpowers/plans/2026-05-17-fix-login.md" }, waves: [{ status: "completed", tasks: [{ id: 1, title: "Failing test" }, { id: 2, title: "Fix" }] }], loop: { breakCondition: "npm test" }, breakConditionPassed: true, testsPass: true, reviewClean: true, iter: 1, maxIter: 1, maxIterLabel: "1", costUSD: "2.40", maxCostUSD: 50 } },
+  { tag: "multi-wave-loop", ctx: { task: { title: "Refactor", path: "docs/tasks/13-refactor.md" }, plan: { path: "docs/superpowers/plans/p.md" }, waves: [{ status: "completed", tasks: [{ id: 1, title: "A" }] }, { status: "completed", tasks: [{ id: 2, title: "B" }] }], loop: { breakCondition: "pytest" }, breakConditionPassed: true, testsPass: true, reviewClean: true, iter: 3, maxIter: 5, maxIterLabel: "5", costUSD: "12.00", maxCostUSD: 50 } },
+  { tag: "incomplete", ctx: { task: { title: "X", path: "docs/tasks/x.md" }, plan: { path: "p.md" }, waves: [{ status: "incomplete", tasks: [{ id: 1, title: "A" }] }], loop: { breakCondition: "true" }, breakConditionPassed: false, testsPass: false, reviewClean: false, iter: 1, maxIter: 1, maxIterLabel: "1", costUSD: "0.50", maxCostUSD: 50 } },
 ];
 
 function listTemplates(dir) {

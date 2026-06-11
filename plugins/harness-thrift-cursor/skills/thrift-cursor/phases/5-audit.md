@@ -15,7 +15,7 @@ There is no `.thrift-state.json` to read.
 ## Steps
 
 1. Resolve `audit.outputPath` placeholder `<date>` → `YYYY-MM-DD`.
-   Default path: `docs/thrift/cursor-recap-<date>.md`.
+   Default path: `.agent-skill/reports/thrift/cursor-recap-<date>.md`.
 2. If file exists: append a `-HHMM` suffix.
 3. Render `templates/audit-report.md.hbs` with a **subset** of the
    Claude Code context — the cost / token / cache sections are present

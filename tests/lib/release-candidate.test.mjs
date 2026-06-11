@@ -42,7 +42,11 @@ function makeFixture({ readme, readmeKo }) {
       "# Release validation checklist",
       "## Release Candidate Lifecycle",
       "`git rev-parse HEAD`",
+      "`node scripts/github-governance-check.mjs`",
+      "`node scripts/docs-structure-check.mjs`",
+      "`node scripts/release-provenance.mjs --release=rc-YYYY-MM-DD-SHORTSHA --out-dir=.agent-skill/releases/rc-YYYY-MM-DD-SHORTSHA`",
       "`./scripts/release-smoke.sh --fast --with-live-cli`",
+      "`node scripts/generate-support-matrix.mjs --check`",
       "Create a date-stamped release-candidate tag.",
       "Roll back only to a previous verified tag/SHA.",
       "",
@@ -66,17 +70,37 @@ test("release-candidate report validates current checkout evidence", () => {
   assert.equal(report.ok, true, JSON.stringify(report.checks, null, 2));
   assert.match(report.git.head, /^[0-9a-f]{40}$/);
   assert.match(report.recommendedTag, /^rc-2026-06-02-[0-9a-f]{7}$/);
-  assert.equal(report.plugins.count, 18);
+  assert.equal(report.plugins.count, 19);
   assert.equal(report.plugins.manifests.find((plugin) => plugin.name === "harness-builder").version, "0.3.0");
   assert.equal(report.plugins.manifests.find((plugin) => plugin.name === "harness-floor").version, "0.5.1");
   assert.ok(report.gateCommands.includes("./scripts/release-smoke.sh --fast --with-live-cli"));
+  assert.ok(report.gateCommands.includes("node scripts/github-governance-check.mjs"));
+  assert.ok(report.gateCommands.includes("node scripts/docs-structure-check.mjs"));
+  assert.ok(
+    report.gateCommands.includes(
+      `node scripts/release-provenance.mjs --release=${report.recommendedTag} --out-dir=.agent-skill/releases/${report.recommendedTag}`,
+    ),
+  );
+  assert.ok(report.gateCommands.includes("node scripts/skill-eval.mjs --smoke --no-write --json"));
   assert.ok(report.gateCommands.includes("node scripts/release-publish-preflight.mjs --base=origin/main"));
+  assert.ok(report.gateCommands.includes("node scripts/generate-support-matrix.mjs --check"));
   assert.ok(
     report.gateCommands.includes("node scripts/target-project-smoke.mjs --target=/path/to/target --platform=claude,codex --lang=ko"),
   );
   assert.ok(
     report.checks.some(
       (check) => check.ok && check.name === "README/README.ko Versioning matches plugin manifests",
+    ),
+  );
+  assert.equal(report.provenance.schemaVersion, "agent-skill-release-manifest/v1");
+  assert.equal(report.provenance.pluginCount, 19);
+  assert.equal(report.provenance.release, report.recommendedTag);
+  assert.match(report.provenance.marketplaceChecksum, /^sha256:[0-9a-f]{64}$/);
+  assert.ok(report.rollout.some((command) => command.includes("--verify-provenance --manifest=/path/to/release-manifest.json")));
+  assert.ok(report.rollout.some((command) => command.includes("--verify-checksums --manifest=/path/to/release-manifest.json")));
+  assert.ok(
+    report.checks.some(
+      (check) => check.ok && check.name === "release provenance manifest can be generated",
     ),
   );
 });
@@ -116,4 +140,6 @@ test("release-candidate CLI emits JSON evidence", () => {
   assert.equal(report.ok, true);
   assert.match(report.recommendedTag, /^rc-2026-06-02-[0-9a-f]{7}$/);
   assert.equal(report.checks.find((check) => check.name === "marketplace plugins align with plugin manifests").ok, true);
+  assert.equal(report.checks.find((check) => check.name === "release provenance manifest can be generated").ok, true);
+  assert.equal(report.provenance.pluginCount, 19);
 });

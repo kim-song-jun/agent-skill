@@ -18,10 +18,10 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.ok, true);
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
-  assert.equal(result.platforms.claude.checks.length, 61);
-  assert.equal(result.platforms.codex.checks.length, 66);
-  assert.match(result.platforms.claude.summary, /Claude: ok \(61\/61 checks\)/);
-  assert.match(result.platforms.codex.summary, /Codex: ok \(66\/66 checks\)/);
+  assert.equal(result.platforms.claude.checks.length, 82);
+  assert.equal(result.platforms.codex.checks.length, 75);
+  assert.match(result.platforms.claude.summary, /Claude: ok \(82\/82 checks\)/);
+  assert.match(result.platforms.codex.summary, /Codex: ok \(75\/75 checks\)/);
   for (const platform of Object.values(result.platforms)) {
     const names = platform.checks.map((check) => check.name);
     const duplicateNames = names.filter((name, index) => names.indexOf(name) !== index);
@@ -36,7 +36,22 @@ test("release audit reports Claude and Codex as independently ready", () => {
   );
   assert.ok(
     result.platforms.claude.checks.some(
-      (check) => check.name === "tests/manual-checklist.md matches release contract (local deploy release gate)",
+      (check) => check.name === "tests/manual-checklist.md matches release contract (public PR CI and local release gate)",
+    ),
+  );
+  assert.ok(
+    result.platforms.claude.checks.some(
+      (check) => check.name === "scripts/github-governance-check.mjs matches release contract (GitHub governance check)",
+    ),
+  );
+  assert.ok(
+    result.platforms.claude.checks.some(
+      (check) => check.name === "scripts/docs-structure-check.mjs matches release contract (docs structure check)",
+    ),
+  );
+  assert.ok(
+    result.platforms.claude.checks.some(
+      (check) => check.name === "docs/github-governance.md matches release contract (GitHub governance docs)",
     ),
   );
   assert.ok(
@@ -65,10 +80,42 @@ test("release audit reports Claude and Codex as independently ready", () => {
     ),
   );
   assert.ok(
+    result.platforms.claude.checks.some(
+      (check) => check.name === "release provenance manifest can be generated" && /19\/19 plugin checksums/.test(check.details),
+    ),
+  );
+  assert.ok(
+    result.platforms.claude.checks.some(
+      (check) =>
+        check.name === "release provenance manifest can be generated" &&
+        check.severity === "warning" &&
+        /marketplace consistency: passed/.test(check.details) &&
+        /signed tag: (none|unsigned|unknown)/.test(check.details),
+    ),
+  );
+  assert.ok(
+    result.platforms.claude.checks.some(
+      (check) => check.name === "scripts/release-provenance.mjs matches release contract (release provenance manifest)",
+    ),
+  );
+  assert.ok(
+    result.platforms.claude.checks.some(
+      (check) => check.name === "scripts/install-all.sh matches release contract (install-all provenance verification)",
+    ),
+  );
+  assert.ok(
+    result.platforms.claude.checks.some(
+      (check) => check.name === "scripts/update.sh matches release contract (update provenance verification)",
+    ),
+  );
+  assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "plugins/harness-builder/skills/agent-init/templates/agents/qa-reviewer.md.hbs matches release contract"),
   );
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "plugins/harness-builder/skills/agent-init/templates/agents/verification-reviewer.md.hbs matches release contract"),
+  );
+  assert.ok(
+    result.platforms.claude.checks.some((check) => check.name === "plugins/harness-builder/skills/agent-init/templates/agents/quality-debt-reviewer.md.hbs matches release contract"),
   );
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "plugins/harness-builder/skills/agent-init/templates/AGENTS.md.hbs matches release contract (companion root guidance)"),
@@ -77,7 +124,16 @@ test("release audit reports Claude and Codex as independently ready", () => {
     result.platforms.claude.checks.some((check) => check.name === "plugins/harness-builder/skills/agent-init/lib/doctor-core.mjs matches release contract"),
   );
   assert.ok(
+    result.platforms.claude.checks.some((check) => check.name === "plugins/harness-floor/skills/agent-handoff/SKILL.md exists"),
+  );
+  assert.ok(
+    result.platforms.claude.checks.some((check) => check.name === "plugins/harness-floor/skills/agent-handoff/SKILL.md matches release contract"),
+  );
+  assert.ok(
     result.platforms.codex.checks.some((check) => check.name === "plugins/harness-thrift-codex/skills/thrift-codex/phases/3-summariser.md matches release contract (advisory summariser contract)"),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some((check) => check.name === "plugins/harness-builder-codex/skills/codex-init/templates/skills/quality-debt-reviewer/SKILL.md.hbs matches release contract"),
   );
   assert.ok(
     result.platforms.claude.checks.some((check) => check.name === "scripts/install-platform.sh matches release contract"),
@@ -94,7 +150,22 @@ test("release audit reports Claude and Codex as independently ready", () => {
   );
   assert.ok(
     result.platforms.codex.checks.some(
-      (check) => check.name === "tests/manual-checklist.md matches release contract (local deploy release gate)",
+      (check) => check.name === "tests/manual-checklist.md matches release contract (public PR CI and local release gate)",
+    ),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some(
+      (check) => check.name === "scripts/github-governance-check.mjs matches release contract (GitHub governance check)",
+    ),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some(
+      (check) => check.name === "scripts/docs-structure-check.mjs matches release contract (docs structure check)",
+    ),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some(
+      (check) => check.name === "docs/github-governance.md matches release contract (GitHub governance docs)",
     ),
   );
   assert.ok(
@@ -120,6 +191,26 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.ok(
     result.platforms.codex.checks.some(
       (check) => check.name === "scripts/release-candidate.mjs matches release contract (release-candidate evidence script)",
+    ),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some(
+      (check) => check.name === "release provenance manifest can be generated" && /19\/19 plugin checksums/.test(check.details),
+    ),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some(
+      (check) => check.name === "scripts/release-provenance.mjs matches release contract (release provenance manifest)",
+    ),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some(
+      (check) => check.name === "scripts/install-all.sh matches release contract (install-all provenance verification)",
+    ),
+  );
+  assert.ok(
+    result.platforms.codex.checks.some(
+      (check) => check.name === "scripts/update.sh matches release contract (update provenance verification)",
     ),
   );
   assert.ok(
@@ -157,6 +248,7 @@ test("release audit fails public CLI scripts without executable bits", () => {
         { name: "harness-thrift" },
         { name: "harness-explore" },
         { name: "harness-debug" },
+        { name: "harness-data" },
       ],
     }),
   );
@@ -214,6 +306,7 @@ test("release audit CLI emits human-readable platform summaries", () => {
   assert.match(output, /release readiness audit: ok/i);
   assert.match(output, /Claude: ok/i);
   assert.match(output, /Codex: ok/i);
+  assert.match(output, /warn - release provenance manifest can be generated: 19\/19 plugin checksums; marketplace consistency: passed; signed tag: (none|unsigned|unknown)/);
 });
 
 test("release audit reports missing contract text files as failed checks", () => {
@@ -228,6 +321,7 @@ test("release audit reports missing contract text files as failed checks", () =>
         { name: "harness-thrift" },
         { name: "harness-explore" },
         { name: "harness-debug" },
+        { name: "harness-data" },
       ],
     }),
   );
@@ -255,6 +349,7 @@ test("release audit fails incomplete shared Claude/Codex project installer contr
         { name: "harness-thrift" },
         { name: "harness-explore" },
         { name: "harness-debug" },
+        { name: "harness-data" },
         { name: "harness-builder-codex" },
         { name: "harness-floor-codex" },
         { name: "harness-thrift-codex" },
@@ -295,6 +390,7 @@ test("release audit fails release smoke without the release doc contract gate", 
         { name: "harness-thrift" },
         { name: "harness-explore" },
         { name: "harness-debug" },
+        { name: "harness-data" },
       ],
     }),
   );
@@ -339,6 +435,7 @@ test("release audit fails doctor cores without recovery guidance", () => {
         { name: "harness-thrift" },
         { name: "harness-explore" },
         { name: "harness-debug" },
+        { name: "harness-data" },
         { name: "harness-builder-codex" },
         { name: "harness-floor-codex" },
         { name: "harness-thrift-codex" },
@@ -389,6 +486,7 @@ test("release audit fails incomplete Claude slash-command skill surfaces", () =>
         { name: "harness-thrift" },
         { name: "harness-explore" },
         { name: "harness-debug" },
+        { name: "harness-data" },
       ],
     }),
   );

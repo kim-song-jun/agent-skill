@@ -24,13 +24,28 @@ For each wave with `status === "completed"`:
 2. Build the deterministic gate plan:
    ```
    import { buildGatePlan } from "./lib/gate-plan.mjs";
-   const gatePlan = buildGatePlan({ files, gates: config.gates, taskId, title });
+   const orchestration = wave.orchestration ?? state.orchestration ?? null;
+   const requiredReviewerRoles = (orchestration?.requiredAgents ?? [])
+     .filter((agent) => agent.kind === "reviewer")
+     .map((agent) => agent.role);
+   const requiredCoordinatorRoles = (orchestration?.requiredAgents ?? [])
+     .filter((agent) => agent.kind === "coordinator")
+     .map((agent) => agent.role);
+   const gatePlan = buildGatePlan({
+     files,
+     gates: config.gates,
+     taskId,
+     title,
+     requiredReviewerRoles,
+     requiredCoordinatorRoles,
+   });
    ```
    `gatePlan.dispatches` is the source of truth for Phase 4 ordering.
    `lib/gate-plan.mjs` wraps `lib/changed-file-classifier.mjs` and uses
-   `classifyChangedFiles(files)` internally, invokes returned coordinators
-   before reviewers, and includes the description prefix plus required audit
-   token, gate reason, and pass criteria for each dispatch.
+   `classifyChangedFiles(files)` internally, then unions any dynamic roles
+   persisted by Phase 3. It invokes coordinators before reviewers and includes
+   the description prefix plus required audit token, gate reason, and pass
+   criteria for each dispatch.
 3. Dispatch every `gatePlan.dispatches[]` entry in order:
    - `kind=coordinator`, `role=orchestrator`: prompt `.codex/skills/orchestrator/SKILL.md`
      first. Ask it to identify HOT files, unsafe ownership overlap, retry
@@ -50,6 +65,9 @@ For each wave with `status === "completed"`:
      confusion, accessibility-visible behavior, and acceptance gaps. NOT
      tech-stack verification. It must emit `QA_AUDIT: passed|failed|skipped`.
    - Technical reviewers must emit `VERIFICATION_AUDIT: passed|failed|skipped`.
+   - Append each dynamic sequential review spawn to
+     `.agent-skill/runs/<run-id>/spawn-log.jsonl` with role, reason, wave, and
+     cost estimate.
 4. Collect verdicts. Bucket issues by severity.
 4b. **Classifier-based gate.** Wave passes Phase 4 iff:
    - `ORCHESTRATION_AUDIT` is `passed` or `skipped` for every coordinator
@@ -69,8 +87,9 @@ For each wave with `status === "completed"`:
    - Dispatch `dev` skill with the critical issues.
    - Re-dispatch the classifier-selected reviewer personas afterward.
    - Up to 3 retry cycles. If the same issue repeats through 3 retry cycles,
-     stop the retry loop and escalate to planner/user decision. If still
-     failing: abort, push
+     update `state.orchestration.failureSignatures`, stop the retry loop, and
+     escalate to planner/user decision instead of spawning more implementers.
+     If still failing: abort, push
      `{phase: 4, status: "blocked"}`, exit code 2.
 6. Record `state.waves[i].gateVerdict = {issues, retries, finalStatus}`.
 7. Push `{phase: 4, completedAt}` once all waves processed.

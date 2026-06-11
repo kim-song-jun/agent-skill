@@ -5,7 +5,7 @@ description: >
   hypothesis state persistence, structured error parsing, and git/input
   bisection. Use run /debug to start an investigation from a failing
   command; run /debug --resume to continue across sessions. Writes a
-  durable log to docs/debug/<date>-<slug>.md at end. Wraps (does not
+  durable log to .agent-skill/reports/debug/<date>-<slug>.md at end. Wraps (does not
   replace) superpowers:systematic-debugging when that skill is installed.
 ---
 
@@ -87,6 +87,14 @@ under `phases/`; Read it on demand.
    shell work where output may exceed 20 lines when available; otherwise
    run the smallest useful `shell_command`/`exec_command` and capture raw
    output to `.debug-artifacts/`.
+7. **Shared interaction model for user decisions.** Any choice, resume,
+   or confirmation uses `agent-interaction/v1` from
+   `../agent-all-codex/lib/interactions/*.mjs`, renders through
+   `renderer-codex.mjs`, and appends the result to
+   `.agent-skill/runs/debug/interactions.jsonl` with
+   `appendInteractionLog({ source: "debug" })`. Non-TTY may choose a
+   recommended low/medium-risk option, but high-risk options and unknown
+   refs must use `nonTtyPolicy: "pause"`.
 
 ## Codex primitive map
 
@@ -97,7 +105,7 @@ under `phases/`; Read it on demand.
 | Shell one-shot | `shell_command` |
 | Reused shell session | `exec_command` |
 | Large shell output | context-mode `ctx_execute` / `ctx_batch_execute` when installed |
-| Prompt user | ask a concise question in the main turn |
+| Prompt user | `agent-interaction/v1` via `renderer-codex.mjs`, logged to `interactions.jsonl` |
 | Invoke helper skill | installed skill invocation when Codex exposes it; fallback prompt otherwise |
 
 ## Lib modules
@@ -129,7 +137,7 @@ under `phases/`; Read it on demand.
 Print:
 ```
 Debug complete: <root-cause-one-liner>
-Log: docs/debug/<date>-<slug>.md
+Log: .agent-skill/reports/debug/<date>-<slug>.md
 Hypotheses: <tested>/<total> tested, <verified> verified, <rejected> rejected.
 ```
 

@@ -16,10 +16,14 @@ If `--no-pr` OR `config.defaults.createPR === false`: skip. Push
 4. Push: `git push -u origin "$branch"`. If push fails (network/auth):
    warn, push `{phase: 5, status: "pushed-locally"}`, continue.
 5. Render `templates/pr-body.md.hbs` with PR context (waves, plan, task,
-   loop break condition, testsPass, reviewClean, iter, cost).
+   loop break condition, testsPass, reviewClean, iter, cost). Then run
+   `redactArtifactContent({ artifactPath: "PR body", content: rendered, config })`,
+   append a redaction audit summary when findings exist, and abort before
+   `gh pr create` if `assertRedactionAllowed` blocks. Use the redacted body for
+   every shell command; never pass the raw body to GitHub.
 6. Create PR:
    ```bash
-   gh pr create --base <baseBranch> --title "<task.title>" --body "$(rendered)"
+   gh pr create --base <baseBranch> --title "<task.title>" --body "$(prBody)"
    ```
    If `gh` missing or unauthenticated: warn `gh missing — PR not created`,
    stash `prUrl: null`, continue.

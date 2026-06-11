@@ -22,14 +22,15 @@ export const CONTRACTS = {
       ".claude/agents/frontend-dev.md",
       ".claude/agents/backend-dev.md",
       ".claude/agents/integration-dev.md",
+      ".claude/agents/quality-debt-reviewer.md",
       ".claude/agents/verification-reviewer.md",
       ".claude/agents/qa-reviewer.md",
       ".claude/agents/design-reviewer.md",
       ".claude/agents/security-reviewer.md",
       ".claude/agents/data-reviewer.md",
-      "docs/tasks/index.md",
-      "docs/tasks/_template.md",
-      "docs/tasks/_handoff-template.md",
+      ".agent-skill/tasks/index.md",
+      ".agent-skill/tasks/_template.md",
+      ".agent-skill/tasks/_handoff-template.md",
       "scripts/agent-task-ledger-check.mjs",
     ],
     operationalRequired: [
@@ -48,7 +49,7 @@ export const CONTRACTS = {
     builderMarkers: [
       ".claude/hooks/agent-policy-hook.mjs",
       ".claude/agents/orchestrator.md",
-      "docs/tasks/index.md",
+      ".agent-skill/tasks/index.md",
     ],
     textChecks: [
       {
@@ -65,6 +66,11 @@ export const CONTRACTS = {
         profiles: ["builder", "operational"],
         path: ".claude/agents/orchestrator.md",
         patterns: [/Implementation Routing Matrix/, /frontend-dev/, /backend-dev/, /integration-dev/],
+      },
+      {
+        profiles: ["builder", "operational"],
+        path: ".claude/agents/quality-debt-reviewer.md",
+        patterns: [/Quality Debt Policy/, /VERIFICATION_AUDIT: passed/, /Quality Debt Exceptions/],
       },
       {
         profiles: ["builder", "operational"],
@@ -92,15 +98,16 @@ export const CONTRACTS = {
       ".codex/skills/frontend-dev/SKILL.md",
       ".codex/skills/backend-dev/SKILL.md",
       ".codex/skills/integration-dev/SKILL.md",
+      ".codex/skills/quality-debt-reviewer/SKILL.md",
       ".codex/skills/verification-reviewer/SKILL.md",
       ".codex/skills/qa-reviewer/SKILL.md",
       ".codex/skills/design-reviewer/SKILL.md",
       ".codex/skills/security-reviewer/SKILL.md",
       ".codex/skills/data-reviewer/SKILL.md",
       ".codex/hooks/agent-policy-hook.mjs",
-      "docs/tasks/index.md",
-      "docs/tasks/_template.md",
-      "docs/tasks/_handoff-template.md",
+      ".agent-skill/tasks/index.md",
+      ".agent-skill/tasks/_template.md",
+      ".agent-skill/tasks/_handoff-template.md",
       "scripts/agent-task-ledger-check.mjs",
     ],
     operationalRequired: [
@@ -120,7 +127,7 @@ export const CONTRACTS = {
       ".codex/skills/debug-codex/lib/state-checkpoint.mjs",
       ".codex/skills/debug-codex/phases/1-reproduce.md",
       ".debug-artifacts",
-      "docs/debug/index.md",
+      ".agent-skill/reports/debug/index.md",
     ],
     jsonFiles: [
       ".visual-qa.json",
@@ -135,12 +142,12 @@ export const CONTRACTS = {
     ],
     debugMarkers: [
       ".codex/skills/debug-codex/SKILL.md",
-      "docs/debug/index.md",
+      ".agent-skill/reports/debug/index.md",
     ],
     builderMarkers: [
       ".codex/hooks/agent-policy-hook.mjs",
       ".codex/skills/orchestrator/SKILL.md",
-      "docs/tasks/index.md",
+      ".agent-skill/tasks/index.md",
     ],
     textChecks: [
       {
@@ -152,6 +159,11 @@ export const CONTRACTS = {
         profiles: ["builder", "operational"],
         path: ".codex/skills/orchestrator/SKILL.md",
         patterns: [/Implementation Routing Matrix/, /frontend-dev/, /backend-dev/, /integration-dev/],
+      },
+      {
+        profiles: ["builder", "operational"],
+        path: ".codex/skills/quality-debt-reviewer/SKILL.md",
+        patterns: [/Quality Debt Policy/, /VERIFICATION_AUDIT: passed/, /Quality Debt Exceptions/],
       },
       {
         profiles: ["builder", "operational"],

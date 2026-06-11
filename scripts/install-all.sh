@@ -3,9 +3,9 @@
 # `claude` CLI. Bypasses Claude Code's one-at-a-time `/plugin install`.
 #
 # Usage:
-#   ./scripts/install-all.sh                  # install Claude Code essentials (5 plugins)
-#   ./scripts/install-all.sh --all            # install all 18 plugins (incl. CLI-platform siblings)
-#   ./scripts/install-all.sh --claude-code    # explicit: just the 5 native ones (default)
+#   ./scripts/install-all.sh                  # install Claude Code essentials (6 plugins)
+#   ./scripts/install-all.sh --all            # install all 19 plugins (incl. CLI-platform siblings)
+#   ./scripts/install-all.sh --claude-code    # explicit: just the 6 native ones (default)
 #   ./scripts/install-all.sh --cli=codex      # builder + floor + thrift + debug, all for Codex CLI
 #   ./scripts/install-all.sh --cli=copilot    # ... for Copilot CLI
 #   ./scripts/install-all.sh --cli=gemini     # ... for Gemini CLI
@@ -13,6 +13,8 @@
 #   ./scripts/install-all.sh --foundations    # also install approved foundations
 #   ./scripts/install-all.sh --foundations-only
 #                                               # install only superpowers/context-mode
+#   ./scripts/install-all.sh --verify-checksums [--manifest=release-manifest.json]
+#                                               # verify release provenance before install
 #   ./scripts/install-all.sh --dry-run        # print commands; don't execute
 #
 # Requires: `claude` binary in PATH. Marketplace must already be added:
@@ -26,6 +28,8 @@ MODE="claude-code"
 DRY_RUN=0
 UPDATE_FOUNDATIONS=0
 FOUNDATIONS_ONLY=0
+VERIFY_CHECKSUMS=0
+PROVENANCE_MANIFEST=""
 FOUNDATION_PLUGINS=(
   "superpowers@claude-plugins-official"
   "context-mode@context-mode"
@@ -42,9 +46,9 @@ install-all.sh — bulk install every plugin in this marketplace via the
 `claude` CLI. Bypasses Claude Code's one-at-a-time `/plugin install`.
 
 Usage:
-  ./scripts/install-all.sh                  # install Claude Code essentials (5 plugins)
-  ./scripts/install-all.sh --all            # install all 18 plugins (incl. CLI-platform siblings)
-  ./scripts/install-all.sh --claude-code    # explicit: just the 5 native ones (default)
+  ./scripts/install-all.sh                  # install Claude Code essentials (6 plugins)
+  ./scripts/install-all.sh --all            # install all 19 plugins (incl. CLI-platform siblings)
+  ./scripts/install-all.sh --claude-code    # explicit: just the 6 native ones (default)
   ./scripts/install-all.sh --cli=codex      # builder + floor + thrift + debug, all for Codex CLI
   ./scripts/install-all.sh --cli=copilot    # ... for Copilot CLI
   ./scripts/install-all.sh --cli=gemini     # ... for Gemini CLI
@@ -52,6 +56,8 @@ Usage:
   ./scripts/install-all.sh --foundations    # also install approved foundations
   ./scripts/install-all.sh --foundations-only
                                              # install only superpowers/context-mode
+  ./scripts/install-all.sh --verify-checksums [--manifest=release-manifest.json]
+                                             # verify release provenance before install
   ./scripts/install-all.sh --dry-run        # print commands; don't execute
 
 Approved foundations:
@@ -61,6 +67,16 @@ Approved foundations:
 Requires: `claude` binary in PATH. Marketplace must already be added:
   /plugin marketplace add https://github.com/kim-song-jun/agent-skill
 EOF
+}
+
+run_provenance_verification() {
+  local cmd=(node "$SCRIPT_DIR/release-provenance.mjs" --verify)
+  if [ -n "$PROVENANCE_MANIFEST" ]; then
+    cmd+=(--manifest="$PROVENANCE_MANIFEST")
+  fi
+  echo "Verifying release provenance checksums:"
+  "${cmd[@]}"
+  echo
 }
 
 print_foundation_install_dry_run() {
@@ -136,6 +152,8 @@ for arg in "$@"; do
       UPDATE_FOUNDATIONS=1
       FOUNDATIONS_ONLY=1
       ;;
+    --verify-checksums|--verify-provenance) VERIFY_CHECKSUMS=1 ;;
+    --manifest=*) PROVENANCE_MANIFEST="${arg#*=}" ;;
     --dry-run)     DRY_RUN=1 ;;
     -h|--help)
       usage
@@ -148,6 +166,10 @@ for arg in "$@"; do
       ;;
   esac
 done
+
+if [ "$VERIFY_CHECKSUMS" = "1" ]; then
+  run_provenance_verification
+fi
 
 if [ "$FOUNDATIONS_ONLY" = "0" ]; then
   select_plugins_for_mode "$MODE"

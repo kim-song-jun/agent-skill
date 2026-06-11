@@ -97,8 +97,20 @@ fi
 run_step "release readiness audit" \
   node "$REPO_ROOT/scripts/release-audit.mjs"
 
+run_step "GitHub governance check" \
+  node "$REPO_ROOT/scripts/github-governance-check.mjs"
+
+run_step "docs structure check" \
+  node "$REPO_ROOT/scripts/docs-structure-check.mjs"
+
+run_step "release provenance manifest smoke" \
+  node "$REPO_ROOT/scripts/release-provenance.mjs" --no-write --json
+
 run_step "fresh release fixtures" \
   node "$REPO_ROOT/scripts/release-fixture-smoke.mjs"
+
+run_step "skill utility eval smoke" \
+  node "$REPO_ROOT/scripts/skill-eval.mjs" --smoke --no-write --json
 
 run_step "Claude marketplace dry-run" \
   bash "$REPO_ROOT/scripts/install-all.sh" --dry-run --claude-code
@@ -118,6 +130,9 @@ run_step "focused release contracts" \
     tests/lib/release-install-scripts.test.mjs \
     tests/lib/update-script-contract.test.mjs \
     tests/lib/release-doc-contract.test.mjs \
+    tests/lib/skill-eval.test.mjs \
+    tests/lib/github-governance.test.mjs \
+    tests/lib/release-provenance.test.mjs \
     tests/lib/cross-platform-manifest.test.mjs \
     tests/lib/codex-current-hook-schema.test.mjs \
     tests/lib/codex-install-hook.test.mjs \
@@ -126,6 +141,9 @@ run_step "focused release contracts" \
     tests/agent-all/lib/generated-policy-hook.test.mjs \
     tests/agent-all/lib/changed-file-classifier.test.mjs \
     tests/agent-all/lib/gate-plan.test.mjs \
+    tests/agent-all/lib/orchestration/orchestration-planner.test.mjs \
+    tests/agent-all/interactions/schema-renderer.test.mjs \
+    tests/agent-all/interactions/non-tty-log.test.mjs \
     tests/agent-all/policy/coordinator-audit-validator.test.mjs \
     tests/agent-all/policy/audit-token-ssot.test.mjs \
     tests/agent-all/policy/shell-tokenizer-continuation.test.mjs \
@@ -140,6 +158,7 @@ run_step "focused release contracts" \
     tests/lib/thrift-codex-hooks.test.mjs
 
 run_step "vendored libs" node scripts/sync-lib.mjs --check
+run_step "support matrix" node scripts/generate-support-matrix.mjs --check
 
 if [ "$MODE" = "full" ]; then
   mapfile -t TEST_FILES < <(cd "$REPO_ROOT" && find tests -name '*.test.mjs' | sort)

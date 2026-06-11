@@ -1,0 +1,36 @@
+name: Quality debt
+description: Track an exception to quality-debt policy with owner and expiry.
+title: "[quality] "
+labels:
+  - type:quality
+body:
+  - type: textarea
+    id: exception
+    attributes:
+      label: Quality debt exception
+      description: What debt is being requested or observed?
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: Owner
+      placeholder: "@username"
+    validations:
+      required: true
+  - type: input
+    id: expiry
+    attributes:
+      label: Expiry
+      description: Use YYYY-MM-DD.
+      placeholder: "2026-06-30"
+    validations:
+      required: true
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Mitigation or follow-up
+      description: What removes this exception?
+    validations:
+      required: true
+

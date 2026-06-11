@@ -1,8 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { spawnSync } from "node:child_process";
 
 const LIVE_CODEX_PATHS = [
   "plugins/harness-builder-codex",
@@ -20,27 +19,27 @@ const STALE_PATTERNS = [
   /timeout_seconds/,
 ];
 
-test("live Codex generators do not emit stale hook TOML schema", () => {
-  const rg = spawnSync(
-    "rg",
-    [
-      "--files",
-      ...LIVE_CODEX_PATHS,
-      "-g",
-      "*.md",
-      "-g",
-      "*.mjs",
-      "-g",
-      "*.hbs",
-      "-g",
-      "*.toml",
-    ],
-    { encoding: "utf-8" },
-  );
-  assert.equal(rg.status, 0, rg.stderr);
+const SCANNED_EXTENSIONS = new Set([".md", ".mjs", ".hbs", ".toml"]);
 
+function listScannedFiles(root) {
+  const files = [];
+  const entries = readdirSync(root, { withFileTypes: true });
+  for (const entry of entries) {
+    const rel = `${root}/${entry.name}`;
+    if (entry.isDirectory()) {
+      files.push(...listScannedFiles(rel));
+      continue;
+    }
+    if (entry.isFile() && SCANNED_EXTENSIONS.has(entry.name.slice(entry.name.lastIndexOf(".")))) {
+      files.push(rel);
+    }
+  }
+  return files.sort();
+}
+
+test("live Codex generators do not emit stale hook TOML schema", () => {
   const offenders = [];
-  for (const rel of rg.stdout.trim().split(/\r?\n/).filter(Boolean)) {
+  for (const rel of LIVE_CODEX_PATHS.flatMap(listScannedFiles)) {
     const body = readFileSync(resolve(rel), "utf-8");
     for (const pattern of STALE_PATTERNS) {
       if (pattern.test(body)) {

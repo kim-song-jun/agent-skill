@@ -37,9 +37,11 @@ test("TTY mode calls askUser sequentially per task, per decision", async () => {
   const result = await routeWaveDecisions({
     payloads: [payload("t1", [dec("d1", 0)]), payload("t2", [dec("d1", 0)])],
     statePath, isTTY: true,
-    askUser: async (q) => { calls.push(q.questions[0].header); return 1; }, // user picks index 1 each time
+    askUser: async (q) => { calls.push(q); return 1; }, // user picks index 1 each time
   });
   assert.deepEqual(calls.length, 2);
+  assert.deepEqual(calls[0].optionIdOrder, ["option-0", "option-1"]);
+  assert.match(calls[0].questions[0].question, /^\[decision\] d1/);
   assert.equal(result.answers.t1.d1, 1);
   assert.equal(result.answers.t2.d1, 1);
 });

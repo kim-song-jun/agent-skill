@@ -1,5 +1,9 @@
 {
   "language": "{{language}}",
+  "artifact": {
+    "root": ".agent-skill",
+    "exportDocs": false
+  },
   "defaults": {
     "maxIter": {{maxIter}},
     "maxCostUSD": {{maxCostUSD}},
@@ -8,19 +12,47 @@
     "createPR": true,
     "dispatch": "auto"
   },
+  "telemetry": {
+    "cost": {
+      "enabled": true,
+      "warnAtRatio": 0.8,
+      "fallbackUSDPerKChar": 0.0015,
+      "modelRates": {}
+    }
+  },
   "waves": {
     "small":  { "maxParallel": 2,  "rolesAllowed": ["dev", "reviewer"] },
-    "medium": { "maxParallel": 4,  "rolesAllowed": ["dev", "frontend-dev", "backend-dev", "reviewer", "verification-reviewer", "qa-reviewer"] },
-    "large":  { "maxParallel": 8,  "rolesAllowed": ["dev", "frontend-dev", "backend-dev", "reviewer", "orchestrator", "verification-reviewer", "qa-reviewer", "design-reviewer", "security-reviewer", "data-reviewer", "integration-dev"] }
+    "medium": { "maxParallel": 4,  "rolesAllowed": ["dev", "frontend-dev", "backend-dev", "reviewer", "quality-debt-reviewer", "verification-reviewer", "qa-reviewer"] },
+    "large":  { "maxParallel": 8,  "rolesAllowed": ["dev", "frontend-dev", "backend-dev", "reviewer", "orchestrator", "quality-debt-reviewer", "verification-reviewer", "qa-reviewer", "design-reviewer", "security-reviewer", "data-reviewer", "integration-dev"] }
   },
   "loop": {
+    "maxIter": {{maxIter}},
     "breakCondition": "{{breakCondition}}",
-    "stableIters": 1
+    "stableIters": 1,
+    "maxRuntimeSec": null,
+    "maxRepeatedFailureSignature": 3
   },
   "gates": {
     "specReview": true,
     "qualityReview": true,
     "blockOnCritical": true
+  },
+  "policy": {
+    "qualityDebt": {
+      "enabled": true,
+      "allowPaths": [],
+      "allowRules": [],
+      "justifications": []
+    }
+  },
+  "security": {
+    "redaction": {
+      "enabled": true,
+      "allowPaths": [],
+      "allowRules": [],
+      "failOn": ["high"],
+      "maskOn": ["high", "medium"]
+    }
   },
   "pr": {
     "branchPrefix": "feat/agent-all/",

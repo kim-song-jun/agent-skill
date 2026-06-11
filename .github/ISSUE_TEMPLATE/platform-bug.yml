@@ -1,0 +1,40 @@
+name: Platform bug
+description: Report a Claude, Codex, Copilot, Cursor, or Gemini behavior gap.
+title: "[bug] "
+labels:
+  - type:bug
+  - area:platform
+body:
+  - type: dropdown
+    id: affected-platform
+    attributes:
+      label: Affected platform
+      options:
+        - claude
+        - codex
+        - copilot
+        - cursor
+        - gemini
+        - multiple
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include commands, fixture paths, and relevant output.
+

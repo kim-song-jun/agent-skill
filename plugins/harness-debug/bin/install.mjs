@@ -8,11 +8,11 @@
 // time. So this installer primarily:
 //
 //   1. Verifies the target is a git repo (warn-only).
-//   2. Creates `.debug-artifacts/` and `docs/debug/` directories so
+//   2. Creates `.debug-artifacts/` and `.agent-skill/reports/debug/` directories so
 //      Phase 1 and Phase 5 have somewhere to write.
 //   3. Writes a `.gitignore` entry for `.debug-artifacts/` so the
 //      raw logs don't pollute commits.
-//   4. Optionally seeds `docs/debug/index.md`.
+//   4. Optionally seeds `.agent-skill/reports/debug/index.md`.
 //
 // Usage:
 //   node plugins/harness-debug/bin/install.mjs <target> [--dry-run]
@@ -85,7 +85,7 @@ function patchGitignore(target, dryRun) {
 }
 
 function seedDebugIndex(target, dryRun) {
-  const p = resolve(target, "docs/debug/index.md");
+  const p = resolve(target, ".agent-skill/reports/debug/index.md");
   if (existsSync(p)) {
     console.log(`exists ${p}`);
     return;
@@ -119,7 +119,7 @@ function main() {
   }
 
   ensureDir(target, ".debug-artifacts", args.dryRun);
-  ensureDir(target, "docs/debug", args.dryRun);
+  ensureDir(target, ".agent-skill/reports/debug", args.dryRun);
 
   if (!args.noGitignore) {
     patchGitignore(target, args.dryRun);
@@ -131,7 +131,7 @@ function main() {
   console.log("Debug install summary:");
   console.log(`  target:       ${target}`);
   console.log(`  artifacts:    .debug-artifacts/   (raw logs land here at Phase 1)`);
-  console.log(`  docs:         docs/debug/         (debug-log.md land here at Phase 5)`);
+  console.log(`  docs:         .agent-skill/reports/debug/         (debug-log.md land here at Phase 5)`);
   console.log(`  gitignore:    ${args.noGitignore ? "skipped" : "patched (.debug-artifacts/)"}`);
   console.log(`  state file:   .debug-state.json   (created on first /debug run)`);
   console.log(`  dry-run:      ${args.dryRun ? "yes" : "no"}`);

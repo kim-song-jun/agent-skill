@@ -105,7 +105,7 @@ const CASES = [
   },
   {
     tpl: "plugins/harness-floor-cursor/skills/agent-all-cursor/templates/agent-all.config.json.hbs",
-    contains: ["\"maxIter\": 10", "\"maxCostUSD\": 5", "\"waveSize\": \"medium\"", "npm test --silent"],
+    contains: ["\"maxIter\": 10", "\"maxCostUSD\": 5", "\"waveSize\": \"medium\"", "\"maxRuntimeSec\": null", "npm test --silent"],
   },
   {
     tpl: "plugins/harness-floor-cursor/skills/agent-all-cursor/templates/rules/agent-all.mdc.hbs",
@@ -125,7 +125,7 @@ const CASES = [
   },
   {
     tpl: "plugins/harness-floor-copilot/skills/agent-all-copilot/templates/agent-all.config.json.hbs",
-    contains: ["\"maxIter\": 10", "\"maxCostUSD\": 5", "\"waveSize\": \"medium\"", "npm test --silent"],
+    contains: ["\"maxIter\": 10", "\"maxCostUSD\": 5", "\"waveSize\": \"medium\"", "\"maxRuntimeSec\": null", "npm test --silent"],
   },
   {
     tpl: "plugins/harness-floor-copilot/skills/agent-all-copilot/templates/pr-body.md.hbs",
@@ -133,7 +133,7 @@ const CASES = [
   },
   {
     tpl: "plugins/harness-floor-codex/skills/agent-all-codex/templates/agent-all.config.json.hbs",
-    contains: ["\"maxIter\": 10", "\"maxCostUSD\": 5", "\"dispatch\": \"auto\"", "npm test --silent"],
+    contains: ["\"maxIter\": 10", "\"maxCostUSD\": 5", "\"dispatch\": \"auto\"", "\"maxRuntimeSec\": null", "npm test --silent"],
   },
   {
     tpl: "plugins/harness-floor-codex/skills/agent-all-codex/templates/pr-body.md.hbs",
@@ -146,7 +146,7 @@ const CASES = [
   },
   {
     tpl: "plugins/harness-floor-gemini/skills/agent-all-gemini/templates/agent-all.config.json.hbs",
-    contains: ["\"maxIter\": 10", "\"subprocessTimeout\": 1800", "\"maxSubprocesses\": 8", "npm test --silent"],
+    contains: ["\"maxIter\": 10", "\"subprocessTimeout\": 1800", "\"maxSubprocesses\": 8", "\"maxRuntimeSec\": null", "npm test --silent"],
   },
   {
     tpl: "plugins/harness-floor-gemini/skills/agent-all-gemini/templates/pr-body.md.hbs",

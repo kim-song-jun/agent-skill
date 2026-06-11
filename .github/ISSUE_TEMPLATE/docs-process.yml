@@ -1,0 +1,33 @@
+name: Docs or process
+description: Improve documentation, release policy, governance, or contribution flow.
+title: "[docs] "
+labels:
+  - type:docs
+  - type:process
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is unclear, stale, or missing?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What doc or process update should be made?
+    validations:
+      required: true
+  - type: dropdown
+    id: release-impact
+    attributes:
+      label: Release impact
+      options:
+        - none
+        - docs-only
+        - release gate wording
+        - release process change
+    validations:
+      required: true
+

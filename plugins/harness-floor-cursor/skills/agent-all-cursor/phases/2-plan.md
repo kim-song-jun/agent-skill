@@ -3,7 +3,7 @@
 ## Steps
 
 1. The coordinator drafts a plan from `task.path` directly into
-   `docs/superpowers/plans/<YYYY-MM-DD>-<slug>.md`. The plan format mirrors
+   `.agent-skill/plans/<YYYY-MM-DD>-<slug>.md`. The plan format mirrors
    `superpowers:writing-plans`:
    - One `# <Plan title>` heading.
    - `## Context`, `## Goals`, `## Non-goals` sections.

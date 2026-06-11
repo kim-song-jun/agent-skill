@@ -6,6 +6,10 @@
 - `config.defaults.waveSize` (or `--wave-size` override)
 - `config.waves[<waveSize>]`
 - `config.policy.decisionSurfacing` (default true)
+- `state.loop.{failureSignatures,lastFailureSignature}` when resuming from a
+  failing loop iteration
+- `state.costUSD`
+- `state.costTelemetry.summary.totalUSD` when cost telemetry is present
 
 ## Steps
 
@@ -22,22 +26,77 @@
    });
    ```
 
-2. Build waves: `const waves = buildWaves(tasks, config.waves[waveSize])` from `lib/wave-builder.mjs`.
+2. Build static waves first:
+   ```javascript
+   import { buildWaves } from "./lib/wave-builder.mjs";
+   const waves = buildWaves(tasks, config.waves[waveSize]);
+   ```
 
-3. For each wave, capture `baseCommit` before implementation with `git rev-parse HEAD`, then run sub-phases **3a → 3b → 3c**. Persist this pre-wave commit on the wave record so Phase 4 can include the first wave commit in gate diffs.
+3. For each wave, classify the active wave through the dynamic orchestration
+   planner, capture `baseCommit` before implementation with `git rev-parse HEAD`,
+   then run sub-phases **3a → 3b → 3c**. Persist this pre-wave commit on the
+   wave record so Phase 4 can include the first wave commit in gate diffs.
+   ```javascript
+   import { planDynamicWave } from "./lib/orchestration/wave-planner.mjs";
+
+   const planned = planDynamicWave({
+     tasks,
+     waveConfig: config.waves[waveSize],
+     runId,
+     wave: i,
+     platform: "claude",
+     failureSignatures: state.loop?.failureSignatures ?? {},
+     visualQa: state.loop?.lastVisualQaVerdict ?? null,
+     costUSD: state.costTelemetry?.summary?.totalUSD ?? state.costUSD ?? 0,
+     maxCostUSD: config.defaults.maxCostUSD,
+     repeatedFailureThreshold: config.loop?.maxRepeatedFailureSignature ?? 3,
+     writePolicyAudit: true,
+     writeSpawnLog: true,
+   });
+   ```
+
+   Persist `planned.orchestration` to `state.orchestration` before dispatch and
+   later copy it onto the wave record. Shape:
+   `{runId,wave,changedFiles,changedDomains,requiredAgents,spawnedAgents,
+   failureSignatures,blockedReasons,budget}`.
+
+   `requiredAgents` is the dynamic source of truth for implementation/review
+   roles: UI/frontend changes include `frontend-dev`, `design-reviewer`, and
+   `qa-reviewer`; migrations/fixtures/backfills include `data-reviewer`;
+   auth/API/security surfaces include `security-reviewer`; repeated failure
+   signatures add a `planner` escalation and do not add another implementer.
+   The spawn policy emits `BeforeAgentSpawn` events through the shared policy
+   engine, enforces wave-level spawn caps and same-role repeat limits from
+   `state.orchestration.spawnedAgents`, and appends
+   `.agent-skill/runs/<run-id>/spawn-log.jsonl` entries with role, reason,
+   wave, and cost estimate.
+
+   Cost telemetry is the budget SSOT when present. Record each reported or
+   estimated model/tool usage as `agent-cost-telemetry/v1`, append
+   `.agent-skill/runs/<run-id>/cost-telemetry.jsonl`, and mirror the latest
+   summary to `state.costTelemetry.summary` plus `state.costUSD` for backward
+   compatibility. Do not store prompt, transcript, or tool-output bodies in the
+   telemetry record.
+
+   This is local `/agent-all` orchestration only. Do not call the built-in
+   `Workflow` tool from this phase; `Workflow` remains a sibling route for
+   evidence-producing work, never a nested executor inside `/agent-all`.
 
 ### 3a — Scoping (parallel)
 
-a. Dispatch one Task subagent per task in the wave with description `Implement Task N: <title>` and a prompt containing the mini-plan plus the mandatory Dispatch Prompt Contract below. Do not duplicate the scoping addendum or verification directive; the `agent-policy-hook` PreToolUse hook (installed by `/agent-init`, Task matcher) injects those automatically.
+a. Dispatch one Task subagent per task in the wave with description `Implement Task N: <title>` and a prompt containing the mini-plan plus the mandatory Dispatch Prompt Contract below. Use `planned.orchestration.requiredAgents` to select or validate task roles (`frontend-dev`, `backend-dev`, `integration-dev`, or `dev`) when the plan left `role: dev` ambiguous. Do not duplicate the scoping addendum or verification directive; the `agent-policy-hook` PreToolUse hook (installed by `/agent-init`, Task matcher) injects those automatically.
 b. Collect each return as a JSON payload between ` ```decision-payload ` fences. Parse with `lib/decisions/schema.mjs` `validateDecisionPayload`. If `result.ok === false`, treat as `NO_DECISIONS` and log a warning.
 
 ### 3b — Ask (sequential UI per task)
 
 a. If `config.policy.decisionSurfacing === false`, skip 3b entirely and use empty answer map for all tasks.
-b. Call `lib/decision-router.mjs` `routeWaveDecisions({ payloads, statePath, isTTY, askUser })`.
+b. Call `lib/decision-router.mjs` `routeWaveDecisions({ payloads, statePath, isTTY, askUser, runId })`.
    - `isTTY = process.stdout.isTTY && !flags.yes && iteration === 1`. Loop iteration > 1 forces non-TTY.
-   - `askUser` invokes `AskUserQuestion` with the renderer's args. The returned index is mapped back through the router.
-c. Persist `state.decisions` to `.agent-all-state.json` after every individual answer (resumable).
+   - Each legacy decision payload is first normalized through `lib/interactions/schema.mjs` as `agent-interaction/v1` with kind `decision`.
+   - `askUser` invokes `AskUserQuestion` with `renderer-claude.mjs` args. The returned index is mapped back through schema option IDs to the original decision option index.
+   - Codex, Copilot, Cursor, and Gemini use `renderer-codex.mjs`, `renderer-copilot.mjs`, `renderer-cursor.mjs`, and `renderer-gemini.mjs` over the same interaction object.
+c. Persist `state.decisions` and `state.interactions` to `.agent-all-state.json` after every individual answer (resumable). Append `.agent-skill/runs/<run-id>/interactions.jsonl` for every shown or auto-resolved interaction.
+d. In non-TTY mode, auto-select only the recommended/default option when it is not high-risk. High-risk recommended/default options produce a blocked interaction, keep `chosen_index: null`, write the markdown review trail to `.agent-skill/runs/<run-id>/decisions.md`, and require a user/planner decision before implementation continues.
 
 ### 3c — Implementation (parallel re-dispatch)
 
@@ -46,7 +105,7 @@ b. Re-dispatch implementer subagent. PostToolUse hook validates `STATUS: DONE` c
 c. After each implementer returns, the orchestrator MUST inspect the reported changed files and `git diff`, stage only task-owned pathspecs, create the task commit, and record the orchestrator-created commit SHA on that task. If the diff includes unreported or forbidden files, do not commit; re-dispatch or escalate.
 d. Phase 4 (Gate) reviewer subagents likewise get the `Review Task N: <title>` description; PreToolUse hook injects the `VERIFICATION_AUDIT` directive; PostToolUse hook validates the token's presence.
 
-4. Capture wave result: `{index: i, baseCommit, startCommit, endCommit, tasks: [{id, status, changedFiles, commits, decisions: state.decisions[id]}], status: "completed"|"incomplete"}`. `commits` are orchestrator-created pathspec commits, not subagent self-commits. Derive `startCommit` and `endCommit` from the first and last entries in `wave.tasks[].commits`.
+4. Capture wave result: `{index: i, baseCommit, startCommit, endCommit, orchestration: planned.orchestration, costTelemetry: state.costTelemetry?.summary, tasks: [{id, status, changedFiles, commits, decisions: state.decisions[id]}], status: "completed"|"incomplete"}`. `commits` are orchestrator-created pathspec commits, not subagent self-commits. Derive `startCommit` and `endCommit` from the first and last entries in `wave.tasks[].commits`.
 
 5. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
 
@@ -54,6 +113,10 @@ d. Phase 4 (Gate) reviewer subagents likewise get the `Review Task N: <title>` d
 
 - If a 3a scoping subagent returns invalid JSON or a payload that fails schema validation: treat as `NO_DECISIONS` for that task and log a warning to `state.warnings`.
 - If a 3c implementer reports BLOCKED for >1 task in a wave: mark wave `incomplete`. Phase 4 will decide whether to retry or abort.
+- If `planned.orchestration.blockedReasons` contains a repeated failure
+  escalation or budget exceedance: do not dispatch another implementer. Stop
+  the wave, write the orchestration state, and surface the planner/user
+  decision requirement.
 - If `tasks.length === 0`: abort with `plan has no '### Task N' headings`.
 
 ## Dispatch Prompt Contract (mandatory)
@@ -98,5 +161,5 @@ Wave <i> — scoping <N>/<N>, ask <K>/<N>, implement <M>/<N>
 ```
 Print decision summary in non-TTY mode:
 ```
-[wave i] auto-resolved 5 decisions across 3 tasks → docs/agent-all/iter-<n>/decisions.md
+[wave i] auto-resolved 5 decisions across 3 tasks → .agent-skill/runs/<run-id>/decisions.md + .agent-skill/runs/<run-id>/interactions.jsonl
 ```

@@ -1,0 +1,11 @@
+{
+  "loop": {
+    "breakCondition": {
+      "type": "verification-adapter",
+      "adapter": "cli",
+      "config": {
+        "command": "node --version"
+      }
+    }
+  }
+}

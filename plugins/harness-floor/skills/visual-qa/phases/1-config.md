@@ -97,7 +97,7 @@
    Estimated LLM cost: ~$<estCostUSD>
    ```
 
-6. If `matrix.length > 5000` OR `--yes` not set: ask `Proceed? [Y/n]` and wait. (`--yes` skips except when over 5000. Threshold raised from 500 — cost-unrestricted principle.)
+6. If `matrix.length > 5000` OR `--yes` not set: build an `agent-interaction/v1` confirmation and render it with the host renderer from `../agent-all/lib/interactions/renderer-*.mjs`. Use `kind: "budget_warning"` when cost or capture count is high; use `kind: "confirmation"` otherwise. Append the selected or blocked result to `.agent-skill/runs/<run-id>/interactions.jsonl` with `appendInteractionLog({ source: "visual-qa" })`. `--yes` skips the prompt only when `matrix.length <= 5000`; over 5000 captures must use `nonTtyPolicy: "pause"` so non-TTY cannot auto-approve the high-risk run.
 
 7. Update state:
    - Push `{phase: 1, completedAt}` to `phases`.

@@ -9,6 +9,7 @@ CLAUDE_CODE_NATIVE=(
   "harness-thrift"
   "harness-explore"
   "harness-debug"
+  "harness-data"
 )
 
 CLI_PORTS_CODEX=("harness-builder-codex" "harness-floor-codex" "harness-thrift-codex" "harness-debug-codex")

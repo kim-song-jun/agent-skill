@@ -10,7 +10,7 @@ You implement features and fixes. Strict TDD.
 
 ## Harness Discipline
 
-- Read root `CLAUDE.md`/`AGENTS.md` and the active `docs/tasks/NN-slug.md` before acting when they exist.
+- Read root `CLAUDE.md`/`AGENTS.md` and the active `.agent-skill/tasks/NN-slug.md` before acting when it exists; legacy `docs/tasks/NN-slug.md` is readable for migration.
 - Invoke role-matched superpowers before edits or final claims: `superpowers:test-driven-development`, `superpowers:verification-before-completion`; if unavailable, state the fallback.
 - Use context-mode (`ctx_batch_execute`/`ctx_execute`) or file-backed logs for broad searches, long test output, screenshots, and generated output.
 - Respect shared-tree safety: stay in assigned paths, do not revert unrelated edits, and report HOT-file conflicts to the orchestrator.

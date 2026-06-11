@@ -2,7 +2,7 @@
 
 1. Compute slug: `slug = <YYYY-MM-DD>-<short-git-sha>` (e.g.,
    `2026-05-18-abc1234`). Override with `--slug=<custom>` if provided.
-2. Slug dir: `<config.output.dir>/<slug>/` (default `docs/visual-qa/<slug>/`).
+2. Slug dir: `<config.output.dir>/<slug>/` (default `.agent-skill/reports/visual-qa/<slug>/`).
 3. If slug dir exists AND `--force`: rm -rf it.
 4. If slug dir exists AND no `--force`: print `Run with --force to re-run
    today's slug, or use --slug=<other>` and abort.

@@ -9,7 +9,7 @@ function runHook(event, payload, env = {}) {
   const result = spawnSync("node", [HOOK, event], {
     input: JSON.stringify(payload),
     encoding: "utf-8",
-    env: { ...process.env, ...env },
+    env: { ...process.env, AGENT_POLICY_AUDIT: "0", ...env },
   });
   return { code: result.status, stdout: result.stdout, stderr: result.stderr };
 }

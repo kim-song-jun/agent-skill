@@ -108,6 +108,7 @@ test("thrift-codex release docs describe model default as overrideable, not plac
 test("config-loader: DEFAULTS use Codex-appropriate summariser + baseline", () => {
   assert.equal(DEFAULTS.summariser.model, "gpt-5-nano");
   assert.equal(DEFAULTS.audit.estimateBaseline, "naive-codex");
+  assert.equal(DEFAULTS.audit.outputPath, ".agent-skill/reports/thrift/audit-<date>.md");
   assert.equal(DEFAULTS.cache.enabled, false);
 });
 

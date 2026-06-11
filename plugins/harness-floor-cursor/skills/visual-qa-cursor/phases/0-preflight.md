@@ -8,8 +8,17 @@
    and abort.
 3. Unless `--skip-health`: HTTP GET `<baseUrl>` with 5s timeout via
    Cursor's terminal. If status is not 2xx:
-   - If `--yes`: abort with `baseUrl not responding`.
-   - Else: ask in chat `Dev server at <baseUrl> not responding (status=<x>). Continue anyway? [y/N]`.
+   - Build an `agent-interaction/v1` confirmation with
+     `kind: "confirmation"`, `id: "visual-qa:base-url-health"`,
+     default option `abort`, and options `abort` (recommended, low risk)
+     and `continue` (medium risk).
+   - Render with
+     `../agent-all-cursor/lib/interactions/renderer-cursor.mjs` and append
+     the result to `.agent-skill/runs/<run-id>/interactions.jsonl` with
+     `appendInteractionLog({ source: "visual-qa" })`.
+   - If `--yes` or non-TTY, resolve through `resolveNonTtyInteraction()`;
+     because the default is `abort`, non-TTY must abort with
+     `baseUrl not responding` unless a TTY user selects `continue`.
 4. Read `.visual-qa-state.json` if present. If `--resume` and
    `max(state.phases[*].phase) >= 0`, skip rest of Phase 0.
 5. Push `{phase: 0, completedAt: "<iso>"}` to `phases` via Cursor's

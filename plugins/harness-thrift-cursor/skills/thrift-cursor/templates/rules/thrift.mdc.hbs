@@ -41,7 +41,7 @@ summarisation pass to the user:
 
 > "This chat is getting long. Per the thrift rule, I can write a
 > one-page summary of the work so far to
-> `docs/thrift/cursor-summary-<date>-<HHMM>.md` so you can start a
+> `.agent-skill/reports/thrift/cursor-summary-<date>-<HHMM>.md` so you can start a
 > fresh chat with that file in context. Proceed?"
 
 When the user accepts:
@@ -55,7 +55,7 @@ When the user accepts:
 
 Before the user ends a long session (heuristic: ≥30 minutes wall clock
 or ≥`{{everyNTurns}}` turns), proactively offer to write an end-of-session
-recap to `docs/thrift/cursor-recap-<date>.md`. The recap covers:
+recap to `.agent-skill/reports/thrift/cursor-recap-<date>.md`. The recap covers:
 
 - What was attempted.
 - Files touched (paths only, with one-line descriptions).

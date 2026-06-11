@@ -35,7 +35,7 @@ export const DEFAULTS = {
   },
   audit: {
     estimateBaseline: "naive-codex",
-    outputPath: "docs/thrift/audit-<date>.md",
+    outputPath: ".agent-skill/reports/thrift/audit-<date>.md",
   },
 };
 

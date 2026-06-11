@@ -24,7 +24,7 @@ per-platform decomposition in
   - Every ~25 turns or after ~30k output tokens, suggest a summarisation
     pass (no programmatic compact API on Cursor).
   - Before ending a long session, write a one-page recap to
-    `docs/thrift/cursor-recap-<date>.md`.
+    `.agent-skill/reports/thrift/cursor-recap-<date>.md`.
 
 ## What it does NOT do (vs Claude Code version)
 
@@ -118,7 +118,7 @@ Please follow .cursor/rules/thrift.mdc and produce the end-of-session recap.
   },
   "audit": {
     "estimateBaseline": "naive-cursor",
-    "outputPath": "docs/thrift/cursor-recap-<date>.md"
+    "outputPath": ".agent-skill/reports/thrift/cursor-recap-<date>.md"
   }
 }
 ```

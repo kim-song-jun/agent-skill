@@ -200,7 +200,9 @@ Detected via:
 - `process.stdout.isTTY === false`, OR
 - `--loop` runs after iteration 1 (Phase 6 re-entry).
 
-When triggered, `non-tty-resolver.mjs` picks each decision's `recommended_index`, appends to `.agent-all-state.json` as:
+When triggered, `non-tty-resolver.mjs` first converts each decision to
+`agent-interaction/v1`, then picks the recommended/default option only when it
+is not high-risk. It appends to `.agent-all-state.json` as:
 
 ```json
 "decisions": {
@@ -210,20 +212,26 @@ When triggered, `non-tty-resolver.mjs` picks each decision's `recommended_index`
 }
 ```
 
-A summary is written to the iteration's report (`docs/agent-all/iter-<N>/decisions.md`) so the next-morning review surfaces all auto-picks.
+A summary is written to the iteration's report
+(`docs/agent-all/iter-<N>/decisions.md`) so the next-morning review surfaces
+all auto-picks. Every interaction also appends
+`.agent-skill/runs/<run-id>/interactions.jsonl`. High-risk recommended/default
+options are recorded as blocked interactions and require user/planner input.
 
 ## 10. Per-platform port matrix
 
 | Platform | Hook mechanism | Renderer | Enforcement strength |
 |---|---|---|---|
-| Claude Code | `.claude/settings.local.json` hooks | `AskUserQuestion` MCP-style tool | 🟢 Hard |
-| Copilot CLI | `.github/hooks/*.json` | stdin prompt | 🟢 Hard |
-| Codex CLI | `[[hooks.PreToolUse]]` in `~/.codex/config.toml` for shell/policy events; floor workflows use prompt-level sequential dispatch | stdin prompt | 🟡 Mixed: hard shell policy, prompt-level floor orchestration |
-| Cursor | `.cursor/rules/decision-protocol.mdc` (always-loaded rule) | chat prompt | 🟡 Soft (prompt-only) |
-| Gemini CLI | `GEMINI.md` section | chat prompt | 🟡 Soft (prompt-only) |
-| VS Code Copilot | `.github/copilot-instructions.md` | chat prompt | 🟡 Soft (prompt-only) |
+| Claude Code | `.claude/settings.local.json` hooks | `renderer-claude.mjs` → native `AskUserQuestion` | 🟢 Hard |
+| Copilot CLI | `.github/hooks/*.json` + prompt docs | `renderer-copilot.mjs` markdown | 🟡 Prompt-level unless optional hook is reviewed |
+| Codex CLI | `[[hooks.PreToolUse]]` in `~/.codex/config.toml` for shell/policy events; floor workflows use prompt-level sequential dispatch | `renderer-codex.mjs` prompt choices | 🟡 Mixed: hard shell policy, prompt-level floor orchestration |
+| Cursor | `.cursor/rules/decision-protocol.mdc` (always-loaded rule) | `renderer-cursor.mjs` markdown | 🟡 Soft (prompt-only) |
+| Gemini CLI | `GEMINI.md` section | `renderer-gemini.mjs` markdown | 🟡 Soft (prompt-only) |
+| VS Code Copilot | `.github/copilot-instructions.md` | Copilot markdown | 🟡 Soft (prompt-only) |
 
-The shared `lib/decisions/` is platform-agnostic Node. Each platform's port plugin's `bin/install.mjs` emits the right hook/rule artifact pointing at the shared lib.
+The shared `lib/decisions/` remains the legacy payload validator, while
+`lib/interactions/` is the platform-neutral UX schema/renderer layer used by
+decision, confirmation, resume, budget-warning, blocked, and handoff prompts.
 
 ## 11. Opt-out
 
@@ -253,7 +261,7 @@ These are real and should be explicit in README's "Common questions" + a new "Kn
 
 4. **AskUserQuestion has a hard 4-option limit.** If a subagent finds more than 4 viable candidates, it must condense to top 3 + "Other". Subagent guidance lives in `addendum.md`.
 
-5. **Non-TTY auto-pick can be wrong.** Overnight runs may auto-resolve a critical decision incorrectly and only surface it the next morning. Mitigation: every auto-pick is logged with reasoning to `docs/agent-all/iter-<N>/decisions.md`; the next iteration's plan can flag past auto-picks for re-review if quality regressions appear.
+5. **Non-TTY auto-pick can be wrong.** Overnight runs may auto-resolve a critical low/medium-risk decision incorrectly and only surface it the next morning. Mitigation: every auto-pick is logged with reasoning to `docs/agent-all/iter-<N>/decisions.md` and `.agent-skill/runs/<run-id>/interactions.jsonl`; high-risk options are blocked instead of auto-approved.
 
 6. **Per-task scoping pass adds ~15-20% subagent dispatch cost.** Each task now has 2 dispatches (scoping + impl) instead of 1. Implementation is unchanged, so the second dispatch is roughly the same cost as before; the first is shorter (no code-writing). Real cost increase is the *extra coordination round-trip*. `--max-cost` already governs this safely.
 
@@ -289,7 +297,7 @@ In per-platform README (each port plugin's bin output):
 - **Cross-plugin isolation**: existing `tests/lib/cross-platform-isolation.test.mjs` must still pass after `lib/_shared/` additions (may need rule tweak).
 - **Smoke**: end-to-end `/agent-all "trivial task" --yes` exercising the full 3a/3b/3c flow in non-TTY mode.
 
-Target: maintain repo's "1788/1788 passing" green status. Add focused tests for any new lib/hook surface.
+Target: maintain repo's "1981/1981 passing" green status. Add focused tests for any new lib/hook surface.
 
 ## 15. Out of scope (v1)
 

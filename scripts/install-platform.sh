@@ -7,7 +7,7 @@
 # because they do not have comparable AI-workflow marketplaces.
 #
 # Usage:
-#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations|--no-update-foundations] [--no-doctor] [--uninstall] [--force-root-clean]
+#   ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations|--no-update-foundations] [--verify-checksums] [--manifest=<PATH>] [--no-doctor] [--uninstall] [--force-root-clean]
 #
 # --platform:
 #   claude          — Claude Code project files (CLAUDE.md + .claude/)
@@ -45,6 +45,10 @@
 # --no-doctor:
 #   skip the automatic Claude/Codex post-install doctor check.
 #
+# --verify-checksums / --manifest:
+#   verify release-manifest plugin checksums before writing or removing target
+#   project artifacts. --verify-provenance is accepted as an alias.
+#
 # --uninstall:
 #   remove Claude/Codex project-local harness artifacts through the
 #   conservative harness cleaner. Root guidance is preserved unless
@@ -72,7 +76,7 @@ still run outside Claude Code. Other tools install through renderer scripts
 because they do not have comparable AI-workflow marketplaces.
 
 Usage:
-  ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations|--no-update-foundations] [--no-doctor] [--uninstall] [--force-root-clean]
+  ./scripts/install-platform.sh --platform=<NAME> --target=<DIR> [--ctx <PATH>] [--force] [--theme=THEME] [--lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations|--no-update-foundations] [--verify-checksums] [--manifest=<PATH>] [--no-doctor] [--uninstall] [--force-root-clean]
 
 --platform:
   claude          — Claude Code project files (CLAUDE.md + .claude/)
@@ -110,6 +114,10 @@ Usage:
 --no-doctor:
   skip the automatic Claude/Codex post-install doctor check.
 
+--verify-checksums / --manifest:
+  verify release-manifest plugin checksums before writing or removing target
+  project artifacts. --verify-provenance is accepted as an alias.
+
 --uninstall:
   remove Claude/Codex project-local harness artifacts through the conservative
   harness cleaner. Root guidance is preserved unless --force-root-clean is
@@ -145,6 +153,8 @@ FOUNDATION_MODE="auto"
 NO_DOCTOR=0
 UNINSTALL=0
 FORCE_ROOT_CLEAN=0
+VERIFY_CHECKSUMS=0
+PROVENANCE_MANIFEST=""
 
 while [ "$#" -gt 0 ]; do
   arg="$1"
@@ -171,6 +181,8 @@ while [ "$#" -gt 0 ]; do
     --dry-run)    DRY_RUN=1 ;;
     --update-foundations) FOUNDATION_MODE="strict" ;;
     --no-update-foundations) FOUNDATION_MODE="skip" ;;
+    --verify-checksums|--verify-provenance) VERIFY_CHECKSUMS=1 ;;
+    --manifest=*) PROVENANCE_MANIFEST="${arg#*=}" ;;
     --no-doctor)  NO_DOCTOR=1 ;;
     --uninstall)  UNINSTALL=1 ;;
     --force-root-clean) FORCE_ROOT_CLEAN=1 ;;
@@ -301,6 +313,20 @@ format_cmd() {
 }
 
 TARGET_ABS="$(cd "$TARGET" 2>/dev/null && pwd)" || { echo "Error: target dir does not exist: $TARGET" >&2; exit 1; }
+
+run_provenance_verification() {
+  local cmd=(node "$REPO_ROOT/scripts/release-provenance.mjs" --verify)
+  if [ -n "$PROVENANCE_MANIFEST" ]; then
+    cmd+=(--manifest="$PROVENANCE_MANIFEST")
+  fi
+  echo "  → release provenance verification"
+  "${cmd[@]}"
+  echo
+}
+
+if [ "$VERIFY_CHECKSUMS" = "1" ]; then
+  run_provenance_verification
+fi
 
 if [ "$UNINSTALL" = "1" ]; then
   echo "Uninstalling for $PLATFORM from $TARGET_ABS$([ "$DRY_RUN" = "1" ] && printf " (dry-run"))"
@@ -566,11 +592,11 @@ print_install_summary() {
 
   case "$platform:$theme" in
     claude:all)
-      echo "  - CLAUDE.md, AGENTS.md, .claude/agents/, .claude/hooks/, docs/tasks/, .visual-qa.json, .agent-all.json"
+      echo "  - CLAUDE.md, AGENTS.md, .claude/agents/, .claude/hooks/, .agent-skill/tasks/, .visual-qa.json, .agent-all.json"
       echo "  - Note: Claude plugin installation still uses install-all.sh or Claude Code /plugin install"
       ;;
     claude:builder)
-      echo "  - CLAUDE.md, AGENTS.md, .claude/agents/, .claude/hooks/, docs/tasks/ (builder-only heavy scaffold)"
+      echo "  - CLAUDE.md, AGENTS.md, .claude/agents/, .claude/hooks/, .agent-skill/tasks/ (builder-only heavy scaffold)"
       echo "  - Note: Claude builder theme skips .visual-qa.json and .agent-all.json; install floor plugins with install-all.sh or Claude Code /plugin install"
       ;;
     cursor:all)
@@ -601,11 +627,11 @@ print_install_summary() {
       echo "  - .github/copilot-instructions.md (VS Code instructions-only scaffold)"
       ;;
     codex:all)
-      echo "  - AGENTS.md, .codex/skills/, .codex/hooks/, .visual-qa.json, .agent-all.json, .thrift.json, .debug-artifacts/, docs/debug/"
+      echo "  - AGENTS.md, .codex/skills/, .codex/hooks/, .visual-qa.json, .agent-all.json, .thrift.json, .debug-artifacts/, .agent-skill/reports/debug/"
       echo "  - Note: Codex config snippets were printed to stdout; merge approved snippets into ~/.codex/config.toml"
       ;;
     codex:builder)
-      echo "  - AGENTS.md, .codex/skills/, .codex/hooks/agent-policy-hook.mjs, docs/tasks/"
+      echo "  - AGENTS.md, .codex/skills/, .codex/hooks/agent-policy-hook.mjs, .agent-skill/tasks/"
       echo "  - Note: codex-config.toml policy-hook snippet was printed to stdout; merge into ~/.codex/config.toml"
       ;;
     codex:floor)
@@ -617,7 +643,7 @@ print_install_summary() {
       echo "  - Note: install-platform uses --no-instrument for Codex thrift; merge hook snippets manually after approval"
       ;;
     codex:debug)
-      echo "  - .codex/skills/debug-codex/, .debug-artifacts/, docs/debug/"
+      echo "  - .codex/skills/debug-codex/, .debug-artifacts/, .agent-skill/reports/debug/"
       echo "  - Note: type run /debug \"<failing command>\" in Codex to start an investigation"
       ;;
     gemini:all)

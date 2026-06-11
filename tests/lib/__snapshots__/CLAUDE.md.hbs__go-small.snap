@@ -15,7 +15,7 @@ go
 These apply to the main agent and to every role in `.claude/agents/`:
 
 1. **Brainstorm first.** Before any deliverable, invoke `superpowers:brainstorming` unless the user explicitly asks for direct execution.
-2. **Plan before implementation.** Multi-step work uses `superpowers:writing-plans` and stores plans in `docs/superpowers/plans/`.
+2. **Plan before implementation.** Multi-step work uses `superpowers:writing-plans` and stores generated control-plane plans in `.agent-skill/plans/` by default.
 3. **Parallel through orchestration.** Use `superpowers:dispatching-parallel-agents` or `superpowers:subagent-driven-development` when tasks do not share files.
 4. **Verify before completion.** Use `superpowers:verification-before-completion` before claiming success.
 5. **Use context-mode for bulk context.** Store or index large logs, broad searches, and bulky browser snapshots outside the main conversation.
@@ -30,6 +30,18 @@ These apply to the main agent and to every role in `.claude/agents/`:
 4. **Tech-Debt Grep.** Before completion, check touched code paths for `TODO`, `FIXME`, `HACK`, and `XXX`. Resolve in-scope debt in the same change; if it is out of scope, state why.
 5. **Decision Matrix.** When two or more reasonable choices remain, or multiple user decisions are needed, present a `Decision Matrix` with option, impact, recommendation, and whether confirmation is required.
 
+
+## Quality Debt Policy
+
+- Do not add fallback code unless the task acceptance criteria explicitly requires fallback behavior.
+- Do not silence errors that should fail fast.
+- Do not add TODO/FIXME/dead code unless linked to an issue and accepted by the user.
+- Do not add tests that cannot fail for the intended regression.
+- Do not increase timeout/retry/sleep as a substitute for root-cause debugging.
+- Do not use broad `any`, `ts-ignore`, disabled lint, broad catch, or broad cast without justification.
+- Do not leave test-only or debug-only branches in production code.
+- Do not introduce a new abstraction unless at least two concrete call sites need it now.
+- If temporary debt is explicitly accepted, record it in the active task doc `Quality Debt Exceptions` table with reason, owner, follow-up issue, and expiry.
 
 ## Subagent Dispatch Contract
 
@@ -58,5 +70,5 @@ Do not self-commit from a delegated subagent unless the orchestrator explicitly 
 
 ## Work Folders
 
-- `docs/superpowers/specs/` - brainstorming output.
-- `docs/superpowers/plans/` - implementation plans.
+- `.agent-skill/specs/` - brainstorming output.
+- `.agent-skill/plans/` - implementation plans.

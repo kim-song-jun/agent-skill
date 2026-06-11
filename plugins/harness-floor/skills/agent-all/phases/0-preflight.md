@@ -18,20 +18,43 @@
    if (warning) { /* print: ".agent-all.json not found; using built-ins. Run /agent-init --theme=floor to seed." */ }
    ```
 
-5. Read `.agent-all-state.json` if present. If `--resume` and `max(state.phases[*].phase) >= 0`, skip rest of Phase 0.
+5. Read `.agent-all-state.json` if present. If `--resume` and a task path is
+   known, discover `/agent-handoff` artifacts before skipping:
+   `.agent-skill/handoff/<display-id>-<slug>.handoff.md` and
+   `.agent-skill/handoff/<display-id>-<slug>.session.md`, falling back to legacy
+   `docs/tasks/<NN>-<slug>.handoff.md` and `.session.md`.
+   ```javascript
+   import { discoverResumeArtifacts } from "./lib/resume-artifacts.mjs";
+   const resumeArtifacts = discoverResumeArtifacts({ taskPath });
+   if (resumeArtifacts.found) {
+     state.resumeArtifacts = resumeArtifacts.artifacts;
+     state.resumeMetadata = resumeArtifacts.metadata;
+   }
+   ```
+   - If interactive and metadata includes `nextActions`, show the choices and
+     ask which action to take through `agent-interaction/v1`, defaulting to the
+     recommended action.
+   - If non-TTY or `--yes`, auto-select the recommended action and append an
+     audit entry to `.agent-skill/runs/handoff-audit.jsonl` with the task path,
+     selected action id, and reason. Also append the shared interaction audit
+     to `.agent-skill/runs/handoff/interactions.jsonl`.
+   - If no sibling files exist, continue normal `.agent-all-state.json` resume.
+   If `--resume` and `max(state.phases[*].phase) >= 0`, skip rest of Phase 0.
 
 6. Validate positional argument:
    - If ends with `.md`: must exist as a file. If not: abort `task file not found: <path>`. Stash as `taskPath`.
    - Otherwise: must be non-empty string. Stash as `prompt`. If empty: abort `provide a prompt or task path`.
 
 7. Validate task ledger scaffolding:
-   - Require `docs/tasks/index.md` and `docs/tasks/_template.md` to exist before continuing.
-   - Exception: if the input is a free-form prompt and this invocation is creating the first task in Phase 1, allow Phase 1 to create the missing ledger scaffold and task doc after confirming `docs/tasks/` can be created.
-   - If `--task-id=<N>` is present, validate that `N` is a positive integer and stash it as `requestedId` for Phase 1.
+   - Require `.agent-skill/tasks/index.md` and `.agent-skill/tasks/_template.md` to exist before continuing. During migration, legacy `docs/tasks/index.md` and `docs/tasks/_template.md` satisfy this gate when the active task path is under `docs/tasks/`.
+   - Exception: if the input is a free-form prompt and this invocation is creating the first task in Phase 1, allow Phase 1 to create the missing ledger scaffold and task doc after confirming `.agent-skill/tasks/` can be created.
+   - If `--task-id=<N>` is present, validate that `N` is a positive integer and stash it as `requestedId` for Phase 1. This is a legacy display-sequence hint only; it must never become the canonical task id.
+   - If `--display-id=T-YYYYMMDD-NNN` is present, validate the display id shape and stash it as `requestedDisplayId`. If the requested display id already exists, Phase 1 must suffix it instead of failing or reusing it.
+   - Ensure `.agent-skill/registry/` can be created. Phase 1 owns writing `.agent-skill/registry/tasks.json` when it creates a new task.
 
 8. **Resolve loop break-condition (if `--loop` is set).** See `### Break-condition resolution` below. Mutates `config.loop.breakCondition` in memory; may rewrite `.agent-all.json` if user opts in.
 
-9. Push `{phase: 0, completedAt: "<iso>"}` to state. Use atomic write (temp + rename). Create `.agent-all-state.json` with `{"phases": [], "decisions": {}}` if missing. The `decisions` map is populated by Phase 3b (decision-surfacing) and keyed by task-id.
+9. Push `{phase: 0, completedAt: "<iso>"}` to state. Use atomic write (temp + rename). Create `.agent-all-state.json` with `{"phases": [], "decisions": {}, "interactions": {}}` if missing. The `decisions` and `interactions` maps are populated by Phase 3b (decision-surfacing) and keyed by canonical task id (`AS-TASK-*`) when available.
 
 ## Break-condition resolution
 
@@ -46,6 +69,7 @@ import {
   QA_SHORTCUT_SPEC,
   QA_AUTOSCAFFOLD_CONFIG,
 } from "./lib/break-resolver.mjs";
+import { VERIFICATION_ADAPTER_IDS } from "./lib/verification-adapters/schema.mjs";
 ```
 
 Decision tree:
@@ -87,9 +111,9 @@ Decision tree:
 
 4. **Interactive prompt** — when none of the above apply:
 
-   a. Ask: "Loop break-condition?" with the four presets from
+   a. Ask: "Loop break-condition?" with the presets from
       `PRESET_CATALOGUE` (Test command auto-detected / visual-qa skill /
-      Custom shell command / Composite).
+      Verification adapter / Custom shell command / Composite).
 
    b. **Custom**: follow-up prompt for the shell one-liner. Validate
       non-empty.
@@ -98,13 +122,28 @@ Decision tree:
       under `docs/`); leave empty to use the visual-qa skill's own
       defaults.
 
-   d. **Composite**: repeatedly prompt for each step (1-based index) by
-      offering the first three preset types only. Stop when the user
+   d. **Verification adapter**: follow-up prompt for the adapter id
+      (`verify:web-ui`, `verify:cli`, `verify:api-contract`,
+      `verify:notebook-data`, `verify:sql-db`, or `verify:batch-job`).
+      Accept the short aliases (`cli`, `api-contract`, `notebook-data`,
+      `sql-db`, `batch-job`, `visual-qa`) and normalise through
+      `VERIFICATION_ADAPTER_IDS`. Then prompt for optional config JSON.
+      Store the result as:
+      ```json
+      {
+        "type": "verification-adapter",
+        "adapter": "verify:cli",
+        "config": { "command": "my-tool --check" }
+      }
+      ```
+
+   e. **Composite**: repeatedly prompt for each step (1-based index) by
+      offering the first four preset types only. Stop when the user
       selects "Done" or after a hard cap of 5 steps.
 
-   e. Echo the resolved spec via `serializeBreakCondition(resolved)`.
+   f. Echo the resolved spec via `serializeBreakCondition(resolved)`.
 
-   f. Save-confirmation prompt: "Save this as the default in
+   g. Save-confirmation prompt: "Save this as the default in
       `.agent-all.json`?" yes/no. On yes: deep-merge into the config
       object and atomically write `.agent-all.json` (temp + rename).
       On no: keep only in memory for this invocation.

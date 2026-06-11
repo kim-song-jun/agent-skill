@@ -61,6 +61,7 @@ test("[copilot] config-loader: DEFAULTS includes storeMemory + cache.intermediat
   assert.equal(r.config.storeMemory.enabled, true);
   assert.equal(r.config.storeMemory.scope, "repository");
   assert.equal(r.config.platform, "copilot");
+  assert.equal(r.config.audit.outputPath, ".agent-skill/reports/thrift/audit-<date>.md");
 });
 
 test("[copilot] config-loader: returns DEFAULTS + warning when path missing", () => {

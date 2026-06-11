@@ -1,0 +1,9 @@
+{
+  "telemetry": {
+    "cost": {
+      "enabled": "yes",
+      "warnAtRatio": "0.8",
+      "modelRates": []
+    }
+  }
+}

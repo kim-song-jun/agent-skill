@@ -13,7 +13,7 @@ description: >
 
 Runs the cost-unrestricted visual-QA pipeline on Codex CLI. Reads
 `.visual-qa.json`, captures via Playwright MCP, analyses each image
-with the configured LLM, produces `docs/visual-qa/<slug>/report.md`.
+with the configured LLM, produces `.agent-skill/reports/visual-qa/<slug>/report.md`.
 
 ## Usage
 
@@ -66,7 +66,7 @@ and phase paths can stay platform-explicit.
 | Write file | `apply_patch` |
 | Shell | `shell_command` (one-shot) / `exec_command` (PTY) |
 | Dispatch page subagent | `.codex/skills/visual-qa-page/SKILL.md` |
-| Prompt user | `ask_user` |
+| Prompt user | `agent-interaction/v1` via `renderer-codex.mjs`, logged to `interactions.jsonl` |
 | Persist state | `apply_patch` |
 | Playwright | `mcp__playwright__browser_*` (via `[mcp_servers.playwright]`) |
 
@@ -74,7 +74,8 @@ and phase paths can stay platform-explicit.
 
 - `.visual-qa.json` missing → abort.
 - Playwright MCP not in config.toml → abort with snippet.
-- baseUrl unreachable → `ask_user`, abort if `--yes`.
+- baseUrl unreachable → `agent-interaction/v1` confirmation, abort if
+  `--yes` or non-TTY resolves the default abort option.
 - Page subagent fails all captures → mark incomplete, continue.
 
 ## When done

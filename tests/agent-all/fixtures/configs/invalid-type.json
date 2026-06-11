@@ -1,1 +1,1 @@
-{ "defaults": { "maxIter": "not-a-number" } }
+{ "defaults": { "maxIter": "not-a-number" }, "loop": { "maxRuntimeSec": "forever" }, "artifact": { "exportDocs": "yes" } }

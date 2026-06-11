@@ -17,7 +17,8 @@
 
 ## Phase 1 proper
 
-0. **Resolve interaction language (v0.5.1+).** Detect the language the brainstorming dialogue should run in:
+0. **Resolve interaction language and interaction model (v0.5.1+).** Detect
+   the language the brainstorming dialogue should run in:
    ```javascript
    // Priority: explicit ko/en flag > --lang=auto/env auto fallthrough > $AGENT_INIT_LANG > $LANG/$LC_ALL > 'en'
    function detectLang() {
@@ -37,6 +38,21 @@
    When `interactionLang === "en"`, no prefix needed (the default).
 
    Stash `ctx.interactionLang` for use in later phases — agent templates inherit it via `{{interactionLang}}` so dispatched subagents speak the same language.
+
+   All user-facing `/agent-init` choices use the shared
+   `agent-interaction/v1` `AgentInteraction` schema before rendering. This
+   includes profile selection (`operational/heavy`, `builder`, `lite`), theme
+   resolution when flags are absent or ambiguous, optional platform selection,
+   and any Phase 5 global config/foundation update approval that is queued from
+   discovery. Claude renders these through native `AskUserQuestion` using
+   `renderer-claude.mjs`; Codex, Copilot, Cursor, and Gemini render the same
+   object through their prompt/markdown renderers. Non-TTY runs call
+   `resolveNonTtyInteraction()`: recommended low/medium-risk defaults may be
+   selected and logged, while high-risk choices such as global config mutation
+   or foundation updates pause as blocked until the user explicitly approves.
+   Append each shown, auto-selected, or blocked choice to
+   `.agent-skill/runs/<run-id>/interactions.jsonl` using
+   `appendInteractionLog({ source: "agent-init" })`.
 
 1. **Reject unsupported theme flags.** If `flags.theme` is set and is not
    `"lite"`, `"builder"`, or `"floor"`, abort before brainstorming with:

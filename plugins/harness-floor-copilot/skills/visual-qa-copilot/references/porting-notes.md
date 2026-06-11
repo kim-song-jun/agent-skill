@@ -19,7 +19,7 @@ This iteration ports the **full 6-phase orchestrator** using Copilot's
 | Awaiter | `await` per Task | `subagentStop` hook OR `list_agents` polling |
 | LLM call | claude-sonnet-4-6 via Task | Copilot's configured model |
 | Matrix persistence | in-process | `store_memory(key="visual-qa/matrix")` |
-| Output dir | `docs/visual-qa/<slug>/` | Same |
+| Output dir | `.agent-skill/reports/visual-qa/<slug>/` | Same |
 
 ## Known unknowns
 

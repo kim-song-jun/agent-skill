@@ -13,7 +13,7 @@ description: >
 
 Runs the cost-unrestricted visual-QA pipeline on Cursor. Reads
 `.visual-qa.json`, captures via Playwright MCP, analyses each image with
-the configured LLM, produces `docs/visual-qa/<slug>/report.md`.
+the configured LLM, produces `.agent-skill/reports/visual-qa/<slug>/report.md`.
 
 ## Usage (from Cursor chat)
 
@@ -71,7 +71,9 @@ with templates — see "What this skill installs".
 
 - `.visual-qa.json` missing → abort with install instructions.
 - Playwright MCP not registered → abort with `.cursor/mcp.json` snippet.
-- baseUrl unreachable (no `--skip-health`) → ask in chat, abort if `--yes`.
+- baseUrl unreachable (no `--skip-health`) → `agent-interaction/v1`
+  confirmation via `renderer-cursor.mjs`, abort if `--yes` or non-TTY
+  resolves the default abort option.
 - Per-page subagent fails on all captures → mark page `incomplete`,
   continue other pages, surface in report.
 - LLM call fails for an image → retry once, then record as `analysis_error`.

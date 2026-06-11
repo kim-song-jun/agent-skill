@@ -24,7 +24,7 @@ in Phase 3:
 | Awaiter | `await Promise.all(tasks)` in orchestrator | Cursor planner; coordinator waits for all background chats |
 | LLM call | claude-sonnet-4-6 via Task | Cursor's configured model (typically claude-sonnet-4-6 or gpt-4o) |
 | Browser MCP | `mcp__plugin_playwright_playwright__*` (Claude Code path) | `mcp__playwright__*` (Cursor MCP path; project-scoped in `.cursor/mcp.json`) |
-| Output dir | `docs/visual-qa/<slug>/` (configurable) | Same |
+| Output dir | `.agent-skill/reports/visual-qa/<slug>/` (configurable) | Same |
 
 ## Known limitations (Cursor-specific)
 

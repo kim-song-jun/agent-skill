@@ -143,6 +143,7 @@ test("config-loader: DEFAULTS has NO cache section", () => {
   assert.ok("contextMode" in DEFAULTS);
   assert.ok("audit" in DEFAULTS);
   assert.equal(DEFAULTS.audit.estimateBaseline, "naive-cursor");
+  assert.equal(DEFAULTS.audit.outputPath, ".agent-skill/reports/thrift/cursor-recap-<date>.md");
 });
 
 test("config-loader: returns DEFAULTS with warning when path missing", () => {

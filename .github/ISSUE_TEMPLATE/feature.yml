@@ -1,0 +1,39 @@
+name: Feature
+description: Propose a capability, workflow, or platform improvement.
+title: "[feature] "
+labels:
+  - type:feature
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What should change, and why does it matter?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - area:platform
+        - area:verification
+        - area:hooks
+        - area:data
+        - area:release
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List the observable requirements that prove the feature works.
+      placeholder: "- [ ] ..."
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification plan
+      description: Commands, fixtures, docs, or manual checks expected for this change.
+

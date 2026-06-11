@@ -13,7 +13,7 @@ description: >
 
 Runs the cost-unrestricted visual-QA pipeline on Copilot CLI. Reads
 `.visual-qa.json`, captures via Playwright MCP, analyses each image with
-the configured LLM, produces `docs/visual-qa/<slug>/report.md`.
+the configured LLM, produces `.agent-skill/reports/visual-qa/<slug>/report.md`.
 
 ## Usage
 
@@ -58,7 +58,7 @@ the configured LLM, produces `docs/visual-qa/<slug>/report.md`.
 | Await dispatched agent | `subagentStop` hook OR `list_agents` poll |
 | Inspect dispatched agent | `read_agent` |
 | Persist matrix/state | `apply_patch` + `store_memory(scope="repository")` |
-| Prompt user | `ask_user` |
+| Prompt user | `agent-interaction/v1` via `renderer-copilot.mjs`, logged to `interactions.jsonl` |
 | Playwright | `mcp__playwright__browser_*` (via `~/.copilot/mcp-config.json`) |
 
 ## On error
@@ -66,7 +66,8 @@ the configured LLM, produces `docs/visual-qa/<slug>/report.md`.
 - `.visual-qa.json` missing → abort.
 - Playwright MCP not registered → abort with mcp-config.json snippet.
 - `task` tool unavailable (Copilot < v0.0.380) → abort with upgrade hint.
-- baseUrl unreachable → `ask_user`, abort if `--yes`.
+- baseUrl unreachable → `agent-interaction/v1` confirmation, abort if
+  `--yes` or non-TTY resolves the default abort option.
 - Per-page `task` fails → mark page incomplete, continue others.
 
 ## When done

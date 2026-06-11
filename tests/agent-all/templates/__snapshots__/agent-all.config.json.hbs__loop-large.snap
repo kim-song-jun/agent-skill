@@ -1,5 +1,9 @@
 {
   "language": "auto",
+  "artifact": {
+    "root": ".agent-skill",
+    "exportDocs": false
+  },
   "defaults": {
     "maxIter": 10,
     "maxCostUSD": 200,
@@ -7,19 +11,47 @@
     "brainstormFirst": true,
     "createPR": true
   },
+  "telemetry": {
+    "cost": {
+      "enabled": true,
+      "warnAtRatio": 0.8,
+      "fallbackUSDPerKChar": 0.0015,
+      "modelRates": {}
+    }
+  },
   "waves": {
     "small":  { "maxParallel": 2,  "rolesAllowed": ["dev", "reviewer"] },
-    "medium": { "maxParallel": 4,  "rolesAllowed": ["frontend-dev", "backend-dev", "designer", "reviewer"] },
-    "large":  { "maxParallel": 8,  "rolesAllowed": ["frontend-dev", "backend-dev", "designer", "qa-*", "reviewer", "doc-writer"] }
+    "medium": { "maxParallel": 4,  "rolesAllowed": ["frontend-dev", "backend-dev", "designer", "reviewer", "quality-debt-reviewer"] },
+    "large":  { "maxParallel": 8,  "rolesAllowed": ["frontend-dev", "backend-dev", "designer", "qa-*", "reviewer", "quality-debt-reviewer", "doc-writer"] }
   },
   "loop": {
+    "maxIter": 10,
     "breakCondition": "pytest && npm test",
-    "stableIters": 1
+    "stableIters": 1,
+    "maxRuntimeSec": null,
+    "maxRepeatedFailureSignature": 3
   },
   "gates": {
     "specReview": true,
     "qualityReview": true,
     "blockOnCritical": true
+  },
+  "policy": {
+    "qualityDebt": {
+      "enabled": true,
+      "allowPaths": [],
+      "allowRules": [],
+      "justifications": []
+    }
+  },
+  "security": {
+    "redaction": {
+      "enabled": true,
+      "allowPaths": [],
+      "allowRules": [],
+      "failOn": ["high"],
+      "maskOn": ["high", "medium"]
+    }
   },
   "pr": {
     "branchPrefix": "feat/agent-all/",

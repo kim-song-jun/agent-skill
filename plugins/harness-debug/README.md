@@ -21,7 +21,7 @@ cost-unrestricted multi-agent).
 - **Bisects.** Git history bisection for regressions; ddmin-style
   input bisection for shrinking failing inputs.
 - **Writes a durable artifact.** Phase 5 emits
-  `docs/debug/<date>-<slug>.md` so a future similar bug starts from
+  `.agent-skill/reports/debug/<date>-<slug>.md` so a future similar bug starts from
   prior knowledge.
 - **Wraps (does not replace) `superpowers:systematic-debugging`** when
   that skill is available. The skill remains the source of truth for
@@ -75,4 +75,4 @@ the shipped lib modules and parsers.
 - Per-platform ports (`harness-debug-{codex,copilot,gemini,cursor}`).
 - v2 schema migration for multi-failure sessions.
 - Integration audit with `harness-thrift` summariser pressure.
-- Cross-session debug-log search beyond `grep docs/debug/`.
+- Cross-session debug-log search beyond `grep .agent-skill/reports/debug/`.

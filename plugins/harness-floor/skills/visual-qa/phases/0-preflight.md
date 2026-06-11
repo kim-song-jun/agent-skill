@@ -7,8 +7,9 @@
 2. Confirm Playwright MCP tools are available. Use `ToolSearch` to load `mcp__plugin_playwright_playwright__browser_navigate`. If unavailable: print `Install the playwright plugin: /plugin install playwright@claude-plugins-official` and abort.
 
 3. Unless `--skip-health`: GET `<baseUrl>` with 5s timeout (use `ctx_execute` with `language: "shell"` and `curl --max-time 5 -s -o /dev/null -w "%{http_code}" <baseUrl>`). If the status is not 2xx:
-   - If `--yes`: abort with `baseUrl not responding`.
-   - Else: ask user `Dev server at <baseUrl> not responding (status=<x>). Continue anyway? [y/N]` and wait.
+   - Build an `agent-interaction/v1` confirmation with `kind: "confirmation"`, `id: "visual-qa:base-url-health"`, default option `abort`, and options `abort` (recommended, low risk) and `continue` (medium risk).
+   - Render it with the host renderer from `../agent-all/lib/interactions/renderer-*.mjs` and append the result to `.agent-skill/runs/<run-id>/interactions.jsonl` with `appendInteractionLog({ source: "visual-qa" })`.
+   - If `--yes` or non-TTY, resolve through `resolveNonTtyInteraction()`. Because the default is `abort`, non-TTY must abort with `baseUrl not responding` unless a TTY user explicitly selects `continue`.
 
 4. Read `.visual-qa-state.json` if present. If `--resume` and `max(state.phases[*].phase) >= 0`, skip the rest of Phase 0.
 

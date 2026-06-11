@@ -72,8 +72,15 @@
 3. Estimate cost using the static visual-qa rate table. If `--budget` is
    set and the estimate is higher, abort with a clear budget error.
 
-4. Unless `--yes` or the estimate is within `--budget`, ask:
-   `ask_user("<N> captures, est. cost $<X>. Proceed? [y/N]")`.
+4. Unless `--yes` or the estimate is within `--budget`, build an
+   `agent-interaction/v1` confirmation and render it with
+   `../agent-all-codex/lib/interactions/renderer-codex.mjs`. Use
+   `kind: "budget_warning"` when cost or capture count is high; use
+   `kind: "confirmation"` otherwise. Append the result to
+   `.agent-skill/runs/<run-id>/interactions.jsonl` with
+   `appendInteractionLog({ source: "visual-qa" })`. `--yes` may skip
+   only when `matrix.length <= 5000`; over 5000 captures must use
+   `nonTtyPolicy: "pause"` so non-TTY cannot auto-approve the run.
 
 5. Push `{phase: 1, completedAt, mode, matrixSize, estCostUSD}` to state.
    Also persist the matrix grouped by page so Phase 3 can invoke

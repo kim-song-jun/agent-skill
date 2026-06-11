@@ -14,6 +14,7 @@ test("config-loader: returns DEFAULTS with warning when path missing", () => {
   const r = loadConfig("/tmp/nonexistent/.thrift.json");
   assert.equal(r.ok, true);
   assert.equal(r.config.summariser.everyNTurns, 25);
+  assert.equal(r.config.audit.outputPath, ".agent-skill/reports/thrift/audit-<date>.md");
   assert.match(r.warning, /not found/);
 });
 
@@ -21,6 +22,7 @@ test("config-loader: returns DEFAULTS when path is null", () => {
   const r = loadConfig(null);
   assert.equal(r.ok, true);
   assert.equal(r.config.summariser.model, "claude-haiku-4-5-20251001");
+  assert.equal(r.config.audit.outputPath, ".agent-skill/reports/thrift/audit-<date>.md");
 });
 
 test("config-loader: parses valid config", () => {

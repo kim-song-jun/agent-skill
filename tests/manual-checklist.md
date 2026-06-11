@@ -8,7 +8,11 @@ the automated gate, and only runtime UX observations stay manual.
 
 ```bash
 node scripts/release-audit.mjs
+node scripts/github-governance-check.mjs
+node scripts/docs-structure-check.mjs
+node scripts/release-provenance.mjs --release=rc-YYYY-MM-DD-SHORTSHA --out-dir=.agent-skill/releases/rc-YYYY-MM-DD-SHORTSHA
 node scripts/release-fixture-smoke.mjs
+node scripts/skill-eval.mjs --smoke --no-write --json
 ./scripts/release-smoke.sh --fast --with-live-cli
 node scripts/release-publish-preflight.mjs --base=origin/main
 node scripts/target-project-smoke.mjs --target=/path/to/target --platform=claude,codex --lang=ko
@@ -17,16 +21,31 @@ node --test
 node scripts/sync-lib.mjs --check
 ```
 
-## Local-only deployment path
+## Public PR smoke CI and local release gate
 
-No `.github/workflows/release.yml` file is shipped in this release branch, so
-GitHub CLI `workflow` scope is not required for branch publishing. The release
-uses local gate evidence instead:
+Public PR smoke CI exists for fast contributor feedback, but it is not a
+release approval surface. The public workflows are:
+
+- `.github/workflows/smoke.yml` runs
+  `node scripts/github-governance-check.mjs` and
+  `bash scripts/release-smoke.sh --fast`.
+- `.github/workflows/docs.yml` runs `node scripts/docs-structure-check.mjs`
+  and the release doc contract.
+- `.github/workflows/templates.yml` runs manifest/marketplace consistency,
+  template snapshot smoke, vendored-lib sync, and support matrix drift checks.
+
+Local release gate remains authoritative for release candidates because it
+adds live CLI probes, target-project smoke, full test coverage, and
+release-candidate evidence:
 
 ```bash
 node scripts/release-candidate.mjs --date=2026-06-02
 node scripts/release-audit.mjs
+node scripts/github-governance-check.mjs
+node scripts/docs-structure-check.mjs
+node scripts/release-provenance.mjs --release=rc-YYYY-MM-DD-SHORTSHA --out-dir=.agent-skill/releases/rc-YYYY-MM-DD-SHORTSHA
 node scripts/release-fixture-smoke.mjs
+node scripts/skill-eval.mjs --smoke --no-write --json
 ./scripts/release-smoke.sh --fast --with-live-cli
 node scripts/release-publish-preflight.mjs --base=origin/main
 node scripts/target-project-smoke.mjs --target=/Users/sungjun/Documents/molcube/posco/posco-mds --platform=claude,codex --lang=ko
@@ -38,7 +57,14 @@ The gate covers:
 
 - Local release-gate wiring for clean-SHA evidence, fresh release fixtures,
   live Claude/Codex probes, target-project smoke, full test suite, and
-  vendored-lib sync without requiring GitHub workflow scope.
+  vendored-lib sync beyond the public PR smoke subset.
+- Public PR smoke wiring for `.github/workflows/smoke.yml`,
+  `.github/workflows/docs.yml`, `.github/workflows/templates.yml`, issue
+  templates, PR template, and `.github/labels.yml` via
+  `scripts/github-governance-check.mjs`.
+- Docs structure coverage for required public docs, governance sections, local
+  Markdown links, and the rule that public CI does not replace the local
+  release gate.
 - Target project rollout rehearsal with `scripts/target-project-smoke.mjs`,
   which runs no-write Claude/Codex `install-platform.sh --dry-run` commands
   and operational doctors before a real target refresh.
@@ -52,7 +78,13 @@ The gate covers:
 - Codex floor and visual-qa dispatch contracts, including the verified `codex exec` positional `[PROMPT]` interface.
 - Sentinel merge, dry-run, force, policy-hook, folder-guide, task-ledger, foundation-status, and lite-profile contracts.
 - Release readiness audit coverage for Claude/Codex manifests, required files, hook schema, role routing, and audit tokens.
+- Release provenance coverage for `release-manifest.json`,
+  `release-manifest.sha256`, plugin directory checksums, marketplace
+  consistency, vendored-lib sync, and signed-tag status warnings.
 - Release smoke gate coverage for live Claude plugin marketplace/install and Codex exec probes, fresh fixtures, Claude/Codex marketplace dry-runs, focused release contracts, vendored-lib sync, and full-suite mode.
+- Skill utility eval smoke coverage for baseline vs `agent-all` pass rate,
+  intervention counts, and cost overhead; full eval remains a manual
+  release-candidate benchmark via `node scripts/skill-eval.mjs --full`.
 - Public CLI packaging coverage for release/install/update script shebangs and executable bits.
 - Fresh release fixture coverage for Claude marketplace dry-run, Claude operational/lite render output, Claude terminal `install-platform.sh --platform=claude` operational/builder/lite installs, Codex operational/lite/builder/floor/thrift/debug installs, and Claude/Codex install→uninstall roundtrips in new git repos.
 - Command-surface coverage for Claude/Codex skill metadata, Codex init help/unknown-flag behavior, and documented post-install entrypoints.
@@ -77,7 +109,7 @@ is covered by the automated gate above and the short live host probes below.
 | Codex current-CLI parity | `release-smoke.sh --fast --with-live-cli`, Codex exec probes, command-surface tests, and Codex runtime specs must prove the supported prompt-level/sequential floor instead of unsupported legacy agent hooks. |
 | Doctor, recovery, and cleanup | Doctor tests, release fixtures, and install→uninstall roundtrips must prove post-install doctor, actionable recovery commands, conservative cleanup, and `--force-root-clean` behavior for Claude/Codex. |
 | No HOME/global config mutation | Release fixtures and docs contracts must prove project renderers do not patch HOME/global CLI config files by default; Codex/Gemini/Copilot global snippets remain manual merge surfaces. |
-| Deployable release gate | Before shipping, run `node scripts/release-candidate.mjs --date=2026-06-02`, `node scripts/release-audit.mjs`, `node scripts/release-fixture-smoke.mjs`, `./scripts/release-smoke.sh --fast --with-live-cli`, `node scripts/release-publish-preflight.mjs --base=origin/main`, `node scripts/target-project-smoke.mjs --target=/Users/sungjun/Documents/molcube/posco/posco-mds --platform=claude,codex --lang=ko`, `node --test`, and `node scripts/sync-lib.mjs --check` locally for release, live host, publish, and target-project evidence. |
+| Deployable release gate | Before shipping, run `node scripts/release-candidate.mjs --date=2026-06-02`, `node scripts/release-audit.mjs`, `node scripts/github-governance-check.mjs`, `node scripts/docs-structure-check.mjs`, `node scripts/release-provenance.mjs --release=rc-YYYY-MM-DD-SHORTSHA --out-dir=.agent-skill/releases/rc-YYYY-MM-DD-SHORTSHA`, `node scripts/release-fixture-smoke.mjs`, `node scripts/skill-eval.mjs --smoke --no-write --json`, `./scripts/release-smoke.sh --fast --with-live-cli`, `node scripts/release-publish-preflight.mjs --base=origin/main`, `node scripts/target-project-smoke.mjs --target=/Users/sungjun/Documents/molcube/posco/posco-mds --platform=claude,codex --lang=ko`, `node --test`, `node scripts/sync-lib.mjs --check`, and `node scripts/generate-support-matrix.mjs --check` locally for release, live host, publish, provenance, target-project, CI governance, and utility benchmark evidence. |
 
 ## Release Candidate Lifecycle
 
@@ -92,34 +124,43 @@ deployable until the lifecycle evidence points at one verified commit.
    and CHANGELOG.md/CHANGELOG.ko.md must agree, with no stale deferred/mock
    release wording.
 3. Run the full deployable gate: `node scripts/release-audit.mjs`,
+   `node scripts/github-governance-check.mjs`,
+   `node scripts/docs-structure-check.mjs`,
+   `node scripts/release-provenance.mjs --release=rc-YYYY-MM-DD-SHORTSHA --out-dir=.agent-skill/releases/rc-YYYY-MM-DD-SHORTSHA`,
    `node scripts/release-fixture-smoke.mjs`,
+   `node scripts/skill-eval.mjs --smoke --no-write --json`,
    `./scripts/release-smoke.sh --fast --with-live-cli`,
    `node scripts/release-publish-preflight.mjs --base=origin/main`,
    `node scripts/target-project-smoke.mjs --target=/path/to/target --platform=claude,codex --lang=ko`,
    `node --test`, and `node scripts/sync-lib.mjs --check`.
-4. Confirm the local-only deployment gate passed for the same commit. It must
-   cover release-candidate evidence, fresh Claude/Codex fixtures, live
-   Claude/Codex smoke, the full Node test suite, target-project smoke, and
-   vendored-lib sync.
+4. Confirm the public PR smoke and local release gate passed for the same
+   commit. It must cover public workflow/template/docs governance,
+   release-candidate evidence, fresh Claude/Codex fixtures, live Claude/Codex
+   smoke, the full Node test suite, target-project smoke, and vendored-lib
+   sync.
 5. Capture the live host probe output from
    `./scripts/release-smoke.sh --fast --with-live-cli`; it must record
    `claude`/`codex` versions, Claude plugin marketplace/install command
    surfaces, and Codex `exec [PROMPT]` support for the same verified SHA.
-6. Capture target-project smoke output for each intended rollout project. A
+6. Capture the provenance manifest path and `release-manifest.sha256` sidecar.
+   Missing or unsigned tags are warnings unless the release owner explicitly
+   runs verification with `--require-signed-tag`.
+7. Capture target-project smoke output for each intended rollout project. A
    failing doctor means the target is stale; refresh with the recommended
    `install-platform.sh --force` command, then rerun the target smoke.
-7. Run `node scripts/release-publish-preflight.mjs --base=origin/main` before
+8. Run `node scripts/release-publish-preflight.mjs --base=origin/main` before
    pushing. Workflow changes require a GitHub token with `workflow` scope; if
    missing, refresh with `gh auth refresh -h github.com -s workflow`.
-8. Create a date-stamped release-candidate tag that points only at the
+9. Create a date-stamped release-candidate tag that points only at the
    verified SHA, then push the branch/tag after gate output is captured in
    release notes.
-9. Roll out by refreshing the Claude marketplace and running the documented
+10. Roll out by refreshing the Claude marketplace and running the documented
    update/install paths: `/plugin marketplace update agent-skill`,
-   `scripts/update.sh`, `scripts/update.sh --cli=codex`, or the project-local
-   `install-platform.sh` paths. Re-run the post-install doctor for target
-   Claude/Codex projects.
-10. Roll back only to a previous verified tag/SHA. Restore the marketplace/repo
+   `scripts/update.sh --verify-provenance --manifest=/path/to/release-manifest.json`,
+   `scripts/update.sh --cli=codex --verify-provenance --manifest=/path/to/release-manifest.json`,
+   or the project-local `install-platform.sh --verify-checksums --manifest=/path/to/release-manifest.json` paths.
+   Re-run the post-install doctor for target Claude/Codex projects.
+11. Roll back only to a previous verified tag/SHA. Restore the marketplace/repo
    pointer to that SHA, force reinstall with the documented update path, or for
    project-local scaffolds run `install-platform.sh --uninstall` and reinstall
    from the previous checkout. Run doctor after rollback; do not hand-edit

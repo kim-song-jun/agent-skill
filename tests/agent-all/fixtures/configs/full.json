@@ -7,5 +7,6 @@
   },
   "loop": { "breakCondition": "npm test", "stableIters": 2 },
   "gates": { "specReview": true, "qualityReview": true, "blockOnCritical": true },
-  "pr": { "branchPrefix": "feat/agent-all/", "baseBranch": "main" }
+  "pr": { "branchPrefix": "feat/agent-all/", "baseBranch": "main" },
+  "artifact": { "root": ".custom-agent", "exportDocs": true }
 }

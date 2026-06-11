@@ -6,12 +6,14 @@
 # Usage (from anywhere — script self-locates the repo root):
 #   bash <(curl -fsSL https://raw.githubusercontent.com/kim-song-jun/agent-skill/main/scripts/update.sh)
 # Or, if you already cloned:
-#   bash scripts/update.sh                 # update all 5 Claude Code essentials
-#   bash scripts/update.sh --all           # all 18 plugins (CLI siblings included)
+#   bash scripts/update.sh                 # update all 6 Claude Code essentials
+#   bash scripts/update.sh --all           # all 19 plugins (CLI siblings included)
 #   bash scripts/update.sh --cli=codex     # one platform's full plugin set
 #   bash scripts/update.sh --cli=cursor    # one platform's full plugin set
 #   bash scripts/update.sh --foundations    # also refresh superpowers/context-mode
 #   bash scripts/update.sh --foundations-only
+#   bash scripts/update.sh --verify-provenance --manifest=release-manifest.json
+#                                             # verify checksums before install
 #   bash scripts/update.sh --dry-run       # print the plan; change nothing
 #
 # Idempotent — re-runnable any time. Exit 0 = success.
@@ -24,7 +26,7 @@ Usage: bash scripts/update.sh [options]
 
 Options:
   --dry-run       Print the update/install plan and selected plugins; change nothing.
-  --all           Update/install all 18 agent-skill plugins.
+  --all           Update/install all 19 agent-skill plugins.
   --claude-code   Update/install the Claude Code essentials (default).
   --cli=codex     Update/install the Codex plugin set.
   --cli=copilot   Update/install the GitHub Copilot plugin set.
@@ -33,6 +35,10 @@ Options:
   --foundations   Also update/install approved foundation plugins.
   --foundations-only
                   Update/install only approved foundation plugins.
+  --verify-provenance
+                  Verify release-manifest checksums before marketplace/install.
+  --manifest=<path>
+                  Manifest path for --verify-provenance (default: release-manifest.json).
   -h, --help      Show this help and exit.
 EOF
 }
@@ -41,6 +47,8 @@ DRY_RUN=0
 MODE="claude-code"
 UPDATE_FOUNDATIONS=0
 FOUNDATIONS_ONLY=0
+VERIFY_PROVENANCE=0
+PROVENANCE_MANIFEST=""
 PASSTHROUGH=()
 FOUNDATION_PLUGINS=(
   "superpowers@claude-plugins-official"
@@ -92,6 +100,12 @@ for arg in "$@"; do
       UPDATE_FOUNDATIONS=1
       FOUNDATIONS_ONLY=1
       ;;
+    --verify-provenance|--verify-checksums)
+      VERIFY_PROVENANCE=1
+      ;;
+    --manifest=*)
+      PROVENANCE_MANIFEST="${arg#*=}"
+      ;;
     *)
       echo "Error: unknown argument: $arg" >&2
       usage >&2
@@ -129,6 +143,15 @@ resolve_plugin_groups_for_dry_run() {
   trap cleanup_dry_run_metadata_clone EXIT
 }
 
+run_provenance_verification() {
+  local cmd=(node "$REPO_ROOT/scripts/release-provenance.mjs" --verify)
+  if [ -n "$PROVENANCE_MANIFEST" ]; then
+    cmd+=(--manifest="$PROVENANCE_MANIFEST")
+  fi
+  echo "→ verifying release provenance manifest and plugin checksums …"
+  "${cmd[@]}"
+}
+
 print_foundation_dry_run() {
   local marketplace key
   echo "Selected foundation update dry-run:"
@@ -150,6 +173,9 @@ else
 fi
 if [ "$FOUNDATIONS_ONLY" != "1" ]; then
   echo "  - verify vendored libs match canonical sources"
+  if [ "$VERIFY_PROVENANCE" = "1" ]; then
+    echo "  - verify release provenance manifest and plugin checksums"
+  fi
   echo "  - refresh agent-skill marketplace cache"
   echo "  - force-update already-installed selected plugins"
   echo "  - install any missing selected platform plugins through install-all.sh"
@@ -171,6 +197,9 @@ echo "  - no global CLI config files are patched by this script"
 
 if [ "$DRY_RUN" = "1" ]; then
   echo "Dry run requested; no git pull, marketplace update, uninstall, or install command will run."
+  if [ "$VERIFY_PROVENANCE" = "1" ]; then
+    run_provenance_verification
+  fi
   if [ "$UPDATE_FOUNDATIONS" = "1" ]; then
     echo
     print_foundation_dry_run
@@ -249,6 +278,10 @@ fi
 
 echo "→ verifying vendored libs match canonical sources …"
 node "$REPO_ROOT/scripts/sync-lib.mjs" --check
+
+if [ "$VERIFY_PROVENANCE" = "1" ]; then
+  run_provenance_verification
+fi
 
 if [ "$UPDATE_FOUNDATIONS" = "1" ]; then
   run_foundation_updates

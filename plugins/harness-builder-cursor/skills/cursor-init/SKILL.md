@@ -23,7 +23,15 @@ Once Cursor supports skill invocation, a future `cursor-init` runtime will:
    const detected = detectProject(process.cwd()); // { stack, runtime, services }
    ```
 
-2. Gather user input (purpose, size, qa_personas, deploy_targets, constraints).
+2. Gather user input (purpose, size, qa_personas, deploy_targets,
+   constraints). Represent each prompt and optional/default choice as the
+   shared `agent-interaction/v1` `AgentInteraction` schema before rendering.
+   Cursor uses `renderer-cursor.mjs` for rules/chat markdown over the same
+   object that Claude can render with native `AskUserQuestion`. Non-TTY runs
+   use `resolveNonTtyInteraction()` to select only low/medium-risk recommended
+   defaults, block high-risk choices, and append
+   `.agent-skill/runs/<run-id>/interactions.jsonl` with
+   `appendInteractionLog({ source: "cursor-init" })`.
 
 3. Render the templates with the discovery context:
 

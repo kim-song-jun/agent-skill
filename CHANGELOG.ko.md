@@ -6,7 +6,86 @@
 
 ## 미출시
 
-- GitHub `workflow` scope 없이 publish할 수 있도록 deploy branch를 local-only release gate로 전환. release-audit는 이제 `tests/manual-checklist.md`의 local deploy 계약을 검증.
+- Top-level planning docs 추가: `PROJECT_PLAN.md`, `ROADMAP.md`, generated
+  `SUPPORT_MATRIX.md`, `docs/architecture/README.md`가 vision, workstream,
+  milestone, platform support, active issue taxonomy를 매핑.
+- `harness-data` 추가: notebook 실행, SQL 검증, artifact diff, data handoff
+  evidence를 위한 `/data-runner` 안내를 제공.
+- `verify:notebook-data`와 `verify:sql-db`를 notebook cell error 검사, SQL
+  row/schema/null/duplicate/outlier assertion, artifact diff metadata,
+  environment/reproducibility evidence, 파괴적 SQL policy 차단,
+  `/agent-handoff` data evidence summary까지 확장.
+- `/agent-all` non-web loop completion용 verification adapter 추가:
+  기존 visual-qa는 `verify:web-ui`로 감싸고, `verify:cli`,
+  `verify:api-contract`, `verify:notebook-data`, `verify:sql-db`,
+  `verify:batch-job`은 공통 `verification-evidence/v1` 결과 모델로
+  `.agent-skill/runs/<run-id>/verification-evidence.jsonl`에 기록.
+- `/agent-handoff` 추가: task doc 추출, 안전한 git 상태 수집, sibling
+  `.handoff.md`/`.session.md` 생성, machine-readable resume metadata,
+  non-TTY 추천 action audit logging, `/agent-all --resume` artifact 자동
+  감지를 포함.
+- `/agent-all` decision과 `/agent-handoff` resume prompt를 위한 공통
+  `agent-interaction/v1` UX plumbing 추가. Claude native `AskUserQuestion`,
+  Codex prompt renderer, Copilot/Cursor/Gemini markdown renderer, non-TTY
+  recommended-option resolution, high-risk 자동 승인 차단, markdown decision
+  review log, `.agent-skill/runs/<run-id>/interactions.jsonl` 기록을 포함.
+- 설치 대상이 아닌 `harness-core` capability metadata 추가.
+  `AgentCapability` schema validation, Claude/Codex platform adapter renderer,
+  generated `SUPPORT_MATRIX.md`, 공유 capability catalog drift test를 포함.
+- 공유 Node policy hook engine(`agent-policy-event/v1` →
+  `agent-policy-result/v1`) 추가. JSONL audit log, loop policy check,
+  verification/reviewer audit 강제, dynamic agent spawn 검증, verification
+  adapter lifecycle event, non-TTY decision logging, Claude/Codex hook
+  adapter를 포함.
+- `/agent-all` cost telemetry(`agent-cost-telemetry/v1`) 추가. 플랫폼이
+  보고한 cost 또는 best-effort token/char 추정치를
+  `.agent-skill/runs/<run-id>/cost-telemetry.jsonl`에 기록하고
+  `state.costTelemetry.summary`에 미러링하며, 예산 80% 경고와 100%
+  중단을 공유 policy engine에 연결하고 task ledger/handoff artifact에
+  비용 요약을 노출.
+- #22용 `scripts/skill-eval.mjs`(`agent-skill-eval-report/v1`) 추가. 세 개의
+  deterministic benchmark fixture가 baseline과 `agent-all` smoke run을
+  비교하고, full mode는 visual QA, quality gate, dynamic orchestration,
+  verification-adapter mode까지 확장합니다. 결과는
+  `.agent-skill/evals/<date>/`에 pass rate, iteration, intervention 수,
+  reviewer/quality debt 신호, rollback 수, token estimate, 공유 cost
+  telemetry 기반 cost overhead와 함께 기록됩니다.
+- #23용 public GitHub governance 추가: PR smoke/docs/templates workflow,
+  issue template, PR template, `.github/labels.yml`, governance 문서,
+  `scripts/github-governance-check.mjs`,
+  `scripts/docs-structure-check.mjs`를 추가. 공개 CI는 빠른 smoke,
+  manifest/marketplace consistency, docs structure, template drift,
+  vendored-lib sync, support matrix drift를 검증하고 local release gate는
+  authoritative 상태로 유지.
+- #24용 supply-chain provenance 추가:
+  `scripts/release-provenance.mjs`가 checkout commit, marketplace checksum,
+  plugin별 directory checksum, vendored-lib/template aggregate checksum,
+  signed-tag 상태를 담은 `release-manifest.json`과
+  `release-manifest.sha256`를 생성합니다. Release audit, release candidate
+  evidence, release smoke가 manifest를 검증하고, `install-all.sh`,
+  `install-platform.sh`, `update.sh`는 `--verify-checksums` /
+  `--verify-provenance --manifest=<path>`로 이를 확인할 수 있습니다.
+- #25용 secret/privacy redaction gate 추가. 공유 redaction rule/scanner가
+  handoff/session prompt, visual/debug report, verification evidence,
+  policy/interaction/spawn log, PR body를 검사합니다. High severity는 기본
+  차단, medium severity는 mask되며
+  `.agent-skill/runs/<run-id>/redaction-audit.jsonl`에는 원문 없이
+  rule/count/severity/action metadata와 path/rule allowlist 계약만 남깁니다.
+- `/agent-init`와 `/agent-all`에 Quality Debt Policy gate 추가. 생성된 root
+  guidance가 `Quality Debt Policy`를 포함하고, `quality-debt-reviewer`가
+  요청되지 않은 fallback, TODO/debt marker, suppression, skipped 또는
+  meaningless test, production test/debug path를 감사하며, 공유 policy
+  engine이 issue link와 expiry가 있는 task-doc `Quality Debt Exceptions`
+  없이는 차단하거나 justification을 요구.
+- 상태 기반 dynamic `/agent-all` orchestration 추가. 변경 파일/실패 상태를
+  분류해 `requiredAgents`를 계산하고, 반복 failure signature는 구현자 추가
+  대신 planner/user decision으로 escalation하며, dynamic spawn은 공유
+  policy engine으로 검증하고 `.agent-skill/runs/<run-id>/spawn-log.jsonl`에
+  기록.
+- `--max-iter=0` 또는 `loop.maxIter: null`로 `/agent-all --loop` 무제한
+  반복 모드 추가. 반복 failure signature escalation과 장기 재개용 loop
+  state handoff 필드도 포함.
+- Deploy branch를 local-only release evidence에서 공개 PR smoke CI + authoritative local release gate로 확장. release-audit는 이제 `tests/manual-checklist.md`의 public PR CI/local release 계약을 검증.
 - `.github/workflows/*.yml` 변경을 감지하고 GitHub CLI auth에 `workflow` scope가 없으면 push 전에 실패시키는 no-push branch publishing preflight `scripts/release-publish-preflight.mjs` 추가.
 - 실제 대상 프로젝트용 no-write rollout 리허설 `scripts/target-project-smoke.mjs` 추가. Claude/Codex `install-platform.sh --dry-run`과 operational doctor 증거를 묶고, stale scaffold에는 권장 refresh 명령을 출력.
 - Claude/Codex harness 요구사항을 authoritative gate에 직접 매핑하는 release-audited User Objective Release Matrix 추가: heavy 기본값 + lite opt-out, 승인된 foundation 자동 갱신, superpowers/context-mode 활성화, persona 세분화, orchestration gate, POSCO MDS-style Django/Vue routing, Codex current-CLI parity, doctor/cleanup, HOME config 안전성, deployable release gate 포함.
@@ -30,7 +109,7 @@
 - Claude QA, 기본 reviewer, 전문 reviewer persona도 Codex와 같은 Phase 4 machine-token 출력 계약을 release fixture와 release audit에서 증명하도록 강화.
 - Claude 터미널 `install-platform.sh --theme=builder`가 이제 진짜 builder-only heavy scaffold를 설치하고, floor config를 생략하며, builder-profile doctor를 실행하도록 고정. release fixture도 이를 증명.
 - Codex builder/lite 루트 `AGENTS.md`가 이제 floor가 설치된 경우에만 `.agent-all.json` language 정렬을 안내하도록 변경. builder-only 설치가 없는 floor config를 암시하지 않도록 release fixture와 release audit에서 고정.
-- Codex debug 포트를 마켓플레이스, Codex 설치 그룹, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, 공개 검증 문서에 등록. 현재 suite: 1788/1788 통과; fast release smoke: 450/450 통과.
+- Codex debug 포트를 마켓플레이스, Codex 설치 그룹, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, 공개 검증 문서에 등록. 현재 suite: 1981/1981 통과; fast release smoke: 503/503 통과.
 - Claude/Codex 터미널 operational bootstrap이 `claude` 사용 가능 시 승인된 foundation(`superpowers`, `context-mode`)만 자동 갱신하도록 변경. `--update-foundations` strict 모드와 `--no-update-foundations` opt-out 포함.
 - 기본 foundation auto-refresh에서 승인된 갱신이 실패해도 Claude/Codex bootstrap은 degraded foundation mode로 계속 진행하도록 강화. strict 실패는 `--update-foundations`에서만 유지.
 - `/agent-init` 기본값을 운영형/무거운 scaffold로 변경하고, 최소 경로는 `/agent-init --lite`로 제공.
@@ -170,7 +249,7 @@ Suite **1280 → 1292 통과** (+12 새 tests: renderer prefix 테이블, langua
 
 ### 추가
 
-- **Decision-surfacing 프로토콜.** `/agent-all` Phase 3가 **3a scoping → 3b ask → 3c implement**로 분리. Implementer subagent가 read-only scoping pass를 거쳐 아키텍처/스펙 모호점 결정들을 JSON payload `{options[2-4], recommended_index, reasoning}`로 반환, main이 `AskUserQuestion`으로 1/2/3 패널 표시 (추천 표시 포함), 답변 baked-in으로 재-dispatch. Non-TTY 모드는 recommended 자동 선택 + `.agent-all-state.json` + `docs/agent-all/iter-<N>/decisions.md` 로그.
+- **Decision-surfacing 프로토콜.** `/agent-all` Phase 3가 **3a scoping → 3b ask → 3c implement**로 분리. Implementer subagent가 read-only scoping pass를 거쳐 아키텍처/스펙 모호점 결정들을 JSON payload `{options[2-4], recommended_index, reasoning}`로 반환, main이 `AskUserQuestion`으로 1/2/3 패널 표시 (추천 표시 포함), 답변 baked-in으로 재-dispatch. Non-TTY 모드는 recommended low/medium-risk 선택을 자동 선택하고 `.agent-all-state.json`, `docs/agent-all/iter-<N>/decisions.md`, `.agent-skill/runs/<run-id>/interactions.jsonl`에 로그하며, high-risk 선택은 block.
 - **단일 `floor-policy` hook** (PreToolUse + PostToolUse on `Task`) — dispatch 시 scoping addendum + verification directive 자동 inject, 반환 시 `verification_passed` / `VERIFICATION_AUDIT: passed|failed|skipped` 토큰 검증. 단일 파일에 internal router — Task 호출 아니면 오버헤드 거의 없음.
 - **`.agent-all.json` `policy` opt-out** — `decisionSurfacing`, `verification`, `reviewerAudit` 플래그 모두 기본 `true`. 기존 deep-merge가 자연스럽게 override 처리하도록 `DEFAULTS`에 추가.
 - **플랫폼별 parity** — Cursor (`.cursor/rules/decision-protocol.mdc`, soft), Copilot CLI (`.github/agent-all/decision-protocol.md`, `.github/hooks/`로 hard), Codex (`[[hooks.agent]]` snippet을 stdout으로 — 수동 merge, hard), Gemini (`.gemini/agent-all-decision-protocol.md`, soft), VS Code Copilot (`.github/copilot-instructions.md` 읽음, soft).

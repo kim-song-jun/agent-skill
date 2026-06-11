@@ -59,6 +59,14 @@ The skill runs 5 phases strictly in order. Each phase is described in a separate
 5. **context-mode for any inspection.** When reading `installed_plugins.json`, large directories, or `git status`, use `mcp__plugin_context-mode_context-mode__ctx_batch_execute` instead of raw Bash.
 6. **Operational profile is default.** Unless `--lite` or `--theme=lite` is passed, render task ledger, local guides, policy hooks, and foundation checks. Only the default/floor profile renders `.visual-qa.json` and `.agent-all.json`; `--theme=builder` skips those floor config files.
 7. **Dry-run is a no-mutation planning mode.** When `--dry-run` is set, phases must only compute and print planned writes. Do not write root files, local guides, agents, hooks, settings, state files, task ledger files, platform artifacts, foundation updates, global config patches, or commits. Phase 5 prints the complete plan and exits.
+8. **Interactive choices use one schema.** Profile/theme/platform choices,
+   foundation approvals, and global config approvals are modeled as
+   `agent-interaction/v1` `AgentInteraction` records. Claude renders them with
+   `renderer-claude.mjs` and native `AskUserQuestion`; non-Claude surfaces use
+   their platform renderers over the same object. Non-TTY mode uses
+   `resolveNonTtyInteraction()`, logs to
+   `.agent-skill/runs/<run-id>/interactions.jsonl`, and blocks high-risk
+   approvals instead of auto-selecting them.
 
 ## Lib modules
 

@@ -2,12 +2,15 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { summarizeManifestForAudit } from "./release-provenance.mjs";
 
 const DEFAULT_PLATFORMS = ["claude", "codex"];
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const PUBLIC_CLI_SCRIPTS = [
+  "scripts/docs-structure-check.mjs",
   "scripts/doctor.mjs",
+  "scripts/github-governance-check.mjs",
   "scripts/harness-clean.mjs",
   "scripts/install-all.sh",
   "scripts/install-platform.sh",
@@ -15,10 +18,13 @@ const PUBLIC_CLI_SCRIPTS = [
   "scripts/release-candidate.mjs",
   "scripts/release-fixture-smoke.mjs",
   "scripts/release-publish-preflight.mjs",
+  "scripts/release-provenance.mjs",
   "scripts/release-smoke.sh",
+  "scripts/skill-eval.mjs",
   "scripts/sync-lib.mjs",
   "scripts/target-project-smoke.mjs",
   "scripts/update.sh",
+  "plugins/harness-floor/skills/agent-handoff/bin/agent-handoff.mjs",
 ];
 
 const RELEASE_SMOKE_CONTRACT = {
@@ -30,7 +36,11 @@ const RELEASE_SMOKE_CONTRACT = {
     /claude plugin: marketplace\/install surface/,
     /probe_codex_exec_surface/,
     /release-audit\.mjs/,
+    /github-governance-check\.mjs/,
+    /docs-structure-check\.mjs/,
     /release-fixture-smoke\.mjs/,
+    /skill-eval\.mjs[\s\S]{0,120}--smoke[\s\S]{0,120}--no-write[\s\S]{0,120}--json/,
+    /release-provenance\.mjs[\s\S]{0,120}--no-write[\s\S]{0,120}--json/,
     /install-all\.sh" --dry-run --claude-code/,
     /install-all\.sh" --dry-run --cli=codex/,
     /node --test[\s\S]{0,900}tests\/lib\/release-audit\.test\.mjs[\s\S]{0,900}tests\/lib\/release-install-scripts\.test\.mjs/,
@@ -42,18 +52,71 @@ const RELEASE_SMOKE_CONTRACT = {
 
 const LOCAL_DEPLOY_CONTRACT = {
   file: "tests/manual-checklist.md",
-  label: "local deploy release gate",
+  label: "public PR CI and local release gate",
   patterns: [
-    /Local-only deployment path/,
-    /No `.github\/workflows\/.*` file is shipped in this release branch/,
-    /workflow` scope is not required for branch publishing/,
+    /Public PR smoke CI and local release gate/,
+    /\.github\/workflows\/smoke\.yml/,
+    /\.github\/workflows\/docs\.yml/,
+    /\.github\/workflows\/templates\.yml/,
+    /node scripts\/github-governance-check\.mjs/,
+    /node scripts\/docs-structure-check\.mjs/,
+    /Local release gate remains authoritative/,
     /node scripts\/release-candidate\.mjs --date=2026-06-02/,
+    /node scripts\/release-provenance\.mjs --release=/,
     /node scripts\/release-audit\.mjs/,
     /node scripts\/release-fixture-smoke\.mjs/,
+    /node scripts\/skill-eval\.mjs --smoke --no-write --json/,
     /\.\/scripts\/release-smoke\.sh --fast --with-live-cli/,
     /node scripts\/target-project-smoke\.mjs --target=\/Users\/sungjun\/Documents\/molcube\/posco\/posco-mds --platform=claude,codex --lang=ko/,
     /node --test/,
     /node scripts\/sync-lib\.mjs --check/,
+  ],
+};
+
+const GITHUB_GOVERNANCE_CHECK_CONTRACT = {
+  file: "scripts/github-governance-check.mjs",
+  label: "GitHub governance check",
+  patterns: [
+    /buildGithubGovernanceReport/,
+    /\.github\/workflows\/smoke\.yml/,
+    /\.github\/workflows\/docs\.yml/,
+    /\.github\/workflows\/templates\.yml/,
+    /\.github\/ISSUE_TEMPLATE\/feature\.yml/,
+    /\.github\/pull_request_template\.md/,
+    /\.github\/labels\.yml/,
+    /type:feature/,
+    /area:verification/,
+    /priority:p0/,
+  ],
+};
+
+const DOCS_STRUCTURE_CHECK_CONTRACT = {
+  file: "scripts/docs-structure-check.mjs",
+  label: "docs structure check",
+  patterns: [
+    /buildDocsStructureReport/,
+    /docs\/github-governance\.md/,
+    /local markdown links resolve/,
+    /public CI does not replace local release gate/,
+    /No files were written|process\.exit/,
+  ],
+};
+
+const GITHUB_GOVERNANCE_DOC_CONTRACT = {
+  file: "docs/github-governance.md",
+  label: "GitHub governance docs",
+  patterns: [
+    /Public PR Smoke CI/,
+    /\.github\/workflows\/smoke\.yml/,
+    /\.github\/workflows\/docs\.yml/,
+    /\.github\/workflows\/templates\.yml/,
+    /Local release gate remains authoritative/,
+    /Issue Templates/,
+    /Pull Request Template/,
+    /Label Taxonomy/,
+    /type:feature/,
+    /area:release/,
+    /priority:p2/,
   ],
 };
 
@@ -135,13 +198,53 @@ const RELEASE_CANDIDATE_SCRIPT_CONTRACT = {
     /release-smoke\.sh --fast --with-live-cli/,
     /release-publish-preflight\.mjs/,
     /target-project-smoke\.mjs/,
+    /release-provenance\.mjs --release=/,
+  ],
+};
+
+const RELEASE_PROVENANCE_SCRIPT_CONTRACT = {
+  file: "scripts/release-provenance.mjs",
+  label: "release provenance manifest",
+  patterns: [
+    /agent-skill-release-manifest\/v1/,
+    /buildReleaseManifest/,
+    /verifyReleaseManifest/,
+    /release-manifest\.json/,
+    /release-manifest\.sha256/,
+    /checksumDirectory/,
+    /git tag -v/,
+    /sync-lib\.mjs/,
+  ],
+};
+
+const INSTALL_ALL_PROVENANCE_CONTRACT = {
+  file: "scripts/install-all.sh",
+  label: "install-all provenance verification",
+  patterns: [
+    /--verify-checksums/,
+    /--verify-provenance/,
+    /--manifest=/,
+    /run_provenance_verification/,
+    /release-provenance\.mjs" --verify/,
+  ],
+};
+
+const UPDATE_PROVENANCE_CONTRACT = {
+  file: "scripts/update.sh",
+  label: "update provenance verification",
+  patterns: [
+    /--verify-provenance/,
+    /--verify-checksums/,
+    /--manifest=<path>/,
+    /run_provenance_verification/,
+    /release-provenance\.mjs" --verify/,
   ],
 };
 
 const PLATFORM_CONTRACTS = {
   claude: {
     label: "Claude",
-    marketplacePlugins: ["harness-builder", "harness-floor", "harness-thrift", "harness-explore", "harness-debug"],
+    marketplacePlugins: ["harness-builder", "harness-floor", "harness-thrift", "harness-explore", "harness-debug", "harness-data"],
     requiredFiles: [
       "scripts/install-platform.sh",
       "plugins/harness-builder/.claude-plugin/plugin.json",
@@ -158,6 +261,7 @@ const PLATFORM_CONTRACTS = {
       "plugins/harness-builder/skills/agent-init/templates/agents/backend-dev.md.hbs",
       "plugins/harness-builder/skills/agent-init/templates/agents/integration-dev.md.hbs",
       "plugins/harness-builder/skills/agent-init/templates/agents/orchestrator.md.hbs",
+      "plugins/harness-builder/skills/agent-init/templates/agents/quality-debt-reviewer.md.hbs",
       "plugins/harness-builder/skills/agent-init/templates/agents/verification-reviewer.md.hbs",
       "plugins/harness-builder/skills/agent-init/templates/agents/qa-reviewer.md.hbs",
       "plugins/harness-builder/skills/agent-init/templates/agents/design-reviewer.md.hbs",
@@ -171,17 +275,33 @@ const PLATFORM_CONTRACTS = {
       "plugins/harness-floor/skills/agent-all/SKILL.md",
       "plugins/harness-floor/skills/agent-all/lib/gate-plan.mjs",
       "plugins/harness-floor/skills/agent-all/lib/policy/coordinator-audit-validator.mjs",
+      "plugins/harness-floor/skills/agent-all/lib/git-state-reader.mjs",
+      "plugins/harness-floor/skills/agent-all/lib/handoff-writer.mjs",
+      "plugins/harness-floor/skills/agent-all/lib/resume-artifacts.mjs",
+      "plugins/harness-floor/skills/agent-all/lib/session-prompt-writer.mjs",
+      "plugins/harness-floor/skills/agent-all/lib/task-doc-extractor.mjs",
+      "plugins/harness-floor/skills/agent-handoff/SKILL.md",
+      "plugins/harness-floor/skills/agent-handoff/lib/agent-handoff-runner.mjs",
       "plugins/harness-floor/skills/visual-qa/SKILL.md",
       "plugins/harness-thrift/skills/thrift/SKILL.md",
+      "plugins/harness-data/.claude-plugin/plugin.json",
+      "plugins/harness-data/README.md",
+      "plugins/harness-data/skills/data-runner/SKILL.md",
     ],
     textChecks: [
       RELEASE_SMOKE_CONTRACT,
       LOCAL_DEPLOY_CONTRACT,
+      GITHUB_GOVERNANCE_CHECK_CONTRACT,
+      DOCS_STRUCTURE_CHECK_CONTRACT,
+      GITHUB_GOVERNANCE_DOC_CONTRACT,
       RELEASE_PUBLISH_PREFLIGHT_CONTRACT,
       TARGET_PROJECT_SMOKE_CONTRACT,
       USER_OBJECTIVE_RELEASE_MATRIX,
       RELEASE_CANDIDATE_LIFECYCLE,
       RELEASE_CANDIDATE_SCRIPT_CONTRACT,
+      RELEASE_PROVENANCE_SCRIPT_CONTRACT,
+      INSTALL_ALL_PROVENANCE_CONTRACT,
+      UPDATE_PROVENANCE_CONTRACT,
       {
         file: "plugins/harness-builder/skills/agent-init/SKILL.md",
         patterns: [
@@ -193,6 +313,12 @@ const PLATFORM_CONTRACTS = {
           /--resume/,
           /--platform=claude,codex,gemini/,
           /--lang=ko\|en\|auto/,
+          /agent-interaction\/v1/,
+          /renderer-claude\.mjs/,
+          /AskUserQuestion/,
+          /resolveNonTtyInteraction\(\)/,
+          /interactions\.jsonl/,
+          /high-risk/,
           /When done[\s\S]{0,180}(phases completed|files written)/i,
         ],
       },
@@ -219,8 +345,29 @@ const PLATFORM_CONTRACTS = {
           /--loop/,
           /--qa/,
           /--resume/,
+          /agent-interaction\/v1/,
+          /renderer-claude\.mjs/,
+          /renderer-codex\.mjs/,
+          /interactions\.jsonl/,
+          /high-risk/,
           /superpowers:subagent-driven-development/,
           /When done/i,
+        ],
+      },
+      {
+        file: "plugins/harness-floor/skills/agent-handoff/SKILL.md",
+        patterns: [
+          /^---\nname: agent-handoff\n/m,
+          /^# \/agent-handoff$/m,
+          /--dry-run/,
+          /--strict/,
+          /--yes/,
+          /agent-skill\/handoff@1/,
+          /agent-skill\/session-prompt@1/,
+          /handoff-audit\.jsonl/,
+          /interactions\.jsonl/,
+          /User approval required \/ 사용자 승인 필요/,
+          /When Done/i,
         ],
       },
       {
@@ -248,6 +395,20 @@ const PLATFORM_CONTRACTS = {
         ],
       },
       {
+        file: "plugins/harness-data/skills/data-runner/SKILL.md",
+        patterns: [
+          /^---\nname: data-runner\n/m,
+          /^# \/data-runner$/m,
+          /notebook-runner/,
+          /sql-validator/,
+          /artifact-diff/,
+          /verify:notebook-data/,
+          /verify:sql-db/,
+          /allowDestructive=true/,
+          /When Done/i,
+        ],
+      },
+      {
         file: "plugins/harness-builder/skills/agent-init/templates/CLAUDE.md.hbs",
         patterns: [
           /Role Routing/i,
@@ -255,6 +416,8 @@ const PLATFORM_CONTRACTS = {
           /Implementation Routing Matrix/i,
           /frontend-dev[\s\S]{0,240}backend-dev/i,
           /verification-reviewer/i,
+          /Quality Debt Policy/i,
+          /quality-debt-reviewer/i,
           /Orchestration Contract/i,
           /Role Gate Matrix/i,
           /Configured QA Personas/i,
@@ -272,6 +435,8 @@ const PLATFORM_CONTRACTS = {
           /superpowers:verification-before-completion/i,
           /context-mode[\s\S]{0,220}(file-backed logs|bulk context|broad searches|long outputs)/i,
           /Orchestration Contract/i,
+          /Quality Debt Policy/i,
+          /quality-debt-reviewer/i,
           /Role Gate Matrix/i,
         ],
       },
@@ -294,6 +459,10 @@ const PLATFORM_CONTRACTS = {
       {
         file: "plugins/harness-builder/skills/agent-init/templates/agents/verification-reviewer.md.hbs",
         patterns: [/Verification Review Task/, /VERIFICATION_AUDIT: passed/, /VERIFICATION_AUDIT: failed/, /VERIFICATION_AUDIT: skipped/, /literal line at the END/i],
+      },
+      {
+        file: "plugins/harness-builder/skills/agent-init/templates/agents/quality-debt-reviewer.md.hbs",
+        patterns: [/Quality Debt Reviewer/, /Quality Debt Policy/, /Quality Debt Exceptions/, /VERIFICATION_AUDIT: passed/, /VERIFICATION_AUDIT: failed/, /VERIFICATION_AUDIT: skipped/],
       },
       {
         file: "plugins/harness-builder/skills/agent-init/templates/agents/qa-reviewer.md.hbs",
@@ -370,6 +539,9 @@ const PLATFORM_CONTRACTS = {
         patterns: [
           /claude[\s\S]{0,140}Claude Code project files/,
           /--update-foundations\|--no-update-foundations/,
+          /--verify-checksums/,
+          /--manifest=<PATH>/,
+          /run_provenance_verification/,
           /FOUNDATION_MODE="auto"/,
           /foundation auto-update skipped/,
           /foundation auto-update failed/,
@@ -456,6 +628,7 @@ const PLATFORM_CONTRACTS = {
       "plugins/harness-builder-codex/skills/codex-init/templates/skills/backend-dev/SKILL.md.hbs",
       "plugins/harness-builder-codex/skills/codex-init/templates/skills/integration-dev/SKILL.md.hbs",
       "plugins/harness-builder-codex/skills/codex-init/templates/skills/orchestrator/SKILL.md.hbs",
+      "plugins/harness-builder-codex/skills/codex-init/templates/skills/quality-debt-reviewer/SKILL.md.hbs",
       "plugins/harness-builder-codex/skills/codex-init/templates/skills/verification-reviewer/SKILL.md.hbs",
       "plugins/harness-builder-codex/skills/codex-init/templates/skills/design-reviewer/SKILL.md.hbs",
       "plugins/harness-builder-codex/skills/codex-init/templates/skills/security-reviewer/SKILL.md.hbs",
@@ -478,11 +651,17 @@ const PLATFORM_CONTRACTS = {
     textChecks: [
       RELEASE_SMOKE_CONTRACT,
       LOCAL_DEPLOY_CONTRACT,
+      GITHUB_GOVERNANCE_CHECK_CONTRACT,
+      DOCS_STRUCTURE_CHECK_CONTRACT,
+      GITHUB_GOVERNANCE_DOC_CONTRACT,
       RELEASE_PUBLISH_PREFLIGHT_CONTRACT,
       TARGET_PROJECT_SMOKE_CONTRACT,
       USER_OBJECTIVE_RELEASE_MATRIX,
       RELEASE_CANDIDATE_LIFECYCLE,
       RELEASE_CANDIDATE_SCRIPT_CONTRACT,
+      RELEASE_PROVENANCE_SCRIPT_CONTRACT,
+      INSTALL_ALL_PROVENANCE_CONTRACT,
+      UPDATE_PROVENANCE_CONTRACT,
       {
         file: "plugins/harness-builder-codex/skills/codex-init/SKILL.md",
         patterns: [
@@ -493,6 +672,13 @@ const PLATFORM_CONTRACTS = {
           /--theme=lite/,
           /--dry-run/,
           /--lang=en\|ko\|auto/,
+          /agent-interaction\/v1/,
+          /renderer-codex\.mjs/,
+          /renderer-claude\.mjs/,
+          /AskUserQuestion/,
+          /resolveNonTtyInteraction\(\)/,
+          /interactions\.jsonl/,
+          /high-risk/,
           /When done[\s\S]{0,220}Codex config snippet/i,
         ],
       },
@@ -624,6 +810,8 @@ const PLATFORM_CONTRACTS = {
           /Implementation Routing Matrix/i,
           /frontend-dev[\s\S]{0,240}backend-dev/i,
           /verification-reviewer/i,
+          /Quality Debt Policy/i,
+          /quality-debt-reviewer/i,
           /Orchestration Contract/i,
           /Role Gate Matrix/i,
           /QA Personas/i,
@@ -655,6 +843,10 @@ const PLATFORM_CONTRACTS = {
       {
         file: "plugins/harness-builder-codex/skills/codex-init/templates/skills/verification-reviewer/SKILL.md.hbs",
         patterns: [/Verification Review Task/, /VERIFICATION_AUDIT: passed/, /VERIFICATION_AUDIT: failed/, /VERIFICATION_AUDIT: skipped/, /literal line at the END/i],
+      },
+      {
+        file: "plugins/harness-builder-codex/skills/codex-init/templates/skills/quality-debt-reviewer/SKILL.md.hbs",
+        patterns: [/Quality Debt Reviewer/, /Quality Debt Policy/, /Quality Debt Exceptions/, /VERIFICATION_AUDIT: passed/, /VERIFICATION_AUDIT: failed/, /VERIFICATION_AUDIT: skipped/],
       },
       {
         file: "plugins/harness-builder-codex/skills/codex-init/templates/skills/integration-dev/SKILL.md.hbs",
@@ -715,6 +907,9 @@ const PLATFORM_CONTRACTS = {
           /run_post_install_doctor/,
           /"--platform=codex" "--profile=\$profile"/,
           /--update-foundations\|--no-update-foundations/,
+          /--verify-checksums/,
+          /--manifest=<PATH>/,
+          /run_provenance_verification/,
           /FOUNDATION_MODE="auto"/,
           /foundation auto-update skipped/,
           /foundation auto-update failed/,
@@ -793,6 +988,7 @@ export function runReleaseAudit({ root = ROOT, platforms = DEFAULT_PLATFORMS } =
 
     checks.push(checkMarketplace(marketplace, contract.marketplacePlugins));
     checks.push(checkExecutableScripts(root, PUBLIC_CLI_SCRIPTS));
+    checks.push(checkReleaseProvenance(root));
     for (const file of contract.requiredFiles) {
       checks.push(checkExists(root, file));
     }
@@ -866,6 +1062,32 @@ function checkExecutableScripts(root, files) {
   };
 }
 
+function checkReleaseProvenance(root) {
+  try {
+    const summary = summarizeManifestForAudit(root);
+    const signedTagStatus = summary.signedTag?.status || "unknown";
+    return {
+      ok: summary.ok,
+      severity: signedTagStatus === "signed" ? "info" : "warning",
+      name: "release provenance manifest can be generated",
+      details: summary.ok
+        ? [
+            `${summary.checksumCount}/${summary.pluginCount} plugin checksums`,
+            `marketplace consistency: ${summary.manifestConsistency}`,
+            `signed tag: ${signedTagStatus}`,
+          ].join("; ")
+        : `checksumCount=${summary.checksumCount} pluginCount=${summary.pluginCount}; marketplace consistency: ${summary.manifestConsistency || "unknown"}; signed tag: ${signedTagStatus}`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      severity: "error",
+      name: "release provenance manifest can be generated",
+      details: error.message,
+    };
+  }
+}
+
 function checkExists(root, file) {
   const ok = existsSync(resolve(root, file));
   return {
@@ -926,7 +1148,9 @@ function printHuman(result) {
   for (const platform of Object.values(result.platforms)) {
     console.log(platform.summary);
     for (const check of platform.checks) {
-      console.log(`  ${check.ok ? "ok" : "fail"} - ${check.name}`);
+      const status = check.ok ? (check.severity === "warning" ? "warn" : "ok") : "fail";
+      const details = check.details ? `: ${check.details}` : "";
+      console.log(`  ${status} - ${check.name}${details}`);
     }
   }
 }

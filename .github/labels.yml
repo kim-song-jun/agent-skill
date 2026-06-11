@@ -1,0 +1,40 @@
+- name: type:feature
+  color: "0E8A16"
+  description: New capability, workflow, adapter, or user-visible behavior.
+- name: type:bug
+  color: "D73A4A"
+  description: Incorrect behavior, regression, or broken compatibility.
+- name: type:docs
+  color: "0075CA"
+  description: Documentation-only change.
+- name: type:process
+  color: "5319E7"
+  description: Governance, release, CI, or contribution process.
+- name: type:quality
+  color: "B60205"
+  description: Quality-debt policy, exception, or prevention work.
+- name: area:platform
+  color: "1D76DB"
+  description: Claude, Codex, Copilot, Cursor, Gemini, or VS Code platform surfaces.
+- name: area:verification
+  color: "5319E7"
+  description: Verification adapters, reviewer gates, evidence, or audit tokens.
+- name: area:hooks
+  color: "7057FF"
+  description: Policy hooks, loop gates, hard/soft enforcement, or audit logs.
+- name: area:data
+  color: "006B75"
+  description: Data runner, notebook, SQL, artifact, or data review workflows.
+- name: area:release
+  color: "C5DEF5"
+  description: Release gate, smoke CI, manifest, marketplace, or provenance.
+- name: priority:p0
+  color: "B60205"
+  description: Release-blocking or security-critical work.
+- name: priority:p1
+  color: "D93F0B"
+  description: Important work needed for the next release window.
+- name: priority:p2
+  color: "FBCA04"
+  description: Useful follow-up that can wait behind active release work.
+

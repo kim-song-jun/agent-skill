@@ -97,16 +97,16 @@ test("phase 5 handles dry-run before reading persisted plugin scan state", () =>
 
 test("phase 5 creates docs tasks directory before writing task ledger files", () => {
   const phase5 = readPhase("5-wire.md");
-  const docsTasksIndex = phase5.indexOf("docs/tasks/");
-  assert.notEqual(docsTasksIndex, -1, "Phase 5 must mention docs/tasks/");
+  const docsTasksIndex = phase5.indexOf(".agent-skill/tasks/");
+  assert.notEqual(docsTasksIndex, -1, "Phase 5 must mention .agent-skill/tasks/");
   const mkdirIndex = phase5.indexOf("`mkdir -p`", docsTasksIndex);
-  assert.notEqual(mkdirIndex, -1, "Phase 5 must explicitly create docs/tasks/ with mkdir -p");
+  assert.notEqual(mkdirIndex, -1, "Phase 5 must explicitly create .agent-skill/tasks/ with mkdir -p");
 
   const taskLedgerMatch = phase5.match(/write task ledger files/i);
   assert.ok(taskLedgerMatch, "Phase 5 must still describe task ledger writes");
   assert.ok(
     mkdirIndex < taskLedgerMatch.index,
-    "Phase 5 must create docs/tasks/ before writing task ledger files",
+    "Phase 5 must create .agent-skill/tasks/ before writing task ledger files",
   );
 });
 

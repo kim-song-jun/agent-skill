@@ -42,7 +42,7 @@ export function resolvePageSkillPath(projectRoot) {
  * @param {object} args.page          — page descriptor from .visual-qa.json
  * @param {string} args.page.name
  * @param {string} [args.page.path]
- * @param {string} args.slugDir       — `docs/visual-qa/<slug>/`
+ * @param {string} args.slugDir       — `.agent-skill/reports/visual-qa/<slug>/`
  * @param {string} args.baseUrl
  * @param {object} [args.config]
  * @returns {string}

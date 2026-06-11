@@ -78,6 +78,7 @@ test("agent-all-gemini: config includes dispatch.subprocessTimeout/maxSubprocess
   assert.ok(body.includes("subprocessTimeout"));
   assert.ok(body.includes("maxSubprocesses"));
   assert.ok(body.includes("subprocessTmpDir"));
+  assert.ok(body.includes("\"maxRuntimeSec\": null"));
 });
 
 test("agent-all-gemini: porting-notes explains why it's the heaviest port", () => {

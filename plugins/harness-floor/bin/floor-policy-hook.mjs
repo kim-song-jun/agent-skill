@@ -2,10 +2,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { validateVerification } from "../skills/agent-all/lib/policy/verification-validator.mjs";
-import { validateReviewerAudit } from "../skills/agent-all/lib/policy/reviewer-audit-validator.mjs";
-import { validateQaAudit } from "../skills/agent-all/lib/policy/qa-audit-validator.mjs";
-import { validateCoordinatorAudit } from "../skills/agent-all/lib/policy/coordinator-audit-validator.mjs";
+import { evaluatePolicyEvent } from "../skills/agent-all/lib/policy/policy-engine.mjs";
 import { resolveLanguage } from "../skills/agent-all/lib/config-loader.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -64,6 +61,63 @@ function isReviewerDispatch(params) {
   return /^(?:review task|.+\sreview task)\b/i.test(params.description);
 }
 
+function projectCwd() {
+  return process.env.CLAUDE_PROJECT_DIR || process.cwd();
+}
+
+function runId() {
+  return process.env.AGENT_SKILL_RUN_ID || process.env.AGENT_ALL_RUN_ID || "default";
+}
+
+function agentRole(params) {
+  if (isImplementerDispatch(params)) return "implementer";
+  if (isQaReviewerDispatch(params)) return "qa";
+  if (isCoordinatorDispatch(params)) return "coordinator";
+  if (isReviewerDispatch(params)) return "reviewer";
+  return null;
+}
+
+function resultText(payload) {
+  const value = payload?.result ?? payload?.tool_response ?? payload?.toolResponse ?? payload?.response ?? "";
+  return typeof value === "string" ? value : JSON.stringify(value ?? "");
+}
+
+function evaluateTaskPolicy({ event, payload, params }) {
+  return evaluatePolicyEvent({
+    event,
+    platform: "claude",
+    runId: runId(),
+    phase: event === "BeforeAgentSpawn" ? "dispatch" : "gate",
+    toolName: "Task",
+    taskId: params?.taskId,
+    displayId: params?.description,
+    agent: {
+      role: agentRole(params),
+      reason: params?.description || params?.prompt || "Task dispatch",
+      // Claude's Task API does not expose an up-front dollar estimate. Zero is
+      // the explicit "no known additional budget declared by hook" sentinel.
+      budgetImpactUSD: 0,
+    },
+    payload: {
+      description: params?.description,
+      resultText: resultText(payload),
+      waveSpawnCount: payload?.waveSpawnCount,
+    },
+  }, {
+    cwd: projectCwd(),
+    writeAudit: process.env.AGENT_POLICY_AUDIT !== "0",
+  });
+}
+
+function firstBlockingReason(policyVerdict) {
+  return policyVerdict.results.find((result) => (
+    result.action === "deny"
+      || result.action === "stop_loop"
+      || result.action === "requires_justification"
+      || result.action === "ask_user"
+  ))?.reason;
+}
+
 async function readStdin() {
   return new Promise((res) => {
     let buf = "";
@@ -93,6 +147,11 @@ async function main() {
   }
 
   if (event === "PreToolUse") {
+    const policyVerdict = evaluateTaskPolicy({ event: "BeforeAgentSpawn", payload, params });
+    if (!policyVerdict.ok) {
+      process.stderr.write(firstBlockingReason(policyVerdict) || "policy denied Task dispatch");
+      process.exit(2);
+    }
     const lang = pickLanguage();
     const addendum = ADDENDA[lang] || ADDENDA.en;
     const verifDir = VERIFICATION_DIRECTIVES[lang] || VERIFICATION_DIRECTIVES.en;
@@ -114,32 +173,10 @@ async function main() {
   }
 
   if (event === "PostToolUse") {
-    const text = payload.result || "";
-    if (isImpl) {
-      const v = validateVerification(text);
-      if (!v.ok) {
-        process.stderr.write(v.reason);
-        process.exit(2);
-      }
-    }
-    if (isQa) {
-      const v = validateQaAudit(text);
-      if (!v.ok) {
-        process.stderr.write(v.reason);
-        process.exit(2);
-      }
-    } else if (isCoord) {
-      const v = validateCoordinatorAudit(text);
-      if (!v.ok) {
-        process.stderr.write(v.reason);
-        process.exit(2);
-      }
-    } else if (isRev) {
-      const v = validateReviewerAudit(text);
-      if (!v.ok) {
-        process.stderr.write(v.reason);
-        process.exit(2);
-      }
+    const policyVerdict = evaluateTaskPolicy({ event: "AfterAgentReturn", payload, params });
+    if (!policyVerdict.ok) {
+      process.stderr.write(firstBlockingReason(policyVerdict) || "policy denied Task result");
+      process.exit(2);
     }
     process.stdout.write(JSON.stringify(payload));
     process.exit(0);

@@ -18,7 +18,7 @@
     "severityThreshold": "minor"
   },
   "output": {
-    "dir": "docs/visual-qa",
+    "dir": ".agent-skill/reports/visual-qa",
     "keepLastN": 10
   }
 }

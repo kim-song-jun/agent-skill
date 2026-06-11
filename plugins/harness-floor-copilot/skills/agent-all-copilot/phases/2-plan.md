@@ -3,7 +3,7 @@
 ## Steps
 
 1. The coordinator drafts a plan from `task.path` directly into
-   `docs/superpowers/plans/<YYYY-MM-DD>-<slug>.md` via `apply_patch`. Plan
+   `.agent-skill/plans/<YYYY-MM-DD>-<slug>.md` via `apply_patch`. Plan
    format same as Claude port:
    - One `# <Plan title>` heading.
    - `## Context`, `## Goals`, `## Non-goals`.

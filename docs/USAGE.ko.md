@@ -68,10 +68,13 @@ task ledger, 정책 훅, `.visual-qa.json`, `.agent-all.json`, 및 CLAUDE.md의 
 ### 기존 작업 파일에서
 
 ```
-/agent-all docs/tasks/12-fix-flaky-test.md
+/agent-all .agent-skill/tasks/T-20260611-001-fix-flaky-test.md
 ```
 
 brainstorming을 건너뜁니다 (이미 완료했으므로), 계획 + 디스패치로 바로 진행합니다.
+새 task 파일은 파일명에 `T-YYYYMMDD-NNN` display id를 쓰고,
+frontmatter와 `.agent-skill/registry/tasks.json`에는 `AS-TASK-*` canonical id를
+기록합니다.
 
 ### 테스트가 통과할 때까지 반복
 
@@ -79,7 +82,34 @@ brainstorming을 건너뜁니다 (이미 완료했으므로), 계획 + 디스패
 /agent-all "Fix the flaky login test" --loop --max-iter=10
 ```
 
-`npm test` (`.agent-all.json`의 `loop.breakCondition`에서)가 `stableIters` 연속 반복 동안 종료 코드 0을 반환할 때까지 전체 파이프라인을 다시 실행합니다. 하드 캡이 무한 실행을 방지합니다.
+`npm test` (`.agent-all.json`의 `loop.breakCondition`에서)가 `stableIters`
+연속 반복 동안 종료 코드 0을 반환할 때까지 전체 파이프라인을 다시
+실행합니다. `--max-iter=0` 또는 `.agent-all.json`의 `loop.maxIter: null`을
+사용하면 반복 횟수는 무제한입니다. 그래도 비용/런타임 예산, hard policy
+hook, 사용자 중단, 반복 failure signature가 loop를 멈출 수 있습니다.
+
+웹이 아닌 완료 기준은 visual QA 대신 verification adapter를 사용할 수 있습니다.
+
+```
+/agent-all "CLI 동작 검증" --loop \
+  --break-condition='{"type":"verification-adapter","adapter":"cli","config":{"command":"my-tool --check","goldenStdoutPath":"test/golden/help.txt"}}'
+
+/agent-all "notebook 산출물 갱신" --loop \
+  --break-condition='{"type":"verification-adapter","adapter":"notebook-data","config":{"command":"jupyter nbconvert --execute analysis.ipynb --to notebook --inplace","notebooks":["analysis.ipynb"],"requiredArtifacts":["outputs/summary.csv"],"seed":"42","dataSnapshot":"snapshot-id"}}'
+
+/agent-all "SQL 결과 검증" --loop \
+  --break-condition='{"type":"verification-adapter","adapter":"sql-db","config":{"files":["queries/validate.sql"],"command":"npm run validate:sql","assertions":[{"id":"row-count","type":"row-count","expected":10}],"requiredArtifacts":["reports/explain.txt"]}}'
+```
+
+기본 adapter는 `verify:web-ui`, `verify:cli`, `verify:api-contract`,
+`verify:notebook-data`, `verify:sql-db`, `verify:batch-job`입니다. 결과는
+`.agent-skill/runs/<run-id>/verification-evidence.jsonl`에
+`verification-evidence/v1`로 기록됩니다.
+
+`harness-data`는 notebook, SQL, artifact diff 작업용 `/data-runner` 안내를
+추가합니다. 생성되는 task template은 Data Task Addendum을 포함하며,
+파괴적 SQL/data 작업은 `allowDestructive=true`가 명시 승인되지 않으면
+차단됩니다.
 
 ### PR 생성 건너뛰기 (커밋만)
 
@@ -93,6 +123,50 @@ brainstorming을 건너뜁니다 (이미 완료했으므로), 계획 + 디스패
 /agent-all "Build dashboard" --wave-size=large    # 최대 8개 병렬 서브에이전트
 ```
 
+## 세션 인계 (`/agent-handoff`)
+
+### handoff와 새 세션 프롬프트 생성
+
+```
+/agent-handoff .agent-skill/tasks/T-20260611-001-fix-flaky-test.md
+```
+
+작성 파일:
+- `.agent-skill/handoff/T-20260611-001-fix-flaky-test.handoff.md`
+- `.agent-skill/handoff/T-20260611-001-fix-flaky-test.session.md`
+
+handoff는 완료/남은 작업, blocker, 검증 증거, git 상태, next-action 후보를
+요약합니다. session prompt는 source-of-truth 파일, preflight gate, 수정 가능
+범위, 검증 gate, 위험 명령 승인 정책을 포함합니다.
+
+### 쓰기 없이 미리보기
+
+```
+/agent-handoff .agent-skill/tasks/T-20260611-001-fix-flaky-test.md --dry-run
+```
+
+### task doc 구조 엄격 검사
+
+```
+/agent-handoff .agent-skill/tasks/T-20260611-001-fix-flaky-test.md --strict
+```
+
+`--strict`는 표준 task-ledger 섹션 존재만 요구하며, 진행 중인 작업의
+unchecked checkbox는 허용합니다. non-TTY 모드 또는 `--yes`에서는 추천 next
+action(`/agent-all <task> --resume`)을 자동 선택하고
+`.agent-skill/runs/handoff-audit.jsonl`과
+`.agent-skill/runs/handoff/interactions.jsonl`에 근거를 기록합니다.
+
+### 생성된 artifact에서 재개
+
+```
+/agent-all .agent-skill/tasks/T-20260611-001-fix-flaky-test.md --resume
+```
+
+`--resume`은 `.agent-skill/handoff/*.handoff.md`와 `.session.md` 파일을
+자동 감지합니다. 마이그레이션 중에는 legacy `docs/tasks/*` sibling도
+fallback으로 읽고, metadata를 surface한 뒤 이어서 진행합니다.
+
 ## 시각적 QA (`/visual-qa`)
 
 ### 첫 실행 (기준선 생성)
@@ -103,7 +177,38 @@ npm run dev                                       # dev 서버 :3000에서
 /visual-qa
 ```
 
-출력: `docs/visual-qa/<date>-<hex>/report.md` + 이미지별 `.png` + `.analysis.{json,md}`.
+출력: `.agent-skill/reports/visual-qa/<date>-<hex>/report.md` + 이미지별 `.png` + `.analysis.{json,md}`.
+
+## Artifact policy
+
+생성되는 control-plane 산출물은 기본적으로 `.agent-skill/` 아래에 저장됩니다.
+task 문서는 `.agent-skill/tasks/`, spec은 `.agent-skill/specs/`, plan은
+`.agent-skill/plans/`, handoff 파일은 `.agent-skill/handoff/`, task registry는
+`.agent-skill/registry/tasks.json`, run log는 `.agent-skill/runs/`, visual QA report는 `.agent-skill/reports/visual-qa/`,
+debug log는 `.agent-skill/reports/debug/`, thrift audit은 `.agent-skill/reports/thrift/`,
+baseline은 `.agent-skill/baselines/`를 사용합니다. 기존 `docs/tasks/` task 문서는 migration/resume을 위해 계속
+읽을 수 있습니다. `/agent-init`은 기존 사용자 문서를 삭제하지 않습니다.
+
+`.agent-all.json`의 `"artifact": {"root": ".custom-agent", "exportDocs": false}`로
+root를 바꿀 수 있습니다. `exportDocs: true`는 선택한 report를 publication용
+`docs/`로 mirror하는 워크플로에서만 명시적으로 켜세요.
+
+Control-plane artifact를 저장하거나 공유하기 전에는 redaction gate가
+handoff/session prompt, visual/debug/thrift report, verification evidence,
+policy/interaction/spawn log, PR body를 scan합니다. High-severity secret
+후보는 기본 차단하고, medium privacy 후보는 mask합니다. allowlist는 원문
+값이 아니라 path/rule 단위로만 설정합니다:
+
+```json
+{
+  "security": {
+    "redaction": {
+      "allowPaths": ["docs/public-fixtures/**"],
+      "allowRules": []
+    }
+  }
+}
+```
 
 ### 코드 변경 후 다시 실행
 
@@ -139,7 +244,7 @@ npm run dev                                       # dev 서버 :3000에서
 세션은 다음 중 하나가 발생할 때까지 종료되지 않습니다:
 1. 에이전트가 목표 완료를 인정
 2. `/goal clear`로 수동으로 지움
-3. `--max-iter` 또는 `--max-cost` 도달 (루프 종료, 하지만 목표 훅은 지움까지 차단)
+3. `--max-iter`, `--max-cost`, 또는 `--max-runtime-sec` 도달 (루프 종료, 하지만 목표 훅은 지움까지 차단)
 
 ### 패턴: 중첩 목표 + 작업별 루프
 
@@ -178,7 +283,16 @@ run /agent-all for "Hard refactor that needs second-opinion"
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --theme=debug
 ```
 
-기본 renderer 경로는 operational scaffold를 설치합니다. Claude가 아닌 플랫폼은 기본으로 무거운 builder + floor + thrift 번들을 설치하며, Codex `all`은 debug skill도 함께 설치합니다. `--theme=debug`는 `run /debug "<failing command>"`용 `.codex/skills/debug-codex/`, `.debug-artifacts/`, `docs/debug/`만 설치합니다. Claude `--theme=builder`는 `.visual-qa.json`/`.agent-all.json` 없이 무거운 builder scaffold만 설치합니다. `--lang=ko|en|auto`는 생성된 루트 지침을 맞추고, floor config가 설치될 때는 `.agent-all.json` language 값도 함께 맞춥니다. `--lite`는 builder-only 경로이며 floor/thrift/debug 파일과 전역 Codex config 스니펫을 건너뜁니다. Claude/Codex operational 설치는 가능할 때 승인된 foundation(`superpowers@claude-plugins-official`, `context-mode@context-mode`)만 자동 갱신하고, `claude` CLI가 없거나 승인된 foundation 갱신이 실패하면 degraded foundation 경고를 출력한 뒤 계속 진행합니다. Lite는 기본 자동 foundation 갱신을 건너뛰며, 무거운 artifact 설치 없이 strict foundation 갱신이 필요하면 `--lite --update-foundations`를 함께 사용하세요. `--update-foundations`는 갱신 실패를 strict 실패로 만들 때, `--no-update-foundations`는 opt-out할 때, `--dry-run`은 `claude` 호출 없이 승인된 계획만 볼 때 사용하세요. Claude와 Codex `all`, `builder`, `--lite`, 그리고 Codex `--theme=debug` 설치는 post-install doctor를 자동 실행하며, 검증을 의도적으로 미룰 때만 `--no-doctor`를 넘기세요.
+기본 renderer 경로는 operational scaffold를 설치합니다. Claude가 아닌 플랫폼은 기본으로 무거운 builder + floor + thrift 번들을 설치하며, Codex `all`은 debug skill도 함께 설치합니다. `--theme=debug`는 `run /debug "<failing command>"`용 `.codex/skills/debug-codex/`, `.debug-artifacts/`, `.agent-skill/reports/debug/`만 설치합니다. Claude `--theme=builder`는 `.visual-qa.json`/`.agent-all.json` 없이 무거운 builder scaffold만 설치합니다. `--lang=ko|en|auto`는 생성된 루트 지침을 맞추고, floor config가 설치될 때는 `.agent-all.json` language 값도 함께 맞춥니다. `--lite`는 builder-only 경로이며 floor/thrift/debug 파일과 전역 Codex config 스니펫을 건너뜁니다. Claude/Codex operational 설치는 가능할 때 승인된 foundation(`superpowers@claude-plugins-official`, `context-mode@context-mode`)만 자동 갱신하고, `claude` CLI가 없거나 승인된 foundation 갱신이 실패하면 degraded foundation 경고를 출력한 뒤 계속 진행합니다. Lite는 기본 자동 foundation 갱신을 건너뛰며, 무거운 artifact 설치 없이 strict foundation 갱신이 필요하면 `--lite --update-foundations`를 함께 사용하세요. `--update-foundations`는 갱신 실패를 strict 실패로 만들 때, `--no-update-foundations`는 opt-out할 때, `--dry-run`은 `claude` 호출 없이 승인된 계획만 볼 때 사용하세요. Claude와 Codex `all`, `builder`, `--lite`, 그리고 Codex `--theme=debug` 설치는 post-install doctor를 자동 실행하며, 검증을 의도적으로 미룰 때만 `--no-doctor`를 넘기세요.
+
+릴리즈 artifact는 provenance manifest로 설치/갱신 전에 검증할 수 있습니다:
+
+```bash
+node scripts/release-provenance.mjs --release=<rc-tag> --out-dir=.agent-skill/releases/<rc-tag>
+./scripts/install-all.sh --verify-checksums --manifest=.agent-skill/releases/<rc-tag>/release-manifest.json --claude-code
+./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --verify-checksums --manifest=.agent-skill/releases/<rc-tag>/release-manifest.json
+./scripts/update.sh --verify-provenance --manifest=.agent-skill/releases/<rc-tag>/release-manifest.json --cli=codex
+```
 
 수동 doctor 재실행:
 
@@ -205,7 +319,7 @@ node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/my-project -
 
 보수적 cleanup은 생성된 Claude/Codex 역할 파일, hook, floor/thrift config,
 Codex debug skill 디렉터리, task template, helper script를 제거합니다.
-Debug 증거인 `docs/debug/`와 `.debug-artifacts/`는 보존합니다. 루트
+Debug 증거인 `.agent-skill/reports/debug/`와 `.debug-artifacts/`는 보존합니다. 루트
 `CLAUDE.md`/`AGENTS.md` 가이드는 agent-skill sentinel이 있을 때만 정리하며,
 생성된 루트 가이드까지 의도적으로 제거하려면 `install-platform.sh --uninstall`에
 `--force-root-clean`을 같이 넘기세요.
@@ -237,8 +351,8 @@ playwright 플러그인을 설치합니다:
 
 ### `/agent-all` 루프가 코드 3으로 종료
 
-`--max-iter` 소진됨. 다음 중 하나:
-- `--max-iter` 상향 (또는 구성 `maxIter`)
+Loop guard가 소진됨. 다음 중 하나:
+- `--max-iter` 상향 (또는 구성 `maxIter`), `--max-runtime-sec` 상향, 또는 명시적 반복 무제한으로 `--max-iter=0` 설정
 - `.agent-all.json`에서 `loop.breakCondition` 완화
 - 차단 중인 항목에 대해 `.agent-all-state.json`에서 마지막 웨이브의 게이트 판정 검사
 
@@ -255,7 +369,7 @@ playwright 플러그인을 설치합니다:
 
 ## Decision-surfacing — 패널 형태
 
-`/agent-all`이 Phase 3에서 implementer subagent를 dispatch할 때, 첫 동작은 **scoping pass** — read-only로 코드를 읽고 혼자 결정했을 결정 후보들을 JSON payload로 반환. main thread는 각 결정을 subagent의 추천 표시된 1/2/3 패널로 보여줍니다.
+`/agent-all`이 Phase 3에서 implementer subagent를 dispatch할 때, 첫 동작은 **scoping pass** — read-only로 코드를 읽고 혼자 결정했을 결정 후보들을 JSON payload로 반환. coordinator는 각 결정을 `agent-interaction/v1`으로 정규화하고, Claude에서는 native `AskUserQuestion`, Codex/Copilot/Cursor/Gemini에서는 prompt/markdown renderer로 보여줍니다.
 
 세션 출력 예 (대화 모드):
 
@@ -274,7 +388,7 @@ src/lib/auth.ts:42 기준으로 보통 localStorage에 저장됨.
 선택: _
 ```
 
-**Non-TTY 모드** (야간, `--yes`, loop iter ≥ 2)는 recommended를 자동 선택하고 `docs/agent-all/iter-<N>/decisions.md`에 append:
+**Non-TTY 모드** (야간, `--yes`, loop iter ≥ 2)는 recommended low/medium-risk 옵션을 자동 선택하고 `.agent-skill/runs/<run-id>/decisions.md`와 `.agent-skill/runs/<run-id>/interactions.jsonl`에 append:
 
 ```markdown
 # Auto-resolved decisions — iter 7 — 2026-05-21T03:14Z
@@ -286,7 +400,14 @@ src/lib/auth.ts:42 기준으로 보통 localStorage에 저장됨.
 - Reasoning: 기존 session 패턴 …
 ```
 
-**과거 auto-pick 검토:** `grep -A2 "Chosen:" docs/agent-all/iter-*/decisions.md`로 모든 iteration의 자동 선택을 한 번에. Regression 발견 시 다음 iteration plan에 force re-ask 메모.
+**과거 auto-pick 검토:** `grep -A2 "Chosen:" .agent-skill/runs/*/decisions.md`로 모든 iteration의 자동 선택을 한 번에. Regression 발견 시 다음 iteration plan에 force re-ask 메모.
+
+High-risk recommended/default 옵션은 non-TTY에서 자동 승인하지 않습니다.
+`.agent-all-state.json`과 `.agent-skill/runs/<run-id>/interactions.jsonl`에
+blocked interaction으로 기록하고, run은 사용자/planner 입력을 기다리거나
+escalate해야 합니다. `/agent-handoff`와 `/agent-all --resume`도 같은 schema로
+resume next-action prompt를 처리하며 handoff는
+`.agent-skill/runs/handoff/interactions.jsonl`을 씁니다.
 
 **프로젝트별 opt-out:** `.agent-all.json` →
 ```json
@@ -294,12 +415,41 @@ src/lib/auth.ts:42 기준으로 보통 localStorage에 저장됨.
 ```
 Protocol 전체 스킵. Verification + reviewer-audit hook은 별도로 계속.
 
+**Policy engine audit:** hard hook과 loop gate는 공유
+`agent-policy-event/v1` -> `agent-policy-result/v1` schema를 사용합니다.
+결정은 `.agent-skill/runs/<run-id>/policy-log.jsonl`에 JSONL로 append됩니다.
+dynamic `/agent-all` orchestration은 각 role, reason, wave, cost estimate를
+`.agent-skill/runs/<run-id>/spawn-log.jsonl`에도 기록합니다. 저장되는 state
+필드는 `orchestration:
+{runId,wave,changedFiles,changedDomains,requiredAgents,spawnedAgents,failureSignatures,blockedReasons,budget}`입니다.
+사용자-facing 결정은 `state.interactions`에 저장되고
+`.agent-skill/runs/<run-id>/interactions.jsonl`에 append됩니다. Redaction
+summary는 `.agent-skill/runs/<run-id>/redaction-audit.jsonl`에 append되고,
+원문 없이 rule/count/severity/action metadata만 저장합니다.
+
+**Cost telemetry:** `/agent-all`은 플랫폼이 보고한 cost, token usage, 또는
+output-size 기반 fallback 추정을 `agent-cost-telemetry/v1`로 정규화합니다.
+run은 `.agent-skill/runs/<run-id>/cost-telemetry.jsonl`에 append하고 최신
+summary를 `state.costTelemetry.summary`에 미러링합니다.
+`.agent-all.json: telemetry.cost.warnAtRatio`(기본 `0.8`)에서 사용자 확인을
+요구하고 `defaults.maxCostUSD`에서 중단합니다. 추정 요금 조정이 필요하면
+`telemetry.cost.modelRates`에 프로젝트별 provider rate override를 둡니다.
+
+**Skill utility eval:** `node scripts/skill-eval.mjs --smoke`는 fixture
+baseline과 `agent-all`을 pass rate, iteration, token estimate, cost overhead,
+manual intervention, reviewer-gate failure, quality-debt finding, rollback으로
+비교합니다. 결과는 `.agent-skill/evals/<date>/summary.md`, `summary.json`,
+`runs.jsonl`, `artifacts/fixture-manifest.json`에 기록됩니다. CI-safe 보고는
+`--smoke --no-write --json`을 사용하고, visual QA, quality gate, dynamic
+orchestration, verification-adapter mode까지 포함하는 `--full`은 수동 또는
+release-candidate benchmark 용도로 둡니다.
+
 **플랫폼별 강제 강도:**
 | 플랫폼 | 메커니즘 | 강도 |
 |---|---|---|
-| Claude Code | `floor-policy` hook (PreToolUse + PostToolUse on Task) | 🟢 Hard |
-| Copilot CLI | `.github/agent-all/decision-protocol.md`; 수동 hook 검토 후 선택적 hook helper | 🟡 프롬프트 |
-| Codex CLI | 프롬프트/순차 floor 워크플로; command hook은 shell/policy 이벤트만 담당 | 🟡 프롬프트 |
-| Cursor | `.cursor/rules/decision-protocol.mdc` (always-loaded rule) | 🟡 Soft |
-| Gemini CLI | `.gemini/agent-all-decision-protocol.md` (GEMINI.md에서 참조) | 🟡 Soft |
-| VS Code Copilot | `.github/agent-all/decision-protocol.md` (copilot-instructions.md에서) | 🟡 Soft |
+| Claude Code | `floor-policy` hook + `renderer-claude.mjs` native `AskUserQuestion` | 🟢 Hard |
+| Copilot CLI | `.github/agent-all/decision-protocol.md` + `renderer-copilot.mjs`; 수동 hook 검토 후 선택적 hook helper | 🟡 프롬프트 |
+| Codex CLI | 생성 command hook은 shell policy hard-block; `renderer-codex.mjs`로 프롬프트/sequential floor interaction 처리 | 🟡 Mixed |
+| Cursor | `.cursor/rules/decision-protocol.mdc` + `renderer-cursor.mjs` | 🟡 Soft |
+| Gemini CLI | `.gemini/agent-all-decision-protocol.md` + `renderer-gemini.mjs` | 🟡 Soft |
+| VS Code Copilot | `.github/agent-all/decision-protocol.md` + Copilot markdown renderer | 🟡 Soft |

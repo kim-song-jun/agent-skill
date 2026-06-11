@@ -44,6 +44,15 @@ Ask the user (one at a time) for:
 4. Deploy targets (e.g., "vercel", "fly.io", "github releases")
 5. Special constraints (compliance, performance budgets, "" if none)
 
+Represent each prompt and any optional/default choice as the shared
+`agent-interaction/v1` `AgentInteraction` schema before rendering. Codex uses
+`renderer-codex.mjs` to produce the prompt surface; Claude-compatible callers
+may render the same object with `renderer-claude.mjs` and native
+`AskUserQuestion`. Non-TTY runs use `resolveNonTtyInteraction()` to select only
+low/medium-risk recommended defaults, block high-risk choices, and append
+`.agent-skill/runs/<run-id>/interactions.jsonl` with
+`appendInteractionLog({ source: "codex-init" })`.
+
 Run the project-detection helper to derive `stack`, `runtime`, `services`:
 
 ```javascript
@@ -102,12 +111,12 @@ Render and write each template:
 - `templates/AGENTS.md.hbs` → `AGENTS.md` (project root)
 - `templates/skills/<role>/SKILL.md.hbs` → `.codex/skills/<role>/SKILL.md` for each agent role
 - `templates/hooks/agent-policy-hook.mjs` → `.codex/hooks/agent-policy-hook.mjs`
-- `templates/task-ledger/AGENTS.md.hbs` → `docs/tasks/AGENTS.md`
-- `templates/task-ledger/index.md.hbs` → `docs/tasks/index.md`
-- `templates/task-ledger/_template.md.hbs` → `docs/tasks/_template.md`
-- `templates/task-ledger/_handoff-template.md.hbs` → `docs/tasks/_handoff-template.md`
+- `templates/task-ledger/AGENTS.md.hbs` → `.agent-skill/tasks/AGENTS.md`
+- `templates/task-ledger/index.md.hbs` → `.agent-skill/tasks/index.md`
+- `templates/task-ledger/_template.md.hbs` → `.agent-skill/tasks/_template.md`
+- `templates/task-ledger/_handoff-template.md.hbs` → `.agent-skill/tasks/_handoff-template.md`
 - `templates/task-ledger/agent-task-ledger-check.mjs` → `scripts/agent-task-ledger-check.mjs`
-- operational workspace keepfiles → `docs/superpowers/specs/`, `docs/superpowers/plans/`, `docs/decisions/`, and `docs/tasks/`
+- operational workspace keepfiles → `.agent-skill/specs/`, `.agent-skill/plans/`, `.agent-skill/decisions/`, `.agent-skill/tasks/`, `.agent-skill/registry/`, `.agent-skill/handoff/`, `.agent-skill/reports/visual-qa/`, `.agent-skill/reports/debug/`, `.agent-skill/reports/thrift/`, and `.agent-skill/baselines/`
 - `templates/local-guides/AGENTS.md.hbs` → `.codex/AGENTS.md`
 - `templates/folder-guides/AGENTS.md.hbs` → `<detected-folder>/AGENTS.md`
 

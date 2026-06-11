@@ -1,0 +1,34 @@
+name: Public Smoke CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: PR smoke gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: GitHub governance surface
+        run: node scripts/github-governance-check.mjs
+
+      - name: Release smoke subset
+        run: bash scripts/release-smoke.sh --fast
+
+      # Live host probes stay local because public PR CI cannot assume installed CLIs.
+      # Run locally before release: bash scripts/release-smoke.sh --fast --with-live-cli

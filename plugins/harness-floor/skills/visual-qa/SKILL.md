@@ -5,7 +5,7 @@ description: Cost-unrestricted visual QA. Drives Playwright MCP to capture a con
 
 # /visual-qa
 
-Drives the visual QA pipeline for the current project. Reads `.visual-qa.json`, captures the matrix via Playwright MCP, analyses each image with the configured LLM, and produces `docs/visual-qa/<date-slug>/report.md`.
+Drives the visual QA pipeline for the current project. Reads `.visual-qa.json`, captures the matrix via Playwright MCP, analyses each image with the configured LLM, and produces `.agent-skill/reports/visual-qa/<date-slug>/report.md` by default.
 
 ## Modes
 

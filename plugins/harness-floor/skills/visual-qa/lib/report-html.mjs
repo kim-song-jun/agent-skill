@@ -3,6 +3,12 @@
 // lightbox modal for fullscreen comparison. No external assets — inline CSS,
 // inline JS, image refs are relative paths into captures/.
 
+import {
+  assertRedactionAllowed,
+  redactArtifactContent,
+} from "../../agent-all/lib/security/artifact-redactor.mjs";
+import { writeRedactionAudit } from "../../agent-all/lib/security/redact-report-writer.mjs";
+
 /**
  * @param {object} reportData
  * @param {string} reportData.slug         - run slug (date or named)
@@ -20,15 +26,26 @@
  *   screenshots: { before: string, after: string, baseline?: string },
  *   notes?: string
  * }>} reportData.captures
+ * @param {object} [opts]
+ * @param {object} [opts.config] - optional redaction config
+ * @param {string} [opts.artifactPath] - audit/display path for the artifact
+ * @param {boolean} [opts.writeAudit] - append redaction audit metadata when findings exist
+ * @param {string} [opts.cwd] - audit root when opts.writeAudit is true
+ * @param {string} [opts.runId] - audit run id when opts.writeAudit is true
+ * @param {Date|string} [opts.now] - deterministic timestamp for tests
  * @returns {string} HTML document
  */
-export function renderHtml(reportData) {
+export function renderHtml(reportData, opts = {}) {
+  return renderHtmlArtifact(reportData, opts).html;
+}
+
+export function renderHtmlArtifact(reportData, opts = {}) {
   const { slug, generatedAt, baseUrl, captures } = reportData;
   const counts = countByVerdict(captures);
 
   const cards = captures.map((c, i) => cardHtml(c, i)).join("\n");
 
-  return `<!doctype html>
+  const html = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -61,6 +78,29 @@ export function renderHtml(reportData) {
   <script>${INLINE_JS}</script>
 </body>
 </html>`;
+  const checked = redactArtifactContent({
+    artifactPath: opts.artifactPath ?? "report.html",
+    content: html,
+    config: opts.config ?? {},
+    now: opts.now ?? generatedAt ?? new Date(),
+  });
+  const redactionAudit = opts.writeAudit
+    ? writeRedactionAudit({
+        cwd: opts.cwd ?? process.cwd(),
+        runId: opts.runId ?? "visual-qa",
+        config: opts.config ?? {},
+        artifactPath: opts.artifactPath ?? "report.html",
+        findings: checked.findings,
+        now: opts.now ?? generatedAt ?? new Date(),
+      })
+    : null;
+  assertRedactionAllowed(checked);
+  return {
+    html: checked.content,
+    findings: checked.findings,
+    audit: checked.audit,
+    redactionAudit,
+  };
 }
 
 function cardHtml(c, idx) {

@@ -7,10 +7,11 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 const scriptPath = "scripts/update.sh";
 const pluginGroupsPath = "scripts/lib/plugin-groups.sh";
@@ -22,11 +23,29 @@ function indexOfRequired(text) {
   return index;
 }
 
+function makeProvenanceManifest() {
+  const outDir = mkdtempSync(join(tmpdir(), "agent-skill-update-provenance-manifest-"));
+  const res = spawnSync(process.execPath, [
+    resolve("scripts/release-provenance.mjs"),
+    "--release=test-update",
+    `--out-dir=${outDir}`,
+  ], {
+    encoding: "utf-8",
+  });
+  assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+  return { outDir, manifestPath: join(outDir, "release-manifest.json") };
+}
+
 test("update script supports dry-run, codex platform selection, and install-all delegation", () => {
   assert.match(script, /--dry-run/);
   assert.match(script, /--cli=codex/);
   assert.match(script, /--foundations/);
   assert.match(script, /--foundations-only/);
+  assert.match(script, /--verify-provenance/);
+  assert.match(script, /--verify-checksums/);
+  assert.match(script, /--manifest=<path>/);
+  assert.match(script, /run_provenance_verification/);
+  assert.match(script, /release-provenance\.mjs" --verify/);
   assert.match(script, /exec bash "\$REPO_ROOT\/scripts\/install-all\.sh"/);
 });
 
@@ -91,6 +110,8 @@ test("help exits before git, marketplace, or install commands", () => {
 
   assert.equal(result.status, 0, `stdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
   assert.match(result.stdout, /Usage:/);
+  assert.match(result.stdout, /--verify-provenance/);
+  assert.match(result.stdout, /--manifest=<path>/);
   assert.doesNotMatch(result.stdout, /foundation update plan/);
   assert.doesNotMatch(result.stderr, /should-not-run/);
 });
@@ -400,6 +421,38 @@ exit 1
   assert.match(foundationsOnly.stdout, /DRY-RUN: claude plugin install context-mode@context-mode/);
   assert.doesNotMatch(foundationsOnly.stdout, /Selected plugin install dry-run/);
   assert.equal(readFileSync(gitLog, "utf-8"), "", "--foundations-only dry-run must not clone plugin metadata");
+});
+
+test("update --dry-run --verify-provenance checks manifest before install dry-run", () => {
+  const { outDir, manifestPath } = makeProvenanceManifest();
+  const env = {
+    ...process.env,
+    PATH: `${dirname(process.execPath)}:${process.env.PATH || "/usr/bin:/bin"}`,
+  };
+  try {
+    const result = spawnSync("bash", [
+      resolve(scriptPath),
+      "--dry-run",
+      "--verify-provenance",
+      `--manifest=${manifestPath}`,
+      "--cli=codex",
+    ], {
+      env,
+      encoding: "utf-8",
+    });
+
+    assert.equal(
+      result.status,
+      0,
+      `update.sh should exit 0\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+    );
+    assert.match(result.stdout, /verify release provenance manifest and plugin checksums/);
+    assert.match(result.stdout, /release provenance verify: ok/);
+    assert.match(result.stdout, /Dry run requested; no git pull, marketplace update, uninstall, or install command will run/);
+    assert.match(result.stdout, /DRY-RUN: install harness-builder-codex@agent-skill for Codex CLI/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
 });
 
 function writeExecutable(path, content) {

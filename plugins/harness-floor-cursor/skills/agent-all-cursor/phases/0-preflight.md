@@ -68,16 +68,20 @@ Decision tree:
 
 4. **Interactive prompt** — the coordinator asks the user inline in the
    Cursor chat. There is no `ask_user` primitive in Cursor; instead emit
-   a single chat block listing the four PRESET_CATALOGUE entries
-   (test-auto / visual-qa / Custom shell command / Composite) and wait
-   for the user's reply.
+   a single chat block listing the five PRESET_CATALOGUE entries
+   (test-auto / visual-qa / Verification adapter / Custom shell command /
+   Composite) and wait for the user's reply.
 
    a. Map the user's choice to a `PRESET_CATALOGUE` entry by `key`.
    b. **Custom**: follow-up — ask for the shell one-liner. Validate non-empty.
    c. **visual-qa**: follow-up — ask for optional `spec` path; empty for default.
-   d. **Composite**: repeat the menu (up to 5 times) for each step; stop on "Done".
-   e. Echo the resolved spec via `serializeBreakCondition(resolved)`.
-   f. Save-confirmation: ask "Save this as the default in `.agent-all.json`?
+   d. **Verification adapter**: ask for an adapter id (`cli`,
+      `api-contract`, `notebook-data`, `sql-db`, `batch-job`, or `visual-qa`)
+      and optional config JSON. Store it as
+      `{type:"verification-adapter", adapter, config}`.
+   e. **Composite**: repeat the menu (up to 5 times) for each step; stop on "Done".
+   f. Echo the resolved spec via `serializeBreakCondition(resolved)`.
+   g. Save-confirmation: ask "Save this as the default in `.agent-all.json`?
       (y/n)". On `y`: deep-merge into config and write `.agent-all.json`
       atomically via `apply_patch` / `write_file`. On `n`: keep in memory only.
 

@@ -56,4 +56,5 @@ test("invalid type → returns error", () => {
   const r = loadConfig(fx("invalid-type.json"));
   assert.equal(r.ok, false);
   assert.ok(r.errors.some((e) => /maxIter/.test(e.path) && /number/i.test(e.message)));
+  assert.ok(r.errors.some((e) => e.path === "loop.maxRuntimeSec" && /number/i.test(e.message)));
 });

@@ -5,9 +5,13 @@
 2. If `priorRunDir`: read its `report.json` and diff per-issue. Bucket each
    issue as `new`, `resolved`, or `unchanged` (compare by
    `{component, state, breakpoint, severity, descriptionHash}`).
-3. Render `templates/report.md.hbs` with the merged data. Write to
-   `<slug-dir>/report.md`.
-4. Write `<slug-dir>/report.json` (structured form, next run's prior).
+3. Render `templates/report.md.hbs` with the merged data. Pass the Markdown
+   through `redactArtifactContent({ artifactPath: "<slug-dir>/report.md", content, config })`,
+   append a redaction audit summary when findings exist, and write only the
+   redacted content to `<slug-dir>/report.md`.
+4. Render `<slug-dir>/report.json` (structured form, next run's prior), pass it
+   through the same redaction gate, and block the write on high-severity
+   secret/privacy findings.
 5. Push `{phase: 4, completedAt, issueCount, newCount, resolvedCount}` to state.
 
 ## Shell helpers

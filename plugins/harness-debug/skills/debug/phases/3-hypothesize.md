@@ -30,10 +30,14 @@ mechanical.
 
 3. Choose a `currentCandidate`:
    - `--yes` flag → automatically call
-     `selectCandidate(state, nextUntested(state).id)`.
+     `selectCandidate(state, nextUntested(state).id)` and append an
+     `agent-interaction/v1` audit result to `.agent-skill/runs/debug/interactions.jsonl`
+     with `source: "debug"`.
    - Otherwise → present the hypotheses to the user with a "test
-     these in order of easiest-to-test first" recommendation and let
-     them pick.
+     these in order of easiest-to-test first" recommendation as an
+     `agent-interaction/v1` decision (`id: "debug:hypothesis-candidate"`)
+     and let them pick. High-risk experiments must use option `risk: "high"`
+     and cannot be auto-selected by `resolveNonTtyInteraction()`.
 
 4. Push checkpoint:
    ```

@@ -5,6 +5,8 @@
 //   {type:"shell", cmd}                     → run via `sh -c`
 //   {type:"test-auto"}                      → detect stack, expand to shell at runtime
 //   {type:"visual-qa", spec?, slug?}        → dispatch visual-qa skill subagent
+//   {type:"verification-adapter", adapter, config?}
+//                                             → run verify:* adapter, record evidence
 //   {type:"composite", steps:[...]}         → sequential AND of steps; all must pass
 //
 // Loop-evaluator stays type-agnostic; Phase 6 supplies the runner per type.
@@ -12,7 +14,12 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-export const PRESET_TYPES = ["shell", "test-auto", "visual-qa", "composite"];
+import {
+  normalizeAdapterId,
+  VERIFICATION_ADAPTER_IDS,
+} from "./verification-adapters/schema.mjs";
+
+export const PRESET_TYPES = ["shell", "test-auto", "visual-qa", "verification-adapter", "composite"];
 
 export function detectStackTestCommand(cwd = ".") {
   const has = (p) => existsSync(resolve(cwd, p));
@@ -55,6 +62,16 @@ export function normalizeBreakCondition(input) {
     if (input.mode === "comprehensive" || input.mode === "declared") out.mode = input.mode;
     return out;
   }
+  if (input.type === "verification-adapter") {
+    const adapter = normalizeAdapterId(input.adapter);
+    if (!adapter) return null;
+    const out = { type: "verification-adapter", adapter };
+    if (input.config && typeof input.config === "object" && !Array.isArray(input.config)) {
+      out.config = JSON.parse(JSON.stringify(input.config));
+    }
+    if (typeof input.label === "string" && input.label.trim()) out.label = input.label.trim();
+    return out;
+  }
   if (input.type === "composite") {
     if (!Array.isArray(input.steps) || input.steps.length === 0) return null;
     const steps = [];
@@ -79,6 +96,10 @@ export function serializeBreakCondition(spec) {
     const modeTail = norm.mode === "comprehensive" ? " [comprehensive]" : "";
     return `visual-qa skill${modeTail}${tail}`;
   }
+  if (norm.type === "verification-adapter") {
+    const adapter = norm.adapter.replace(/^verify:/, "");
+    return `verification adapter: ${adapter}`;
+  }
   if (norm.type === "composite") {
     return `composite [${norm.steps.map(serializeBreakCondition).join(" && ")}]`;
   }
@@ -98,10 +119,11 @@ export function buildShellCommand(spec, opts = {}) {
     return cmd;
   }
   if (norm.type === "visual-qa") return null;
+  if (norm.type === "verification-adapter") return null;
   if (norm.type === "composite") {
     const parts = [];
     for (const s of norm.steps) {
-      if (s.type === "visual-qa") return null; // composite with visual-qa needs the runtime runner
+      if (s.type === "visual-qa" || s.type === "verification-adapter") return null; // needs runtime runner
       const c = buildShellCommand(s, opts);
       if (!c) return null;
       parts.push(`(${c})`);
@@ -118,6 +140,32 @@ export function needsVisualQARunner(spec) {
   if (norm.type === "visual-qa") return true;
   if (norm.type === "composite") return norm.steps.some((s) => s.type === "visual-qa");
   return false;
+}
+
+// True when the spec or any nested step needs a verification adapter runner.
+// Legacy visual-qa is considered verify:web-ui for evidence collection.
+export function needsVerificationAdapterRunner(spec) {
+  const norm = normalizeBreakCondition(spec);
+  if (!norm) return false;
+  if (norm.type === "visual-qa" || norm.type === "verification-adapter") return true;
+  if (norm.type === "composite") {
+    return norm.steps.some((s) => s.type === "visual-qa" || s.type === "verification-adapter");
+  }
+  return false;
+}
+
+export function toVerificationAdapterSpec(spec) {
+  const norm = normalizeBreakCondition(spec);
+  if (!norm) return null;
+  if (norm.type === "verification-adapter") return norm;
+  if (norm.type === "visual-qa") {
+    const config = {};
+    if (norm.spec) config.spec = norm.spec;
+    if (norm.slug) config.slug = norm.slug;
+    if (norm.mode) config.mode = norm.mode;
+    return { type: "verification-adapter", adapter: "verify:web-ui", config };
+  }
+  return null;
 }
 
 // Stable key used to recognise the built-in default.
@@ -171,7 +219,7 @@ export const QA_AUTOSCAFFOLD_CONFIG = {
     categories: ["accessibility", "alignment", "color-contrast", "copy-quality", "responsive-fit"],
     severityThreshold: "minor",
   },
-  output: { dir: "docs/visual-qa", keepLastN: 10 },
+  output: { dir: ".agent-skill/reports/visual-qa", keepLastN: 10 },
 };
 
 // Catalogue used by the Phase 0 interactive prompt.
@@ -185,10 +233,21 @@ export const PRESET_CATALOGUE = [
   {
     key: "visual-qa",
     label: "visual-qa skill",
-    description: "Dispatch the visual-qa orchestrator; pass = exit 0.",
+    description: "Dispatch the visual-qa orchestrator through verify:web-ui evidence; pass = exit 0.",
     build: (opts = {}) => {
       const out = { type: "visual-qa" };
       if (opts.spec) out.spec = opts.spec;
+      return out;
+    },
+  },
+  {
+    key: "verification-adapter",
+    label: "Verification adapter",
+    description: `Run one of ${VERIFICATION_ADAPTER_IDS.join(", ")} and record standard evidence.`,
+    build: (opts = {}) => {
+      const adapter = normalizeAdapterId(opts.adapter ?? "verify:cli") ?? "verify:cli";
+      const out = { type: "verification-adapter", adapter };
+      if (opts.config && typeof opts.config === "object" && !Array.isArray(opts.config)) out.config = opts.config;
       return out;
     },
   },

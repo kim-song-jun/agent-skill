@@ -40,20 +40,27 @@ const PLUGINS = {
       ".codex/skills/backend-dev/SKILL.md",
       ".codex/skills/integration-dev/SKILL.md",
       ".codex/skills/verification-reviewer/SKILL.md",
+      ".codex/skills/quality-debt-reviewer/SKILL.md",
       ".codex/skills/qa-reviewer/SKILL.md",
       ".codex/skills/design-reviewer/SKILL.md",
       ".codex/skills/security-reviewer/SKILL.md",
       ".codex/skills/data-reviewer/SKILL.md",
       ".codex/hooks/agent-policy-hook.mjs",
       "scripts/agent-task-ledger-check.mjs",
-      "docs/superpowers/specs/.gitkeep",
-      "docs/superpowers/plans/.gitkeep",
-      "docs/decisions/.gitkeep",
-      "docs/tasks/.gitkeep",
-      "docs/tasks/AGENTS.md",
-      "docs/tasks/index.md",
-      "docs/tasks/_template.md",
-      "docs/tasks/_handoff-template.md",
+      ".agent-skill/specs/.gitkeep",
+      ".agent-skill/plans/.gitkeep",
+      ".agent-skill/decisions/.gitkeep",
+      ".agent-skill/tasks/.gitkeep",
+      ".agent-skill/registry/.gitkeep",
+      ".agent-skill/handoff/.gitkeep",
+      ".agent-skill/reports/visual-qa/.gitkeep",
+      ".agent-skill/reports/debug/.gitkeep",
+      ".agent-skill/reports/thrift/.gitkeep",
+      ".agent-skill/baselines/.gitkeep",
+      ".agent-skill/tasks/AGENTS.md",
+      ".agent-skill/tasks/index.md",
+      ".agent-skill/tasks/_template.md",
+      ".agent-skill/tasks/_handoff-template.md",
     ],
     stdoutContains: /\[\[hooks\.PreToolUse\]\]/, // TOML snippet for ~/.codex/config.toml
     stdoutHeader:   /codex-config\.toml/,
@@ -140,14 +147,15 @@ test("harness-builder-claude: shell init writes operational scaffold and runs do
       ".claude/agents/frontend-dev.md",
       ".claude/agents/backend-dev.md",
       ".claude/agents/integration-dev.md",
+      ".claude/agents/quality-debt-reviewer.md",
       ".claude/agents/verification-reviewer.md",
       ".claude/agents/qa-reviewer.md",
       ".claude/agents/design-reviewer.md",
       ".claude/agents/security-reviewer.md",
       ".claude/agents/data-reviewer.md",
-      "docs/tasks/index.md",
-      "docs/tasks/_template.md",
-      "docs/tasks/_handoff-template.md",
+      ".agent-skill/tasks/index.md",
+      ".agent-skill/tasks/_template.md",
+      ".agent-skill/tasks/_handoff-template.md",
       "scripts/agent-task-ledger-check.mjs",
       ".visual-qa.json",
       ".agent-all.json",
@@ -160,6 +168,7 @@ test("harness-builder-claude: shell init writes operational scaffold and runs do
     const settings = JSON.parse(readFileSync(resolve(target, ".claude/settings.local.json"), "utf-8"));
     const policyHook = readFileSync(resolve(target, ".claude/hooks/agent-policy-hook.mjs"), "utf-8");
     const agentAll = JSON.parse(readFileSync(resolve(target, ".agent-all.json"), "utf-8"));
+    const visualQa = JSON.parse(readFileSync(resolve(target, ".visual-qa.json"), "utf-8"));
 
     assert.match(claude, /Orchestration Contract/);
     assert.match(claude, /Role Gate Matrix/);
@@ -169,6 +178,8 @@ test("harness-builder-claude: shell init writes operational scaffold and runs do
     assert.match(qa, /QA_AUDIT: passed[\s\S]{0,120}QA_AUDIT: failed[\s\S]{0,120}QA_AUDIT: skipped/);
     assert.match(qa, /literal line at the END/i);
     assert.equal(agentAll.language, "ko");
+    assert.deepEqual(agentAll.artifact, { root: ".agent-skill", exportDocs: false });
+    assert.equal(visualQa.output.dir, ".agent-skill/reports/visual-qa");
     assert.ok(JSON.stringify(settings).includes("agent-policy-hook.mjs"));
     assert.ok(
       (settings.hooks.PreToolUse || []).some(
@@ -220,8 +231,9 @@ test("harness-builder-claude: --lite skips operational ledger, personas, and pol
       ".claude/agents/orchestrator.md",
       ".claude/agents/frontend-dev.md",
       ".claude/agents/backend-dev.md",
+      ".claude/agents/quality-debt-reviewer.md",
       ".claude/agents/qa-reviewer.md",
-      "docs/tasks/index.md",
+      ".agent-skill/tasks/index.md",
       ".visual-qa.json",
       ".agent-all.json",
     ]) {
@@ -308,11 +320,15 @@ test("harness-builder-codex: SKILL.md documents that lite skips config snippet o
 test("harness-builder-codex: SKILL.md documents operational workspace outputs", () => {
   const body = readFileSync(CODEX_INIT_SKILL, "utf-8");
 
-  assert.match(body, /docs\/superpowers\/specs\//);
-  assert.match(body, /docs\/superpowers\/plans\//);
-  assert.match(body, /docs\/decisions\//);
-  assert.match(body, /docs\/tasks\/AGENTS\.md/);
-  assert.match(body, /docs\/tasks\/_handoff-template\.md/);
+  assert.match(body, /\.agent-skill\/specs\//);
+  assert.match(body, /\.agent-skill\/plans\//);
+  assert.match(body, /\.agent-skill\/decisions\//);
+  assert.match(body, /\.agent-skill\/reports\/visual-qa\//);
+  assert.match(body, /\.agent-skill\/reports\/debug\//);
+  assert.match(body, /\.agent-skill\/reports\/thrift\//);
+  assert.match(body, /\.agent-skill\/baselines\//);
+  assert.match(body, /\.agent-skill\/tasks\/AGENTS\.md/);
+  assert.match(body, /\.agent-skill\/tasks\/_handoff-template\.md/);
   assert.match(body, /scripts\/agent-task-ledger-check\.mjs/);
 });
 
@@ -373,7 +389,7 @@ test("harness-builder-codex: AGENTS.md documents operational profile", () => {
     const res = runInit(PLUGINS.codex.bin, [target]);
     assert.equal(res.status, 0, res.stderr);
     const body = readFileSync(resolve(target, "AGENTS.md"), "utf-8");
-    assert.match(body, /docs\/tasks/);
+    assert.match(body, /\.agent-skill\/tasks/);
     assert.match(body, /pathspec/);
     assert.match(body, /operational harness/i);
     assert.match(body, /reviewer personas/i);
@@ -387,6 +403,7 @@ test("harness-builder-codex: AGENTS.md documents operational profile", () => {
     assert.match(body, /design-reviewer[\s\S]{0,260}qa-reviewer/i);
     assert.match(body, /security-reviewer[\s\S]{0,260}data-reviewer/i);
     assert.match(body, /verification-reviewer[\s\S]{0,260}(tests|typecheck|lint|evidence)/i);
+    assert.match(body, /quality-debt-reviewer[\s\S]{0,260}(fallback|suppressions|TODO|test quality)/i);
     assert.match(body, /3 (?:failed cycles|repeated failures|attempts)/i);
   } finally {
     rmSync(target, { recursive: true, force: true });
@@ -661,10 +678,10 @@ test("harness-builder-codex: generated task ledger matches agent-all contract", 
     const res = runInit(PLUGINS.codex.bin, [target]);
     assert.equal(res.status, 0, res.stderr);
 
-    const index = readFileSync(resolve(target, "docs/tasks/index.md"), "utf-8");
-    const template = readFileSync(resolve(target, "docs/tasks/_template.md"), "utf-8");
-    const handoffTemplate = readFileSync(resolve(target, "docs/tasks/_handoff-template.md"), "utf-8");
-    const guide = readFileSync(resolve(target, "docs/tasks/AGENTS.md"), "utf-8");
+    const index = readFileSync(resolve(target, ".agent-skill/tasks/index.md"), "utf-8");
+    const template = readFileSync(resolve(target, ".agent-skill/tasks/_template.md"), "utf-8");
+    const handoffTemplate = readFileSync(resolve(target, ".agent-skill/tasks/_handoff-template.md"), "utf-8");
+    const guide = readFileSync(resolve(target, ".agent-skill/tasks/AGENTS.md"), "utf-8");
 
     assert.match(index, /^## Active$/m);
     assert.doesNotMatch(index, /^## Active Tasks$/m);
@@ -675,13 +692,26 @@ test("harness-builder-codex: generated task ledger matches agent-all contract", 
     for (const section of REQUIRED_SECTIONS) {
       assert.match(template, new RegExp(`^## ${section}$`, "m"));
     }
+    assert.match(template, /^## Data Task Addendum$/m);
+    assert.match(template, /^### Dataset \/ Source$/m);
+    assert.match(template, /^### Validation Queries$/m);
+    assert.match(template, /^### Rollback \/ Cleanup$/m);
 
-    const check = spawnSync("node", ["scripts/agent-task-ledger-check.mjs", "docs/tasks/_template.md"], {
+    const check = spawnSync("node", ["scripts/agent-task-ledger-check.mjs", ".agent-skill/tasks/_template.md"], {
       cwd: target,
       encoding: "utf-8",
     });
     assert.equal(check.status, 0, check.stderr);
     assert.match(check.stdout, /task ledger ok/);
+
+    const missingIdentityPath = resolve(target, ".agent-skill/tasks/T-20260611-001-missing-identity.md");
+    writeFileSync(missingIdentityPath, template);
+    const missingIdentity = spawnSync("node", ["scripts/agent-task-ledger-check.mjs", ".agent-skill/tasks/T-20260611-001-missing-identity.md"], {
+      cwd: target,
+      encoding: "utf-8",
+    });
+    assert.notEqual(missingIdentity.status, 0);
+    assert.match(missingIdentity.stderr, /missing task identity frontmatter/);
   } finally {
     rmSync(target, { recursive: true, force: true });
   }
@@ -694,7 +724,7 @@ test("harness-builder-codex: --lite skips ledger and hooks", () => {
     assert.equal(res.status, 0, res.stderr);
 
     assert.ok(existsSync(resolve(target, "AGENTS.md")));
-    assert.ok(!existsSync(resolve(target, "docs/tasks/index.md")));
+    assert.ok(!existsSync(resolve(target, ".agent-skill/tasks/index.md")));
     assert.ok(!existsSync(resolve(target, ".codex/hooks/agent-policy-hook.mjs")));
 
     for (const rel of [
@@ -711,6 +741,7 @@ test("harness-builder-codex: --lite skips ledger and hooks", () => {
       ".codex/skills/backend-dev/SKILL.md",
       ".codex/skills/integration-dev/SKILL.md",
       ".codex/skills/verification-reviewer/SKILL.md",
+      ".codex/skills/quality-debt-reviewer/SKILL.md",
       ".codex/skills/qa-reviewer/SKILL.md",
       ".codex/skills/design-reviewer/SKILL.md",
       ".codex/skills/security-reviewer/SKILL.md",
@@ -788,6 +819,7 @@ test("harness-builder-codex: generated role skills embed foundation and shared-t
         "verification-before-completion",
       ],
       "verification-reviewer": ["requesting-code-review", "verification-before-completion"],
+      "quality-debt-reviewer": ["requesting-code-review", "verification-before-completion"],
       "qa-reviewer": ["requesting-code-review", "verification-before-completion"],
       "design-reviewer": ["requesting-code-review", "verification-before-completion"],
       "security-reviewer": ["requesting-code-review", "verification-before-completion"],
@@ -796,6 +828,7 @@ test("harness-builder-codex: generated role skills embed foundation and shared-t
     };
     const verificationAuditRoles = [
       "reviewer",
+      "quality-debt-reviewer",
       "verification-reviewer",
       "integration-dev",
       "design-reviewer",
@@ -960,6 +993,7 @@ test("harness-builder-codex: generated hook ignores non-Bash and guides large sa
     const hookPath = resolve(target, ".codex/hooks/agent-policy-hook.mjs");
     const nonBash = spawnSync("node", [hookPath], {
       encoding: "utf-8",
+      env: { ...process.env, CODEX_PROJECT_DIR: target, AGENT_POLICY_AUDIT: "0" },
       input: JSON.stringify({
         tool_name: "apply_patch",
         tool_input: { command: "git reset --hard" },
@@ -970,6 +1004,7 @@ test("harness-builder-codex: generated hook ignores non-Bash and guides large sa
 
     const largeSafeBash = spawnSync("node", [hookPath], {
       encoding: "utf-8",
+      env: { ...process.env, CODEX_PROJECT_DIR: target, AGENT_POLICY_AUDIT: "0" },
       input: JSON.stringify({
         tool_name: "Bash",
         tool_input: { command: "git status --short" },
@@ -982,6 +1017,7 @@ test("harness-builder-codex: generated hook ignores non-Bash and guides large sa
 
     const smallSafeBash = spawnSync("node", [hookPath], {
       encoding: "utf-8",
+      env: { ...process.env, CODEX_PROJECT_DIR: target, AGENT_POLICY_AUDIT: "0" },
       input: JSON.stringify({
         tool_name: "Bash",
         tool_input: { command: "pwd" },
@@ -1002,6 +1038,7 @@ test("harness-builder-codex: generated hook blocks destructive Bash PreToolUse p
     const hookPath = resolve(target, ".codex/hooks/agent-policy-hook.mjs");
     const hookRes = spawnSync("node", [hookPath], {
       encoding: "utf-8",
+      env: { ...process.env, CODEX_PROJECT_DIR: target, AGENT_POLICY_AUDIT: "0" },
       input: JSON.stringify({
         tool_name: "Bash",
         tool_input: { command: "git reset --hard" },
@@ -1022,6 +1059,7 @@ test("harness-builder-codex: generated hook blocks destructive shell_command Pre
     const hookPath = resolve(target, ".codex/hooks/agent-policy-hook.mjs");
     const hookRes = spawnSync("node", [hookPath], {
       encoding: "utf-8",
+      env: { ...process.env, CODEX_PROJECT_DIR: target, AGENT_POLICY_AUDIT: "0" },
       input: JSON.stringify({
         tool_name: "shell_command",
         tool_input: { command: "git reset --hard" },
@@ -1040,7 +1078,7 @@ test("harness-builder-codex: --theme=lite skips ledger and hooks", () => {
     const res = runInit(PLUGINS.codex.bin, [target, "--theme=lite"]);
     assert.equal(res.status, 0, res.stderr);
     assert.ok(existsSync(resolve(target, "AGENTS.md")));
-    assert.ok(!existsSync(resolve(target, "docs/tasks/index.md")));
+    assert.ok(!existsSync(resolve(target, ".agent-skill/tasks/index.md")));
     assert.ok(!existsSync(resolve(target, ".codex/hooks/agent-policy-hook.mjs")));
   } finally {
     rmSync(target, { recursive: true, force: true });
@@ -1055,7 +1093,7 @@ test("harness-builder-codex: --dry-run reports planned writes without writing fi
     assert.match(res.stdout, /dry-run: would write/);
     assert.ok(!existsSync(resolve(target, "AGENTS.md")));
     assert.ok(!existsSync(resolve(target, ".codex/hooks/agent-policy-hook.mjs")));
-    assert.ok(!existsSync(resolve(target, "docs/tasks/index.md")));
+    assert.ok(!existsSync(resolve(target, ".agent-skill/tasks/index.md")));
     assert.match(res.stdout, PLUGINS.codex.stdoutHeader);
   } finally {
     rmSync(target, { recursive: true, force: true });

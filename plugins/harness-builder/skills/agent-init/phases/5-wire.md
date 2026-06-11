@@ -34,17 +34,24 @@
 
    If both arrays are empty: print "All required plugins are enabled."
 
-4. Resolve selected platforms from `--platform=claude,codex,gemini`. In interactive use, prompt before wiring platform-specific artifacts. In non-interactive use, default to Claude-only. Global CLI config patching always requires a separate explicit approval.
+4. Resolve selected platforms from `--platform=claude,codex,gemini`. In
+   interactive use, prompt before wiring platform-specific artifacts through
+   the Phase 1 `agent-interaction/v1` contract and append the result to
+   `.agent-skill/runs/<run-id>/interactions.jsonl`. In non-interactive use,
+   call `resolveNonTtyInteraction()`: default to the recommended Claude-only
+   low-risk choice, and block any high-risk platform/global config expansion
+   until the user approves it. Global CLI config patching always requires a
+   separate explicit approval.
 
 5. Update `.gitignore`. If `.claude/.agent-init-state.json` is not already listed, append it. Idempotent.
 
-6. Make sure `docs/superpowers/specs/`, `docs/superpowers/plans/`, `docs/decisions/`, and `docs/tasks/` exist. `mkdir -p` for each. Add a `.gitkeep` to each.
+6. Make sure `.agent-skill/specs/`, `.agent-skill/plans/`, `.agent-skill/decisions/`, `.agent-skill/tasks/`, `.agent-skill/registry/`, `.agent-skill/handoff/`, `.agent-skill/reports/visual-qa/`, `.agent-skill/reports/debug/`, `.agent-skill/reports/thrift/`, and `.agent-skill/baselines/` exist. `mkdir -p` for each. Add a `.gitkeep` to each.
 
 7. If operational mode is active, write task ledger files:
-   - `docs/tasks/CLAUDE.md`
-   - `docs/tasks/index.md`
-   - `docs/tasks/_template.md`
-   - `docs/tasks/_handoff-template.md`
+   - `.agent-skill/tasks/CLAUDE.md`
+   - `.agent-skill/tasks/index.md`
+   - `.agent-skill/tasks/_template.md`
+   - `.agent-skill/tasks/_handoff-template.md`
    - `scripts/agent-task-ledger-check.mjs`
 
    Lite mode skips task ledger and policy hook generation.
@@ -65,7 +72,12 @@
     - Append `.agent-all-state.json` to `.gitignore` (idempotent — same pattern as `.agent-init-state.json` and `.visual-qa-state.json`).
     - Do not mutate Phase 2 render context here; `floorTheme` was resolved in Phase 1 before `CLAUDE.md` rendered.
 
-9. If `--update-foundations` is set, print the foundation update plan before running `scripts/update.sh`. Global CLI config patching still requires a separate explicit approval.
+9. If `--update-foundations` is set, print the foundation update plan before
+   running `scripts/update.sh` and capture the approval as
+   `agent-interaction/v1` with `nonTtyPolicy: "pause"`. Non-TTY foundation
+   updates and global CLI config patches are high-risk: log a blocked
+   interaction and stop instead of auto-selecting approval. Global CLI config
+   patching still requires a separate explicit approval.
 
 10. **Post-install doctor.** Run the project-local scaffold check before committing:
    ```bash
@@ -75,8 +87,8 @@
 
 11. Single git commit with explicit pathspecs:
    ```bash
-   git add -- CLAUDE.md AGENTS.md .claude/ .gitignore docs/ scripts/ .visual-qa.json .agent-all.json <generated-local-guide-paths>
-   git commit -m "chore: bootstrap harness via /agent-init" -- CLAUDE.md AGENTS.md .claude/ .gitignore docs/ scripts/ .visual-qa.json .agent-all.json <generated-local-guide-paths>
+   git add -- CLAUDE.md AGENTS.md .claude/ .gitignore .agent-skill/ scripts/ .visual-qa.json .agent-all.json <generated-local-guide-paths>
+   git commit -m "chore: bootstrap harness via /agent-init" -- CLAUDE.md AGENTS.md .claude/ .gitignore .agent-skill/ scripts/ .visual-qa.json .agent-all.json <generated-local-guide-paths>
    ```
    Omit any path that was skipped by lite mode, legacy mode, or platform selection. Replace `<generated-local-guide-paths>` with the exact folder-level guidance files rendered in Phase 2; do not substitute broad top-level directory pathspecs.
 

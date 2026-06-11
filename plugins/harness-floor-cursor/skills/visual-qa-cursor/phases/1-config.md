@@ -8,8 +8,15 @@
    - For each `flows[].steps[] × breakpoint`: one flow-step capture.
 3. Estimate cost: `(matrix.length × analysis.model.imageRate) + flat overhead`.
    Use a static rate table (e.g., $0.003/image for claude-sonnet-4-6).
-4. Unless `--yes` or estimate ≤ `--budget`: ask in chat
-   `<matrix.length> captures, est. cost $<X>. Proceed? [y/N]`. Abort on N.
+4. Unless `--yes` or estimate <= `--budget`, build an
+   `agent-interaction/v1` confirmation and render it with
+   `../agent-all-cursor/lib/interactions/renderer-cursor.mjs`. Use
+   `kind: "budget_warning"` when cost or capture count is high; use
+   `kind: "confirmation"` otherwise. Append the result to
+   `.agent-skill/runs/<run-id>/interactions.jsonl` with
+   `appendInteractionLog({ source: "visual-qa" })`. `--yes` may skip
+   only when `matrix.length <= 5000`; over 5000 captures must use
+   `nonTtyPolicy: "pause"` so non-TTY cannot auto-approve the run.
 5. Push `{phase: 1, completedAt, matrixSize, estCostUSD}` to state.
 
 ## Shell helpers

@@ -143,6 +143,7 @@ Every task doc must contain:
 - `Ambiguity Log`
 - `Progress Snapshot`
 - `Verification`
+- `Cost Telemetry`
 
 Recommended sections also include:
 
@@ -190,6 +191,7 @@ Phase 1, 3, 4, and 6 update `Progress Snapshot` with:
 - Latest validation evidence
 - Current commit/branch state
 - Next action
+- Cost telemetry summary and budget status
 
 Blocked, exhausted, or interrupted runs create or update a handoff section/file using `_handoff-template.md`.
 

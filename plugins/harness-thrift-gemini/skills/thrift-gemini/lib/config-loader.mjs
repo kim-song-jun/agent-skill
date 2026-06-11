@@ -50,7 +50,7 @@ export const DEFAULTS = {
   },
   audit: {
     estimateBaseline: "naive-gemini",
-    outputPath: "docs/thrift/audit-<date>.md",
+    outputPath: ".agent-skill/reports/thrift/audit-<date>.md",
   },
 };
 

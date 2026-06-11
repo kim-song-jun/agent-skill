@@ -35,16 +35,24 @@ this skill installs into the target project. The pipeline lives in
 
 ```
 @agent-all-coordinator run /agent-all for "add user signup form"
-@agent-all-coordinator run /agent-all using docs/tasks/12-fix-login.md --loop --max-iter=5
-@agent-all-coordinator run /agent-all using docs/tasks/x.md --no-pr --wave-size=large
+@agent-all-coordinator run /agent-all using .agent-skill/tasks/12-fix-login.md --loop --max-iter=5
+@agent-all-coordinator run /agent-all using .agent-skill/tasks/x.md --no-pr --wave-size=large
+@agent-all-coordinator run /agent-handoff using .agent-skill/tasks/x.md --strict
 ```
 
 ## Flags
 
 Same as Claude Code: `--loop`, `--max-iter=<N>`, `--max-cost=<USD>`,
-`--wave-size=small|medium|large`, `--no-pr`, `--no-brainstorm`,
+`--max-runtime-sec=<seconds>`, `--wave-size=small|medium|large`, `--no-pr`, `--no-brainstorm`,
 `--resume`, `--force`, `--yes`,
 `--break-condition=<spec>`, `--reconfigure`, `--qa`.
+
+`--resume` checks for `/agent-handoff` sibling artifacts
+(`.agent-skill/tasks/<NN>-<slug>.handoff.md` and `.session.md`) and uses their
+metadata to surface the recommended next action. In non-TTY mode the
+recommended action is auto-selected and logged to
+`.agent-skill/runs/handoff-audit.jsonl` plus the shared
+`.agent-skill/runs/handoff/interactions.jsonl`.
 
 `--qa` is the one-flag shortcut for end-to-end verification: equivalent
 to `--break-condition='{"type":"composite","steps":[{"type":"test-auto"},
@@ -53,7 +61,8 @@ visual-qa (comprehensive mode) runs as the final E2E check. Auto-scaffolds
 `.visual-qa.json` with sane defaults if missing.
 
 When `--loop` is set, Phase 0 prompts the user interactively for the
-break-condition preset (test-auto / visual-qa / Custom shell / Composite)
+break-condition preset (test-auto / visual-qa / Verification adapter /
+Custom shell / Composite)
 and offers to save the choice to `.agent-all.json`. Use
 `--break-condition=<spec>` (JSON object or plain shell string) to skip
 the prompt for one invocation, or `--reconfigure` to re-prompt even when
@@ -65,7 +74,7 @@ a non-default value already lives in config.
 |-------|------|---------|
 | 0 | `phases/0-preflight.md` | git + .cursor/agents/ + config + input checks |
 | 1 | `phases/1-intent.md` | brainstorming (chat-driven) OR load task file |
-| 2 | `phases/2-plan.md` | draft plan into docs/superpowers/plans/ |
+| 2 | `phases/2-plan.md` | draft plan into .agent-skill/plans/ |
 | 3 | `phases/3-dispatch.md` | fan out to `agent-all-implementer` (parallel via `is_background`) |
 | 4 | `phases/4-gate.md` | fan out to `agent-all-reviewer` for spec + quality review |
 | 5 | `phases/5-pr.md` | branch push + `gh pr create` (or skip) |
@@ -74,10 +83,26 @@ a non-default value already lives in config.
 ## Rules
 
 1. **Coordinator reads phases sequentially**. Do not skip; do not parallelize phases.
-2. **State lives in `.agent-all-state.json`.** Same shape as Claude port.
+2. **State lives in `.agent-all-state.json`.** Same shape as Claude port, including `state.costTelemetry.summary` for the latest `agent-cost-telemetry/v1` summary and legacy `state.costUSD`.
 3. **Delegate, don't reimplement.** Phase 1 = brainstorming chat; Phase 2 = the user (or coordinator) writes the plan; Phase 3 = dispatch to `agent-all-implementer`.
 4. **Cursor handles parallelism implicitly.** Coordinator says "for each wave task, invoke `agent-all-implementer` with this task block" — Cursor's planner fans out to background agents.
-5. **Hard caps:** `--max-iter` clamped to 50; `--max-cost` is best-effort — Cursor doesn't expose per-turn cost in the chat surface, so the coordinator records cost only when the user pastes it.
+5. **Loop stops:** completion is break-condition driven. `--max-iter=0` or
+   `loop.maxIter: null` enables unlimited iterations, while cost/runtime
+   budgets, hard policy hooks, user interruption, and repeated failure signatures can still
+   stop the loop. Cost enforcement is best-effort through
+   `agent-cost-telemetry/v1` because Cursor does not expose per-turn cost in
+   the chat surface.
+6. **Policy events use the shared schema.** Cursor surfaces
+   `agent-policy-event/v1` results as soft warnings/logs because this chat
+   surface cannot hard-deny tool calls; append
+   `.agent-skill/runs/<run-id>/policy-log.jsonl` when possible. Cost usage
+   appends `.agent-skill/runs/<run-id>/cost-telemetry.jsonl`.
+7. **Interactions use the shared UX schema.** Render
+   `agent-interaction/v1` decision/confirmation/resume prompts through the
+   Cursor rule/chat renderer, persist choices in `.agent-all-state.json`, and
+   append `.agent-skill/runs/<run-id>/interactions.jsonl` when possible.
+   Non-TTY may auto-select recommended low/medium-risk options only; high-risk
+   options pause or block.
 
 ## Differences from the Claude Code orchestrator
 

@@ -9,7 +9,7 @@ Render the durable debug-log artifact and populate `state.resolution`.
    chars. If empty, fall back to `unknown`.
 2. Compute the output path:
    ```
-   const path = `docs/debug/${todayISO()}-${slug}.md`;
+   const path = `.agent-skill/reports/debug/${todayISO()}-${slug}.md`;
    ```
    `--slug=<name>` overrides the auto slug.
 3. Render `templates/debug-log.md.hbs` with the full state. The
@@ -21,7 +21,10 @@ Render the durable debug-log artifact and populate `state.resolution`.
    const result = finishDebugSession({ projectRoot, state, slug, now });
    ```
    It renders the markdown, writes the log atomically, updates
-   `.debug-state.json`, and appends `docs/debug/index.md`.
+   `.debug-state.json`, appends `.agent-skill/reports/debug/index.md`, and runs every durable
+   debug artifact through the secret/privacy redaction gate before writing.
+   High-severity findings block the write; medium findings are masked; the
+   redaction audit stores only rule/count/severity/action metadata.
 5. If implementing manually, write the rendered markdown to the computed
    path with atomic write (tmp + rename).
 6. Populate `state.resolution`:
@@ -34,7 +37,7 @@ Render the durable debug-log artifact and populate `state.resolution`.
    };
    saveState(statePath, state);
    ```
-7. Optionally append a one-line entry to `docs/debug/index.md`:
+7. Optionally append a one-line entry to `.agent-skill/reports/debug/index.md`:
    ```
    - YYYY-MM-DD — <slug> — <rootCause one-liner> — <path>
    ```

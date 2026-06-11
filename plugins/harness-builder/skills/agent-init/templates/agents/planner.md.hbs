@@ -10,7 +10,7 @@ You produce written implementation plans. You do not write production code, edit
 
 ## Harness Discipline
 
-- Read root `CLAUDE.md`/`AGENTS.md` and the active `docs/tasks/NN-slug.md` before acting when they exist.
+- Read root `CLAUDE.md`/`AGENTS.md` and the active `.agent-skill/tasks/NN-slug.md` before acting when it exists; legacy `docs/tasks/NN-slug.md` is readable for migration.
 - Invoke role-matched superpowers before edits or final claims: `superpowers:brainstorming`, `superpowers:writing-plans`, `superpowers:dispatching-parallel-agents`; if unavailable, state the fallback.
 - Use context-mode (`ctx_batch_execute`/`ctx_execute`) or file-backed logs for broad searches, long test output, screenshots, and generated output.
 - Respect shared-tree safety: stay in assigned paths, do not revert unrelated edits, and report HOT-file conflicts to the orchestrator.
@@ -18,7 +18,7 @@ You produce written implementation plans. You do not write production code, edit
 ## Rules
 
 1. **Brainstorm before planning.** Invoke `superpowers:brainstorming` to align with the user on intent, scope, and success criteria.
-2. **Plan via writing-plans.** Once intent is clear, invoke `superpowers:writing-plans` and save to `docs/superpowers/plans/YYYY-MM-DD-<slug>.md`.
+2. **Plan via writing-plans.** Once intent is clear, invoke `superpowers:writing-plans` and save generated control-plane plans to `.agent-skill/plans/YYYY-MM-DD-<slug>.md` by default.
 3. **Dispatch in parallel only after a plan exists.** If the plan has 2+ independent tasks, call `superpowers:dispatching-parallel-agents` to coordinate the fan-out.
 4. **context-mode for exploration.** Use `ctx_batch_execute` for any shell command likely to produce more than ~20 lines.
 
@@ -28,6 +28,7 @@ This project uses **{{stack}}**.{{#if deploy_targets}} It deploys to **{{deploy_
 
 ## Output Location
 
-- Plans → `docs/superpowers/plans/`
-- Task tracking → `docs/tasks/`
+- Plans → `.agent-skill/plans/`
+- Task tracking → `.agent-skill/tasks/`
+- Legacy input → `docs/tasks/` remains readable for migration.
 - Never to `src/`, `lib/`, `app/`, or any application code path.

@@ -7,6 +7,7 @@ const DEFAULT_GATES = {
 
 const REVIEWER_ORDER = [
   "reviewer",
+  "quality-debt-reviewer",
   "verification-reviewer",
   "qa-reviewer",
   "design-reviewer",
@@ -19,6 +20,7 @@ const DESCRIPTION_PREFIXES = {
   "orchestrator": "Orchestration Gate Task",
   "reviewer": "Review Task",
   "spec-reviewer": "Spec Review Task",
+  "quality-debt-reviewer": "Quality Debt Review Task",
   "verification-reviewer": "Verification Review Task",
   "qa-reviewer": "QA Review Task",
   "design-reviewer": "Design Review Task",
@@ -31,6 +33,7 @@ const GATE_REASONS = {
   "orchestrator": "Changed-file classifier selected the orchestration gate for HOT/shared files or broad non-doc changes.",
   "reviewer:spec": "Spec review is enabled; compare the wave diff against the task goal, plan, and acceptance criteria.",
   "reviewer:quality": "Base quality review is enabled; inspect the wave diff for code quality, maintainability, and regressions.",
+  "quality-debt-reviewer": "Quality debt review is enabled; inspect the wave diff for unrequested fallback, meaningless tests, suppressions, TODO/dead code, debug/test-only production paths, and unjustified debt.",
   "verification-reviewer": "Feature or bug-fix work requires verification evidence: tests, typecheck, lint, diff scope, and reruns after fixes.",
   "qa-reviewer": "User-visible work requires user-side QA: scenarios, persona confusion, accessibility-visible behavior, loading, empty, and error states.",
   "design-reviewer": "Frontend or UI files changed; review visual hierarchy, responsive fit, component conventions, and state styling.",
@@ -79,6 +82,12 @@ function passCriteriaForDispatch({ role, kind, auditToken }) {
       "No blocking user-flow, persona, accessibility-visible, loading, empty, or error-state issues.",
     ];
   }
+  if (role === "quality-debt-reviewer") {
+    return [
+      `${auditToken}: passed or skipped.`,
+      "No unrequested fallback, silent error handling, TODO/FIXME debt, lint/type suppression, skipped or meaningless tests, or production test/debug path remains without a Quality Debt Exceptions row.",
+    ];
+  }
   return [
     `${auditToken}: passed or skipped.`,
     "No blocking technical, security, data, design, integration, or verification-evidence issues for this persona.",
@@ -123,6 +132,8 @@ export function buildGatePlan({
   gates = DEFAULT_GATES,
   taskId = "<N>",
   title = "<title>",
+  requiredReviewerRoles = [],
+  requiredCoordinatorRoles = [],
 } = {}) {
   const resolvedGates = { ...DEFAULT_GATES, ...(gates ?? {}) };
   if (!resolvedGates.specReview && !resolvedGates.qualityReview) {
@@ -136,9 +147,15 @@ export function buildGatePlan({
     };
   }
 
-  const classification = resolvedGates.qualityReview
+  const fileClassification = resolvedGates.qualityReview
     ? classifyChangedFiles(files)
     : { reviewers: [], coordinators: [] };
+  const classification = resolvedGates.qualityReview
+    ? {
+        reviewers: [...new Set(["quality-debt-reviewer", ...(fileClassification.reviewers ?? []), ...requiredReviewerRoles])],
+        coordinators: [...new Set([...(fileClassification.coordinators ?? []), ...requiredCoordinatorRoles])],
+      }
+    : fileClassification;
   const coordinators = orderRoles(classification.coordinators ?? [], ["orchestrator"]);
   const reviewers = orderRoles(classification.reviewers ?? []);
 
@@ -164,6 +181,7 @@ export function buildGatePlan({
     passCriteria: [
       "ORCHESTRATION_AUDIT for every coordinator is passed or skipped.",
       "VERIFICATION_AUDIT for verification-reviewer and technical reviewers is passed or skipped.",
+      "Quality debt reviewer reports no unapproved fallback, suppression, skipped/meaningless test, TODO/dead code, or production test/debug path.",
       "QA_AUDIT for qa-reviewer is passed or skipped when qa-reviewer is dispatched.",
       "No coordinator reports HOT-file ownership conflicts, unsafe retry sequencing, or pathspec commit risk.",
       "No reviewer persona reports blocking issues.",

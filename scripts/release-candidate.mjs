@@ -3,17 +3,23 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildReleaseManifest } from "./release-provenance.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const GATE_COMMANDS = [
   "node scripts/release-audit.mjs",
+  "node scripts/github-governance-check.mjs",
+  "node scripts/docs-structure-check.mjs",
+  "node scripts/release-provenance.mjs --release=<recommendedTag> --out-dir=.agent-skill/releases/<recommendedTag>",
   "node scripts/release-fixture-smoke.mjs",
+  "node scripts/skill-eval.mjs --smoke --no-write --json",
   "./scripts/release-smoke.sh --fast --with-live-cli",
   "node scripts/release-publish-preflight.mjs --base=origin/main",
   "node scripts/target-project-smoke.mjs --target=/path/to/target --platform=claude,codex --lang=ko",
   "node --test",
   "node scripts/sync-lib.mjs --check",
+  "node scripts/generate-support-matrix.mjs --check",
 ];
 
 const STALE_RELEASE_WORDING = [
@@ -40,11 +46,19 @@ export function buildReleaseCandidateReport(options = {}) {
   const git = readGitState(root);
   const shortSha = git.head ? git.head.slice(0, 7) : "unknown";
   const recommendedTag = `rc-${date}-${shortSha}`;
+  const gateCommands = GATE_COMMANDS.map((command) => command.replaceAll("<recommendedTag>", recommendedTag));
+  const provenanceManifest = buildReleaseManifest({
+    root,
+    release: recommendedTag,
+    generatedBy: "scripts/release-candidate.mjs",
+    createdAt: "release-candidate-preview",
+  });
 
   const checks = [
     checkGitHead(git),
     checkCleanWorktree(git, allowDirty),
     checkMarketplaceManifestAlignment(marketplacePlugins, marketplaceManifests, allManifests),
+    checkReleaseProvenance(provenanceManifest, marketplacePlugins),
     checkReadmeVersioning(root, marketplaceManifests),
     checkChangelog(root),
     checkManualLifecycle(root),
@@ -58,7 +72,15 @@ export function buildReleaseCandidateReport(options = {}) {
     date,
     git,
     recommendedTag,
-    gateCommands: GATE_COMMANDS,
+    gateCommands,
+    provenance: {
+      schemaVersion: provenanceManifest.schemaVersion,
+      release: provenanceManifest.release,
+      pluginCount: provenanceManifest.plugins.length,
+      marketplaceChecksum: provenanceManifest.marketplace.checksum,
+      signedTag: provenanceManifest.signedTag,
+      manifestCommand: gateCommands.find((command) => command.includes("release-provenance.mjs")),
+    },
     checks,
     plugins: {
       count: marketplacePlugins.length,
@@ -71,9 +93,9 @@ export function buildReleaseCandidateReport(options = {}) {
     },
     rollout: [
       "/plugin marketplace update agent-skill",
-      "scripts/update.sh",
-      "scripts/update.sh --cli=codex",
-      "scripts/install-platform.sh --platform=claude|codex --target=/path/to/project",
+      "scripts/update.sh --verify-provenance --manifest=/path/to/release-manifest.json",
+      "scripts/update.sh --cli=codex --verify-provenance --manifest=/path/to/release-manifest.json",
+      "scripts/install-platform.sh --platform=claude|codex --target=/path/to/project --verify-checksums --manifest=/path/to/release-manifest.json",
     ],
     rollback: [
       "checkout the previous verified tag/SHA",
@@ -136,6 +158,22 @@ function checkMarketplaceManifestAlignment(marketplacePlugins, marketplaceManife
         ? `${marketplacePlugins.length} marketplace plugins matched`
         : null,
     ].filter(Boolean).join("; "),
+  };
+}
+
+function checkReleaseProvenance(manifest, marketplacePlugins) {
+  const pluginNames = new Set(manifest.plugins.map((plugin) => plugin.name));
+  const missing = marketplacePlugins.map((plugin) => plugin.name).filter((name) => !pluginNames.has(name));
+  const missingChecksums = manifest.plugins
+    .filter((plugin) => !/^sha256:[0-9a-f]{64}$/.test(plugin.checksum || ""))
+    .map((plugin) => plugin.name);
+  return {
+    ok: missing.length === 0 && missingChecksums.length === 0 && manifest.tests.manifestConsistency === "passed",
+    name: "release provenance manifest can be generated",
+    details:
+      missing.length === 0 && missingChecksums.length === 0
+        ? `${manifest.plugins.length} plugin checksums; signed tag: ${manifest.signedTag.status}`
+        : `missing plugins: ${missing.join(", ")}; missing checksums: ${missingChecksums.join(", ")}`,
   };
 }
 
@@ -203,7 +241,11 @@ function checkManualLifecycle(root) {
   const missing = [
     /Release Candidate Lifecycle/,
     /git rev-parse HEAD/,
+    /github-governance-check\.mjs/,
+    /docs-structure-check\.mjs/,
+    /release-provenance\.mjs --release=/,
     /release-smoke\.sh --fast --with-live-cli/,
+    /generate-support-matrix\.mjs --check/,
     /date-stamped release-candidate tag/,
     /Roll back only to a previous verified tag\/SHA/,
   ].filter((pattern) => !pattern.test(text));

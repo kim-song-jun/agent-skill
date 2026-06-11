@@ -1,0 +1,42 @@
+name: Template Drift CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  templates:
+    name: Manifests and templates
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Manifest and marketplace consistency
+        run: node scripts/release-audit.mjs --json
+
+      - name: Template snapshot smoke
+        run: >
+          node --test
+          tests/lib/render.test.mjs
+          tests/lib/cross-platform-manifest.test.mjs
+          tests/agent-all/templates/snapshot.test.mjs
+          tests/visual-qa/templates/snapshot.test.mjs
+
+      - name: Vendored lib drift
+        run: node scripts/sync-lib.mjs --check
+
+      - name: Support matrix drift
+        run: node scripts/generate-support-matrix.mjs --check
