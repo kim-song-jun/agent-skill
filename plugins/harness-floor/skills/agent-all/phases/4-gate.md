@@ -3,6 +3,7 @@
 ## Inputs (from state)
 
 - `state.waves[]`
+- `state.waves[].orchestration` or latest `state.orchestration`
 - `config.gates.{specReview, qualityReview, blockOnCritical}`
 
 ## Skip conditions
@@ -23,13 +24,33 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
 2. Build the deterministic gate plan:
    ```
    import { buildGatePlan } from "./lib/gate-plan.mjs";
-   const gatePlan = buildGatePlan({ files, gates: config.gates, taskId, title });
+   const orchestration = wave.orchestration ?? state.orchestration ?? null;
+   const requiredReviewerRoles = (orchestration?.requiredAgents ?? [])
+     .filter((agent) => agent.kind === "reviewer")
+     .map((agent) => agent.role);
+   const requiredCoordinatorRoles = (orchestration?.requiredAgents ?? [])
+     .filter((agent) => agent.kind === "coordinator")
+     .map((agent) => agent.role);
+   const gatePlan = buildGatePlan({
+     files,
+     gates: config.gates,
+     taskId,
+     title,
+     requiredReviewerRoles,
+     requiredCoordinatorRoles,
+   });
    ```
    `gatePlan.dispatches` is the source of truth for Phase 4 ordering.
    `lib/gate-plan.mjs` wraps `lib/changed-file-classifier.mjs` and uses
-   `classifyChangedFiles(files)` internally, dispatches returned coordinators
-   before reviewers, and includes the description prefix plus required audit
-   token, gate reason, and pass criteria for each dispatch.
+   `classifyChangedFiles(files)` internally, then unions any dynamic
+   orchestration roles persisted by Phase 3. It dispatches coordinators before
+   reviewers and includes the description prefix plus required audit token,
+   gate reason, and pass criteria for each dispatch.
+   When `gates.qualityReview !== false`, the plan must include
+   `quality-debt-reviewer` even if the classifier finds no domain-specific
+   reviewer. This gate checks unrequested fallback, meaningless tests,
+   suppressions, TODO/dead code, debug/test-only production paths, and
+   unjustified temporary debt.
 
 3. Dispatch every `gatePlan.dispatches[]` entry in order:
    - `kind=coordinator`, `role=orchestrator`: description prefix
@@ -50,10 +71,15 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
      tech-stack verification. It must emit `QA_AUDIT: passed|failed|skipped`.
    - Technical reviewers must emit `VERIFICATION_AUDIT: passed|failed|skipped`.
    - Other personas (`data-reviewer`, `design-reviewer`, `integration-dev`,
-     `security-reviewer`) are technical reviewers for Phase 4 and must emit
-     `VERIFICATION_AUDIT: passed|failed|skipped`.
+     `quality-debt-reviewer`, `security-reviewer`) are technical reviewers for
+     Phase 4 and must emit `VERIFICATION_AUDIT: passed|failed|skipped`.
    - Persona-specific reviewers should emit their existing reviewer verdict
      format and issue severities before the audit token.
+   - For every dynamic reviewer/coordinator dispatch, append a spawn log entry
+     to `.agent-skill/runs/<run-id>/spawn-log.jsonl` with role, reason, wave,
+     and cost estimate. If a dispatch was not already present in
+     `orchestration.requiredAgents`, evaluate it with
+     `lib/orchestration/spawn-policy.mjs` before spawning.
 
 4. Collect verdicts. Bucket issues by severity (`critical | major | minor`).
 
@@ -61,6 +87,9 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
    - `ORCHESTRATION_AUDIT ∈ {passed, skipped}` for every coordinator dispatch, AND
    - `VERIFICATION_AUDIT ∈ {passed, skipped}` for the `verification-reviewer` dispatch, AND
    - `QA_AUDIT ∈ {passed, skipped}` for the `qa-reviewer` dispatch when the classifier returned `qa-reviewer`, AND
+   - `quality-debt-reviewer` reports no unapproved quality debt; every accepted
+     exception must be recorded in the task doc `Quality Debt Exceptions` table
+     with reason, owner, follow-up issue, and expiry, AND
    - no returned coordinator reports HOT-file ownership conflicts, unsafe retry sequencing, or pathspec commit risk, AND
    - no returned reviewer persona reports blocking issues.
 
@@ -69,10 +98,12 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
 5. If any critical issue AND `blockOnCritical === true`:
    - Dispatch an implementer subagent with the critical issues. Re-run reviewers afterward.
    - Up to 3 retry cycles.
-   - If the same issue repeats through 3 retry cycles, stop the retry loop and escalate to a planner/user decision.
+   - If the same issue repeats through 3 retry cycles, update
+     `state.orchestration.failureSignatures` and stop the retry loop. Escalate
+     to a planner/user decision instead of dispatching more implementers.
    - If still failing: abort phase, push `{phase: 4, status: "blocked"}` to state, exit code 2.
 
-6. Record wave gate verdict in `state.waves[i].gateVerdict = {issues, retries, finalStatus}`.
+6. Record wave gate verdict in `state.waves[i].gateVerdict = {issues, retries, finalStatus}` and keep `state.orchestration.blockedReasons` in sync with any critical repeated-failure, budget, or policy block.
 
 7. Push `{phase: 4, completedAt}` to `phases` once all waves processed.
 

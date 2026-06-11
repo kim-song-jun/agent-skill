@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { QA_AUTOSCAFFOLD_CONFIG as CODEX_QA_AUTOSCAFFOLD_CONFIG } from "../../plugins/harness-floor-codex/skills/agent-all-codex/lib/break-resolver.mjs";
 
 const REPO = resolve(".");
@@ -13,6 +13,19 @@ const UPDATE = resolve(REPO, "scripts/update.sh");
 
 function tmp(prefix) {
   return mkdtempSync(join(tmpdir(), prefix));
+}
+
+function makeProvenanceManifest() {
+  const outDir = tmp("agent-skill-release-provenance-manifest-");
+  const res = spawnSync(process.execPath, [
+    resolve(REPO, "scripts/release-provenance.mjs"),
+    "--release=test-install",
+    `--out-dir=${outDir}`,
+  ], {
+    encoding: "utf-8",
+  });
+  assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+  return { outDir, manifestPath: resolve(outDir, "release-manifest.json") };
 }
 
 test("install-all --dry-run for Claude essentials does not require the claude binary", () => {
@@ -35,9 +48,35 @@ test("install-all --help documents approved foundation bootstrap flags", () => {
   assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
   assert.match(res.stdout, /--foundations/);
   assert.match(res.stdout, /--foundations-only/);
+  assert.match(res.stdout, /--verify-checksums/);
+  assert.match(res.stdout, /--manifest=release-manifest\.json/);
   assert.match(res.stdout, /superpowers/);
   assert.match(res.stdout, /context-mode/);
   assert.doesNotMatch(res.stderr, /claude' binary not found/);
+});
+
+test("install-all --verify-checksums verifies release manifest before dry-run install", () => {
+  const { outDir, manifestPath } = makeProvenanceManifest();
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_ALL,
+      "--dry-run",
+      "--verify-checksums",
+      `--manifest=${manifestPath}`,
+      "--claude-code",
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, PATH: `${dirname(process.execPath)}:${process.env.PATH || "/usr/bin:/bin"}` },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /Verifying release provenance checksums:/);
+    assert.match(res.stdout, /release provenance verify: ok/);
+    assert.match(res.stdout, /plugin directory checksums: 19 plugin checksums matched/);
+    assert.match(res.stdout, /DRY-RUN: claude plugin install harness-builder@agent-skill/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
 });
 
 test("install-all --dry-run --foundations prints approved foundations and selected plugins without claude", () => {
@@ -142,10 +181,43 @@ test("install-platform --help documents dry-run and canonical wrapper flags", ()
   assert.match(res.stdout, /--lang=en\|ko\|auto/);
   assert.match(res.stdout, /--update-foundations/);
   assert.match(res.stdout, /--no-update-foundations/);
+  assert.match(res.stdout, /--verify-checksums/);
+  assert.match(res.stdout, /--manifest=<PATH>/);
   assert.match(res.stdout, /--no-doctor/);
   assert.match(res.stdout, /--uninstall/);
   assert.match(res.stdout, /--force-root-clean/);
   assert.doesNotMatch(res.stderr, /--platform and --target are required/);
+});
+
+test("install-platform --verify-checksums verifies manifest before target dry-run", () => {
+  const { outDir, manifestPath } = makeProvenanceManifest();
+  const target = tmp("agent-skill-release-platform-provenance-target-");
+  const home = tmp("agent-skill-release-platform-provenance-home-");
+  try {
+    const res = spawnSync("/bin/bash", [
+      INSTALL_PLATFORM,
+      "--platform=codex",
+      `--target=${target}`,
+      "--theme=builder",
+      "--dry-run",
+      "--no-update-foundations",
+      "--verify-checksums",
+      `--manifest=${manifestPath}`,
+    ], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /release provenance verification/);
+    assert.match(res.stdout, /release provenance verify: ok/);
+    assert.match(res.stdout, /harness-builder-codex\/bin\/init\.mjs/);
+    assert.ok(!existsSync(resolve(target, "AGENTS.md")), "dry-run must not write target files after verification");
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+    rmSync(target, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
 });
 
 test("install-platform claude all succeeds in a fresh project and runs doctor", () => {
@@ -172,9 +244,10 @@ test("install-platform claude all succeeds in a fresh project and runs doctor", 
       ".claude/agents/orchestrator.md",
       ".claude/agents/frontend-dev.md",
       ".claude/agents/backend-dev.md",
+      ".claude/agents/quality-debt-reviewer.md",
       ".claude/agents/qa-reviewer.md",
       ".claude/hooks/agent-policy-hook.mjs",
-      "docs/tasks/index.md",
+      ".agent-skill/tasks/index.md",
       "scripts/agent-task-ledger-check.mjs",
       ".visual-qa.json",
       ".agent-all.json",
@@ -224,8 +297,9 @@ test("install-platform claude builder theme installs only builder artifacts and 
       ".claude/agents/orchestrator.md",
       ".claude/agents/frontend-dev.md",
       ".claude/agents/backend-dev.md",
+      ".claude/agents/quality-debt-reviewer.md",
       ".claude/agents/qa-reviewer.md",
-      "docs/tasks/index.md",
+      ".agent-skill/tasks/index.md",
       "scripts/agent-task-ledger-check.mjs",
     ]) {
       assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
@@ -236,7 +310,7 @@ test("install-platform claude builder theme installs only builder artifacts and 
       ".thrift.json",
       ".codex/skills/debug-codex/SKILL.md",
       ".debug-artifacts",
-      "docs/debug/index.md",
+      ".agent-skill/reports/debug/index.md",
     ]) {
       assert.ok(!existsSync(resolve(target, rel)), `unexpected builder artifact ${rel}`);
     }
@@ -289,15 +363,16 @@ test("install-platform claude --lite installs only the lightweight project scaff
       ".claude/agents/orchestrator.md",
       ".claude/agents/frontend-dev.md",
       ".claude/agents/backend-dev.md",
+      ".claude/agents/quality-debt-reviewer.md",
       ".claude/agents/qa-reviewer.md",
       ".claude/hooks/agent-policy-hook.mjs",
-      "docs/tasks/index.md",
+      ".agent-skill/tasks/index.md",
       ".visual-qa.json",
       ".agent-all.json",
       ".thrift.json",
       ".codex/skills/debug-codex/SKILL.md",
       ".debug-artifacts",
-      "docs/debug/index.md",
+      ".agent-skill/reports/debug/index.md",
     ]) {
       assert.ok(!existsSync(resolve(target, rel)), `unexpected lite artifact ${rel}`);
     }
@@ -501,7 +576,7 @@ test("install-platform codex --uninstall runs the conservative project cleaner",
     assert.ok(!existsSync(resolve(target, ".codex/skills/dev")), "role skill dir should be removed");
     assert.ok(!existsSync(resolve(target, ".codex/skills/debug-codex")), "debug skill dir should be removed");
     assert.ok(!existsSync(resolve(target, ".codex/hooks/agent-policy-hook.mjs")), "policy hook should be removed");
-    assert.ok(!existsSync(resolve(target, "docs/tasks/_template.md")), "generated task template should be removed");
+    assert.ok(!existsSync(resolve(target, ".agent-skill/tasks/_template.md")), "generated task template should be removed");
     assert.ok(!existsSync(resolve(home, ".codex/config.toml")), "uninstall must not patch global Codex config");
   } finally {
     rmSync(target, { recursive: true, force: true });
@@ -614,7 +689,7 @@ test("install-platform codex --dry-run reports selected scripts without writing 
       ".thrift.json",
       ".codex/skills/debug-codex/SKILL.md",
       ".debug-artifacts",
-      "docs/debug/index.md",
+      ".agent-skill/reports/debug/index.md",
     ]) {
       assert.ok(!existsSync(resolve(target, rel)), `dry-run wrote unexpected ${rel}`);
     }
@@ -1106,8 +1181,8 @@ test("install-platform codex all succeeds in a fresh project without patching gl
       ".codex/skills/debug-codex/lib/debug-artifacts.mjs",
       ".codex/hooks/agent-policy-hook.mjs",
       ".codex/hooks/thrift-pretool-bash-telemetry.toml",
-      "docs/tasks/index.md",
-      "docs/debug/index.md",
+      ".agent-skill/tasks/index.md",
+      ".agent-skill/reports/debug/index.md",
       ".visual-qa.json",
       ".agent-all.json",
       ".thrift.json",
@@ -1330,7 +1405,7 @@ test("install-platform codex --lite installs only the builder lite scaffold", ()
       ".codex/skills/frontend-dev/SKILL.md",
       ".codex/skills/backend-dev/SKILL.md",
       ".codex/hooks/agent-policy-hook.mjs",
-      "docs/tasks/index.md",
+      ".agent-skill/tasks/index.md",
       ".visual-qa.json",
       ".agent-all.json",
       ".thrift.json",
@@ -1378,7 +1453,7 @@ test("install-platform codex builder theme installs only builder artifacts and r
       ".codex/skills/frontend-dev/SKILL.md",
       ".codex/skills/backend-dev/SKILL.md",
       ".codex/hooks/agent-policy-hook.mjs",
-      "docs/tasks/index.md",
+      ".agent-skill/tasks/index.md",
     ]) {
       assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
     }
@@ -1391,7 +1466,7 @@ test("install-platform codex builder theme installs only builder artifacts and r
       ".codex/skills/debug-codex/SKILL.md",
       ".codex/hooks/thrift-pretool-bash-telemetry.toml",
       ".debug-artifacts",
-      "docs/debug/index.md",
+      ".agent-skill/reports/debug/index.md",
     ]) {
       assert.ok(!existsSync(resolve(target, rel)), `unexpected builder artifact ${rel}`);
     }
@@ -1445,7 +1520,7 @@ test("install-platform codex thrift theme installs only thrift artifacts and rep
       ".codex/skills/debug-codex/SKILL.md",
       ".codex/hooks/agent-policy-hook.mjs",
       ".debug-artifacts",
-      "docs/debug/index.md",
+      ".agent-skill/reports/debug/index.md",
     ]) {
       assert.ok(!existsSync(resolve(target, rel)), `unexpected thrift artifact ${rel}`);
     }
@@ -1485,14 +1560,14 @@ test("install-platform codex debug theme installs only debug artifacts and repor
       ".codex/skills/debug-codex/lib/debug-artifacts.mjs",
       ".codex/skills/debug-codex/lib/error-parser.mjs",
       ".debug-artifacts",
-      "docs/debug/index.md",
+      ".agent-skill/reports/debug/index.md",
       ".gitignore",
     ]) {
       assert.ok(existsSync(resolve(target, rel)), `missing ${rel}`);
     }
     for (const rel of [
       "AGENTS.md",
-      "docs/tasks/index.md",
+      ".agent-skill/tasks/index.md",
       ".visual-qa.json",
       ".agent-all.json",
       ".thrift.json",
@@ -1551,7 +1626,7 @@ test("install-platform codex floor theme installs only floor artifacts and repor
     }
     for (const rel of [
       "AGENTS.md",
-      "docs/tasks/index.md",
+      ".agent-skill/tasks/index.md",
       ".thrift.json",
       ".codex/skills/planner/SKILL.md",
       ".codex/skills/orchestrator/SKILL.md",
@@ -1561,7 +1636,7 @@ test("install-platform codex floor theme installs only floor artifacts and repor
       ".codex/hooks/agent-policy-hook.mjs",
       ".codex/hooks/thrift-pretool-bash-telemetry.toml",
       ".debug-artifacts",
-      "docs/debug/index.md",
+      ".agent-skill/reports/debug/index.md",
     ]) {
       assert.ok(!existsSync(resolve(target, rel)), `unexpected floor artifact ${rel}`);
     }

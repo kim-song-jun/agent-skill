@@ -95,6 +95,11 @@
       "name": "harness-debug",
       "source": "./plugins/harness-debug",
       "description": "Theme E — systematic debugging: reproduce → isolate → hypothesize → verify workflow with .debug-state.json checkpointing + 10-format error parser + bisection lib"
+    },
+    {
+      "name": "harness-data",
+      "source": "./plugins/harness-data",
+      "description": "Data analysis harness for notebook execution, SQL validation, artifact diffs, and durable verification evidence"
     }
   ]
 }

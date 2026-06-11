@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Stop hook. Appends a short markdown entry to docs/decisions/YYYY-MM-DD-<slug>.md
+// Stop hook. Appends a short markdown entry to .agent-skill/decisions/YYYY-MM-DD-<slug>.md
 // summarising the session. Reads the Stop payload from stdin; never blocks.
 import { readFileSync, mkdirSync, appendFileSync, existsSync } from "node:fs";
 import { resolve, join } from "node:path";
@@ -10,7 +10,7 @@ let payload = {};
 try { payload = JSON.parse(input || "{}"); } catch {}
 
 const cwd = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-const decisionsDir = resolve(cwd, "docs", "decisions");
+const decisionsDir = resolve(cwd, ".agent-skill", "decisions");
 
 try {
   mkdirSync(decisionsDir, { recursive: true });

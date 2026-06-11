@@ -20,6 +20,15 @@ Ask the user (via `ask_user`, one at a time):
 4. Deploy targets
 5. Special constraints (compliance, performance budgets, "" if none)
 
+Represent each prompt and any optional/default choice as the shared
+`agent-interaction/v1` `AgentInteraction` schema before rendering. Gemini uses
+`renderer-gemini.mjs` to produce prompt/markdown output; Claude-compatible
+callers may render the same object with `renderer-claude.mjs` and native
+`AskUserQuestion`. Non-TTY runs use `resolveNonTtyInteraction()` to select only
+low/medium-risk recommended defaults, block high-risk choices, and append
+`.agent-skill/runs/<run-id>/interactions.jsonl` with
+`appendInteractionLog({ source: "gemini-init" })`.
+
 Run project detection:
 
 ```javascript

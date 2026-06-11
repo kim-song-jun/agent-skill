@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -59,6 +59,90 @@ test("generated policy hook blocks project-configured destructive commands and f
     const confirm = runHook({ projectDir, command: "deploy --yes" });
     assert.equal(confirm.status, 2);
     assert.match(confirm.stderr, /destructive confirmation flag: --yes/);
+  } finally {
+    rmSync(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("generated policy hook reads .agent-skill/policy.json command policy", () => {
+  const projectDir = tempProject();
+  try {
+    mkdirSync(join(projectDir, ".agent-skill"), { recursive: true });
+    writeFileSync(
+      join(projectDir, ".agent-skill/policy.json"),
+      JSON.stringify({ destructiveCommands: ["pnpm deploy"] }),
+    );
+
+    const result = runHook({ projectDir, command: "pnpm deploy --prod" });
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /destructive command pattern: pnpm deploy/);
+  } finally {
+    rmSync(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("generated policy hook blocks quality debt before commit", () => {
+  const projectDir = tempProject();
+  try {
+    mkdirSync(join(projectDir, "src"), { recursive: true });
+    writeFileSync(join(projectDir, "src/auth.ts"), "export const token = fallback;\n");
+
+    const result = runHook({ projectDir, command: "git commit -m msg -- src/auth.ts" });
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /fallback|quality debt/i);
+
+    const logPath = join(projectDir, ".agent-skill/runs/default/policy-log.jsonl");
+    const entry = JSON.parse(readFileSync(logPath, "utf-8").trim().split("\n").at(-1));
+    assert.equal(entry.event, "BeforeCommit");
+    assert.equal(entry.results[0].policyId, "quality-debt-gate");
+    assert.equal(entry.results[0].action, "requires_justification");
+  } finally {
+    rmSync(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("generated policy hook accepts task-doc quality debt exceptions", () => {
+  const projectDir = tempProject();
+  try {
+    mkdirSync(join(projectDir, "src"), { recursive: true });
+    mkdirSync(join(projectDir, ".agent-skill/tasks"), { recursive: true });
+    writeFileSync(join(projectDir, "src/auth.ts"), "export const token = fallback;\n");
+    writeFileSync(
+      join(projectDir, ".agent-all-state.json"),
+      JSON.stringify({ task: { path: ".agent-skill/tasks/T-20990101-001-auth.md" } }),
+    );
+    writeFileSync(
+      join(projectDir, ".agent-skill/tasks/T-20990101-001-auth.md"),
+      [
+        "# Auth",
+        "",
+        "## Quality Debt Exceptions",
+        "",
+        "| Item | Reason | Owner | Follow-up issue | Expiry |",
+        "|---|---|---|---|---|",
+        "| fallback in src/auth.ts | legacy API migration | @owner | #123 | 2099-01-01 |",
+      ].join("\n"),
+    );
+
+    const result = runHook({ projectDir, command: "git commit -m msg -- src/auth.ts" });
+    assert.equal(result.status, 0, result.stderr);
+  } finally {
+    rmSync(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("generated policy hook writes common policy audit JSONL for shell decisions", () => {
+  const projectDir = tempProject();
+  try {
+    const result = runHook({ projectDir, command: "echo ok" });
+    assert.equal(result.status, 0, result.stderr);
+    const logPath = join(projectDir, ".agent-skill/runs/default/policy-log.jsonl");
+    const line = readFileSync(logPath, "utf-8").trim().split("\n").at(-1);
+    const entry = JSON.parse(line);
+    assert.equal(entry.event, "BeforeToolUse");
+    assert.equal(entry.platform, "claude");
+    assert.equal(entry.action, "allow");
+    assert.equal(entry.results[0].schemaVersion, "agent-policy-result/v1");
   } finally {
     rmSync(projectDir, { recursive: true, force: true });
   }

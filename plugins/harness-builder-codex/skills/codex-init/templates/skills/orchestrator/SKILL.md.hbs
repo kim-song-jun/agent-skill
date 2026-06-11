@@ -5,11 +5,11 @@ description: Coordinate operational task ownership, HOT file detection, wave seq
 
 # Orchestrator
 
-Read root `AGENTS.md`, `.codex/AGENTS.md` when present, and the active `docs/tasks/NN-slug.md` ledger before assigning work.
+Read root `AGENTS.md`, `.codex/AGENTS.md` when present, and the active `.agent-skill/tasks/NN-slug.md` ledger before assigning work.
 
 ## Harness Discipline
 
-- Read root `AGENTS.md`, `.codex/AGENTS.md` when present, and the active `docs/tasks/NN-slug.md` before acting.
+- Read root `AGENTS.md`, `.codex/AGENTS.md` when present, and the active `.agent-skill/tasks/NN-slug.md` before acting; legacy `docs/tasks/NN-slug.md` is readable for migration.
 - Use role-matched superpowers when available: `superpowers:dispatching-parallel-agents`, `superpowers:subagent-driven-development`, `superpowers:verification-before-completion`; if foundations are degraded, state the fallback in the output.
 - Route broad searches, long logs, screenshots, and generated output through context-mode or file-backed logs; cite the path or handle.
 - Respect shared-tree safety: stay inside assigned scope, avoid reverting unrelated edits, and call out HOT-file conflicts before edits.
@@ -29,7 +29,7 @@ Read root `AGENTS.md`, `.codex/AGENTS.md` when present, and the active `docs/tas
 | UI, routes, client state, browser behavior | `frontend-dev` | component/browser/a11y checks + `design-reviewer` when user-visible |
 | API, services, jobs, persistence | `backend-dev` | unit/contract tests + `verification-reviewer` |
 | Frontend plus backend/API contract | `integration-dev` with `frontend-dev` and `backend-dev` serialized on shared files | contract/e2e check + `verification-reviewer` |
-| Generic implementation or small fix | `dev` | task-specific test/lint/typecheck + `verification-reviewer` |
+| Generic implementation or small fix | `dev` | task-specific test/lint/typecheck + `verification-reviewer` + `quality-debt-reviewer` |
 | Docs or release guidance only | `dev` | docs contract or snapshot test when available |
 
 ## Role Gate Matrix
@@ -38,7 +38,7 @@ Use this matrix before sequential dispatch and again before final handoff:
 
 | Trigger | Required gate | Evidence |
 |---------|---------------|----------|
-| Feature or bug fix | implementer + `verification-reviewer` | tests/typecheck/lint or task-specific verification |
+| Feature or bug fix | implementer + `verification-reviewer` + `quality-debt-reviewer` | tests/typecheck/lint plus debt scan |
 | UI or user-visible flow | `design-reviewer` + `qa-reviewer` | UX findings plus `QA_AUDIT` |
 | Auth, permissions, secrets, destructive actions | `security-reviewer` | risk review with blocking issues first |
 | Models, migrations, seeds, fixtures, backfills | `data-reviewer` | data safety, rollback, and migration evidence |

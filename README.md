@@ -2,15 +2,16 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1788%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-18-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1981%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-19-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..." --loop --qa` per feature; the agent brainstorms → plans → writes → tests → **visually QAs every page** → opens the PR — and keeps iterating until tests AND the UI both pass — without you babysitting every turn.
 
-Works on Claude Code today, with cross-platform ports for **Cursor, GitHub Copilot CLI, VS Code Copilot, Codex CLI, and Gemini CLI**. 18 plugins, 5 slash commands, one marketplace.
+Works on Claude Code today, with cross-platform ports for **Cursor, GitHub Copilot CLI, VS Code Copilot, Codex CLI, and Gemini CLI**. 19 plugins, 6 slash commands, one marketplace.
 
 ```
 /agent-init                                  # bootstrap any git repo (Phase A — once per project)
 /agent-all "Add Google OAuth" --loop --qa    # tests + visual-qa until both pass, opens PR (Phase C)
+/agent-handoff .agent-skill/tasks/T-20260611-001-oauth.md  # write handoff + new-session resume prompt
 /visual-qa                                   # screenshot every page, LLM design review (declared or comprehensive)
 /thrift                                      # keep long sessions affordable (auto-summarize, audit)
 /explore                                     # codebase map; /explore where Foo → O(1) lookup
@@ -62,7 +63,7 @@ git clone https://github.com/kim-song-jun/agent-skill /tmp/agent-skill
 bash /tmp/agent-skill/scripts/install-all.sh --foundations
 ```
 
-Installs all 5 Claude Code essentials plus the approved foundations (`superpowers@claude-plugins-official`, `context-mode@context-mode`) at once via the `claude` CLI. Run `--all` for all 18 plugins (CLI-platform siblings too), `--cli=codex|copilot|gemini|cursor` for a single platform set, or `--foundations-only` to bootstrap just the foundations. Add `--dry-run` to print the exact plan without calling `claude`.
+Installs all 6 Claude Code essentials plus the approved foundations (`superpowers@claude-plugins-official`, `context-mode@context-mode`) at once via the `claude` CLI. Run `--all` for all 19 plugins (CLI-platform siblings too), `--cli=codex|copilot|gemini|cursor` for a single platform set, or `--foundations-only` to bootstrap just the foundations. Add `--dry-run` to print the exact plan without calling `claude`.
 
 ### Option B: paste into Claude Code
 
@@ -72,6 +73,7 @@ Installs all 5 Claude Code essentials plus the approved foundations (`superpower
 /plugin install harness-thrift@agent-skill
 /plugin install harness-explore@agent-skill
 /plugin install harness-debug@agent-skill
+/plugin install harness-data@agent-skill
 /reload-plugins
 ```
 
@@ -110,7 +112,7 @@ That single command updates everything **already installed** from this marketpla
 bash <(curl -fsSL https://raw.githubusercontent.com/kim-song-jun/agent-skill/main/scripts/update.sh)
 ```
 
-`scripts/update.sh` self-locates the repo (or clones into a temp dir), pulls latest, verifies vendored libs (`sync-lib.mjs --check`), force-updates already-installed selected plugins by uninstalling/reinstalling them, then re-runs `install-all.sh` for anything missing. Pass `--all` for all 18 plugins or `--cli=cursor|copilot|codex|gemini` for one platform set. It does not patch global CLI config files.
+`scripts/update.sh` self-locates the repo (or clones into a temp dir), pulls latest, verifies vendored libs (`sync-lib.mjs --check`), force-updates already-installed selected plugins by uninstalling/reinstalling them, then re-runs `install-all.sh` for anything missing. Pass `--all` for all 19 plugins or `--cli=cursor|copilot|codex|gemini` for one platform set. It does not patch global CLI config files.
 
 Use `scripts/update.sh --foundations` when you also want to refresh the approved foundation plugins: `superpowers@claude-plugins-official` and `context-mode@context-mode`. Use `scripts/update.sh --foundations-only` to update/install only the approved foundation plugins without touching agent-skill plugin selections.
 
@@ -125,6 +127,7 @@ Important: `/plugin update` only updates plugins you've already installed. The m
 /plugin install harness-thrift@agent-skill    # install each new plugin you want
 /plugin install harness-explore@agent-skill
 /plugin install harness-debug@agent-skill
+/plugin install harness-data@agent-skill
 /plugin install harness-debug-codex@agent-skill
 /reload-plugins                               # apply
 ```
@@ -157,15 +160,66 @@ Run once per project. Operational mode creates task ledger files, local folder g
 ### `/agent-all` — ship a feature
 
 Takes a free-form prompt OR an existing task file. Plans → writes code → tests → opens a PR.
+During dispatch, it classifies changed files and failure state to pick the
+right roles dynamically: frontend work pulls in design/QA, data lifecycle
+changes pull in data review, security-sensitive changes pull in security
+review, and repeated failure signatures escalate to planner/user decision.
 
 ```
 /agent-all "Add Google OAuth"                        # prompt → PR
-/agent-all docs/tasks/12.md                          # use a written task
+/agent-all .agent-skill/tasks/T-20260611-001-oauth.md # use a written task
 /agent-all "fix flaky test" --loop --max-iter=5      # keep trying till tests pass
 /agent-all "..." --no-pr                             # local-only (no PR)
 ```
 
-Bounded by `--max-iter` (hard cap 50), `--max-cost` (default $500), and the test command in `.agent-all.json`. It can't run forever.
+By default it is bounded by `--max-iter`, `--max-cost` (default $500), and any
+configured `--max-runtime-sec`; completion is driven by the break condition in
+`.agent-all.json`. Use `--max-iter=0` or `loop.maxIter: null` for unlimited
+iteration count; cost/runtime budgets, hard policy hooks, user interruption,
+and repeated failure signatures still stop the loop.
+
+### `/agent-handoff` — resume a long task cleanly
+
+Generates `.agent-skill/handoff/<display-id>-<slug>.handoff.md` and
+`.agent-skill/handoff/<display-id>-<slug>.session.md` from an in-progress task
+doc, safe git state, and `.agent-all-state.json`. New task docs use
+`T-YYYYMMDD-NNN` display ids in filenames and carry a stable `AS-TASK-*`
+canonical id in frontmatter/metadata so parallel runs do not collide. The files
+include human-readable status plus machine-readable metadata so
+`/agent-all <task> --resume` can surface the recommended next action.
+
+```
+/agent-handoff .agent-skill/tasks/T-20260611-001-fix-flaky-test.md
+/agent-handoff .agent-skill/tasks/T-20260611-001-fix-flaky-test.md --dry-run
+/agent-handoff .agent-skill/tasks/T-20260611-001-fix-flaky-test.md --strict
+/agent-all .agent-skill/tasks/T-20260611-001-fix-flaky-test.md --resume
+```
+
+Dangerous operations such as `git reset`, reseed commands, `--apply`, and
+`docker volume rm` are never run during handoff generation; the session prompt
+marks them as requiring explicit user approval. In non-TTY mode, the
+recommended resume action is auto-selected and logged to
+`.agent-skill/runs/handoff-audit.jsonl` and
+`.agent-skill/runs/handoff/interactions.jsonl`.
+
+### Artifact Policy
+
+Generated control-plane artifacts default to `.agent-skill/`: task docs under
+`.agent-skill/tasks/`, specs under `.agent-skill/specs/`, plans under
+`.agent-skill/plans/`, handoff files under `.agent-skill/handoff/`, task
+registry records in `.agent-skill/registry/tasks.json`, run logs under
+`.agent-skill/runs/`, visual QA reports under
+`.agent-skill/reports/visual-qa/`, debug logs under
+`.agent-skill/reports/debug/`, and thrift audits under
+`.agent-skill/reports/thrift/`; baselines live under
+`.agent-skill/baselines/`. Existing `docs/tasks/` task docs are still readable
+for resume/migration; `/agent-init` does not delete user docs.
+
+Override the root in `.agent-all.json` with
+`"artifact": {"root": ".custom-agent", "exportDocs": false}`. Set
+`exportDocs: true` only when a workflow intentionally mirrors selected reports
+into `docs/` for publication; runtime control-plane files stay out of `docs/`
+by default.
 
 ### `/visual-qa` — design review every page
 
@@ -190,7 +244,7 @@ npm run dev                     # in another terminal
 /visual-qa --budget=20          # cap LLM cost at $20
 ```
 
-Output lands in `docs/visual-qa/<date-or-slug>/report.md` (+ `verdict.json` in comprehensive mode).
+Output lands in `.agent-skill/reports/visual-qa/<date-or-slug>/report.md` (+ `verdict.json` in comprehensive mode).
 
 ### `/thrift` — keep long sessions cheap
 
@@ -202,6 +256,7 @@ For sessions over an hour. Auto-suggests `ctx_execute` for big tool outputs, sum
 /thrift audit        # cost report
 ```
 
+Audit reports write to `.agent-skill/reports/thrift/audit-<date>.md` by default.
 Edit `.thrift.json` to tune turn/token thresholds. Cache priming is **off by default** — sessions under 15 min don't benefit.
 
 ### `/explore` — fast codebase navigation
@@ -309,17 +364,37 @@ Heavy lifting (reading code, writing patches, running tests, fixing failures) ha
 
 ### Decision-surfacing — when subagents pause for input
 
-Phase 3 now runs as **3a (scoping) → 3b (ask) → 3c (implement)**. Each implementer subagent first does a read-only scoping pass and returns architectural / spec-ambiguity decisions as a structured JSON payload. Main thread shows them as a 1/2/3 panel with the subagent's recommendation flagged (via `AskUserQuestion`). The subagent is then re-dispatched with the answers baked in.
+Phase 3 now runs as **3a (scoping) → 3b (ask) → 3c (implement)**. Each implementer subagent first does a read-only scoping pass and returns architectural / spec-ambiguity decisions as a structured JSON payload. The coordinator normalizes each one to the common `agent-interaction/v1` schema, then renders it as a native `AskUserQuestion` panel on Claude or a prompt/markdown surface on Codex, Copilot, Cursor, and Gemini. The subagent is then re-dispatched with the answers baked in.
 
-In **non-TTY mode** (overnight loops, `--yes`, iteration ≥ 2), recommended options are auto-picked and logged to `.agent-all-state.json` + `docs/agent-all/iter-<N>/decisions.md`. Overnight workflow preserved.
+In **non-TTY mode** (overnight loops, `--yes`, iteration ≥ 2), recommended low/medium-risk options are auto-picked and logged to `.agent-all-state.json`, `.agent-skill/runs/<run-id>/decisions.md`, and `.agent-skill/runs/<run-id>/interactions.jsonl`. High-risk options are blocked instead of auto-approved. `/agent-handoff` and `/agent-all --resume` use the same interaction model for the resume prompt.
 
-Enforced via a single pair of `floor-policy` hooks (PreToolUse + PostToolUse on `Task`) that also opportunistically validates `verification_passed` and `VERIFICATION_AUDIT:` tokens. Opt out per project in `.agent-all.json`:
+Enforced via `floor-policy` hooks backed by the shared Node policy engine
+(`agent-policy-event/v1` -> `agent-policy-result/v1`). The engine validates
+`verification_passed`, reviewer audit tokens, loop runaway/cost/repeated
+failure stops, dangerous shell commands, pathspec commits, dynamic spawn
+metadata, verification adapter lifecycle events, non-TTY decision logging, and
+secret/privacy redaction for control-plane artifacts. Handoff/session prompts,
+verification evidence,
+visual/debug/thrift reports, policy/interaction/spawn logs, and PR bodies are scanned
+before they are stored or shared; high-severity findings block by default,
+medium findings are masked. Results append to
+`.agent-skill/runs/<run-id>/policy-log.jsonl`; dynamic spawns also append
+role, reason, wave, and cost estimate to
+`.agent-skill/runs/<run-id>/spawn-log.jsonl`; user/resume decisions append to
+`.agent-skill/runs/<run-id>/interactions.jsonl`; redaction summaries append to
+`.agent-skill/runs/<run-id>/redaction-audit.jsonl` with rule/count metadata
+only. Opt out or allow by path/rule per project in `.agent-all.json`:
 
 ```json
-{ "policy": { "decisionSurfacing": false, "verification": true, "reviewerAudit": true } }
+{
+  "policy": { "decisionSurfacing": false, "verification": true, "reviewerAudit": true },
+  "security": { "redaction": { "allowPaths": ["docs/public-fixtures/**"], "allowRules": [] } }
+}
 ```
 
-See `docs/superpowers/specs/2026-05-21-decision-surfacing-and-policy-hooks-design.md`.
+See `docs/superpowers/specs/2026-05-21-decision-surfacing-and-policy-hooks-design.md`
+and `docs/superpowers/specs/2026-06-11-policy-hook-engine.md`; dynamic routing
+is captured in `docs/superpowers/specs/2026-06-11-dynamic-agent-orchestration.md`.
 
 ### The composable trio
 
@@ -347,10 +422,31 @@ The loop re-enters Phase 1 after each PR until a **break-condition** passes. Pic
 |---|---|---|
 | Just tests | `--loop` (then pick "Test command" on first prompt) | `npm test` / `pytest` / `cargo test` — stack-detected |
 | Full E2E (tests + visual UI check) | `--loop --qa` ← **the shortcut** | tests → visual-qa comprehensive |
+| CLI/API/data/SQL completion | `--break-condition='{"type":"verification-adapter",...}'` | adapter evidence → `.agent-skill/runs/<run-id>/verification-evidence.jsonl` |
 | Custom command | `--break-condition='make ci'` | your one-liner |
 | Anything explicit | `--break-condition='{"type":"composite","steps":[...]}'` | JSON spec |
 
-On the **first** `/agent-all --loop` in a project, Phase 0 prompts interactively (test / visual-qa / custom / composite) and offers to save the choice to `.agent-all.json`. Subsequent runs reuse the saved value. `--reconfigure` forces a re-prompt; `--yes` / non-TTY skip it.
+On the **first** `/agent-all --loop` in a project, Phase 0 prompts interactively (test / visual-qa / verification adapter / custom / composite) and offers to save the choice to `.agent-all.json`. Subsequent runs reuse the saved value. `--reconfigure` forces a re-prompt; `--yes` / non-TTY skip it.
+
+Verification adapters generalize the old web-only completion check without removing `/visual-qa`:
+
+```bash
+/agent-all "harden CLI output" --loop \
+  --break-condition='{"type":"verification-adapter","adapter":"cli","config":{"command":"my-tool --help","goldenStdoutPath":"test/golden/help.txt"}}'
+
+/agent-all "validate API schema" --loop \
+  --break-condition='{"type":"verification-adapter","adapter":"api-contract","config":{"spec":"openapi.json","smokeCommand":"npm run smoke:api"}}'
+
+/agent-all "refresh notebook output" --loop \
+  --break-condition='{"type":"verification-adapter","adapter":"notebook-data","config":{"notebooks":["analysis.ipynb"],"requiredArtifacts":["outputs/summary.csv"],"seed":"42"}}'
+
+/agent-all "validate warehouse query" --loop \
+  --break-condition='{"type":"verification-adapter","adapter":"sql-db","config":{"files":["queries/validate.sql"],"command":"npm run validate:sql","assertions":[{"id":"row-count","type":"row-count","expected":10}],"requiredArtifacts":["reports/explain.txt"]}}'
+```
+
+Available adapters are `verify:web-ui` (the visual-qa wrapper), `verify:cli`, `verify:api-contract`, `verify:notebook-data`, `verify:sql-db`, and `verify:batch-job`. Every adapter returns `verification-evidence/v1` with `adapter`, `status`, optional `command`, `artifacts`, `summary`, `failures`, and reproducibility metadata.
+
+For data work, install `harness-data` and use `/data-runner` to shape the task doc before `/agent-all`. The task template includes a Data Task Addendum for Dataset / Source, Data Snapshot, Assumptions, Reproducibility, Validation Queries, Artifacts, Data Risks, and Rollback / Cleanup. Destructive SQL/data operations are blocked by default; only set `allowDestructive=true` after explicit user approval.
 
 ### `--qa` end-to-end: prerequisites and step-by-step
 
@@ -373,20 +469,26 @@ On the **first** `/agent-all --loop` in a project, Phase 0 prompts interactively
 
 - **git-diff scope**: only pages whose source code changed since the last iter get re-crawled (framework auto-detect for Next.js / Remix; conservative "rebuild everything" fallback)
 - **DOM-hash cache**: components whose DOM hasn't changed reuse the prior LLM verdict instead of re-analysing
-- **`--max-iter`** + **`--max-cost=USD`** hard caps as always
+- **`--max-iter`** safety cap (or `0` for unlimited) + **`--max-cost=USD`** and **`--max-runtime-sec=seconds`** budget stops
+- **Cost telemetry**: records `agent-cost-telemetry/v1` summaries in `.agent-skill/runs/<run-id>/cost-telemetry.jsonl`, mirrors the latest total to `state.costTelemetry.summary`, asks at 80% of budget, and stops at 100%. Reported platform cost wins; token/char estimates are best-effort and tunable under `.agent-all.json: telemetry.cost`.
 
 ### `/agent-all --loop` flag reference
 
 | Flag | Default | Effect |
 |---|---|---|
 | `--loop` | off | Enable Phase 6 re-entry. First use prompts for break-condition. |
-| `--max-iter=N` | 1 | Hard cap on iterations (server-clamped to 50) |
+| `--max-iter=N` | config | Optional iteration safety cap; `0` means unlimited |
 | `--max-cost=USD` | 500 | Cap on accumulated API cost; checked after each wave |
+| `--max-runtime-sec=seconds` | config | Optional wall-clock cap for long loop runs |
 | `--qa` | — | Shortcut: composite `test-auto → visual-qa(comprehensive)` + autoscaffold. See above. |
 | `--break-condition=<spec>` | — | Non-interactive override. JSON object or shell string. |
 | `--reconfigure` | — | Force re-prompt even when `.agent-all.json` has a non-default value. |
-| `.agent-all.json: breakCondition` | `npm test` (auto-detected) | Persisted spec. String = shell; object = `shell` / `test-auto` / `visual-qa` / `composite`. |
+| `.agent-all.json: loop.maxIter` | `defaults.maxIter` | Set to `null` for unlimited iteration count |
+| `.agent-all.json: loop.maxRepeatedFailureSignature` | 3 | Escalate to planner/user decision after the same failure repeats |
+| `.agent-all.json: breakCondition` | `npm test` (auto-detected) | Persisted spec. String = shell; object = `shell` / `test-auto` / `visual-qa` / `verification-adapter` / `composite`. |
 | `.agent-all.json: stableIters` | 1 | Consecutive passes required before loop breaks clean. |
+| `.agent-all.json: telemetry.cost.warnAtRatio` | 0.8 | Budget warning threshold before a hard stop |
+| `.agent-all.json: telemetry.cost.modelRates` | `{}` | Optional project-owned token rate overrides for estimates |
 
 ### Troubleshooting — common loop / `--qa` failures
 
@@ -396,7 +498,7 @@ On the **first** `/agent-all --loop` in a project, Phase 0 prompts interactively
 | visual-qa aborts with "playwright MCP not available" | Playwright MCP not installed | `claude mcp add plugin-playwright` (or your platform's equivalent) |
 | Loop runs but **never** breaks | `stableIters > 1` and one of N consecutive runs is failing intermittently | check `.agent-all-state.json` `consecutivePass`; lower `stableIters` to 1 if your test suite is flaky |
 | visual-qa hits `--max-cost` on iter 2 | DOM-hash cache cold + git-diff scoper had nothing to filter on | iter 2+ are usually cheaper; if not, set `comprehensive.cache.gitDiffScope: true` (default) and confirm autoscaffold framework detection |
-| iter 1 "passes" but UI is clearly broken | first-run policy is `report` (default) — loop passes but issues are reported. Read `docs/visual-qa/loop-iter-1/report.md` | Fix the issues, then iter 2 will hold the bar against the iter-1 baseline |
+| iter 1 "passes" but UI is clearly broken | first-run policy is `report` (default) — loop passes but issues are reported. Read `.agent-skill/reports/visual-qa/loop-iter-1/report.md` | Fix the issues, then iter 2 will hold the bar against the iter-1 baseline |
 | `--qa` writes a config but I want different settings | `--qa` autoscaffold runs only when `.visual-qa.json` is missing | Edit `.visual-qa.json` (change scope, breakpoints, baseUrl, etc.) — subsequent runs use the file as-is |
 
 ### How this is different from `/goal` and Ralph Loop
@@ -503,7 +605,7 @@ After any Claude or Codex project install, you can manually re-run the plugin-lo
 | **Cursor** | `.cursor/rules/*.mdc`, `.cursor/agents/*.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | All native. `is_background: true` on parallel subagents. |
 | **Copilot CLI** | `.github/copilot-instructions.md`, `.github/hooks/*.json`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | Builder hook stubs are project-local; floor decision protocol is prompt-level by default. Optional hook helpers require manual hook review. |
 | **VS Code Copilot** | `.github/copilot-instructions.md` | VS Code Copilot extension reads this automatically. Floor, visual-qa, thrift, and Copilot CLI automation files are not installed for this editor-only path. |
-| **Codex CLI** | `AGENTS.md`, `.codex/skills/<role>/SKILL.md`, `.codex/skills/debug-codex/SKILL.md`, `.codex/hooks/agent-policy-hook.mjs`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json`, `.debug-artifacts/`, `docs/debug/` | A `[mcp_servers.playwright]` snippet and current command-hook snippets such as `[[hooks.PreToolUse]]` are printed to stdout. Floor workflows use prompt-level/sequential dispatch because Codex command hooks do not expose Claude Code's Task-style subagent surface. Run debug with `run /debug "<failing command>"`. |
+| **Codex CLI** | `AGENTS.md`, `.codex/skills/<role>/SKILL.md`, `.codex/skills/debug-codex/SKILL.md`, `.codex/hooks/agent-policy-hook.mjs`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json`, `.debug-artifacts/`, `.agent-skill/reports/debug/` | A `[mcp_servers.playwright]` snippet and current command-hook snippets such as `[[hooks.PreToolUse]]` are printed to stdout. Floor workflows use prompt-level/sequential dispatch because Codex command hooks do not expose Claude Code's Task-style subagent surface. Run debug with `run /debug "<failing command>"`. |
 | **Gemini CLI** | `GEMINI.md`, `.gemini/skills/<role>/SKILL.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | A `mcpServers` snippet is printed to stdout — **merge manually** into `~/.gemini/settings.json`. |
 
 ### Once installed, how do you actually use it?
@@ -562,7 +664,7 @@ node /path/to/harness-builder-codex/bin/clean.mjs --target=/path/to/project --pl
 node plugins/harness-thrift-cursor/bin/install.mjs /path/to/project --uninstall
 ```
 
-Claude cleanup strips generated sentinel sections and generated hook/agent/settings registrations while preserving root `CLAUDE.md`/`AGENTS.md` guidance without sentinels unless `--force-root-clean` is explicit. Codex cleanup removes generated `.codex/skills`, `.codex/hooks`, floor/thrift config files, the debug skill directory, task templates, and helper scripts. It preserves debug evidence in `docs/debug/` and `.debug-artifacts/`. By default it preserves root `AGENTS.md` unless an agent-skill sentinel is present; `--force-root-clean` also removes generated-looking root guidance. Cursor, Copilot, Gemini, and VS Code Copilot still use plugin-specific cleanup or manual review for now.
+Claude cleanup strips generated sentinel sections and generated hook/agent/settings registrations while preserving root `CLAUDE.md`/`AGENTS.md` guidance without sentinels unless `--force-root-clean` is explicit. Codex cleanup removes generated `.codex/skills`, `.codex/hooks`, floor/thrift config files, the debug skill directory, task templates, and helper scripts. It preserves debug evidence in `.agent-skill/reports/debug/` and `.debug-artifacts/`. By default it preserves root `AGENTS.md` unless an agent-skill sentinel is present; `--force-root-clean` also removes generated-looking root guidance. Cursor, Copilot, Gemini, and VS Code Copilot still use plugin-specific cleanup or manual review for now.
 
 ---
 
@@ -573,11 +675,11 @@ No. It preserves existing content and adds or replaces only the `agent-skill:ope
 
 **Is `/agent-all --loop` safe to leave unattended?**
 Yes — four layers of safety make it boring to walk away from:
-1. **Hard caps**: `--max-iter` (clamped at 50), `--max-cost` (default $500), evaluated after each wave.
+1. **Loop stops**: break condition pass, optional `--max-iter`, `--max-cost` (default $500), `--max-runtime-sec`, hard policy hooks, user interruption, and repeated failure signatures.
 2. **`breakCondition`**: shell command (your test suite) must exit 0; otherwise loop re-enters Phase 1.
 3. **Implementer verification (mandatory)**: every dispatched implementer subagent MUST invoke `superpowers:verification-before-completion` before claiming done; failure → `STATUS: blocked` (not silently merged).
 4. **Reviewer audit at Phase 4**: every reviewer subagent MUST confirm the implementer actually verified; skipped/failed verification → escalated as `critical`, blocks PR.
-Combined: broken code can't sneak through, costs can't explode, and the session can't run forever.
+Combined: broken code can't sneak through, costs can't explode, and unlimited iteration still has policy and repeated-failure stops.
 
 **Does `/thrift` change my context behavior right away?**
 Yes. After `/thrift`, hooks fire on every subsequent turn. You'll see PreToolUse suggestions inline. The summariser fires at the configured threshold (`.thrift.json`) and asks you to run `/compact`.
@@ -616,7 +718,7 @@ agent-skill is a **higher-layer composition** on top of two foundational Claude 
                           │
         ┌──────────────────────────────────────────┐
         │  agent-skill (this repo)                 │
-        │  18 plugins, 5 themes (A/B/C/D/E)        │
+        │  19 plugins, 5 themes (A/B/C/D/E)        │
         └──────────────────────────────────────────┘
                 ▲                          ▲
                 │ wraps                    │ uses
@@ -703,11 +805,17 @@ Neither is **auto-invoked** by the harness, but both compose with it directly. S
 
 If you want the technical details, design specs, or are porting to a new platform:
 
-- **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for design docs per plugin.
-- **All 18 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
-- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1788 tests, all green.
+- **Project plan** — see [PROJECT_PLAN.md](PROJECT_PLAN.md) for vision, workstreams, artifact policy, canonical ids, metrics, release policy, and issue taxonomy.
+- **Roadmap** — see [ROADMAP.md](ROADMAP.md) for milestone sequencing and active issue mapping.
+- **Cross-platform support matrix** — see [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md), generated from `plugins/harness-core/capabilities/catalog.mjs`.
+- **Architecture index** — see [docs/architecture/README.md](docs/architecture/README.md) for the curated map of date-stamped specs and plans.
+- **GitHub governance** — see [docs/github-governance.md](docs/github-governance.md) for public PR smoke CI, issue templates, PR template, and label taxonomy.
+- **Release provenance** — run `node scripts/release-provenance.mjs --release=<rc-tag>` to write `release-manifest.json` plus `release-manifest.sha256`; installers can re-check it with `--verify-checksums` / `--verify-provenance`.
+- **All 19 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
+- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1981 tests, all green.
 - **Per-platform porting** — see specs ending in `-impl-spec.md` or `-decomposition.md` under `docs/superpowers/specs/`.
-- **Cross-platform support matrix** — see [docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md](docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md).
+- **Skill utility benchmark** — see [docs/superpowers/specs/2026-06-11-skill-utility-benchmark.md](docs/superpowers/specs/2026-06-11-skill-utility-benchmark.md) and run `node scripts/skill-eval.mjs --smoke`.
+- **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for raw design docs per plugin.
 - **Hook precedence (if you're mixing plugins that all register hooks)** — see [docs/superpowers/specs/2026-05-18-hook-precedence-integration.md](docs/superpowers/specs/2026-05-18-hook-precedence-integration.md).
 
 ---
@@ -716,29 +824,30 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 | Layer | Status | Note |
 |---|---|---|
-| Unit/integration tests | ✅ **1788/1788 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-candidate evidence, release publish preflight, target-project smoke, release-fixture-smoke, command-surface, doctor, cleanup, and visual-qa regressions |
-| Release gate | ✅ local deploy gate verified | This branch intentionally ships no `.github/workflows/release.yml`; deployment uses release-candidate evidence, release-audit, fresh fixtures, `./scripts/release-smoke.sh --fast --with-live-cli`, POSCO target smoke, `node --test`, and vendored-lib sync without requiring GitHub `workflow` scope |
+| Unit/integration tests | ✅ **1981/1981 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-candidate evidence, provenance manifests, public GitHub governance, docs structure, release publish preflight, target-project smoke, skill-eval, command-surface, doctor, cleanup, and visual-qa regressions |
+| Release gate | ✅ PR smoke + local gate verified | Public PR CI now covers smoke/docs/templates drift via `.github/workflows/smoke.yml`, `.github/workflows/docs.yml`, and `.github/workflows/templates.yml`; deployment still uses local release-candidate evidence, release-audit, release provenance manifest/checksum evidence, fresh fixtures, `./scripts/release-smoke.sh --fast --with-live-cli`, target-project smoke, `node --test`, vendored-lib sync, and support matrix drift checks |
 | Project install renderers (Claude + 5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
-| Marketplace registration | ✅ 18 plugins listed | sync between local + origin |
-| Claude/Codex skills | ✅ ship today | Claude core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug`; Codex adds `harness-debug-codex` |
+| Marketplace registration | ✅ 19 plugins listed | sync between local + origin |
+| Claude/Codex skills | ✅ ship today | Claude core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug` / `harness-data`; Codex adds `harness-debug-codex` |
 | Claude/Codex CLI runtime | ✅ live smoke probe available | `./scripts/release-smoke.sh --fast --with-live-cli` probes installed `claude`/`codex` versions, Claude plugin marketplace/install command surface, and Codex `exec [PROMPT]` support; release fixture smoke also validates the Claude terminal `install-platform.sh --platform=claude` operational/builder/`--lite` paths, Codex operational/lite/builder/floor/thrift/debug fresh installs, Claude/Codex install→uninstall and `--force-root-clean` roundtrips, installed Codex `agent-all-codex` and `visual-qa-codex` sequential helpers, and Codex debug-only fixtures |
 | Other CLI runtimes | ⚠️ manual verification remains | Cursor/Copilot/Gemini runtime checks stay on the checklist in `docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md` |
 | `/thrift` compact delivery | ⚠️ API-gated advisory path | Claude/Codex both write durable summary files and prompt `/compact`; programmatic compact injection connects when host CLIs expose a stable API |
 | Provider-backed thrift summarizers | ✅ release-scoped | Claude's optional `@anthropic-ai/sdk` summarizer path is implemented and tested; Codex ships a dependency-free heuristic summarizer with configurable `gpt-5-nano` model metadata and OpenAI-rate audit heuristics |
 
-Versioning: `harness-builder` at `v0.3.0`, `harness-floor` at `v0.5.1` (visual-qa runtime wiring + agent-init i18n patch), Claude `harness-thrift`/`harness-explore`/`harness-debug` at `v0.1.0`, and Codex + other platform ports at `v0.1.0`.
+Versioning: `harness-builder` at `v0.3.0`, `harness-floor` at `v0.5.1` (visual-qa runtime wiring + agent-init i18n patch), Claude `harness-thrift`/`harness-explore`/`harness-debug`/`harness-data` at `v0.1.0`, and Codex + other platform ports at `v0.1.0`.
 
 ### Release Candidate Lifecycle
 
 Treat [tests/manual-checklist.md](tests/manual-checklist.md) as the release map. A Claude/Codex release candidate is deployable only when one clean commit has all of this evidence:
 
 - Clean worktree with `git rev-parse HEAD` recorded, plus plugin manifests, `.claude-plugin/marketplace.json`, README/README.ko Versioning, and CHANGELOG.md/CHANGELOG.ko.md aligned.
-- `node scripts/release-audit.mjs`, `node scripts/release-fixture-smoke.mjs`, `./scripts/release-smoke.sh --fast --with-live-cli`, `node scripts/release-publish-preflight.mjs --base=origin/main`, `node --test`, and `node scripts/sync-lib.mjs --check` all pass.
-- The local-only deployment gate passes for the same commit: release-candidate evidence, release-audit, fresh release fixtures, live Claude/Codex smoke, POSCO target smoke, the full Node test suite, and vendored-lib sync.
-- `node scripts/release-publish-preflight.mjs --base=origin/main` passes before branch/tag push. This branch ships no workflow file, so GitHub CLI `workflow` scope is not required.
+- `node scripts/release-audit.mjs`, `node scripts/github-governance-check.mjs`, `node scripts/docs-structure-check.mjs`, `node scripts/release-provenance.mjs --release=<rc-tag> --out-dir=.agent-skill/releases/<rc-tag>`, `node scripts/release-fixture-smoke.mjs`, `node scripts/skill-eval.mjs --smoke --no-write --json`, `./scripts/release-smoke.sh --fast --with-live-cli`, `node scripts/release-publish-preflight.mjs --base=origin/main`, `node --test`, `node scripts/sync-lib.mjs --check`, and `node scripts/generate-support-matrix.mjs --check` all pass.
+- The public PR smoke and local release gate pass for the same commit: GitHub workflow/template/docs governance, release-candidate evidence, release-audit, fresh release fixtures, live Claude/Codex smoke, target-project smoke, the full Node test suite, vendored-lib sync, and support matrix drift checks.
+- `node scripts/release-publish-preflight.mjs --base=origin/main` passes before branch/tag push. Workflow changes require GitHub CLI `workflow` scope; public PR smoke CI does not replace the local release gate.
 - `node scripts/target-project-smoke.mjs --target=/path/to/target --platform=claude,codex --lang=ko` passes for each intended rollout project; if the doctor fails, refresh with the recommended `install-platform.sh --force` command and rerun the smoke.
 - The live probe output records the installed `claude`/`codex` versions, Claude plugin marketplace/install command surfaces, and Codex `exec [PROMPT]` support for that same SHA.
 - The release candidate tag is date-stamped and points at the verified SHA. Rollback uses a previous verified tag/SHA plus the documented update/install path and post-rollback doctor, never hand-edited generated files.
+- The release manifest records the checkout commit, marketplace checksum, plugin directory checksums, vendored-lib/template aggregate checksums, and signed-tag status. Signed tags are reported as warnings unless a release process opts into `--require-signed-tag`.
 
 ### Language
 
@@ -750,7 +859,7 @@ Decision-surfacing prompts and panels are localized. Set `.agent-all.json` `lang
 
 - **Cursor / Copilot CLI / Gemini / VS Code Copilot decision-surfacing enforcement is prompt-level or soft by default.** Cursor, Gemini, and VS Code Copilot do not expose Task-style tool-call hooks for this workflow. Copilot CLI ships an optional hook helper, but `install-platform.sh` does not patch `~/.copilot/hooks.json`; use it only after manual hook review. Claude Code gets Task-level hard enforcement. Codex CLI uses current command hooks for shell/policy events, while floor subagent workflows remain prompt-level/sequential.
 
-- **Non-TTY auto-pick can be wrong.** Overnight runs auto-resolve every decision to the subagent's `recommended_index`. Mistakes only surface the next morning. Every auto-pick is logged with reasoning to `docs/agent-all/iter-<N>/decisions.md` so the next iteration's plan can flag past picks for re-review.
+- **Non-TTY auto-pick can be wrong.** Overnight runs auto-resolve recommended low/medium-risk decisions to the subagent's `recommended_index`. Mistakes only surface the next morning. Every auto-pick is logged with reasoning to `.agent-skill/runs/<run-id>/decisions.md` and `.agent-skill/runs/<run-id>/interactions.jsonl`; high-risk choices pause/block and require user input.
 
 - **`description`-based dispatch routing for policy hook.** The `floor-policy` hook identifies implementer/reviewer subagents by `Task` tool `description` (`"Implement Task ..."` / `"Review Task ..."`). User-dispatched subagents that happen to use those words also trigger the protocol. Per-project opt-out via `.agent-all.json` `policy: { decisionSurfacing: false }`.
 
@@ -760,12 +869,10 @@ Decision-surfacing prompts and panels are localized. Set `.agent-all.json` `lang
 
 ## Roadmap
 
-- Cursor/Copilot/Gemini live runtime verification (follow the runtime checklist)
-- `/thrift` v2 summariser using Claude Code's programmatic compact API
-- Additional provider-backed thrift summarizer adapters for non-release ports
-- `/explore` per-platform ports and `/debug` ports for Cursor/Copilot/Gemini
-- Subagent transcript-listener bridge for Cursor's `is_background: true` awaiter
-- Telemetry opt-in for thrift audit (which coercions actually fired, real-world cost savings)
+See [ROADMAP.md](ROADMAP.md) for the milestone map. The next planning tracks are
+capability core/platform adapters, verification and data expansion, policy hooks
+and dynamic orchestration, cost/eval telemetry, public CI governance, and
+supply-chain provenance.
 
 ## License & Contributing
 
@@ -776,12 +883,20 @@ Before submitting:
 ./scripts/release-smoke.sh --fast        # Claude/Codex release smoke gate
 ./scripts/release-smoke.sh --fast --with-live-cli  # also probe installed Claude/Codex CLIs and command surfaces
 node scripts/release-audit.mjs           # Claude/Codex release readiness matrix
+node scripts/github-governance-check.mjs # public workflows, templates, labels, governance docs
+node scripts/docs-structure-check.mjs    # required docs and local Markdown links
+node scripts/release-provenance.mjs --release=<rc-tag> --out-dir=.agent-skill/releases/<rc-tag>
 node scripts/release-fixture-smoke.mjs   # fresh Claude/Codex release fixtures
+node scripts/skill-eval.mjs --smoke --no-write --json  # CI-safe utility benchmark
+node scripts/skill-eval.mjs --full       # manual/full benchmark; writes .agent-skill/evals/<date>/
 node scripts/release-publish-preflight.mjs --base=origin/main
 node scripts/target-project-smoke.mjs --target=/path/to/project --platform=claude,codex --lang=ko
-node --test                              # 1788/1788 must pass
+node --test                              # 1981/1981 must pass
 node scripts/sync-lib.mjs --check        # vendored shared libs in sync
+node scripts/generate-support-matrix.mjs --check
 ```
+
+When consuming a release artifact, pass `--verify-checksums --manifest=/path/to/release-manifest.json` to `scripts/install-all.sh` or `scripts/install-platform.sh`; `scripts/update.sh` accepts `--verify-provenance --manifest=/path/to/release-manifest.json`.
 
 Repository conventions:
 - All plugin libs (`plugins/*/skills/*/lib/*.mjs`) are pure Node — no host dependencies; cross-plugin imports forbidden (enforced by `tests/lib/cross-platform-isolation.test.mjs`)

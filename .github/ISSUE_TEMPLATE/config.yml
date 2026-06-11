@@ -1,0 +1,6 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Usage and release docs
+    url: https://github.com/kim-song-jun/agent-skill#readme
+    about: Check the current command surface and release gates before filing.
+

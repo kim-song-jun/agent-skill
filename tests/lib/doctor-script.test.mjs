@@ -47,6 +47,7 @@ function claudeDoctorFixtureContent(rel) {
       "| Trigger | Required gate | Evidence |",
       "|---------|---------------|----------|",
       "| UI or user-visible flow | `design-reviewer` + `qa-reviewer` | UX findings plus `QA_AUDIT` |",
+      "| Feature or bug fix | implementer + `verification-reviewer` + `quality-debt-reviewer` | tests plus debt scan |",
       "",
       "## Configured QA Personas",
       "",
@@ -79,6 +80,18 @@ function claudeDoctorFixtureContent(rel) {
       "- payments",
       "",
       "Return `QA_AUDIT: passed`, `QA_AUDIT: failed`, or `QA_AUDIT: skipped`.",
+      "",
+    ].join("\n");
+  }
+  if (rel === ".claude/agents/quality-debt-reviewer.md") {
+    return [
+      "# Quality Debt Reviewer",
+      "",
+      "## Quality Debt Policy",
+      "",
+      "Valid exceptions must appear in `Quality Debt Exceptions`.",
+      "",
+      "Return `VERIFICATION_AUDIT: passed`, `VERIFICATION_AUDIT: failed`, or `VERIFICATION_AUDIT: skipped`.",
       "",
     ].join("\n");
   }
@@ -119,7 +132,7 @@ test("doctor validates an installed Codex operational scaffold", () => {
     assert.ok(data.summary.passed >= 20, "expected a broad Codex operational check set");
     assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug-codex/SKILL.md"), "operational doctor must validate debug skill");
     assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug-codex/lib/debug-artifacts.mjs"), "operational doctor must validate debug artifact helper");
-    assert.ok(data.checks.some((check) => check.path === "docs/debug/index.md"), "operational doctor must validate debug docs");
+    assert.ok(data.checks.some((check) => check.path === ".agent-skill/reports/debug/index.md"), "operational doctor must validate debug docs");
     assert.deepEqual(data.failures, []);
     const foundationWarning = data.warnings.find((warning) => /foundations missing: superpowers, context-mode/.test(warning.message));
     assert.ok(foundationWarning);
@@ -295,14 +308,16 @@ test("doctor validates a Claude operational scaffold and detects foundations whe
       ".claude/agents/frontend-dev.md",
       ".claude/agents/backend-dev.md",
       ".claude/agents/integration-dev.md",
+      ".claude/agents/quality-debt-reviewer.md",
       ".claude/agents/verification-reviewer.md",
       ".claude/agents/qa-reviewer.md",
       ".claude/agents/design-reviewer.md",
       ".claude/agents/security-reviewer.md",
       ".claude/agents/data-reviewer.md",
-      "docs/tasks/index.md",
-      "docs/tasks/_template.md",
-      "docs/tasks/_handoff-template.md",
+      ".agent-skill/tasks/index.md",
+      ".agent-skill/tasks/_template.md",
+      ".agent-skill/tasks/_handoff-template.md",
+      ".agent-skill/registry/.gitkeep",
       "scripts/agent-task-ledger-check.mjs",
     ]) {
       writeRel(target, rel, claudeDoctorFixtureContent(rel));
@@ -495,14 +510,16 @@ test("plugin-local doctor wrappers validate Claude and Codex scaffolds without t
       ".claude/agents/frontend-dev.md",
       ".claude/agents/backend-dev.md",
       ".claude/agents/integration-dev.md",
+      ".claude/agents/quality-debt-reviewer.md",
       ".claude/agents/verification-reviewer.md",
       ".claude/agents/qa-reviewer.md",
       ".claude/agents/design-reviewer.md",
       ".claude/agents/security-reviewer.md",
       ".claude/agents/data-reviewer.md",
-      "docs/tasks/index.md",
-      "docs/tasks/_template.md",
-      "docs/tasks/_handoff-template.md",
+      ".agent-skill/tasks/index.md",
+      ".agent-skill/tasks/_template.md",
+      ".agent-skill/tasks/_handoff-template.md",
+      ".agent-skill/registry/.gitkeep",
       "scripts/agent-task-ledger-check.mjs",
     ]) {
       writeRel(claudeTarget, rel, claudeDoctorFixtureContent(rel));

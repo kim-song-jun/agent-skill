@@ -18,9 +18,10 @@ git init
 - [ ] `/agent-all` with empty `.claude/agents/` aborts and suggests `/agent-init`.
 - [ ] Dirty git tree aborts.
 - [ ] `/agent-all "tiny prompt"` with brainstorming enabled runs brainstorming → plan → 1-wave dispatch → PR.
-- [ ] `/agent-all "prompt"` creates `docs/tasks/NN-slug.md`.
+- [ ] `/agent-all "prompt"` creates `.agent-skill/tasks/NN-slug.md`.
 - [ ] `/agent-all "tiny prompt" --no-brainstorm` skips brainstorming, writes task verbatim.
-- [ ] `/agent-all docs/tasks/X-foo.md` (existing task) skips Phase 1 brainstorming entirely.
+- [ ] `/agent-all .agent-skill/tasks/X-foo.md` (existing task) skips Phase 1 brainstorming entirely.
+- [ ] `/agent-all docs/tasks/X-legacy.md` (legacy existing task) remains readable for migration.
 - [ ] Completion/PR is blocked when required task sections are missing.
 - [ ] Ctrl-C mid-Phase-3 then `--resume` continues without re-running completed waves.
 - [ ] `--no-pr` produces commits + branch but no PR.

@@ -23,7 +23,7 @@
 
 7. Identify `incompletePages` from `state.perPageStatus`.
 
-8. Write `<slug-dir>/report.json`:
+8. Write `<slug-dir>/report.json` only after passing the redaction gate:
    ```json
    {
      "slug": "...",
@@ -36,6 +36,11 @@
      "errored": [<errored captures>]
    }
    ```
+   Render the JSON string, call
+   `redactArtifactContent({ artifactPath: "<slug-dir>/report.json", content, config })`,
+   append any `redaction-audit.jsonl` summary with rule/count/severity/action
+   only, and abort the write if the result is blocked. Never store the raw JSON
+   when a high-severity secret/privacy candidate is detected.
 
 9. **Comprehensive-mode verdict.** When `state.mode === "comprehensive"`:
    ```javascript
@@ -53,7 +58,14 @@
        failOn:   policy.failOn ?? ["critical", "major"],
      });
    }
-   writeFileSync(`<slug-dir>/verdict.json`, JSON.stringify(verdict, null, 2));
+   import { assertRedactionAllowed, redactArtifactContent } from "../agent-all/lib/security/artifact-redactor.mjs";
+   const verdictCheck = redactArtifactContent({
+     artifactPath: `<slug-dir>/verdict.json`,
+     content: JSON.stringify(verdict, null, 2),
+     config,
+   });
+   assertRedactionAllowed(verdictCheck);
+   writeFileSync(`<slug-dir>/verdict.json`, verdictCheck.content);
    state.verdict = verdict;
    ```
 
@@ -65,19 +77,32 @@
     writeCache(state.domHashCachePath, state.domHashCache);
     ```
 
-11. Render `templates/report.md.hbs` with the computed context. Write to `<slug-dir>/report.md`. When `config.report?.mdSideBySide !== false` (default true) AND `state.captures` is non-empty, append a per-element 2-column `Before / After` table beneath each verdict — with a second row for `Baseline / Current` when `capture.hasBaseline === true`.
+11. Render `templates/report.md.hbs` with the computed context. Pass the
+    Markdown through `redactArtifactContent({ artifactPath:
+    "<slug-dir>/report.md", content, config })` before writing to
+    `<slug-dir>/report.md`; high severity blocks the report write, medium
+    severity is masked, and the redaction audit stores only rule/count metadata.
+    When `config.report?.mdSideBySide !== false` (default true) AND
+    `state.captures` is non-empty, append a per-element 2-column
+    `Before / After` table beneath each verdict — with a second row for
+    `Baseline / Current` when `capture.hasBaseline === true`.
+    If `config.artifact?.exportDocs === true`, explicitly mirror the final
+    Markdown report with `mirrorArtifactToDocs({ artifactPath:
+    "<slug-dir>/report.md", content: reportMarkdown, config })` from
+    `../agent-all/lib/artifact-paths.mjs`; default runs keep the report only
+    under `.agent-skill/reports/visual-qa/`.
 
 11b. **Optional `report.html` (default on).** When `config.report?.html !== false`:
     ```javascript
-    import { renderHtml } from "./lib/report-html.mjs";
-    const html = renderHtml({
+    import { renderHtmlArtifact } from "./lib/report-html.mjs";
+    const { html } = renderHtmlArtifact({
       slug: state.slug,
       generatedAt: new Date().toISOString(),
       baseUrl: config.baseUrl,
       captures: state.captures,    // populated by phase 3 with elementId, confidence, hasBaseline, screenshots{before,after,baseline?}
-    });
+    }, { config, artifactPath: `<slug-dir>/report.html`, writeAudit: true, runId: state.runId || "visual-qa" });
     writeFileSync(`<slug-dir>/report.html`, html);
-    ```
+   ```
     Self-contained: inline CSS + JS, no external assets. Lightbox modal with arrow-key navigation between `before` / `after` / `baseline`.
 
 12. Push `{phase: 4, completedAt}` to `phases` in state.

@@ -26,7 +26,7 @@ function main() {
   const byTool = coercions.reduce((acc, c) => { acc[c.tool] = (acc[c.tool] || 0) + 1; return acc; }, {});
 
   const dateStr = new Date().toISOString().slice(0, 10);
-  const outRel = (config.audit?.outputPath || "docs/thrift/audit-<date>.md").replace("<date>", dateStr);
+  const outRel = (config.audit?.outputPath || ".agent-skill/reports/thrift/audit-<date>.md").replace("<date>", dateStr);
   const outputPath = resolve(ROOT, outRel);
 
   const lines = [

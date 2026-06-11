@@ -41,6 +41,7 @@ const OPERATIONAL_AGENTS = [
   { name: "frontend-dev", when: "frontend UI, client logic, styling" },
   { name: "backend-dev", when: "backend APIs, services, migrations" },
   { name: "integration-dev", when: "cross-stack wiring and API contracts" },
+  { name: "quality-debt-reviewer", when: "fallbacks, TODOs, suppressions, and test quality" },
   { name: "verification-reviewer", when: "tests, typecheck, lint, diff scope" },
   { name: "qa-reviewer", when: "user-flow and persona validation" },
   { name: "design-reviewer", when: "UI hierarchy and design tokens" },
@@ -49,10 +50,16 @@ const OPERATIONAL_AGENTS = [
 ];
 
 const OPERATIONAL_WORKSPACE_FILES = [
-  "docs/superpowers/specs/.gitkeep",
-  "docs/superpowers/plans/.gitkeep",
-  "docs/decisions/.gitkeep",
-  "docs/tasks/.gitkeep",
+  ".agent-skill/specs/.gitkeep",
+  ".agent-skill/plans/.gitkeep",
+  ".agent-skill/decisions/.gitkeep",
+  ".agent-skill/tasks/.gitkeep",
+  ".agent-skill/registry/.gitkeep",
+  ".agent-skill/handoff/.gitkeep",
+  ".agent-skill/reports/visual-qa/.gitkeep",
+  ".agent-skill/reports/debug/.gitkeep",
+  ".agent-skill/reports/thrift/.gitkeep",
+  ".agent-skill/baselines/.gitkeep",
 ];
 
 const LANGUAGE_VALUES = new Set(["en", "ko", "auto"]);
@@ -240,6 +247,7 @@ function shouldSkipTemplate(rel, ctx) {
     || rel === "hooks/agent-policy-hook.mjs"
     || rel.startsWith("agents/orchestrator.")
     || rel.startsWith("agents/integration-dev.")
+    || rel.startsWith("agents/quality-debt-reviewer.")
     || rel.startsWith("agents/verification-reviewer.")
     || rel.startsWith("agents/qa-reviewer.")
     || rel.startsWith("agents/design-reviewer.")
@@ -265,10 +273,10 @@ function relToTarget(rel, ctx) {
   if (stripped === "hooks/session-summary.mjs") return ".claude/hooks/session-summary.mjs";
   if (stripped === "hooks/cache-heal.mjs") return ".claude/hooks/cache-heal.mjs";
   if (stripped === "hooks/agent-policy-hook.mjs") return ".claude/hooks/agent-policy-hook.mjs";
-  if (stripped === "task-ledger/CLAUDE.md") return "docs/tasks/CLAUDE.md";
-  if (stripped === "task-ledger/index.md") return "docs/tasks/index.md";
-  if (stripped === "task-ledger/_template.md") return "docs/tasks/_template.md";
-  if (stripped === "task-ledger/_handoff-template.md") return "docs/tasks/_handoff-template.md";
+  if (stripped === "task-ledger/CLAUDE.md") return ".agent-skill/tasks/CLAUDE.md";
+  if (stripped === "task-ledger/index.md") return ".agent-skill/tasks/index.md";
+  if (stripped === "task-ledger/_template.md") return ".agent-skill/tasks/_template.md";
+  if (stripped === "task-ledger/_handoff-template.md") return ".agent-skill/tasks/_handoff-template.md";
   if (stripped === "task-ledger/agent-task-ledger-check.mjs") return "scripts/agent-task-ledger-check.mjs";
   return `.claude/${stripped}`;
 }

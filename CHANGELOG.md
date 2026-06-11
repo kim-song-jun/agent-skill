@@ -6,7 +6,86 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
-- Switched the deploy branch to a local-only release gate so it can publish without GitHub `workflow` scope; release-audit now verifies the local deploy contract in `tests/manual-checklist.md`.
+- Added top-level planning docs: `PROJECT_PLAN.md`, `ROADMAP.md`, generated
+  `SUPPORT_MATRIX.md`, and `docs/architecture/README.md` now map vision,
+  workstreams, milestones, platform support, and active issue taxonomy.
+- Added `harness-data` with `/data-runner` guidance for notebook execution,
+  SQL validation, artifact diffs, and data handoff evidence.
+- Extended `verify:notebook-data` and `verify:sql-db` with notebook cell-error
+  inspection, SQL row/schema/null/duplicate/outlier assertions, artifact diff
+  metadata, environment/reproducibility evidence, destructive SQL policy
+  blocking, and `/agent-handoff` data evidence summaries.
+- Added `/agent-all` verification adapters for non-web loop completion:
+  `verify:web-ui` wraps existing visual-qa, while `verify:cli`,
+  `verify:api-contract`, `verify:notebook-data`, `verify:sql-db`, and
+  `verify:batch-job` share a `verification-evidence/v1` result model and
+  append `.agent-skill/runs/<run-id>/verification-evidence.jsonl`.
+- Added `/agent-handoff`, with task-doc extraction, safe git-state collection,
+  sibling `.handoff.md` and `.session.md` generation, machine-readable resume
+  metadata, non-TTY recommended-action audit logging, and `/agent-all --resume`
+  artifact discovery.
+- Added common `agent-interaction/v1` UX plumbing for `/agent-all` decisions
+  and `/agent-handoff` resume prompts: Claude native `AskUserQuestion`, Codex
+  prompt rendering, Copilot/Cursor/Gemini markdown renderers, non-TTY
+  recommended-option resolution, high-risk auto-approval blocking, markdown
+  decision review logs, and `.agent-skill/runs/<run-id>/interactions.jsonl`.
+- Added non-installable `harness-core` capability metadata with
+  `AgentCapability` schema validation, Claude/Codex platform adapter renderers,
+  generated `SUPPORT_MATRIX.md`, and drift tests for the shared capability
+  catalog.
+- Added the shared Node policy hook engine (`agent-policy-event/v1` →
+  `agent-policy-result/v1`) with JSONL audit logs, loop policy checks,
+  verification/reviewer audit enforcement, dynamic agent spawn validation,
+  verification adapter lifecycle events, non-TTY decision logging, and
+  Claude/Codex hook adapters.
+- Added `/agent-all` cost telemetry (`agent-cost-telemetry/v1`): reported
+  platform costs or best-effort token/char estimates now append
+  `.agent-skill/runs/<run-id>/cost-telemetry.jsonl`, mirror
+  `state.costTelemetry.summary`, feed 80% budget warnings and 100% budget
+  stops through the shared policy engine, and surface cost summaries in task
+  ledger and handoff artifacts.
+- Added `scripts/skill-eval.mjs` (`agent-skill-eval-report/v1`) for issue #22:
+  three deterministic benchmark fixtures compare baseline vs `agent-all` smoke
+  runs, full mode expands to visual QA, quality gate, dynamic orchestration, and
+  verification-adapter modes, and reports write to `.agent-skill/evals/<date>/`
+  with pass rate, iterations, intervention counts, reviewer/quality debt
+  signals, rollback count, token estimates, and cost overhead from shared cost
+  telemetry.
+- Added public GitHub governance for issue #23: PR smoke/docs/templates
+  workflows, issue templates, PR template, `.github/labels.yml`, governance
+  docs, `scripts/github-governance-check.mjs`, and
+  `scripts/docs-structure-check.mjs`. Public CI now covers fast smoke,
+  manifest/marketplace consistency, docs structure, template drift, vendored-lib
+  sync, and support matrix drift while the local release gate remains
+  authoritative.
+- Added supply-chain provenance for issue #24: `scripts/release-provenance.mjs`
+  generates `release-manifest.json` plus `release-manifest.sha256` with
+  checkout commit, marketplace checksum, per-plugin directory checksums,
+  vendored-lib/template aggregate checksums, and signed-tag status. Release
+  audit, release candidate evidence, and release smoke now cover the manifest;
+  `install-all.sh`, `install-platform.sh`, and `update.sh` can verify it with
+  `--verify-checksums` / `--verify-provenance --manifest=<path>`.
+- Added secret/privacy redaction gates for issue #25: shared redaction rules
+  and scanners cover handoff/session prompts, visual/debug reports,
+  verification evidence, policy/interaction/spawn logs, and PR bodies.
+  High-severity findings block by default, medium findings are masked, and
+  `.agent-skill/runs/<run-id>/redaction-audit.jsonl` records only
+  rule/count/severity/action metadata with path/rule allowlists.
+- Added the Quality Debt Policy gate for `/agent-init` and `/agent-all`:
+  generated root guidance now includes `Quality Debt Policy`, the
+  `quality-debt-reviewer` role audits unrequested fallback, TODO/debt markers,
+  suppressions, skipped or meaningless tests, and production test/debug paths,
+  and the shared policy engine can block or require task-doc `Quality Debt
+  Exceptions` with issue links and expiry dates.
+- Added state-based dynamic `/agent-all` orchestration: changed-file/failure
+  classification now computes `requiredAgents`, escalates repeated failure
+  signatures to planner/user decision instead of more implementers, evaluates
+  dynamic spawns through the shared policy engine, and writes
+  `.agent-skill/runs/<run-id>/spawn-log.jsonl`.
+- Added unlimited `/agent-all --loop` mode via `--max-iter=0` or
+  `loop.maxIter: null`, plus repeated failure-signature escalation and loop
+  state handoff fields for long-running resume.
+- Evolved the deploy branch from local-only release evidence to public PR smoke CI plus an authoritative local release gate; release-audit now verifies the public PR CI/local release contract in `tests/manual-checklist.md`.
 - Added `scripts/release-publish-preflight.mjs`, a no-push branch publishing preflight that still detects `.github/workflows/*.yml` changes and fails early when GitHub CLI auth lacks `workflow` scope.
 - Added `scripts/target-project-smoke.mjs`, a no-write rollout rehearsal for real target projects that combines Claude/Codex `install-platform.sh --dry-run` with operational doctor evidence and recommended refresh commands for stale scaffolds.
 - Added a release-audited User Objective Release Matrix mapping the Claude/Codex harness requirements to authoritative gates: heavy default + lite opt-out, approved foundation auto-update, superpowers/context-mode activation, persona segmentation, orchestration gates, POSCO MDS-style Django/Vue routing, Codex current-CLI parity, doctor/cleanup, HOME config safety, and the deployable release gate.
@@ -30,7 +109,7 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Claude QA, base, and specialized reviewer personas now have the same Phase 4 machine-token output contract coverage in release fixtures and release audit as Codex.
 - Claude terminal `install-platform.sh --theme=builder` now installs a true builder-only heavy scaffold, skips floor configs, runs the builder-profile doctor, and is covered by release fixtures.
 - Codex builder/lite root `AGENTS.md` now uses floor-conditional `.agent-all.json` language guidance so builder-only installs no longer imply a missing floor config exists; release fixtures and release audit pin the contract.
-- Registered the Codex debug port in the marketplace, Codex plugin install group, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, and public verification docs. Current suite: 1788/1788 passing; fast release smoke: 450/450 passing.
+- Registered the Codex debug port in the marketplace, Codex plugin install group, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, and public verification docs. Current suite: 1981/1981 passing; fast release smoke: 503/503 passing.
 - Made Claude/Codex terminal operational bootstrap auto-refresh only approved foundations (`superpowers`, `context-mode`) when `claude` is available, with `--update-foundations` strict mode and `--no-update-foundations` opt-out.
 - Hardened foundation auto-refresh so default Claude/Codex bootstrap continues in degraded foundation mode if the approved update fails; strict failure remains opt-in through `--update-foundations`.
 - Changed `/agent-init` default to operational/heavy scaffold with `/agent-init --lite` as the minimal path.
@@ -164,7 +243,7 @@ Suite **1280 → 1292 passing** (+12 new tests for i18n: renderer prefix table, 
 
 ### Added
 
-- **Decision-surfacing protocol.** `/agent-all` Phase 3 splits into **3a scoping → 3b ask → 3c implement**. Implementer subagents do a read-only scoping pass, return architectural / spec-ambiguity decisions as a JSON payload `{options[2-4], recommended_index, reasoning}`, main asks user via `AskUserQuestion` (1/2/3 panel with recommendation flagged), then re-dispatches with answers baked in. Non-TTY mode auto-picks recommended and logs to `.agent-all-state.json` + `docs/agent-all/iter-<N>/decisions.md`.
+- **Decision-surfacing protocol.** `/agent-all` Phase 3 splits into **3a scoping → 3b ask → 3c implement**. Implementer subagents do a read-only scoping pass, return architectural / spec-ambiguity decisions as a JSON payload `{options[2-4], recommended_index, reasoning}`, main asks user via `AskUserQuestion` (1/2/3 panel with recommendation flagged), then re-dispatches with answers baked in. Non-TTY mode auto-picks recommended low/medium-risk choices and logs to `.agent-all-state.json`, `docs/agent-all/iter-<N>/decisions.md`, and `.agent-skill/runs/<run-id>/interactions.jsonl`; high-risk choices block.
 - **Single `floor-policy` hook** (PreToolUse + PostToolUse on `Task`) auto-injects the scoping addendum + verification directive on dispatch and validates `verification_passed` / `VERIFICATION_AUDIT: passed|failed|skipped` tokens on return. Single file with internal router — overhead negligible when not a Task call.
 - **`.agent-all.json` `policy` opt-out** — flags `decisionSurfacing`, `verification`, `reviewerAudit`, all defaulting `true`. Added to `DEFAULTS` so the existing deep-merge handles overrides naturally.
 - **Per-platform parity** — Cursor (`.cursor/rules/decision-protocol.mdc`, soft), Copilot CLI (`.github/agent-all/decision-protocol.md`, hard via `.github/hooks/`), Codex (`[[hooks.agent]]` snippet to stdout for manual merge, hard), Gemini (`.gemini/agent-all-decision-protocol.md`, soft), VS Code Copilot (reads `.github/copilot-instructions.md`, soft).

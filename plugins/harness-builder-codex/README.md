@@ -9,9 +9,12 @@ Emits:
 - folder-level `AGENTS.md` guides for detected app/package directories
 - `.codex/skills/<role>/SKILL.md` per role
 - `.codex/hooks/agent-policy-hook.mjs`
-- task-ledger files under `docs/tasks/`
-- operational workspace directories under `docs/superpowers/specs/`,
-  `docs/superpowers/plans/`, and `docs/decisions/`
+- task-ledger files under `.agent-skill/tasks/`
+- operational workspace directories under `.agent-skill/specs/`,
+  `.agent-skill/plans/`, `.agent-skill/decisions/`,
+  `.agent-skill/handoff/`, `.agent-skill/reports/visual-qa/`,
+  `.agent-skill/reports/debug/`, `.agent-skill/reports/thrift/`, and
+  `.agent-skill/baselines/`
 - a current `~/.codex/config.toml` snippet on stdout using command-hook tables
   such as `[[hooks.PreToolUse]]`
 

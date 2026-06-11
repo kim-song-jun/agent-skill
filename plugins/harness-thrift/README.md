@@ -53,7 +53,7 @@ Then in your project:
     "coerceReadWhenOutputExceeds": 200
   },
   "audit": {
-    "outputPath": "docs/thrift/audit-<date>.md"
+    "outputPath": ".agent-skill/reports/thrift/audit-<date>.md"
   }
 }
 ```

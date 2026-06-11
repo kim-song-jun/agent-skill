@@ -11,7 +11,11 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { summary as hypothesisSummary } from "./hypothesis-tracker.mjs";
-import { saveState } from "./state-checkpoint.mjs";
+import {
+  assertRedactionAllowed,
+  redactArtifactContent,
+} from "./security/artifact-redactor.mjs";
+import { writeRedactionAudit } from "./security/redact-report-writer.mjs";
 
 const DEFAULT_UNVERIFIED_ROOT_CAUSE = "abandoned — no verification";
 const DEFAULT_TEMPLATE = resolve(
@@ -125,6 +129,16 @@ function appendIndexEntry(path, entry) {
   writeFileAtomic(path, `${existing.endsWith("\n") ? existing : `${existing}\n`}${entry}`);
 }
 
+function normalizeRelPath(value) {
+  const input = String(value || "").trim().replace(/\\/g, "/").replace(/\/+$/g, "");
+  return input || ".agent-skill";
+}
+
+function debugReportsDir(config = {}) {
+  const root = normalizeRelPath(config.artifactRoot ?? config.artifact?.root ?? ".agent-skill");
+  return `${root}/reports/debug`;
+}
+
 export function slugifyDebugSubject(value, { maxLength = 40 } = {}) {
   const slug = String(value ?? "")
     .toLowerCase()
@@ -166,13 +180,16 @@ export function finishDebugSession({
   slug = null,
   now = new Date(),
   appendIndex = true,
+  config = {},
 } = {}) {
   if (!state || typeof state !== "object") {
     throw new TypeError("finishDebugSession: state is required");
   }
 
   const context = buildDebugLogContext(state, { slug, now });
-  const debugLogRel = `docs/debug/${context.date}-${context.slug}.md`;
+  const debugDir = debugReportsDir(config);
+  const indexRel = `${debugDir}/index.md`;
+  const debugLogRel = `${debugDir}/${context.date}-${context.slug}.md`;
   const debugLogPath = resolve(projectRoot, debugLogRel);
   const rootCause = context.resolution.rootCause;
   const finishedAt = isoNow(now);
@@ -184,12 +201,44 @@ export function finishDebugSession({
   };
 
   const rendered = renderDebugLog(readFileSync(templatePath, "utf-8"), state, { slug: context.slug, now });
-  writeFileAtomic(debugLogPath, rendered.endsWith("\n") ? rendered : `${rendered}\n`);
-  saveState(statePath, state);
+  const logCheck = redactArtifactContent({
+    artifactPath: debugLogRel,
+    content: rendered.endsWith("\n") ? rendered : `${rendered}\n`,
+    config,
+    now,
+  });
+  const stateCheck = redactArtifactContent({
+    artifactPath: statePath,
+    content: `${JSON.stringify(state, null, 2)}\n`,
+    config,
+    now,
+  });
+  const indexEntry = `- ${context.date} - ${context.slug} - ${rootCause} - ${debugLogRel}\n`;
+  const indexCheck = redactArtifactContent({
+    artifactPath: indexRel,
+    content: indexEntry,
+    config,
+    now,
+  });
+  for (const result of [logCheck, stateCheck, indexCheck]) {
+    writeRedactionAudit({
+      cwd: projectRoot,
+      runId: "debug",
+      config,
+      artifactPath: result.artifactPath,
+      findings: result.findings,
+      now,
+    });
+  }
+  assertRedactionAllowed(logCheck);
+  assertRedactionAllowed(stateCheck);
+  assertRedactionAllowed(indexCheck);
+  writeFileAtomic(debugLogPath, logCheck.content);
+  writeFileAtomic(statePath, stateCheck.content);
 
-  const indexPath = resolve(projectRoot, "docs/debug/index.md");
+  const indexPath = resolve(projectRoot, indexRel);
   if (appendIndex) {
-    appendIndexEntry(indexPath, `- ${context.date} - ${context.slug} - ${rootCause} - ${debugLogRel}\n`);
+    appendIndexEntry(indexPath, indexCheck.content);
   }
 
   const stats = hypothesisSummary(state);
@@ -197,7 +246,7 @@ export function finishDebugSession({
     ok: stats.verified > 0,
     exitCode: stats.verified > 0 ? 0 : 1,
     debugLogPath: debugLogRel,
-    indexPath: "docs/debug/index.md",
+    indexPath: indexRel,
     rootCause,
     summary: `Debug complete: ${rootCause}\nLog: ${debugLogRel}\nHypotheses: ${stats.tested}/${stats.total} tested, ${stats.verified} verified, ${stats.rejected} rejected.`,
   };

@@ -1,0 +1,10 @@
+{
+  "defaults": { "maxIter": null, "maxCostUSD": 100, "waveSize": "large" },
+  "loop": {
+    "maxIter": null,
+    "breakCondition": { "type": "test-auto" },
+    "stableIters": 1,
+    "maxRuntimeSec": 3600,
+    "maxRepeatedFailureSignature": 3
+  }
+}

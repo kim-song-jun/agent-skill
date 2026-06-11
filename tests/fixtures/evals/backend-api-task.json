@@ -1,0 +1,135 @@
+{
+  "schemaVersion": "agent-skill-eval-fixture/v1",
+  "id": "backend-api-task",
+  "title": "Backend API contract change",
+  "category": "backend-api",
+  "smoke": true,
+  "baselineFailure": "Baseline prompt misses the API contract regression and requires manual review.",
+  "acceptanceCriteria": [
+    "API contract smoke passes",
+    "Auth-sensitive path is reviewed",
+    "Rollback count stays at zero"
+  ],
+  "modes": {
+    "baseline": {
+      "passed": false,
+      "iterations": 3,
+      "wallClockMs": 510000,
+      "manualInterventions": 2,
+      "failedReviewerGates": 0,
+      "qualityDebtFindings": 1,
+      "rollbackCount": 1,
+      "telemetryRecords": [
+        {
+          "platform": "fixture",
+          "model": "baseline-prompt",
+          "source": "benchmark",
+          "inputTokens": 2100,
+          "outputTokens": 1500,
+          "totalTokens": 3600,
+          "costUSD": 0.0068
+        }
+      ]
+    },
+    "agent-all": {
+      "passed": true,
+      "iterations": 2,
+      "wallClockMs": 430000,
+      "manualInterventions": 1,
+      "failedReviewerGates": 1,
+      "qualityDebtFindings": 0,
+      "rollbackCount": 0,
+      "telemetryRecords": [
+        {
+          "platform": "fixture",
+          "model": "agent-all-default",
+          "source": "benchmark",
+          "inputTokens": 4800,
+          "outputTokens": 2700,
+          "totalTokens": 7500,
+          "costUSD": 0.0162
+        }
+      ]
+    },
+    "agent-all+visual-qa": {
+      "passed": true,
+      "iterations": 2,
+      "wallClockMs": 455000,
+      "manualInterventions": 1,
+      "failedReviewerGates": 1,
+      "qualityDebtFindings": 0,
+      "rollbackCount": 0,
+      "telemetryRecords": [
+        {
+          "platform": "fixture",
+          "model": "agent-all-default",
+          "source": "benchmark",
+          "inputTokens": 5200,
+          "outputTokens": 2900,
+          "totalTokens": 8100,
+          "costUSD": 0.0175
+        }
+      ]
+    },
+    "agent-all+quality-gate": {
+      "passed": true,
+      "iterations": 2,
+      "wallClockMs": 450000,
+      "manualInterventions": 0,
+      "failedReviewerGates": 1,
+      "qualityDebtFindings": 0,
+      "rollbackCount": 0,
+      "telemetryRecords": [
+        {
+          "platform": "fixture",
+          "model": "agent-all-quality",
+          "source": "benchmark",
+          "inputTokens": 5600,
+          "outputTokens": 3100,
+          "totalTokens": 8700,
+          "costUSD": 0.0192
+        }
+      ]
+    },
+    "agent-all+dynamic-orchestration": {
+      "passed": true,
+      "iterations": 1,
+      "wallClockMs": 410000,
+      "manualInterventions": 0,
+      "failedReviewerGates": 1,
+      "qualityDebtFindings": 0,
+      "rollbackCount": 0,
+      "telemetryRecords": [
+        {
+          "platform": "fixture",
+          "model": "agent-all-dynamic",
+          "source": "benchmark",
+          "inputTokens": 6400,
+          "outputTokens": 3500,
+          "totalTokens": 9900,
+          "costUSD": 0.0226
+        }
+      ]
+    },
+    "agent-all+verification-adapters": {
+      "passed": true,
+      "iterations": 1,
+      "wallClockMs": 390000,
+      "manualInterventions": 0,
+      "failedReviewerGates": 0,
+      "qualityDebtFindings": 0,
+      "rollbackCount": 0,
+      "telemetryRecords": [
+        {
+          "platform": "fixture",
+          "model": "agent-all-verify",
+          "source": "benchmark",
+          "inputTokens": 6200,
+          "outputTokens": 3400,
+          "totalTokens": 9600,
+          "costUSD": 0.0217
+        }
+      ]
+    }
+  }
+}

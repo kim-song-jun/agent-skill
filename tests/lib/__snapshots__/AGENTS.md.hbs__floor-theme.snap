@@ -17,7 +17,7 @@ These rules mirror the Claude Code harness so non-Claude agents can participate 
 
 1. Read `CLAUDE.md` first when present; it is the primary operating index.
 2. Invoke `superpowers:brainstorming` before ambiguous or multi-step deliverables unless the user explicitly asks for direct execution.
-3. Use `superpowers:writing-plans` for non-trivial changes and keep plans in `docs/superpowers/plans/`.
+3. Use `superpowers:writing-plans` for non-trivial changes and keep generated control-plane plans in `.agent-skill/plans/` by default.
 4. Use `superpowers:dispatching-parallel-agents` or `superpowers:subagent-driven-development` as the planning protocol for multi-role work.
 5. Use `superpowers:verification-before-completion` before claiming success.
 6. Use context-mode or file-backed logs for broad searches, test output, screenshots, and noisy generated output when available.
@@ -33,6 +33,18 @@ These rules mirror the Claude Code harness so non-Claude agents can participate 
 4. **Tech-Debt Grep.** Before completion, check touched code paths for `TODO`, `FIXME`, `HACK`, and `XXX`. Resolve in-scope debt in the same change; if it is out of scope, state why.
 5. **Decision Matrix.** When two or more reasonable choices remain, or multiple user decisions are needed, present a `Decision Matrix` with option, impact, recommendation, and whether confirmation is required.
 
+
+## Quality Debt Policy
+
+- Do not add fallback code unless the task acceptance criteria explicitly requires fallback behavior.
+- Do not silence errors that should fail fast.
+- Do not add TODO/FIXME/dead code unless linked to an issue and accepted by the user.
+- Do not add tests that cannot fail for the intended regression.
+- Do not increase timeout/retry/sleep as a substitute for root-cause debugging.
+- Do not use broad `any`, `ts-ignore`, disabled lint, broad catch, or broad cast without justification.
+- Do not leave test-only or debug-only branches in production code.
+- Do not introduce a new abstraction unless at least two concrete call sites need it now.
+- If temporary debt is explicitly accepted, record it in the active task doc `Quality Debt Exceptions` table with reason, owner, follow-up issue, and expiry.
 
 ## Subagent Dispatch Contract
 

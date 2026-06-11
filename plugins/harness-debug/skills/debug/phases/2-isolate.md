@@ -25,7 +25,7 @@ removal preserves the failure.
 Use when the failure is regression-shaped ("worked yesterday, broken
 today"). The user must supply the last known-good commit or tag.
 
-1. Prompt user for `knownGood` ref. `knownBad` is `HEAD`.
+1. Prompt user for `knownGood` ref using `agent-interaction/v1` (`kind: "decision"`, `id: "debug:known-good-ref"`, `nonTtyPolicy: "pause"`). Render through the host renderer from `../agent-all/lib/interactions/renderer-*.mjs` and append the result to `.agent-skill/runs/debug/interactions.jsonl` with `appendInteractionLog({ source: "debug" })`. Non-TTY must pause rather than inventing a ref. `knownBad` is `HEAD`.
 2. Call `lib/bisector.mjs#gitBisect({command: failure.command,
    knownGood, knownBad})`. The wrapper handles `git bisect start/bad/
    good/run/reset` and **always runs `git bisect reset` in `finally`**

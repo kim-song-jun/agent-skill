@@ -26,11 +26,24 @@ None.
 Current phase: gate.
 ## Verification
 - [x] node --test
+## Cost Telemetry
+| Current USD | Max USD | Budget Status | Source |
+|---:|---:|---|---|
+| 0.00 | 100.00 | ok | reported |
 ## Backlog
 - [ ] outside current task
 ## Follow-up
 - [ ] outside hard gate
 `;
+
+const VALID_WITH_IDENTITY = `---
+id: AS-TASK-01K7P8J7G00000000000000000
+display_id: T-20260611-001
+github_issue: 18
+status: doing
+artifact_root: .agent-skill/
+---
+${VALID}`;
 
 test("valid task doc passes required section and checkbox gates", () => {
   assert.deepEqual(validateTaskDoc(VALID), { ok: true, errors: [] });
@@ -60,21 +73,23 @@ test("active task path parser normalizes active ledger entries and skips templat
   assert.equal(typeof ledger.activeTaskPaths, "function");
   const indexText = `# Tasks
 ## Active
-- [1](docs/tasks/1-full.md)
-- docs/tasks/2-plain.md
+- [1](.agent-skill/tasks/1-full.md)
+- [T](.agent-skill/tasks/T-20260611-001-canonical.md)
+- .agent-skill/tasks/2-plain.md
 - 3-local.md
 - ./4-dot-local.md
-- docs/tasks/_template.md
-- [_handoff](docs/tasks/_handoff-template.md)
+- .agent-skill/tasks/_template.md
+- [_handoff](.agent-skill/tasks/_handoff-template.md)
 ## Done
 - docs/tasks/9-done.md
 `;
 
   assert.deepEqual(ledger.activeTaskPaths(indexText), [
-    "docs/tasks/1-full.md",
-    "docs/tasks/2-plain.md",
-    "docs/tasks/3-local.md",
-    "docs/tasks/4-dot-local.md",
+    ".agent-skill/tasks/1-full.md",
+    ".agent-skill/tasks/T-20260611-001-canonical.md",
+    ".agent-skill/tasks/2-plain.md",
+    ".agent-skill/tasks/3-local.md",
+    ".agent-skill/tasks/4-dot-local.md",
   ]);
 });
 
@@ -92,32 +107,54 @@ Avoid treating \`scratch.md\` as an active task.
 `;
 
   assert.deepEqual(ledger.activeTaskPaths(indexText), [
-    "docs/tasks/1-task.md",
+    ".agent-skill/tasks/1-task.md",
     "docs/tasks/2-task.md",
-    "docs/tasks/3-task.md",
+    ".agent-skill/tasks/3-task.md",
   ]);
 });
 
 test("active task path normalizer accepts supported task path forms", () => {
   assert.equal(typeof ledger.normalizeActiveTaskPath, "function");
+  assert.equal(ledger.normalizeActiveTaskPath(".agent-skill/tasks/1-x.md"), ".agent-skill/tasks/1-x.md");
+  assert.equal(ledger.normalizeActiveTaskPath(".agent-skill/tasks/T-20260611-001-x.md"), ".agent-skill/tasks/T-20260611-001-x.md");
+  assert.equal(ledger.normalizeActiveTaskPath("1-x.md"), ".agent-skill/tasks/1-x.md");
+  assert.equal(ledger.normalizeActiveTaskPath("./1-x.md"), ".agent-skill/tasks/1-x.md");
+  assert.equal(ledger.normalizeActiveTaskPath(".agent-skill/tasks/1-x.md#notes"), ".agent-skill/tasks/1-x.md");
+  assert.equal(ledger.normalizeActiveTaskPath(".agent-skill/tasks/_template.md"), null);
+  assert.equal(ledger.normalizeActiveTaskPath(".agent-skill/tasks/_handoff-template.md"), null);
   assert.equal(ledger.normalizeActiveTaskPath("docs/tasks/1-x.md"), "docs/tasks/1-x.md");
-  assert.equal(ledger.normalizeActiveTaskPath("1-x.md"), "docs/tasks/1-x.md");
-  assert.equal(ledger.normalizeActiveTaskPath("./1-x.md"), "docs/tasks/1-x.md");
   assert.equal(ledger.normalizeActiveTaskPath("docs/tasks/1-x.md#notes"), "docs/tasks/1-x.md");
   assert.equal(ledger.normalizeActiveTaskPath("docs/tasks/_template.md"), null);
   assert.equal(ledger.normalizeActiveTaskPath("docs/tasks/_handoff-template.md"), null);
 });
 
+test("task identity frontmatter can be required for new tasks", () => {
+  assert.equal(typeof ledger.validateTaskIdentity, "function");
+  assert.deepEqual(ledger.validateTaskIdentity(VALID_WITH_IDENTITY, { requireIdentity: true }).errors, []);
+  assert.match(
+    ledger.validateTaskDoc(VALID, { requireIdentity: true }).errors.join("\n"),
+    /missing task identity frontmatter/,
+  );
+  assert.match(
+    ledger.validateTaskDoc(
+      VALID_WITH_IDENTITY.replace("display_id: T-20260611-001", "display_id: 18"),
+      { requireIdentity: true },
+    ).errors.join("\n"),
+    /invalid task display_id/,
+  );
+});
+
 test("full task ledger validation trusts supplied task text without default missing-file error", () => {
   assert.equal(typeof ledger.validateTaskLedger, "function");
   const result = ledger.validateTaskLedger({
-    taskPath: "docs/tasks/2-current.md",
-    taskText: VALID,
+    taskPath: ".agent-skill/tasks/T-20260611-001-current.md",
+    taskText: VALID_WITH_IDENTITY,
     indexText: `# Tasks
 ## Active
-- [Current](docs/tasks/2-current.md)
+- [Current](.agent-skill/tasks/T-20260611-001-current.md)
 `,
     templateExists: true,
+    requireIdentity: true,
   });
 
   assert.deepEqual(result, { ok: true, errors: [] });
@@ -126,66 +163,86 @@ test("full task ledger validation trusts supplied task text without default miss
 test("full task ledger validation catches missing scaffold and active task docs", () => {
   assert.equal(typeof ledger.validateTaskLedger, "function");
   const result = ledger.validateTaskLedger({
-    taskPath: "docs/tasks/2-current.md",
-    taskText: VALID,
+    taskPath: ".agent-skill/tasks/T-20260611-001-current.md",
+    taskText: VALID_WITH_IDENTITY,
     indexText: `# Tasks
 ## Active
-- [Current](docs/tasks/2-current.md)
-- [Missing](docs/tasks/3-missing.md)
+- [Current](.agent-skill/tasks/T-20260611-001-current.md)
+- [Missing](.agent-skill/tasks/3-missing.md)
 `,
     templateExists: false,
-    taskExists: (taskPath) => taskPath === "docs/tasks/2-current.md",
+    requireIdentity: true,
+    taskExists: (taskPath) => taskPath === ".agent-skill/tasks/T-20260611-001-current.md",
   });
 
   assert.equal(result.ok, false);
-  assert.match(result.errors.join("\n"), /missing docs\/tasks\/_template\.md/);
-  assert.match(result.errors.join("\n"), /missing active task: docs\/tasks\/3-missing\.md/);
+  assert.match(result.errors.join("\n"), /missing \.agent-skill\/tasks\/_template\.md/);
+  assert.match(result.errors.join("\n"), /missing active task: \.agent-skill\/tasks\/3-missing\.md/);
 });
 
 test("full task ledger validation reports duplicate active task entries", () => {
   assert.equal(typeof ledger.validateTaskLedger, "function");
   const result = ledger.validateTaskLedger({
-    taskPath: "docs/tasks/2-current.md",
-    taskText: VALID,
+    taskPath: ".agent-skill/tasks/T-20260611-001-current.md",
+    taskText: VALID_WITH_IDENTITY,
     indexText: `# Tasks
 ## Active
-- [Current](docs/tasks/2-current.md)
-- ./2-current.md
+- [Current](.agent-skill/tasks/T-20260611-001-current.md)
+- ./T-20260611-001-current.md
 `,
     templateExists: true,
+    requireIdentity: true,
     taskExists: () => true,
   });
 
   assert.equal(result.ok, false);
-  assert.match(result.errors.join("\n"), /duplicate active task: docs\/tasks\/2-current\.md/);
+  assert.match(result.errors.join("\n"), /duplicate active task: \.agent-skill\/tasks\/T-20260611-001-current\.md/);
 });
 
 test("full task ledger validation catches missing index and current task body errors", () => {
   assert.equal(typeof ledger.validateTaskLedger, "function");
   const result = ledger.validateTaskLedger({
-    taskPath: "docs/tasks/2-current.md",
-    taskText: VALID.replace("## Verification", "## Proof"),
+    taskPath: ".agent-skill/tasks/T-20260611-001-current.md",
+    taskText: VALID_WITH_IDENTITY.replace("## Verification", "## Proof"),
     indexText: null,
     templateExists: true,
+    requireIdentity: true,
     taskExists: () => true,
   });
 
   assert.equal(result.ok, false);
-  assert.match(result.errors.join("\n"), /missing docs\/tasks\/index\.md/);
+  assert.match(result.errors.join("\n"), /missing \.agent-skill\/tasks\/index\.md/);
   assert.match(result.errors.join("\n"), /missing section: Verification/);
+});
+
+test("legacy docs/tasks ledger remains valid when selected as tasksDir", () => {
+  const result = ledger.validateTaskLedger({
+    taskPath: "docs/tasks/2-current.md",
+    taskText: VALID,
+    indexText: `# Tasks
+## Active
+- [Current](docs/tasks/2-current.md)
+- ./3-legacy-local.md
+`,
+    templateExists: true,
+    tasksDir: "docs/tasks",
+    taskExists: (taskPath) => taskPath === "docs/tasks/2-current.md" || taskPath === "docs/tasks/3-legacy-local.md",
+  });
+
+  assert.deepEqual(result, { ok: true, errors: [] });
 });
 
 test("phase 1 creates first-task ledger scaffold before reading the index", () => {
   const text = readFileSync(resolve(repoRoot, "plugins/harness-floor/skills/agent-all/phases/1-intent.md"), "utf8");
   const bootstrap = text.indexOf("When Phase 0 allowed first-task scaffold creation");
-  const index = text.indexOf("Read `docs/tasks/index.md` as `indexText`");
+  const index = text.indexOf("Read `.agent-skill/tasks/index.md` as `indexText`");
 
   assert.notEqual(bootstrap, -1);
   assert.notEqual(index, -1);
   assert.ok(bootstrap < index);
-  assert.match(text, /create `docs\/tasks\/`/);
-  assert.match(text, /seed `docs\/tasks\/index\.md`/);
-  assert.match(text, /seed `docs\/tasks\/_template\.md`/);
+  assert.match(text, /create `\.agent-skill\/tasks\/`/);
+  assert.match(text, /seed `\.agent-skill\/tasks\/index\.md`/);
+  assert.match(text, /seed `\.agent-skill\/tasks\/_template\.md`/);
 });
 
 test("phase 5 validates the full ledger before PR creation", () => {

@@ -124,7 +124,9 @@ plugins/harness-floor/skills/agent-all/phases/
 
 감지: `--yes` flag, `process.stdout.isTTY === false`, 또는 `--loop` iteration > 1.
 
-발동되면 `non-tty-resolver.mjs`가 각 결정의 `recommended_index` 선택, `.agent-all-state.json`에 다음 형태로 append:
+발동되면 `non-tty-resolver.mjs`가 각 결정을 먼저 `agent-interaction/v1`로
+변환한 뒤, high-risk가 아닌 recommended/default 옵션만 선택합니다.
+`.agent-all-state.json`에는 다음 형태로 append:
 
 ```json
 "decisions": {
@@ -132,20 +134,26 @@ plugins/harness-floor/skills/agent-all/phases/
 }
 ```
 
-요약을 `docs/agent-all/iter-<N>/decisions.md`에 작성 — 다음날 아침 리뷰가 auto-pick들을 surface.
+요약을 `docs/agent-all/iter-<N>/decisions.md`에 작성 — 다음날 아침
+리뷰가 auto-pick들을 surface. 모든 interaction은
+`.agent-skill/runs/<run-id>/interactions.jsonl`에도 append합니다.
+High-risk recommended/default 옵션은 blocked interaction으로 기록하고
+사용자/planner 입력을 요구합니다.
 
 ## 10. 플랫폼별 포트 매트릭스
 
 | 플랫폼 | Hook 메커니즘 | 렌더러 | 강도 |
 |---|---|---|---|
-| Claude Code | `.claude/settings.local.json` hooks | `AskUserQuestion` MCP-style 도구 | 🟢 Hard |
-| Copilot CLI | `.github/hooks/*.json` | stdin prompt | 🟢 Hard |
-| Codex CLI | `~/.codex/config.toml`의 `[[hooks.PreToolUse]]` shell/policy 이벤트; floor 워크플로는 프롬프트/순차 dispatch | stdin prompt | 🟡 혼합: shell policy는 hard, floor orchestration은 prompt-level |
-| Cursor | `.cursor/rules/decision-protocol.mdc` (always-loaded rule) | 채팅 prompt | 🟡 Soft (prompt-only) |
-| Gemini CLI | `GEMINI.md` 섹션 | 채팅 prompt | 🟡 Soft (prompt-only) |
-| VS Code Copilot | `.github/copilot-instructions.md` | 채팅 prompt | 🟡 Soft (prompt-only) |
+| Claude Code | `.claude/settings.local.json` hooks | `renderer-claude.mjs` → native `AskUserQuestion` | 🟢 Hard |
+| Copilot CLI | `.github/hooks/*.json` + prompt docs | `renderer-copilot.mjs` markdown | 🟡 수동 hook 검토 전에는 프롬프트 수준 |
+| Codex CLI | `~/.codex/config.toml`의 `[[hooks.PreToolUse]]` shell/policy 이벤트; floor 워크플로는 프롬프트/순차 dispatch | `renderer-codex.mjs` prompt choices | 🟡 혼합: shell policy는 hard, floor orchestration은 prompt-level |
+| Cursor | `.cursor/rules/decision-protocol.mdc` (always-loaded rule) | `renderer-cursor.mjs` markdown | 🟡 Soft (prompt-only) |
+| Gemini CLI | `GEMINI.md` 섹션 | `renderer-gemini.mjs` markdown | 🟡 Soft (prompt-only) |
+| VS Code Copilot | `.github/copilot-instructions.md` | Copilot markdown | 🟡 Soft (prompt-only) |
 
-`lib/decisions/`는 플랫폼-무관 Node. 각 포트 plugin의 `bin/install.mjs`가 적절한 hook/rule 아티팩트를 emit, 공유 lib 참조.
+`lib/decisions/`는 legacy payload validator로 남고, `lib/interactions/`가
+decision, confirmation, resume, budget-warning, blocked, handoff prompt에 쓰는
+플랫폼-중립 UX schema/renderer 계층입니다.
 
 ## 11. Opt-out
 
@@ -165,7 +173,7 @@ plugins/harness-floor/skills/agent-all/phases/
 2. Reviewer-audit grep은 fragile — 정확한 토큰 `VERIFICATION_AUDIT: passed|failed|skipped` 매치. Prompt addendum이 token format 강제로 mitigation.
 3. Decision-surfacing이 `subagent-driven-development`의 "continuous execution" 규칙을 의도적으로 깸 (task 시작 전에만 1회 pause; 완료된 task 사이는 pause 안함).
 4. AskUserQuestion 4-option hard limit. 5+ 후보면 top 3 + "Other"로 condense.
-5. Non-TTY auto-pick이 틀릴 수 있음. 모든 auto-pick이 reasoning과 함께 `docs/agent-all/iter-<N>/decisions.md`에 로그.
+5. Non-TTY auto-pick이 틀릴 수 있음. Low/medium-risk auto-pick은 reasoning과 함께 `docs/agent-all/iter-<N>/decisions.md`와 `.agent-skill/runs/<run-id>/interactions.jsonl`에 로그하고, high-risk 옵션은 자동 승인하지 않고 block.
 6. Per-task scoping pass가 ~15-20% subagent dispatch 비용 추가.
 7. Hook 강제는 user가 직접 입력한 Edit/Write에는 적용 안됨 — by design.
 8. `description` 기반 implementer 식별이 false-positive 가능 — opt-out flag가 escape hatch.
@@ -192,7 +200,7 @@ plugins/harness-floor/skills/agent-all/phases/
 - Cross-plugin isolation: 기존 테스트 그대로 통과해야.
 - Smoke: end-to-end `/agent-all "trivial task" --yes` non-TTY 흐름.
 
-목표: 1788/1788 green 유지. 새 lib/hook surface에는 focused tests 추가.
+목표: 1981/1981 green 유지. 새 lib/hook surface에는 focused tests 추가.
 
 ## 15. Out of scope (v1)
 

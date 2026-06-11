@@ -250,20 +250,20 @@ test("vqa sequential-dispatch: buildPagePrompt requires page+slugDir+baseUrl", (
 test("vqa sequential-dispatch: buildPagePrompt embeds env vars", () => {
   const prompt = buildPagePrompt({
     page: { name: "home", path: "/" },
-    slugDir: "docs/visual-qa/run-1/",
+    slugDir: ".agent-skill/reports/visual-qa/run-1/",
     baseUrl: "http://localhost:3000",
   });
   assert.match(prompt, /PAGE_NAME: home/);
   assert.match(prompt, /PAGE_PATH: \//);
   assert.match(prompt, /BASE_URL:  http:\/\/localhost:3000/);
-  assert.match(prompt, /OUTPUT_DIR: docs\/visual-qa\/run-1\/home\//);
+  assert.match(prompt, /OUTPUT_DIR: .agent-skill\/reports\/visual-qa\/run-1\/home\//);
   assert.match(prompt, /End with a JSON line/);
 });
 
 test("vqa sequential-dispatch: buildPagePrompt embeds page skill body when provided", () => {
   const prompt = buildPagePrompt({
     page: { name: "home", path: "/" },
-    slugDir: "docs/visual-qa/run-1/",
+    slugDir: ".agent-skill/reports/visual-qa/run-1/",
     baseUrl: "http://localhost:3000",
     skillPath: "/repo/.codex/skills/visual-qa-page/SKILL.md",
     skillBody: "---\nname: visual-qa-page\n---\nCapture every visible state.",

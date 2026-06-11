@@ -12,7 +12,18 @@
    Parse JSON, verify response. If fail: abort.
 5. Unless `--skip-health`:
    `run_shell_command("curl --max-time 5 -s -o /dev/null -w '%{http_code}' <baseUrl>")`.
-   If not 2xx: `ask_user("Continue anyway? [y/N]")`, abort if `--yes`.
+   If not 2xx:
+   - Build an `agent-interaction/v1` confirmation with
+     `kind: "confirmation"`, `id: "visual-qa:base-url-health"`,
+     default option `abort`, and options `abort` (recommended, low risk)
+     and `continue` (medium risk).
+   - Render with
+     `../agent-all-gemini/lib/interactions/renderer-gemini.mjs` and append
+     the result to `.agent-skill/runs/<run-id>/interactions.jsonl` with
+     `appendInteractionLog({ source: "visual-qa" })`.
+   - If `--yes` or non-TTY, resolve through `resolveNonTtyInteraction()`;
+     because the default is `abort`, non-TTY must abort with
+     `baseUrl not responding` unless a TTY user selects `continue`.
 6. Read `.visual-qa-state.json` if present. If `--resume` and
    `max(state.phases[*].phase) >= 0`, skip rest of Phase 0.
 7. Push `{phase: 0, completedAt}` to state via `write_file` + atomic rename.

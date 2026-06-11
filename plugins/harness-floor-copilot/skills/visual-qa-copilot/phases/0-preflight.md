@@ -9,8 +9,17 @@
    `Copilot CLI v0.0.380+ required for task tool`.
 4. Unless `--skip-health`: `read_bash("curl --max-time 5 -s -o /dev/null -w '%{http_code}' <baseUrl>")`.
    If not 2xx:
-   - If `--yes`: abort.
-   - Else: `ask_user("Dev server at <baseUrl> not responding. Continue? [y/N]")`.
+   - Build an `agent-interaction/v1` confirmation with
+     `kind: "confirmation"`, `id: "visual-qa:base-url-health"`,
+     default option `abort`, and options `abort` (recommended, low risk)
+     and `continue` (medium risk).
+   - Render with
+     `../agent-all-copilot/lib/interactions/renderer-copilot.mjs` and append
+     the result to `.agent-skill/runs/<run-id>/interactions.jsonl` with
+     `appendInteractionLog({ source: "visual-qa" })`.
+   - If `--yes` or non-TTY, resolve through `resolveNonTtyInteraction()`;
+     because the default is `abort`, non-TTY must abort with
+     `baseUrl not responding` unless a TTY user selects `continue`.
 5. Read `.visual-qa-state.json` if present. If `--resume` and
    `max(state.phases[*].phase) >= 0`, skip rest of Phase 0.
 6. Push `{phase: 0, completedAt}` to state via `apply_patch`.

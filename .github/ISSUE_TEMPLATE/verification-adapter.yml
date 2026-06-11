@@ -1,0 +1,27 @@
+name: Verification adapter
+description: Propose or report a verifier integration for agent-all gates.
+title: "[verification] "
+labels:
+  - type:feature
+  - area:verification
+body:
+  - type: input
+    id: adapter-contract
+    attributes:
+      label: Adapter contract
+      description: Name the command, tool, or service interface to integrate.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence shape
+      description: What output proves pass, fail, or blocked?
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety and cost notes
+      description: Include destructive-action, network, and cost considerations.
+

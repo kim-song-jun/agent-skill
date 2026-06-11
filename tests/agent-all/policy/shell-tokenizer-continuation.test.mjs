@@ -19,6 +19,7 @@ function runStatus(hook, command) {
   const r = spawnSync(process.execPath, [resolve(hook)], {
     input: JSON.stringify({ tool_input: { command } }),
     encoding: "utf-8",
+    env: { ...process.env, AGENT_POLICY_AUDIT: "0" },
   });
   return r.status;
 }

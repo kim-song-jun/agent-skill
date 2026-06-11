@@ -1,0 +1,135 @@
+{
+  "schemaVersion": "agent-skill-eval-fixture/v1",
+  "id": "small-web-ui-task",
+  "title": "Small web UI interaction fix",
+  "category": "small-web-ui",
+  "smoke": true,
+  "baselineFailure": "Baseline prompt passes unit checks but misses a visual regression.",
+  "acceptanceCriteria": [
+    "Primary interaction test passes",
+    "Visual regression is detected or resolved",
+    "No quality debt exception is required"
+  ],
+  "modes": {
+    "baseline": {
+      "passed": false,
+      "iterations": 2,
+      "wallClockMs": 360000,
+      "manualInterventions": 1,
+      "failedReviewerGates": 0,
+      "qualityDebtFindings": 1,
+      "rollbackCount": 0,
+      "telemetryRecords": [
+        {
+          "platform": "fixture",
+          "model": "baseline-prompt",
+          "source": "benchmark",
+          "inputTokens": 1800,
+          "outputTokens": 900,
+          "totalTokens": 2700,
+          "costUSD": 0.0044
+        }
+      ]
+    },
+    "agent-all": {
+      "passed": true,
+      "iterations": 2,
+      "wallClockMs": 420000,
+      "manualInterventions": 0,
+      "failedReviewerGates": 1,
+      "qualityDebtFindings": 0,
+      "rollbackCount": 0,
+      "telemetryRecords": [
+        {
+          "platform": "fixture",
+          "model": "agent-all-default",
+          "source": "benchmark",
+          "inputTokens": 4200,
+          "outputTokens": 2100,
+          "totalTokens": 6300,
+          "costUSD": 0.0124
+        }
+      ]
+    },
+    "agent-all+visual-qa": {
+      "passed": true,
+      "iterations": 1,
+      "wallClockMs": 390000,
+      "manualInterventions": 0,
+      "failedReviewerGates": 1,
+      "qualityDebtFindings": 0,
+      "rollbackCount": 0,
+      "telemetryRecords": [
+        {
+          "platform": "fixture",
+          "model": "agent-all-visual",
+          "source": "benchmark",
+          "inputTokens": 5200,
+          "outputTokens": 2500,
+          "totalTokens": 7700,
+          "costUSD": 0.0153
+        }
+      ]
+    },
+    "agent-all+quality-gate": {
+      "passed": true,
+      "iterations": 2,
+      "wallClockMs": 435000,
+      "manualInterventions": 0,
+      "failedReviewerGates": 1,
+      "qualityDebtFindings": 0,
+      "rollbackCount": 0,
+      "telemetryRecords": [
+        {
+          "platform": "fixture",
+          "model": "agent-all-quality",
+          "source": "benchmark",
+          "inputTokens": 5000,
+          "outputTokens": 2400,
+          "totalTokens": 7400,
+          "costUSD": 0.0148
+        }
+      ]
+    },
+    "agent-all+dynamic-orchestration": {
+      "passed": true,
+      "iterations": 1,
+      "wallClockMs": 370000,
+      "manualInterventions": 0,
+      "failedReviewerGates": 1,
+      "qualityDebtFindings": 0,
+      "rollbackCount": 0,
+      "telemetryRecords": [
+        {
+          "platform": "fixture",
+          "model": "agent-all-dynamic",
+          "source": "benchmark",
+          "inputTokens": 6100,
+          "outputTokens": 2900,
+          "totalTokens": 9000,
+          "costUSD": 0.0186
+        }
+      ]
+    },
+    "agent-all+verification-adapters": {
+      "passed": true,
+      "iterations": 1,
+      "wallClockMs": 365000,
+      "manualInterventions": 0,
+      "failedReviewerGates": 0,
+      "qualityDebtFindings": 0,
+      "rollbackCount": 0,
+      "telemetryRecords": [
+        {
+          "platform": "fixture",
+          "model": "agent-all-verify",
+          "source": "benchmark",
+          "inputTokens": 5800,
+          "outputTokens": 2700,
+          "totalTokens": 8500,
+          "costUSD": 0.0175
+        }
+      ]
+    }
+  }
+}

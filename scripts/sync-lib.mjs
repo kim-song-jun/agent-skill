@@ -61,6 +61,145 @@ const CONFIG_LOADER_TARGETS = [
   "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/config-loader.mjs",
 ].map((p) => resolve(repoRoot, p));
 
+const BREAK_RESOLVER_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/break-resolver.mjs",
+);
+const BREAK_RESOLVER_TARGETS = [
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/break-resolver.mjs",
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/break-resolver.mjs",
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/break-resolver.mjs",
+  "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/break-resolver.mjs",
+].map((p) => resolve(repoRoot, p));
+
+const ARTIFACT_PATHS_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/artifact-paths.mjs",
+);
+const ARTIFACT_PATHS_TARGETS = [
+  "plugins/harness-core/lib/artifact-paths.mjs",
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/artifact-paths.mjs",
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/artifact-paths.mjs",
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/artifact-paths.mjs",
+  "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/artifact-paths.mjs",
+].map((p) => resolve(repoRoot, p));
+
+const TASK_ID_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/task-id-allocator.mjs",
+);
+const TASK_REGISTRY_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/task-registry.mjs",
+);
+const TASK_ID_TARGETS = [
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/task-id-allocator.mjs",
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/task-id-allocator.mjs",
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/task-id-allocator.mjs",
+  "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/task-id-allocator.mjs",
+].map((p) => resolve(repoRoot, p));
+const TASK_REGISTRY_TARGETS = [
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/task-registry.mjs",
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/task-registry.mjs",
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/task-registry.mjs",
+  "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/task-registry.mjs",
+].map((p) => resolve(repoRoot, p));
+
+const TASK_DOC_WRITER_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/task-doc-writer.mjs",
+);
+const TASK_DOC_WRITER_TARGETS = [
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/task-doc-writer.mjs",
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/task-doc-writer.mjs",
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/task-doc-writer.mjs",
+  "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/task-doc-writer.mjs",
+].map((p) => resolve(repoRoot, p));
+
+const VERIFICATION_ADAPTER_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/verification-adapters",
+);
+const VERIFICATION_ADAPTER_TARGETS = [
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/verification-adapters",
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/verification-adapters",
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/verification-adapters",
+  "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/verification-adapters",
+].map((p) => resolve(repoRoot, p));
+const VERIFICATION_ADAPTER_FILES = ["schema.mjs", "evidence-writer.mjs", "registry.mjs"];
+
+const DATA_HELPER_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/data",
+);
+const DATA_HELPER_TARGETS = [
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/data",
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/data",
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/data",
+  "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/data",
+].map((p) => resolve(repoRoot, p));
+const DATA_HELPER_FILES = ["artifact-diff.mjs", "notebook-runner.mjs", "sql-validator.mjs"];
+
+const SECURITY_HELPER_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/security",
+);
+const SECURITY_HELPER_TARGETS = [
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/security",
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/security",
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/security",
+  "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/security",
+  "plugins/harness-debug/skills/debug/lib/security",
+  "plugins/harness-debug-codex/skills/debug-codex/lib/security",
+].map((p) => resolve(repoRoot, p));
+const SECURITY_HELPER_FILES = [
+  "artifact-redactor.mjs",
+  "redact-report-writer.mjs",
+  "redaction-rules.mjs",
+  "redaction-scanner.mjs",
+];
+
+const INTERACTION_HELPER_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/interactions",
+);
+const INTERACTION_HELPER_TARGETS = [
+  "plugins/harness-core/lib/interactions",
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/interactions",
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/interactions",
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/interactions",
+  "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/interactions",
+].map((p) => resolve(repoRoot, p));
+const INTERACTION_HELPER_FILES = [
+  "interaction-log-writer.mjs",
+  "non-tty-resolver.mjs",
+  "renderer-claude.mjs",
+  "renderer-codex.mjs",
+  "renderer-copilot.mjs",
+  "renderer-cursor.mjs",
+  "renderer-gemini.mjs",
+  "schema.mjs",
+];
+
+const LOOP_EVALUATOR_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/loop-evaluator.mjs",
+);
+const LOOP_EVALUATOR_TARGETS = [
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/loop-evaluator.mjs",
+].map((p) => resolve(repoRoot, p));
+
+const COST_TELEMETRY_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/cost-telemetry.mjs",
+);
+const COST_TELEMETRY_TARGETS = [
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/cost-telemetry.mjs",
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/cost-telemetry.mjs",
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/cost-telemetry.mjs",
+  "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/cost-telemetry.mjs",
+].map((p) => resolve(repoRoot, p));
+
 // Codex keeps its own agent-all-codex skill path, but the changed-file
 // classifier should remain line-for-line compatible with Claude agent-all.
 const CHANGED_FILE_CLASSIFIER_SOURCE = resolve(
@@ -160,7 +299,7 @@ const AGENT_ALL_RENDER_TARGETS = [
 ].map((p) => resolve(repoRoot, p));
 
 // Task-ledger templates — builder source → agent-all skill templates, so
-// agent-all Phase 1 seeds docs/tasks/ from bundled copies (the harness-builder
+// agent-all Phase 1 seeds .agent-skill/tasks/ from bundled copies (the harness-builder
 // plugin dir is not reachable from harness-floor on a real install).
 const TASK_LEDGER_SOURCE = resolve(
   repoRoot,
@@ -212,6 +351,174 @@ function collectDrift() {
       drift.push({ file: "config-loader.mjs", dest: destPath, reason: "missing", sourceContent: cfgSrc });
     } else if (destContent !== cfgSrc) {
       drift.push({ file: "config-loader.mjs", dest: destPath, reason: "diverged", sourceContent: cfgSrc });
+    }
+  }
+  // agent-all break-resolver.mjs (Claude source → all platform agent-all copies).
+  const breakResolverSrc = readOrNull(BREAK_RESOLVER_SOURCE);
+  if (breakResolverSrc == null) {
+    console.error(`Source missing: ${BREAK_RESOLVER_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of BREAK_RESOLVER_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "break-resolver.mjs", dest: destPath, reason: "missing", sourceContent: breakResolverSrc });
+    } else if (destContent !== breakResolverSrc) {
+      drift.push({ file: "break-resolver.mjs", dest: destPath, reason: "diverged", sourceContent: breakResolverSrc });
+    }
+  }
+  // agent-all artifact path helper (Claude source → all platform agent-all copies).
+  const artifactPathsSrc = readOrNull(ARTIFACT_PATHS_SOURCE);
+  if (artifactPathsSrc == null) {
+    console.error(`Source missing: ${ARTIFACT_PATHS_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of ARTIFACT_PATHS_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "artifact-paths.mjs", dest: destPath, reason: "missing", sourceContent: artifactPathsSrc });
+    } else if (destContent !== artifactPathsSrc) {
+      drift.push({ file: "artifact-paths.mjs", dest: destPath, reason: "diverged", sourceContent: artifactPathsSrc });
+    }
+  }
+  // task identity and registry helpers (Claude source → all platform agent-all copies).
+  const taskIdSrc = readOrNull(TASK_ID_SOURCE);
+  if (taskIdSrc == null) {
+    console.error(`Source missing: ${TASK_ID_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of TASK_ID_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "task-id-allocator.mjs", dest: destPath, reason: "missing", sourceContent: taskIdSrc });
+    } else if (destContent !== taskIdSrc) {
+      drift.push({ file: "task-id-allocator.mjs", dest: destPath, reason: "diverged", sourceContent: taskIdSrc });
+    }
+  }
+  const taskRegistrySrc = readOrNull(TASK_REGISTRY_SOURCE);
+  if (taskRegistrySrc == null) {
+    console.error(`Source missing: ${TASK_REGISTRY_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of TASK_REGISTRY_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "task-registry.mjs", dest: destPath, reason: "missing", sourceContent: taskRegistrySrc });
+    } else if (destContent !== taskRegistrySrc) {
+      drift.push({ file: "task-registry.mjs", dest: destPath, reason: "diverged", sourceContent: taskRegistrySrc });
+    }
+  }
+  const taskDocWriterSrc = readOrNull(TASK_DOC_WRITER_SOURCE);
+  if (taskDocWriterSrc == null) {
+    console.error(`Source missing: ${TASK_DOC_WRITER_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of TASK_DOC_WRITER_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "task-doc-writer.mjs", dest: destPath, reason: "missing", sourceContent: taskDocWriterSrc });
+    } else if (destContent !== taskDocWriterSrc) {
+      drift.push({ file: "task-doc-writer.mjs", dest: destPath, reason: "diverged", sourceContent: taskDocWriterSrc });
+    }
+  }
+  // verification adapter runtime libs (Claude source → all platform agent-all copies).
+  for (const file of VERIFICATION_ADAPTER_FILES) {
+    const sourcePath = resolve(VERIFICATION_ADAPTER_SOURCE, file);
+    const sourceContent = readOrNull(sourcePath);
+    if (sourceContent == null) {
+      console.error(`Source missing: ${sourcePath}`);
+      process.exit(2);
+    }
+    for (const dest of VERIFICATION_ADAPTER_TARGETS) {
+      const destPath = resolve(dest, file);
+      const destContent = readOrNull(destPath);
+      if (destContent == null) {
+        drift.push({ file, dest: destPath, reason: "missing", sourceContent });
+      } else if (destContent !== sourceContent) {
+        drift.push({ file, dest: destPath, reason: "diverged", sourceContent });
+      }
+    }
+  }
+  // data verification helper libs (Claude source → all platform agent-all copies).
+  for (const file of DATA_HELPER_FILES) {
+    const sourcePath = resolve(DATA_HELPER_SOURCE, file);
+    const sourceContent = readOrNull(sourcePath);
+    if (sourceContent == null) {
+      console.error(`Source missing: ${sourcePath}`);
+      process.exit(2);
+    }
+    for (const dest of DATA_HELPER_TARGETS) {
+      const destPath = resolve(dest, file);
+      const destContent = readOrNull(destPath);
+      if (destContent == null) {
+        drift.push({ file, dest: destPath, reason: "missing", sourceContent });
+      } else if (destContent !== sourceContent) {
+        drift.push({ file, dest: destPath, reason: "diverged", sourceContent });
+      }
+    }
+  }
+  // security redaction helper libs (Claude source → platform agent-all and debug copies).
+  for (const file of SECURITY_HELPER_FILES) {
+    const sourcePath = resolve(SECURITY_HELPER_SOURCE, file);
+    const sourceContent = readOrNull(sourcePath);
+    if (sourceContent == null) {
+      console.error(`Source missing: ${sourcePath}`);
+      process.exit(2);
+    }
+    for (const dest of SECURITY_HELPER_TARGETS) {
+      const destPath = resolve(dest, file);
+      const destContent = readOrNull(destPath);
+      if (destContent == null) {
+        drift.push({ file, dest: destPath, reason: "missing", sourceContent });
+      } else if (destContent !== sourceContent) {
+        drift.push({ file, dest: destPath, reason: "diverged", sourceContent });
+      }
+    }
+  }
+  // interaction helper libs (Claude source → core + all platform agent-all copies).
+  for (const file of INTERACTION_HELPER_FILES) {
+    const sourcePath = resolve(INTERACTION_HELPER_SOURCE, file);
+    const sourceContent = readOrNull(sourcePath);
+    if (sourceContent == null) {
+      console.error(`Source missing: ${sourcePath}`);
+      process.exit(2);
+    }
+    for (const dest of INTERACTION_HELPER_TARGETS) {
+      const destPath = resolve(dest, file);
+      const destContent = readOrNull(destPath);
+      if (destContent == null) {
+        drift.push({ file, dest: destPath, reason: "missing", sourceContent });
+      } else if (destContent !== sourceContent) {
+        drift.push({ file, dest: destPath, reason: "diverged", sourceContent });
+      }
+    }
+  }
+  // agent-all loop-evaluator.mjs (Claude source → Copilot vendored copy).
+  const loopEvaluatorSrc = readOrNull(LOOP_EVALUATOR_SOURCE);
+  if (loopEvaluatorSrc == null) {
+    console.error(`Source missing: ${LOOP_EVALUATOR_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of LOOP_EVALUATOR_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "loop-evaluator.mjs", dest: destPath, reason: "missing", sourceContent: loopEvaluatorSrc });
+    } else if (destContent !== loopEvaluatorSrc) {
+      drift.push({ file: "loop-evaluator.mjs", dest: destPath, reason: "diverged", sourceContent: loopEvaluatorSrc });
+    }
+  }
+  // agent-all cost-telemetry.mjs (Claude source → all platform agent-all copies).
+  const costTelemetrySrc = readOrNull(COST_TELEMETRY_SOURCE);
+  if (costTelemetrySrc == null) {
+    console.error(`Source missing: ${COST_TELEMETRY_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of COST_TELEMETRY_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "cost-telemetry.mjs", dest: destPath, reason: "missing", sourceContent: costTelemetrySrc });
+    } else if (destContent !== costTelemetrySrc) {
+      drift.push({ file: "cost-telemetry.mjs", dest: destPath, reason: "diverged", sourceContent: costTelemetrySrc });
     }
   }
   // agent-all changed-file-classifier.mjs (Claude source → Codex vendored copy).
@@ -383,6 +690,16 @@ function totalChecked() {
   return FILES.length * VENDORED_LIBS.length
     + RENDER_ONLY_FILES.length * VENDORED_RENDER_ONLY.length
     + CONFIG_LOADER_TARGETS.length
+    + BREAK_RESOLVER_TARGETS.length
+    + ARTIFACT_PATHS_TARGETS.length
+    + TASK_ID_TARGETS.length
+    + TASK_REGISTRY_TARGETS.length
+    + TASK_DOC_WRITER_TARGETS.length
+    + VERIFICATION_ADAPTER_FILES.length * VERIFICATION_ADAPTER_TARGETS.length
+    + DATA_HELPER_FILES.length * DATA_HELPER_TARGETS.length
+    + SECURITY_HELPER_FILES.length * SECURITY_HELPER_TARGETS.length
+    + INTERACTION_HELPER_FILES.length * INTERACTION_HELPER_TARGETS.length
+    + COST_TELEMETRY_TARGETS.length
     + CHANGED_FILE_CLASSIFIER_TARGETS.length
     + GATE_PLAN_TARGETS.length
     + COORDINATOR_AUDIT_VALIDATOR_TARGETS.length

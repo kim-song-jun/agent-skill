@@ -13,7 +13,7 @@ description: >
 
 Runs the cost-unrestricted visual-QA pipeline on Gemini CLI. Reads
 `.visual-qa.json`, captures via Playwright MCP, analyses each image with
-the configured LLM, produces `docs/visual-qa/<slug>/report.md`.
+the configured LLM, produces `.agent-skill/reports/visual-qa/<slug>/report.md`.
 
 ## Usage
 
@@ -56,7 +56,7 @@ the configured LLM, produces `docs/visual-qa/<slug>/report.md`.
 | Shell | `run_shell_command` |
 | Dispatch page subagent | spawn `gemini chat -p ... --output-file ... &` subprocess |
 | Await | `wait <pid>` OR poll tmp dir |
-| Prompt user | `ask_user` |
+| Prompt user | `agent-interaction/v1` via `renderer-gemini.mjs`, logged to `interactions.jsonl` |
 | Playwright | `mcp__playwright__browser_*` (via `~/.gemini/settings.json` mcpServers) |
 
 ## On error
@@ -64,7 +64,8 @@ the configured LLM, produces `docs/visual-qa/<slug>/report.md`.
 - `.visual-qa.json` missing → abort.
 - Playwright MCP not in settings.json → abort with snippet.
 - `gemini` binary missing → abort.
-- baseUrl unreachable → `ask_user`, abort if `--yes`.
+- baseUrl unreachable → `agent-interaction/v1` confirmation, abort if
+  `--yes` or non-TTY resolves the default abort option.
 - Subprocess timeout → kill, mark page failed, continue.
 - Tmp file missing (subprocess crashed) → synthesize failed status, continue.
 

@@ -72,17 +72,21 @@ Decision tree:
 
 4. **Interactive prompt** — use the Codex `ask_user` primitive:
 
-   a. First call: ask "Loop break-condition?" with the four
-      `PRESET_CATALOGUE` choices (test-auto / visual-qa / Custom shell
-      command / Composite).
+   a. First call: ask "Loop break-condition?" with the five
+      `PRESET_CATALOGUE` choices (test-auto / visual-qa / Verification
+      adapter / Custom shell command / Composite).
    b. **Custom**: follow-up `ask_user` for the shell one-liner. Validate
       non-empty.
    c. **visual-qa**: follow-up `ask_user` for optional `spec` path;
       empty for default.
-   d. **Composite**: repeat the menu (up to 5 times) for each step;
+   d. **Verification adapter**: ask for an adapter id
+      (`cli`, `api-contract`, `notebook-data`, `sql-db`, `batch-job`, or
+      `visual-qa`) and optional config JSON. Store it as
+      `{type:"verification-adapter", adapter, config}`.
+   e. **Composite**: repeat the menu (up to 5 times) for each step;
       stop on "Done".
-   e. Echo the resolved spec via `serializeBreakCondition(resolved)`.
-   f. Save-confirmation: `ask_user` "Save this as the default in
+   f. Echo the resolved spec via `serializeBreakCondition(resolved)`.
+   g. Save-confirmation: `ask_user` "Save this as the default in
       `.agent-all.json`?". On yes: deep-merge into config and atomically
       `apply_patch` `.agent-all.json`. On no: keep in memory only.
 

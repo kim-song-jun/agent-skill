@@ -17,6 +17,8 @@ import {
   serializeBreakCondition,
   buildShellCommand,
   needsVisualQARunner,
+  needsVerificationAdapterRunner,
+  toVerificationAdapterSpec,
   isDefaultOrMissing,
   DEFAULT_BREAK_STRING,
 } from "../../plugins/harness-floor/skills/agent-all/lib/break-resolver.mjs";
@@ -26,13 +28,13 @@ function fixtureDir(seed) {
   return dir;
 }
 
-test("PRESET_TYPES enumerates exactly the four supported shapes", () => {
-  assert.deepEqual([...PRESET_TYPES].sort(), ["composite", "shell", "test-auto", "visual-qa"]);
+test("PRESET_TYPES enumerates exactly the supported shapes", () => {
+  assert.deepEqual([...PRESET_TYPES].sort(), ["composite", "shell", "test-auto", "verification-adapter", "visual-qa"]);
 });
 
-test("PRESET_CATALOGUE exposes four entries with stable keys", () => {
+test("PRESET_CATALOGUE exposes entries with stable keys", () => {
   const keys = PRESET_CATALOGUE.map((e) => e.key);
-  assert.deepEqual(keys, ["test-auto", "visual-qa", "custom", "composite"]);
+  assert.deepEqual(keys, ["test-auto", "visual-qa", "verification-adapter", "custom", "composite"]);
   for (const e of PRESET_CATALOGUE) {
     assert.equal(typeof e.label, "string");
     assert.ok(e.label.length > 0);
@@ -55,6 +57,16 @@ test("PRESET_CATALOGUE.build() for visual-qa carries optional spec", () => {
   const entry = PRESET_CATALOGUE.find((e) => e.key === "visual-qa");
   assert.deepEqual(entry.build({ spec: "docs/ui.md" }), { type: "visual-qa", spec: "docs/ui.md" });
   assert.deepEqual(entry.build(), { type: "visual-qa" });
+});
+
+test("PRESET_CATALOGUE.build() for verification-adapter carries adapter and config", () => {
+  const entry = PRESET_CATALOGUE.find((e) => e.key === "verification-adapter");
+  assert.deepEqual(entry.build({ adapter: "cli", config: { command: "tool --help" } }), {
+    type: "verification-adapter",
+    adapter: "verify:cli",
+    config: { command: "tool --help" },
+  });
+  assert.deepEqual(entry.build(), { type: "verification-adapter", adapter: "verify:cli" });
 });
 
 test("normalizeBreakCondition: plain string becomes {type:'shell', cmd:<string>}", () => {
@@ -81,12 +93,25 @@ test("normalizeBreakCondition: visual-qa with optional spec", () => {
   assert.deepEqual(normalizeBreakCondition({ type: "visual-qa", spec: "x.md" }), { type: "visual-qa", spec: "x.md" });
 });
 
+test("normalizeBreakCondition: verification-adapter normalizes adapter aliases and config", () => {
+  assert.deepEqual(
+    normalizeBreakCondition({ type: "verification-adapter", adapter: "cli", config: { command: "tool --help" } }),
+    { type: "verification-adapter", adapter: "verify:cli", config: { command: "tool --help" } },
+  );
+  assert.deepEqual(
+    normalizeBreakCondition({ type: "verification-adapter", adapter: "visual-qa" }),
+    { type: "verification-adapter", adapter: "verify:web-ui" },
+  );
+  assert.equal(normalizeBreakCondition({ type: "verification-adapter", adapter: "unknown" }), null);
+});
+
 test("normalizeBreakCondition: composite recursively normalises steps", () => {
   const out = normalizeBreakCondition({
     type: "composite",
     steps: [
       "npm test",
       { type: "visual-qa" },
+      { type: "verification-adapter", adapter: "api-contract", config: { spec: "openapi.json" } },
       { type: "test-auto" },
     ],
   });
@@ -95,6 +120,7 @@ test("normalizeBreakCondition: composite recursively normalises steps", () => {
     steps: [
       { type: "shell", cmd: "npm test" },
       { type: "visual-qa" },
+      { type: "verification-adapter", adapter: "verify:api-contract", config: { spec: "openapi.json" } },
       { type: "test-auto" },
     ],
   });
@@ -118,6 +144,7 @@ test("serializeBreakCondition renders human-readable strings", () => {
   assert.equal(serializeBreakCondition({ type: "test-auto" }), "auto-detected test command");
   assert.equal(serializeBreakCondition({ type: "visual-qa" }), "visual-qa skill");
   assert.equal(serializeBreakCondition({ type: "visual-qa", spec: "x.md" }), "visual-qa skill (spec: x.md)");
+  assert.equal(serializeBreakCondition({ type: "verification-adapter", adapter: "notebook-data" }), "verification adapter: notebook-data");
   assert.match(serializeBreakCondition({ type: "composite", steps: ["a", "b"] }), /composite \[shell: a && shell: b\]/);
 });
 
@@ -169,6 +196,10 @@ test("buildShellCommand: visual-qa always returns null (needs subagent)", () => 
   assert.equal(buildShellCommand({ type: "visual-qa" }), null);
 });
 
+test("buildShellCommand: verification-adapter always returns null (needs adapter runner)", () => {
+  assert.equal(buildShellCommand({ type: "verification-adapter", adapter: "cli" }), null);
+});
+
 test("buildShellCommand: composite joins with && and parenthesises each", () => {
   const dir = fixtureDir("comp");
   writeFileSync(resolve(dir, "package.json"), "{}");
@@ -184,6 +215,10 @@ test("buildShellCommand: composite containing visual-qa returns null", () => {
     buildShellCommand({ type: "composite", steps: ["lint", { type: "visual-qa" }] }),
     null,
   );
+  assert.equal(
+    buildShellCommand({ type: "composite", steps: ["lint", { type: "verification-adapter", adapter: "cli" }] }),
+    null,
+  );
 });
 
 test("needsVisualQARunner: true for visual-qa or composite-with-visual-qa", () => {
@@ -193,6 +228,26 @@ test("needsVisualQARunner: true for visual-qa or composite-with-visual-qa", () =
   assert.equal(needsVisualQARunner("npm test"), false);
 });
 
+test("needsVerificationAdapterRunner: true for verification adapters and legacy visual-qa", () => {
+  assert.equal(needsVerificationAdapterRunner({ type: "verification-adapter", adapter: "cli" }), true);
+  assert.equal(needsVerificationAdapterRunner({ type: "visual-qa" }), true);
+  assert.equal(needsVerificationAdapterRunner({ type: "composite", steps: ["lint", { type: "verification-adapter", adapter: "sql-db" }] }), true);
+  assert.equal(needsVerificationAdapterRunner({ type: "shell", cmd: "x" }), false);
+});
+
+test("toVerificationAdapterSpec maps legacy visual-qa to verify:web-ui", () => {
+  assert.deepEqual(toVerificationAdapterSpec({ type: "visual-qa", mode: "comprehensive", spec: "docs/ui.md" }), {
+    type: "verification-adapter",
+    adapter: "verify:web-ui",
+    config: { spec: "docs/ui.md", mode: "comprehensive" },
+  });
+  assert.deepEqual(toVerificationAdapterSpec({ type: "verification-adapter", adapter: "sql" }), {
+    type: "verification-adapter",
+    adapter: "verify:sql-db",
+  });
+  assert.equal(toVerificationAdapterSpec({ type: "shell", cmd: "npm test" }), null);
+});
+
 test("isDefaultOrMissing detects null, empty, and built-in default", () => {
   assert.equal(isDefaultOrMissing(null), true);
   assert.equal(isDefaultOrMissing(""), true);
@@ -200,4 +255,5 @@ test("isDefaultOrMissing detects null, empty, and built-in default", () => {
   assert.equal(isDefaultOrMissing({ type: "shell", cmd: DEFAULT_BREAK_STRING }), true);
   assert.equal(isDefaultOrMissing("pytest"), false);
   assert.equal(isDefaultOrMissing({ type: "visual-qa" }), false);
+  assert.equal(isDefaultOrMissing({ type: "verification-adapter", adapter: "cli" }), false);
 });

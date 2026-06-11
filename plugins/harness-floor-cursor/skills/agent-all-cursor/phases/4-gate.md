@@ -10,18 +10,27 @@ Phase 4. Push `{phase: 4, completedAt}` and exit.
 For each wave with `status === "completed"`:
 
 1. Compute the wave diff: `git diff <wave.startCommit>..<wave.endCommit>`.
-2. If `gates.specReview`: invoke `@agent-all-reviewer` with `mode=spec`,
+2. Read `const orchestration = wave.orchestration ?? state.orchestration`.
+   Union dynamic reviewer/coordinator roles from
+   `orchestration.requiredAgents` into the gate dispatch list before invoking
+   reviewers. Dynamic `orchestrator`, `design-reviewer`, `qa-reviewer`,
+   `security-reviewer`, `data-reviewer`, and `integration-dev` selections
+   must keep their role, reason, wave, and cost estimate in
+   `.agent-skill/runs/<run-id>/spawn-log.jsonl`; if a gate dispatch was not
+   already policy-evaluated in Phase 3, emit a compatible `BeforeAgentSpawn`
+   policy entry before invoking it.
+3. If `gates.specReview`: invoke `@agent-all-reviewer` with `mode=spec`,
    passing the plan section for this wave plus the diff.
-3. If `gates.qualityReview`: invoke `@agent-all-reviewer` with `mode=quality`,
+4. If `gates.qualityReview`: invoke `@agent-all-reviewer` with `mode=quality`,
    passing the diff.
-4. Collect verdicts. Bucket issues by severity (`critical | major | minor`).
-5. If any critical AND `blockOnCritical === true`:
+5. Collect verdicts. Bucket issues by severity (`critical | major | minor`).
+6. If any critical AND `blockOnCritical === true`:
    - Re-dispatch `@agent-all-implementer` with the critical issues.
    - Re-invoke reviewers afterward.
    - Up to 3 retry cycles. If still failing: abort phase, push
      `{phase: 4, status: "blocked"}`, exit code 2.
-6. Record `state.waves[i].gateVerdict = {issues, retries, finalStatus}`.
-7. Push `{phase: 4, completedAt}` once all waves processed.
+7. Record `state.waves[i].gateVerdict = {issues, retries, finalStatus}`.
+8. Push `{phase: 4, completedAt}` once all waves processed.
 
 ## Cursor-specific
 

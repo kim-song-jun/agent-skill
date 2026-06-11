@@ -5,7 +5,7 @@ description: >
   structured error parsing, and git/input bisection. Use /debug to
   start an investigation from a failing command; /debug --resume to
   continue across sessions. Writes a durable log to
-  docs/debug/<date>-<slug>.md at end. Wraps (does not replace)
+  .agent-skill/reports/debug/<date>-<slug>.md at end. Wraps (does not replace)
   superpowers:systematic-debugging when that skill is installed.
 ---
 
@@ -71,6 +71,12 @@ under `phases/`; Read it on demand.
 6. **context-mode for any non-trivial command output.** Use
    `mcp__plugin_context-mode_context-mode__ctx_batch_execute` for
    shell work where output may exceed 20 lines.
+7. **Shared interaction model.** User choices in debug phases use
+   `agent-interaction/v1` from `agent-all/lib/interactions/`: Claude renders
+   native ask panels, Codex/Copilot/Gemini render prompt surfaces, Cursor
+   renders chat/rules guidance, and non-TTY choices are logged to
+   `.agent-skill/runs/debug/interactions.jsonl` without auto-approving
+   high-risk options.
 
 ## Lib modules
 
@@ -100,7 +106,7 @@ under `phases/`; Read it on demand.
 Print:
 ```
 Debug complete: <root-cause-one-liner>
-Log: docs/debug/<date>-<slug>.md
+Log: .agent-skill/reports/debug/<date>-<slug>.md
 Hypotheses: <tested>/<total> tested, <verified> verified, <rejected> rejected.
 ```
 

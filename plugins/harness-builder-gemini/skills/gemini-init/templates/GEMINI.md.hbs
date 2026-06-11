@@ -18,7 +18,7 @@
 Gemini does not get hard hook blocking in this release. This is soft enforcement: follow these rules as prompt-level policy:
 
 - Use task docs under `docs/tasks/` for `/agent-all` work.
-- Keep Decision Matrix, Ambiguity Log, Progress Snapshot, and Verification current.
+- Keep Decision Matrix, Ambiguity Log, Progress Snapshot, Verification, and Cost Telemetry current.
 - On interruption, blocked state, or compact/resume, write a handoff summary with active task, completed items, remaining items, blockers, validation evidence, git state, and next action.
 - Use pathspec commits: `git commit -m "message" -- path/one path/two`.
 - Avoid `git add -A`, `git commit -a`, `git commit --amend`, force push, `git reset --hard`, and `git checkout --` unless the user explicitly approves the exact command.

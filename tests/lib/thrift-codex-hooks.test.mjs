@@ -95,7 +95,7 @@ test("session-end audit writes a report from accumulated state", () => {
     runHook(target, "thrift-pretool-bash-telemetry.mjs", { tool_input: { command: "find ." } });
     const r = runHook(target, "thrift-sessionend-audit.mjs", {});
     assert.equal(r.status, 0);
-    const auditDir = join(target, "docs/thrift");
+    const auditDir = join(target, ".agent-skill/reports/thrift");
     assert.ok(existsSync(auditDir), "audit dir created");
     const report = readdirSync(auditDir).find((n) => n.startsWith("audit-") && n.endsWith(".md"));
     assert.ok(report, "audit report written");

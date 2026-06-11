@@ -48,6 +48,7 @@ test("config-loader: returns DEFAULTS with warning when path missing", () => {
   assert.equal(r.config.summariser.model, "gemini-flash");
   assert.equal(r.config.cache.vertex.tier, "paid");
   assert.equal(r.config.cache.vertex.minTokenThreshold, 32000);
+  assert.equal(r.config.audit.outputPath, ".agent-skill/reports/thrift/audit-<date>.md");
   assert.match(r.warning, /not found/);
 });
 

@@ -39,7 +39,7 @@ Open Cursor chat in the target repository and invoke the coordinator:
 
 ```text
 @agent-all-coordinator run /agent-all for "add user signup form"
-@agent-all-coordinator run /agent-all using docs/tasks/12-fix-login.md --loop --max-iter=5
+@agent-all-coordinator run /agent-all using .agent-skill/tasks/12-fix-login.md --loop --max-iter=5
 ```
 
 For visual checks, ask Cursor to follow `visual-qa-cursor`; the installed

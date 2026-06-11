@@ -17,7 +17,25 @@
    - `rolesAllowed` filter; overflow tasks go in a separate "all-roles"
      wave at the end.
 
-3. For each wave:
+3. Before dispatching each wave, build/update `state.orchestration` with the
+   same state shape as the Claude planner:
+   `{runId,wave,changedFiles,changedDomains,requiredAgents,spawnedAgents,
+   failureSignatures,blockedReasons,budget}`. Compute `requiredAgents` from
+   changed files and failure state:
+   - UI/frontend changes require `frontend-dev`, `design-reviewer`, and
+     `qa-reviewer`.
+   - migrations/fixtures/backfills require `data-reviewer`.
+   - auth/API/security-sensitive files require `security-reviewer`.
+   - repeated failure signatures at the configured threshold require a
+     planner/user decision and must not dispatch another implementer.
+   Write every dynamic Copilot `task` spawn to
+   `.agent-skill/runs/<run-id>/spawn-log.jsonl` with role, reason, wave, and
+   cost estimate. Emit compatible `BeforeAgentSpawn` policy entries with wave
+   spawn count and same-role spawn count when policy logging is available.
+   Do not invoke the built-in `Workflow` tool inside `/agent-all-copilot`;
+   Workflow remains a sibling route that hands off through a task doc.
+
+4. For each wave:
    a. Print: `Wave <i+1>/<N> — <waves[i].length> tasks in parallel`.
    b. For each task in the wave, call:
       ```
@@ -26,6 +44,8 @@
         context: { agentAllWave: i, agentAllTask: t.id, planKey: "agent-all/plan" },
       })
       ```
+      If the plan left `role: dev`, use `state.orchestration.requiredAgents`
+      to choose or validate the implementer role for that task.
       Capture each returned `agentId`.
    c. Wait for all `agentId`s in the wave to settle. Two strategies:
       - **Hook strategy** (preferred if `subagentStop` is registered): the
@@ -36,14 +56,18 @@
         filter for agents whose `parentTask = "agent-all/wave/<i>/<t.id>"`.
         Wave done when all show `status: "completed" | "blocked" | "failed"`.
    d. For each finished agent, call `read_agent(agentId)` to extract
-      `status`, `commits`, `cost`. Accumulate `state.costUSD`.
+      `status`, `commits`, `cost`. Record reported or estimated usage as
+      `agent-cost-telemetry/v1`, append
+      `.agent-skill/runs/<run-id>/cost-telemetry.jsonl`, mirror the latest
+      summary to `state.costTelemetry.summary`, and accumulate `state.costUSD`
+      for backward compatibility.
    e. Capture wave result:
-      `{index: i, tasks: [{id, agentId, status, commits, costUSD}], status: "completed" | "incomplete"}`.
+      `{index: i, orchestration: state.orchestration, tasks: [{id, agentId, status, commits, costUSD}], status: "completed" | "incomplete"}`.
 
-4. If `state.costUSD > config.defaults.maxCostUSD` after the wave: push
+5. If `state.costUSD > config.defaults.maxCostUSD` after the wave: push
    `{phase: 3, status: "cost-cap"}`, abort.
 
-5. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
+6. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
 
 ## On error
 

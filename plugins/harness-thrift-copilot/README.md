@@ -94,7 +94,7 @@ a Copilot-flavoured `cache` section (warns about intermediation):
     "coerceReadWhenOutputExceeds": 200
   },
   "audit": {
-    "outputPath": "docs/thrift/audit-<date>.md",
+    "outputPath": ".agent-skill/reports/thrift/audit-<date>.md",
     "mirrorToStoreMemory": true
   }
 }

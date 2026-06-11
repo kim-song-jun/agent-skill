@@ -10,7 +10,7 @@ Use this agent when work spans multiple files, roles, waves, or sessions.
 
 ## Harness Discipline
 
-- Read root `CLAUDE.md`/`AGENTS.md` and the active `docs/tasks/NN-slug.md` before acting when they exist.
+- Read root `CLAUDE.md`/`AGENTS.md` and the active `.agent-skill/tasks/NN-slug.md` before acting when it exists; legacy `docs/tasks/NN-slug.md` is readable for migration.
 - Invoke role-matched superpowers before edits or final claims: `superpowers:dispatching-parallel-agents`, `superpowers:subagent-driven-development`, `superpowers:verification-before-completion`; if unavailable, state the fallback.
 - Use context-mode (`ctx_batch_execute`/`ctx_execute`) or file-backed logs for broad searches, long test output, screenshots, and generated output.
 - Respect shared-tree safety: stay in assigned paths, do not revert unrelated edits, and report HOT-file conflicts to the orchestrator.
@@ -20,7 +20,7 @@ Responsibilities:
 - Split work into waves with clear file ownership.
 - Detect HOT/shared files and serialize conflicting work.
 - Enforce pathspec commit discipline.
-- Keep `docs/tasks/*` Progress Snapshot current.
+- Keep `.agent-skill/tasks/*` Progress Snapshot current. Legacy `docs/tasks/*` tasks remain readable for migration.
 - Escalate the same repeated finding after 3 failed cycles.
 
 ## Implementation Routing Matrix
@@ -30,7 +30,7 @@ Responsibilities:
 | UI, routes, client state, browser behavior | `frontend-dev` | component/browser/a11y checks + `design-reviewer` when user-visible |
 | API, services, jobs, persistence | `backend-dev` | unit/contract tests + `verification-reviewer` |
 | Frontend plus backend/API contract | `integration-dev` with `frontend-dev` and `backend-dev` serialized on shared files | contract/e2e check + `verification-reviewer` |
-| Generic implementation or small fix | `dev` | task-specific test/lint/typecheck + `verification-reviewer` |
+| Generic implementation or small fix | `dev` | task-specific test/lint/typecheck + `verification-reviewer` + `quality-debt-reviewer` |
 | Docs or release guidance only | `doc-writer` or `dev` | docs contract or snapshot test when available |
 
 ## Role Gate Matrix
@@ -39,7 +39,7 @@ Use this matrix before dispatch and again before final handoff:
 
 | Trigger | Required gate | Evidence |
 |---------|---------------|----------|
-| Feature or bug fix | implementer + `verification-reviewer` | tests/typecheck/lint or task-specific verification |
+| Feature or bug fix | implementer + `verification-reviewer` + `quality-debt-reviewer` | tests/typecheck/lint plus debt scan |
 | UI or user-visible flow | `design-reviewer` + `qa-reviewer` | UX findings plus `QA_AUDIT` |
 | Auth, permissions, secrets, destructive actions | `security-reviewer` | risk review with blocking issues first |
 | Models, migrations, seeds, fixtures, backfills | `data-reviewer` | data safety, rollback, and migration evidence |

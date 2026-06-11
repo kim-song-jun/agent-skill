@@ -141,6 +141,7 @@ test("Claude native root guidance exposes role routing and escalation contracts"
     assert.match(body, /design-reviewer[\s\S]{0,260}qa-reviewer/i, `${rel} must route UI/QA review`);
     assert.match(body, /security-reviewer[\s\S]{0,260}data-reviewer/i, `${rel} must route security/data review`);
     assert.match(body, /verification-reviewer[\s\S]{0,260}(tests|typecheck|lint|evidence)/i, `${rel} must route verification review`);
+    assert.match(body, /quality-debt-reviewer[\s\S]{0,260}(fallback|suppressions|TODO|test quality)/i, `${rel} must route quality debt review`);
     assert.match(body, /3 (?:failed cycles|repeated failures|attempts)/i, `${rel} must define the 3-failure escalation rule`);
     assert.match(body, /Progress Snapshot/i, `${rel} must keep task ledger progress current`);
   }
@@ -162,6 +163,7 @@ test("Claude native role templates embed foundation and shared-tree discipline",
       "verification-before-completion",
     ],
     planner: ["brainstorming", "writing-plans", "dispatching-parallel-agents"],
+    "quality-debt-reviewer": ["requesting-code-review", "verification-before-completion"],
     qa: ["brainstorming", "verification-before-completion"],
     "qa-reviewer": ["requesting-code-review", "verification-before-completion"],
     reviewer: ["requesting-code-review", "verification-before-completion"],
@@ -185,6 +187,7 @@ test("Claude native role templates embed foundation and shared-tree discipline",
 test("Claude native persona reviewers emit the Phase 4 verification audit token expected by floor-policy", () => {
   const personaReviewers = [
     "reviewer",
+    "quality-debt-reviewer",
     "verification-reviewer",
     "data-reviewer",
     "design-reviewer",

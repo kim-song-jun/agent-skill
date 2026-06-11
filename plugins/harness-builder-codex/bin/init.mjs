@@ -37,10 +37,16 @@ const templatesDir = resolve(pluginRoot, "skills/codex-init/templates");
 const STDOUT_TEMPLATES = new Set(["codex-config.toml.hbs"]);
 const FOLDER_GUIDE_TEMPLATE_REL = "folder-guides/AGENTS.md.hbs";
 const OPERATIONAL_WORKSPACE_FILES = [
-  "docs/superpowers/specs/.gitkeep",
-  "docs/superpowers/plans/.gitkeep",
-  "docs/decisions/.gitkeep",
-  "docs/tasks/.gitkeep",
+  ".agent-skill/specs/.gitkeep",
+  ".agent-skill/plans/.gitkeep",
+  ".agent-skill/decisions/.gitkeep",
+  ".agent-skill/tasks/.gitkeep",
+  ".agent-skill/registry/.gitkeep",
+  ".agent-skill/handoff/.gitkeep",
+  ".agent-skill/reports/visual-qa/.gitkeep",
+  ".agent-skill/reports/debug/.gitkeep",
+  ".agent-skill/reports/thrift/.gitkeep",
+  ".agent-skill/baselines/.gitkeep",
 ];
 
 const BASE_AGENTS = [
@@ -53,6 +59,7 @@ const OPERATIONAL_AGENTS = [
   { name: "orchestrator",          when: "wave ownership and shared-tree safety" },
   { name: "frontend-dev",          when: "frontend UI, client logic, styling" },
   { name: "backend-dev",           when: "backend APIs, services, migrations" },
+  { name: "quality-debt-reviewer", when: "fallbacks, TODOs, suppressions, and test quality" },
   { name: "verification-reviewer", when: "tests, typecheck, lint, diff scope" },
   { name: "qa-reviewer",           when: "user-flow and persona validation" },
   { name: "design-reviewer",       when: "UI hierarchy and design tokens" },
@@ -61,7 +68,7 @@ const OPERATIONAL_AGENTS = [
   { name: "integration-dev",        when: "cross-stack wiring and API contracts" },
 ];
 
-const OPERATIONAL_SKILL_RE = /^skills\/(orchestrator|frontend-dev|backend-dev|verification-reviewer|qa-reviewer|design-reviewer|security-reviewer|data-reviewer|integration-dev)\//;
+const OPERATIONAL_SKILL_RE = /^skills\/(orchestrator|frontend-dev|backend-dev|quality-debt-reviewer|verification-reviewer|qa-reviewer|design-reviewer|security-reviewer|data-reviewer|integration-dev)\//;
 
 const LANGUAGE_VALUES = new Set(["en", "ko", "auto"]);
 const USAGE = "Usage: init.mjs <target-project-dir> [--ctx <ctx.json>] [--force] [--lite|--theme=lite] [--lang=en|ko|auto] [--dry-run] [--update-foundations]";
@@ -284,10 +291,10 @@ function relToTarget(rel) {
   if (stripped.startsWith("skills/")) return `.codex/${stripped}`;
   if (stripped === "hooks/agent-policy-hook.mjs") return ".codex/hooks/agent-policy-hook.mjs";
   if (stripped === "local-guides/AGENTS.md") return ".codex/AGENTS.md";
-  if (stripped === "task-ledger/AGENTS.md") return "docs/tasks/AGENTS.md";
-  if (stripped === "task-ledger/index.md") return "docs/tasks/index.md";
-  if (stripped === "task-ledger/_template.md") return "docs/tasks/_template.md";
-  if (stripped === "task-ledger/_handoff-template.md") return "docs/tasks/_handoff-template.md";
+  if (stripped === "task-ledger/AGENTS.md") return ".agent-skill/tasks/AGENTS.md";
+  if (stripped === "task-ledger/index.md") return ".agent-skill/tasks/index.md";
+  if (stripped === "task-ledger/_template.md") return ".agent-skill/tasks/_template.md";
+  if (stripped === "task-ledger/_handoff-template.md") return ".agent-skill/tasks/_handoff-template.md";
   if (stripped === "task-ledger/agent-task-ledger-check.mjs") return "scripts/agent-task-ledger-check.mjs";
   // Unknown layout — drop under .codex/ to be safe.
   return `.codex/${stripped}`;

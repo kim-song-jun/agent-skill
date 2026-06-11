@@ -18,17 +18,37 @@
      separate "all-roles" overflow wave at the end.
    - Pack tasks greedily into waves of size `maxParallel`.
 
-3. For each wave:
+3. Before dispatching each wave, build/update `state.orchestration` with the
+   same state shape as the Claude planner:
+   `{runId,wave,changedFiles,changedDomains,requiredAgents,spawnedAgents,
+   failureSignatures,blockedReasons,budget}`. Compute `requiredAgents` from
+   changed files and failure state:
+   - UI/frontend changes require `frontend-dev`, `design-reviewer`, and
+     `qa-reviewer`.
+   - migrations/fixtures/backfills require `data-reviewer`.
+   - auth/API/security-sensitive files require `security-reviewer`.
+   - repeated failure signatures at the configured threshold require a
+     planner/user decision and must not dispatch another implementer.
+   Write every dynamic Cursor background spawn to
+   `.agent-skill/runs/<run-id>/spawn-log.jsonl` with role, reason, wave, and
+   cost estimate. Emit compatible `BeforeAgentSpawn` policy entries with wave
+   spawn count and same-role spawn count when policy logging is available.
+   Do not invoke the built-in `Workflow` tool inside `/agent-all-cursor`;
+   Workflow remains a sibling route that hands off through a task doc.
+
+4. For each wave:
    - Print: `Wave <i+1>/<N> — <waves[i].length> tasks in parallel`.
    - For each task in the wave, **invoke `@agent-all-implementer`** with
      this task as a chat message body (task title, files, role, the plan
      section verbatim). Cursor's planner sees `agent-all-implementer`
      has `is_background: true` and runs them concurrently.
+   - If the plan left `role: dev`, use `state.orchestration.requiredAgents`
+     to choose or validate the implementer role for that task.
    - Wait for all background invocations to settle.
    - Capture wave result:
-     `{index: i, tasks: [{id, status, commits}], status: "completed" | "incomplete"}`.
+     `{index: i, orchestration: state.orchestration, tasks: [{id, status, commits}], status: "completed" | "incomplete"}`.
 
-4. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
+5. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
 
 ## On error
 

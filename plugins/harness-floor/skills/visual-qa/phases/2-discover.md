@@ -2,7 +2,7 @@
 
 ## Inputs
 
-- `config.output.dir` (default `docs/visual-qa`)
+- `config.output.dir` (default `.agent-skill/reports/visual-qa`)
 - `config.output.keepLastN` (default 10)
 - CLI: `--slug=<custom>`, `--force`, `--resume`
 

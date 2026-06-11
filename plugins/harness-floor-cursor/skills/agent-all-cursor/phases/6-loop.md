@@ -16,7 +16,8 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
 
 2. **Route on `spec.type`:**
 
-   - **`shell` / `test-auto` / pure `composite`** (no visual-qa anywhere):
+   - **`shell` / `test-auto` / pure `composite`** (no visual-qa or
+     verification-adapter anywhere):
      resolve to a single shell line via `buildShellCommand(spec)` then
      run via `read_bash`:
      ```bash
@@ -24,7 +25,14 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
      sh -c "$CMD"; echo "exit=$?"
      ```
 
-   - **`visual-qa`**: dispatch a background agent for the
+   - **`verification-adapter`**: invoke the vendored
+     `lib/verification-adapters/registry.mjs` runner for `verify:cli`,
+     `verify:api-contract`, `verify:notebook-data`, `verify:sql-db`, or
+     `verify:batch-job`, then append
+     `.agent-skill/runs/<run-id>/verification-evidence.jsonl`. Exit 0 only
+     when the evidence status is `passed`.
+
+   - **`visual-qa`**: treat as `verify:web-ui` evidence, then dispatch a background agent for the
      `visual-qa-cursor` skill, with a fresh per-iter slug so each
      iteration's output doesn't clobber the previous one's baseline:
 
@@ -38,17 +46,35 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
      touching prior iters' reports — Phase 2's `priorRunPath` still
      finds the previous iter as baseline.
 
-   - **composite containing visual-qa**: run each step in declared order
+   - **composite containing visual-qa or verification-adapter**: run each step in declared order
      and **short-circuit on the first non-zero exit**. Use the shell
-     branch for shell/test-auto/inner-composite steps; use the visual-qa
-     subagent dispatcher for visual-qa steps.
+     branch for shell/test-auto/inner-composite steps; use the adapter
+     runner or visual-qa subagent dispatcher for verification steps.
 
 3. Compute action:
    - Exit 0: `state.consecutivePass++`. If `consecutivePass >= stableIters`:
      action = `break`. Else action = `continue`.
    - Exit ≠ 0: `state.consecutivePass = 0`. action = `continue`.
-   - If `state.iter >= maxIter`: action = `exhausted`.
+   - If `maxIter === 0` or `maxIter == null`: unlimited mode; do not stop on
+     iteration count.
+   - If bounded `state.iter >= maxIter`: action = `exhausted`.
    - If `state.costUSD >= maxCostUSD`: action = `exhausted`.
+   - If elapsed runtime reaches `loop.maxRuntimeSec` / `--max-runtime-sec`:
+     action = `exhausted`.
+   - If a hard policy hook blocks the iteration: action = `blocked`.
+   - If the same failure signature reaches `loop.maxRepeatedFailureSignature`:
+     action = `blocked` and escalate to planner/user decision.
+   Persist `state.loop` with `iter`, `consecutivePass`, `costUSD`,
+   `costTelemetry`,
+  `startedAt`, `maxRuntimeSec`, `elapsedRuntimeSec`,
+  `lastBreakConditionExit`, `lastFailureSignature`, `failureSignatures`,
+   `lastVerifierSummary`, `lastTouchedFiles`, and `nextAction`.
+   Also keep `state.orchestration` in sync:
+   `{runId,wave,changedFiles,changedDomains,requiredAgents,spawnedAgents,
+   failureSignatures,blockedReasons,budget}`. The next Phase 3 pass consumes
+   `state.loop.failureSignatures` and `state.orchestration`; if a signature
+   reaches `loop.maxRepeatedFailureSignature`, it escalates to planner/user
+   decision before another same-role implementer is dispatched.
 
 4. Branch on action:
    - `break`: push `{phase: 6, completedAt, status: "broken"}`, exit 0.
@@ -57,6 +83,8 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
      loop mode, Phase 1 always uses `state.task` (no re-brainstorm).
    - `exhausted`: push `{phase: 6, completedAt, status: "exhausted"}`,
      exit 3.
+   - `blocked`: write handoff with loop state, push `{phase: 6, completedAt,
+     status: "blocked"}`, exit 4.
 
 ## Cursor-specific
 
@@ -71,7 +99,7 @@ script the re-invocation via `cursor-cli` (when GA).
 
 ## Output
 
-Per iter: `Iter <N>/<max>: break check (<type>) exit=<code>, consecutive=<N>/<stableIters>`.
+Per iter: `Iter <N>/<max|unlimited>: break check (<type>) exit=<code>, consecutive=<N>/<stableIters>`.
 On final exit: `Loop <broken|exhausted> after <N> iter(s). Cost ~$<costUSD>.`
 
 ## Notes
@@ -81,6 +109,13 @@ On final exit: `Loop <broken|exhausted> after <N> iter(s). Cost ~$<costUSD>.`
 - Composite short-circuits as soon as a step fails, saving subprocess
   cost when an early cheap check (lint/type) gates a slower one
   (visual-qa).
+- Policy events use the common `agent-policy-event/v1` schema. Record
+  `BeforeLoopIteration` before the break check and `AfterBreakCondition`
+  after it. Cursor cannot hard-deny from this chat surface, so surface the
+  same policy results as soft warnings and append them to
+  `.agent-skill/runs/<run-id>/policy-log.jsonl` when possible. Include
+  `state.costTelemetry` in loop policy payloads so 80% budget warnings and 100%
+  budget stops share the same summary.
 
 ## Shell helpers
 

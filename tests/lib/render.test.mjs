@@ -116,6 +116,7 @@ const EXPECTED_OPERATIONAL_TEMPLATES = [
   "task-ledger/_handoff-template.md.hbs",
   "agents/orchestrator.md.hbs",
   "agents/integration-dev.md.hbs",
+  "agents/quality-debt-reviewer.md.hbs",
   "agents/verification-reviewer.md.hbs",
   "agents/qa-reviewer.md.hbs",
   "agents/design-reviewer.md.hbs",
@@ -245,8 +246,8 @@ test("lite rendered outputs omit operational hooks and task ledger guidance", ()
   assert.doesNotMatch(out, /^## Hooks$/m);
   assert.doesNotMatch(out, /policy hooks/);
   assert.doesNotMatch(out, /task ledger/i);
-  assert.match(out, /docs\/superpowers\/specs\//);
-  assert.match(out, /docs\/superpowers\/plans\//);
+  assert.match(out, /\.agent-skill\/specs\//);
+  assert.match(out, /\.agent-skill\/plans\//);
 });
 
 test("settings template wires operational policy hook only for operational profile", () => {
@@ -334,6 +335,8 @@ test("task ledger check rejects active index entries pointing to missing task do
       "",
       "## Verification",
       "",
+      "## Cost Telemetry",
+      "",
     ].join("\n"));
 
     const result = spawnSync(process.execPath, ["scripts/agent-task-ledger-check.mjs", "docs/tasks/1-valid.md"], {
@@ -387,6 +390,8 @@ test("task ledger check resolves relative active links from docs/tasks index", (
       "## Progress Snapshot",
       "",
       "## Verification",
+      "",
+      "## Cost Telemetry",
       "",
     ].join("\n"));
 

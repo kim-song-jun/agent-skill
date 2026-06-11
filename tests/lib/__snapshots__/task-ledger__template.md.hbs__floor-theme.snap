@@ -31,6 +31,37 @@ Next action:
 
 ## Verification
 
+## Cost Telemetry
+
+| Current USD | Max USD | Budget Status | Source |
+|---:|---:|---|---|
+| 0.00 | TBD | unbounded | none |
+
+## Quality Debt Exceptions
+
+| Item | Reason | Owner | Follow-up issue | Expiry |
+|---|---|---|---|---|
+
+## Data Task Addendum
+
+Use this section when the task touches notebooks, datasets, SQL, ETL, batch jobs, reports, or derived artifacts.
+
+### Dataset / Source
+
+### Data Snapshot
+
+### Assumptions
+
+### Reproducibility
+
+### Validation Queries
+
+### Artifacts
+
+### Data Risks
+
+### Rollback / Cleanup
+
 ## Risk / Rollback
 
 ## Handoff

@@ -31,7 +31,7 @@ export const DEFAULTS = {
   },
   audit: {
     estimateBaseline: "naive-cursor",
-    outputPath: "docs/thrift/cursor-recap-<date>.md",
+    outputPath: ".agent-skill/reports/thrift/cursor-recap-<date>.md",
   },
 };
 

@@ -18,7 +18,7 @@
 These apply to the main agent and to every role in `.claude/agents/`:
 
 1. **Brainstorm first.** Before any deliverable, invoke `superpowers:brainstorming` unless the user explicitly asks for direct execution.
-2. **Plan before implementation.** Multi-step work uses `superpowers:writing-plans` and stores plans in `docs/superpowers/plans/`.
+2. **Plan before implementation.** Multi-step work uses `superpowers:writing-plans` and stores generated control-plane plans in `.agent-skill/plans/` by default.
 3. **Parallel through orchestration.** Use `superpowers:dispatching-parallel-agents` or `superpowers:subagent-driven-development` when tasks do not share files.
 4. **Verify before completion.** Use `superpowers:verification-before-completion` before claiming success.
 5. **Use context-mode for bulk context.** Store or index large logs, broad searches, and bulky browser snapshots outside the main conversation.
@@ -34,6 +34,18 @@ These apply to the main agent and to every role in `.claude/agents/`:
 5. **Decision Matrix.** When two or more reasonable choices remain, or multiple user decisions are needed, present a `Decision Matrix` with option, impact, recommendation, and whether confirmation is required.
 {{#if operationalProfile}}6. **Task-ledger gate.** If a task ledger document is active, do not call the work complete while required sections, in-scope checkboxes, acceptance criteria, or verification evidence are missing.
 {{/if}}
+
+## Quality Debt Policy
+
+- Do not add fallback code unless the task acceptance criteria explicitly requires fallback behavior.
+- Do not silence errors that should fail fast.
+- Do not add TODO/FIXME/dead code unless linked to an issue and accepted by the user.
+- Do not add tests that cannot fail for the intended regression.
+- Do not increase timeout/retry/sleep as a substitute for root-cause debugging.
+- Do not use broad `any`, `ts-ignore`, disabled lint, broad catch, or broad cast without justification.
+- Do not leave test-only or debug-only branches in production code.
+- Do not introduce a new abstraction unless at least two concrete call sites need it now.
+- If temporary debt is explicitly accepted, record it in the active task doc `Quality Debt Exceptions` table with reason, owner, follow-up issue, and expiry.
 
 ## Subagent Dispatch Contract
 
@@ -53,15 +65,15 @@ Do not self-commit from a delegated subagent unless the orchestrator explicitly 
 
 - Default mode is heavy. Use `/agent-init --lite` only for small repositories that do not need task ledger or hooks.
 - Pick the orchestrator by deliverable: `/agent-all` ships durable, gated code changes as a PR; evidence-producing work (research, multi-unit audits, design/findings reports) goes to the built-in `Workflow` (ultracode) tool instead — they are siblings, never nested. Mixed work: run `Workflow` first to write a task doc, then `/agent-all <taskdoc> --no-brainstorm`. ("Workflow" here means the built-in ultracode tool, not CI workflows.)
-- Every `/agent-all` run must resolve to a task document under `docs/tasks/`.
-- Keep `Decision Matrix`, `Ambiguity Log`, `Progress Snapshot`, and `Verification` current.
-- Phase handoffs belong in the task doc or `_handoff-template.md` output, not in raw chat logs.
+- Every `/agent-all` run must resolve to a task document under `.agent-skill/tasks/`. Legacy `docs/tasks/` task docs remain readable for resume/migration only.
+- Keep `Decision Matrix`, `Ambiguity Log`, `Progress Snapshot`, `Verification`, and `Cost Telemetry` current.
+- Phase handoffs belong in `.agent-skill/handoff/` or the task doc, not in raw chat logs.
 - Existing local instructions outside the generated sentinel section take precedence.
 
 ## Task Ledger
 
-- `docs/tasks/index.md` tracks active tasks.
-- `docs/tasks/_template.md` is the required shape for new tasks.
+- `.agent-skill/tasks/index.md` tracks active tasks.
+- `.agent-skill/tasks/_template.md` is the required shape for new tasks.
 - `scripts/agent-task-ledger-check.mjs` gates completion and PR creation.
 - Checkboxes under `Backlog` and `Follow-up` are not completion blockers.
 
@@ -73,6 +85,7 @@ Use reviewer personas based on changed files:
 - auth, permissions, API views, serializers, destructive actions: `security-reviewer`
 - models, migrations, seeds, fixtures, backfills: `data-reviewer`
 - tests, CI, build config: `verification-reviewer`
+- fallback, TODO/dead code, suppressions, skipped/meaningless tests: `quality-debt-reviewer`
 - cross-stack frontend and backend changes: `integration-dev`, `verification-reviewer`
 
 ## Role Routing
@@ -81,11 +94,12 @@ Use reviewer personas based on changed files:
 - `planner`: ambiguity control, Decision Matrix updates, task slicing, and plan files before implementation.
 - `frontend-dev` / `backend-dev`: stack-specific implementation after the task doc and ownership boundaries are clear.
 - `integration-dev`: cross-stack wiring, API contracts, and frontend/backend coordination points.
+- `quality-debt-reviewer`: fallback, suppression, TODO/dead-code, skipped/meaningless test, and production test/debug-path gate.
 - `design-reviewer` + `qa-reviewer`: UI hierarchy, visual state, accessibility, and user-flow validation.
 - `security-reviewer` + `data-reviewer`: authz, secrets, destructive actions, migrations, seeds, fixtures, and backfills.
 - `verification-reviewer`: tests, typecheck, lint, diff scope, and completion evidence.
 
-Keep each active task's Progress Snapshot current with owner, files, validation, blockers, and next action.
+Keep each active task's Progress Snapshot and Cost Telemetry current with owner, files, validation, blockers, next action, and budget status.
 
 ## Implementation Routing Matrix
 
@@ -109,7 +123,7 @@ Keep each active task's Progress Snapshot current with owner, files, validation,
 
 | Trigger | Required gate | Evidence |
 |---------|---------------|----------|
-| Feature or bug fix | implementer + `verification-reviewer` | tests/typecheck/lint or task-specific verification |
+| Feature or bug fix | implementer + `verification-reviewer` + `quality-debt-reviewer` | tests/typecheck/lint or task-specific verification plus debt scan |
 | UI or user-visible flow | `design-reviewer` + `qa-reviewer` | UX findings plus `QA_AUDIT` |
 | Auth, permissions, secrets, destructive actions | `security-reviewer` | risk review with blocking issues first |
 | Models, migrations, seeds, fixtures, backfills | `data-reviewer` | data safety, rollback, and migration evidence |
@@ -145,10 +159,11 @@ Lite mode keeps only root memory and the minimal role roster.
 {{/if}}
 ## Work Folders
 
-- `docs/superpowers/specs/` - brainstorming output.
-- `docs/superpowers/plans/` - implementation plans.{{#if operationalProfile}}
-- `docs/tasks/` - task ledger.
-- `docs/decisions/` - concise decision records.{{/if}}{{#if degradedFoundations}}
+- `.agent-skill/specs/` - brainstorming output.
+- `.agent-skill/plans/` - implementation plans.{{#if operationalProfile}}
+- `.agent-skill/tasks/` - task ledger.
+- `.agent-skill/decisions/` - concise decision records.
+- `docs/` - user-facing docs only, or explicit export output.{{/if}}{{#if degradedFoundations}}
 
 ## Foundation Status
 

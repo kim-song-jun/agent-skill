@@ -18,7 +18,25 @@
    - `maxParallel` = `min(wave.maxParallel, config.dispatch.maxSubprocesses)`.
    - `rolesAllowed` filter; overflow tasks → "all-roles" wave at end.
 
-3. For each wave:
+3. Before dispatching each wave, build/update `state.orchestration` with the
+   same state shape as the Claude planner:
+   `{runId,wave,changedFiles,changedDomains,requiredAgents,spawnedAgents,
+   failureSignatures,blockedReasons,budget}`. Compute `requiredAgents` from
+   changed files and failure state:
+   - UI/frontend changes require `frontend-dev`, `design-reviewer`, and
+     `qa-reviewer`.
+   - migrations/fixtures/backfills require `data-reviewer`.
+   - auth/API/security-sensitive files require `security-reviewer`.
+   - repeated failure signatures at the configured threshold require a
+     planner/user decision and must not dispatch another implementer.
+   Write every dynamic Gemini subprocess spawn to
+   `.agent-skill/runs/<run-id>/spawn-log.jsonl` with role, reason, wave, and
+   cost estimate. Emit compatible `BeforeAgentSpawn` policy entries with wave
+   spawn count and same-role spawn count when policy logging is available.
+   Do not invoke the built-in `Workflow` tool inside `/agent-all-gemini`;
+   Workflow remains a sibling route that hands off through a task doc.
+
+4. For each wave:
 
    a. Print: `Wave <i+1>/<N> — <waves[i].length> tasks in parallel (subprocesses)`.
 
@@ -29,10 +47,12 @@
           --output-json \
           --output-file '/tmp/agent-all/wave-<i>/task-<task.id>.json' \
           --skill-roster .gemini/skills/<role>/ \
-          --timeout <subprocessTimeout> &",
-        { background: true }
-      )
-      ```
+	          --timeout <subprocessTimeout> &",
+	        { background: true }
+	      )
+	      ```
+      If the plan left `role: dev`, use `state.orchestration.requiredAgents`
+      to choose or validate the skill roster role for that task.
       Each subprocess writes its result JSON to the output file when done.
       Capture each subprocess `pid`.
 
@@ -53,14 +73,17 @@
       Extract `{status, commits, costUSD, exitCode}`. If file missing
       (subprocess crashed): synthesize `{status: "failed", exitCode: -1}`.
 
-   e. Accumulate `state.costUSD += sum(costUSD)`. If
+   e. Record per-subprocess usage as `agent-cost-telemetry/v1`, append
+      `.agent-skill/runs/<run-id>/cost-telemetry.jsonl`, mirror the latest
+      summary to `state.costTelemetry.summary`, and accumulate
+      `state.costUSD += sum(costUSD)` for backward compatibility. If
       `state.costUSD > config.defaults.maxCostUSD`: push
       `{phase: 3, status: "cost-cap"}`, abort.
 
    f. Capture wave result:
-      `{index: i, tasks: [...], status: "completed" | "incomplete", maxParallelUsed: actual}`.
+      `{index: i, orchestration: state.orchestration, tasks: [...], status: "completed" | "incomplete", maxParallelUsed: actual}`.
 
-4. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
+5. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
 
 ## On error
 

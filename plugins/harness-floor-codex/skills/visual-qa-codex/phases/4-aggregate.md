@@ -7,7 +7,10 @@
 2. If `priorRunDir`: read its `report.json`. Diff per-issue. Bucket as
    `new`, `resolved`, `unchanged` (compare by composite key).
 
-3. Write `<slug-dir>/report.json` via `apply_patch`, including:
+3. Render `<slug-dir>/report.json`, pass it through
+   `redactArtifactContent({ artifactPath: "<slug-dir>/report.json", content, config })`,
+   append a redaction audit summary when findings exist, and only then write it
+   via `apply_patch`, including:
    - `matrix.totalCaptures`
    - `issues`
    - `diff`
@@ -37,7 +40,8 @@
      });
    }
 
-   // Write <slug-dir>/verdict.json and set state.verdict.
+   // Pass verdict JSON through the same redaction gate, then write
+   // <slug-dir>/verdict.json and set state.verdict.
    ```
 
 5. **DOM-hash cache writeback.** Also in comprehensive mode, when
@@ -47,7 +51,9 @@
    writeCache(state.domHashCachePath, state.domHashCache);
    ```
 
-6. Render `templates/report.md.hbs`. Write `<slug-dir>/report.md` via `apply_patch`.
+6. Render `templates/report.md.hbs`. Pass the Markdown through the same
+   redaction gate before writing `<slug-dir>/report.md` via `apply_patch`.
+   High-severity findings block the write; medium findings are masked.
 
 7. Push `{phase: 4, completedAt, issueCount, newCount, resolvedCount}` to state.
    In comprehensive mode, also persist `verdict` and the `verdict.json` path.

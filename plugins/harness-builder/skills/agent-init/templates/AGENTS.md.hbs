@@ -19,7 +19,7 @@ These rules mirror the Claude Code harness so non-Claude agents can participate 
 
 1. Read `CLAUDE.md` first when present; it is the primary operating index.
 2. Invoke `superpowers:brainstorming` before ambiguous or multi-step deliverables unless the user explicitly asks for direct execution.
-3. Use `superpowers:writing-plans` for non-trivial changes and keep plans in `docs/superpowers/plans/`.
+3. Use `superpowers:writing-plans` for non-trivial changes and keep generated control-plane plans in `.agent-skill/plans/` by default.
 4. Use `superpowers:dispatching-parallel-agents` or `superpowers:subagent-driven-development` as the planning protocol for multi-role work.
 5. Use `superpowers:verification-before-completion` before claiming success.
 6. Use context-mode or file-backed logs for broad searches, test output, screenshots, and noisy generated output when available.
@@ -36,6 +36,18 @@ These rules mirror the Claude Code harness so non-Claude agents can participate 
 5. **Decision Matrix.** When two or more reasonable choices remain, or multiple user decisions are needed, present a `Decision Matrix` with option, impact, recommendation, and whether confirmation is required.
 {{#if operationalProfile}}6. **Task-ledger gate.** If a task ledger document is active, do not call the work complete while required sections, in-scope checkboxes, acceptance criteria, or verification evidence are missing.
 {{/if}}
+
+## Quality Debt Policy
+
+- Do not add fallback code unless the task acceptance criteria explicitly requires fallback behavior.
+- Do not silence errors that should fail fast.
+- Do not add TODO/FIXME/dead code unless linked to an issue and accepted by the user.
+- Do not add tests that cannot fail for the intended regression.
+- Do not increase timeout/retry/sleep as a substitute for root-cause debugging.
+- Do not use broad `any`, `ts-ignore`, disabled lint, broad catch, or broad cast without justification.
+- Do not leave test-only or debug-only branches in production code.
+- Do not introduce a new abstraction unless at least two concrete call sites need it now.
+- If temporary debt is explicitly accepted, record it in the active task doc `Quality Debt Exceptions` table with reason, owner, follow-up issue, and expiry.
 
 ## Subagent Dispatch Contract
 
@@ -54,18 +66,19 @@ Do not self-commit from a delegated subagent unless the orchestrator explicitly 
 
 ## Operational Harness
 
-- Every `/agent-all` run must resolve to a task document under `docs/tasks/`.
-- Keep Decision Matrix, Ambiguity Log, Progress Snapshot, and Verification current.
+- Every `/agent-all` run must resolve to a task document under `.agent-skill/tasks/`. Legacy `docs/tasks/` task docs remain readable for resume/migration only.
+- Keep Decision Matrix, Ambiguity Log, Progress Snapshot, Verification, and Cost Telemetry current.
 - Use `.claude/agents/` reviewer personas for role-specific implementation and review gates.
 - Folder-level `AGENTS.md` or `CLAUDE.md` files define local ownership and validation scope.
 - Repo-local policy hooks block destructive commands and pathspec-free commits where the host supports hooks.
 
 ## Work Folders
 
-- `docs/superpowers/specs/` - brainstorming output.
-- `docs/superpowers/plans/` - implementation plans.
-- `docs/tasks/` - task ledger.
-- `docs/decisions/` - concise decision records.
+- `.agent-skill/specs/` - brainstorming output.
+- `.agent-skill/plans/` - implementation plans.
+- `.agent-skill/tasks/` - task ledger.
+- `.agent-skill/decisions/` - concise decision records.
+- `docs/` - user-facing docs only, or explicit export output.
 
 ## Role Routing
 
@@ -73,11 +86,13 @@ Do not self-commit from a delegated subagent unless the orchestrator explicitly 
 - `planner`: ambiguity control, Decision Matrix updates, task slicing, and plan files before implementation.
 - `frontend-dev` / `backend-dev`: stack-specific implementation after the task doc and ownership boundaries are clear.
 - `integration-dev`: cross-stack wiring, API contracts, and frontend/backend coordination points.
+- `quality-debt-reviewer`: fallback, suppression, TODO/dead-code, skipped/meaningless test, and production test/debug-path gate.
 - `design-reviewer` + `qa-reviewer`: UI hierarchy, visual state, accessibility, and user-flow validation.
 - `security-reviewer` + `data-reviewer`: authz, secrets, destructive actions, migrations, seeds, fixtures, and backfills.
 - `verification-reviewer`: tests, typecheck, lint, diff scope, and completion evidence.
+- `quality-debt-reviewer`: fallbacks, suppressions, TODO/dead code, skipped or meaningless tests, and production test/debug paths.
 
-Keep each active task's Progress Snapshot current with owner, files, validation, blockers, and next action.
+Keep each active task's Progress Snapshot and Cost Telemetry current with owner, files, validation, blockers, next action, and budget status.
 
 ## Implementation Routing Matrix
 
@@ -101,7 +116,7 @@ Keep each active task's Progress Snapshot current with owner, files, validation,
 
 | Trigger | Required gate | Evidence |
 |---------|---------------|----------|
-| Feature or bug fix | implementer + `verification-reviewer` | tests/typecheck/lint or task-specific verification |
+| Feature or bug fix | implementer + `verification-reviewer` + `quality-debt-reviewer` | tests/typecheck/lint or task-specific verification plus debt scan |
 | UI or user-visible flow | `design-reviewer` + `qa-reviewer` | UX findings plus `QA_AUDIT` |
 | Auth, permissions, secrets, destructive actions | `security-reviewer` | risk review with blocking issues first |
 | Models, migrations, seeds, fixtures, backfills | `data-reviewer` | data safety, rollback, and migration evidence |
@@ -122,8 +137,8 @@ Lite mode keeps only root guidance and the minimal role roster.
 
 ## Work Folders
 
-- `docs/superpowers/specs/` - brainstorming output.
-- `docs/superpowers/plans/` - implementation plans.
+- `.agent-skill/specs/` - brainstorming output.
+- `.agent-skill/plans/` - implementation plans.
 {{/if}}
 ## Role Roster
 

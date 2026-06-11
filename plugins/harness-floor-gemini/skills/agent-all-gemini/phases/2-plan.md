@@ -3,7 +3,7 @@
 ## Steps
 
 1. The coordinator drafts a plan from `task.path` into
-   `docs/superpowers/plans/<YYYY-MM-DD>-<slug>.md` via `write_file`.
+   `.agent-skill/plans/<YYYY-MM-DD>-<slug>.md` via `write_file`.
    Plan format same as Claude port:
    - `# <Plan title>` heading.
    - `## Context`, `## Goals`, `## Non-goals`.

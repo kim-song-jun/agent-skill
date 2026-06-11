@@ -75,7 +75,7 @@ is no `/thrift` slash command on Cursor — the workflow is chat-driven.
    entirely. The `.thrift.json` schema omits the `cache` section to
    avoid implying an unimplemented feature.
 5. **Audit is a textual recap.** Phase 5 writes
-   `docs/thrift/cursor-recap-<date>.md` containing a free-form summary
+   `.agent-skill/reports/thrift/cursor-recap-<date>.md` containing a free-form summary
    of what happened in the session — no token counts, no cost numbers.
 
 ## Lib modules

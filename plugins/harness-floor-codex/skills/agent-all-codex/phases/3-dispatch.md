@@ -6,6 +6,8 @@
 - `state.dispatch` (`"sequential"` for current Codex hooks, set in Phase 0)
 - `config.defaults.waveSize` (or `--wave-size` override)
 - `config.waves[<waveSize>]`
+- `state.loop.failureSignatures`, `state.costUSD`, `state.costTelemetry`, and latest
+  `state.orchestration` when resuming from a failing loop iteration
 
 ## Steps
 
@@ -24,9 +26,39 @@
    Capture `baseCommit` before implementation with `git rev-parse HEAD` so
    Phase 4 can include the first coordinator-created task commit in gate diffs.
 
-   a. Print: `Wave <i+1>/<N> — <waves[i].length> tasks (sequential dispatch)`.
-   b. For each task in the wave (one at a time):
+   a. Build/update `state.orchestration` before dispatch. Use the same state
+      shape as the Claude planner:
+      `{runId,wave,changedFiles,changedDomains,requiredAgents,spawnedAgents,
+      failureSignatures,blockedReasons,budget}`. Compute `requiredAgents`
+      from changed files and failure state before choosing sequential role
+      skills:
+      - UI/frontend changes require `frontend-dev`, `design-reviewer`, and
+        `qa-reviewer`.
+      - migrations/fixtures/backfills require `data-reviewer`.
+      - auth/API/security-sensitive files require `security-reviewer`.
+      - repeated failure signatures at the configured threshold require a
+        planner/user decision and must not dispatch another implementer.
+      Write every dynamic sequential spawn to
+      `.agent-skill/runs/<run-id>/spawn-log.jsonl` with role, reason, wave,
+      and cost estimate. Emit compatible `BeforeAgentSpawn` policy entries
+      when the local policy writer is available. Include wave spawn count and
+      same-role spawn count so policy can enforce per-wave caps and repeated
+      role limits.
+      Do not invoke the built-in `Workflow` tool inside `/agent-all-codex`;
+      Workflow remains a sibling route that hands off through a task doc.
+   b. Print: `Wave <i+1>/<N> — <waves[i].length> tasks (sequential dispatch)`.
+   c. For each task in the wave (one at a time):
       - Build the sequential prompt with `lib/sequential-dispatch.mjs`; it MUST include the role skill body, task body, and mandatory Dispatch Prompt Contract below.
+      - If the plan left `role: dev`, use `state.orchestration.requiredAgents`
+        and the task's files to choose `frontend-dev`, `backend-dev`,
+        `integration-dev`, or `dev`.
+      - Any scoping decision, confirmation, budget warning, blocked state, or
+        resume action must be normalized as `agent-interaction/v1`. Render it
+        with the Codex interaction prompt renderer, persist the result under
+        `state.interactions`, and append
+        `.agent-skill/runs/<run-id>/interactions.jsonl`.
+      - In non-TTY mode, auto-select only recommended low/medium-risk options.
+        High-risk recommendations must pause/block rather than continue.
       - Read `.codex/skills/<task.role>/SKILL.md` and invoke its phases.
       - The role-skill performs the implementation and returns changed files,
         verification evidence, blockers, and final JSON. It must not commit.
@@ -34,15 +66,19 @@
         stages only task-owned pathspecs, creates the task commit, and records
         the coordinator-created commit SHA on that task. If the diff includes
         unreported or forbidden files, do not commit; re-dispatch or escalate.
-   c. After all tasks finish, assemble the same `{agentId, status, changedFiles, commits, costUSD}`
+   d. After all tasks finish, assemble the same `{agentId, status, changedFiles, commits, costUSD}`
       shape (agentId synthetic in fallback mode). `commits` are coordinator-created pathspec commits, not role-skill self-commits.
 
-4. For each finished agent, accumulate `state.costUSD += costUSD`. If
+4. For each finished agent, record reported or estimated usage as
+   `agent-cost-telemetry/v1`, append
+   `.agent-skill/runs/<run-id>/cost-telemetry.jsonl`, mirror the latest summary
+   to `state.costTelemetry.summary`, and accumulate `state.costUSD` for
+   backward compatibility. If
    `state.costUSD > config.defaults.maxCostUSD`: push
    `{phase: 3, status: "cost-cap"}`, abort.
 
 5. Capture wave result:
-   `{index: i, baseCommit, startCommit, endCommit, tasks: [...], status: "completed" | "incomplete", strategy: state.dispatch}`.
+   `{index: i, baseCommit, startCommit, endCommit, orchestration: state.orchestration, tasks: [...], status: "completed" | "incomplete", strategy: state.dispatch}`.
    Derive `startCommit` and `endCommit` from the first and last
    coordinator-created task commit SHAs recorded in `tasks[].commits`.
 
@@ -52,6 +88,8 @@
 
 - `sequential` strategy: if a role-skill returns non-zero: mark task
   `blocked`. If >1 task blocked in a wave: mark wave `incomplete`.
+- If orchestration reports repeated failure or budget block, write state and
+  surface planner/user decision instead of dispatching more implementers.
 - `tasks.length === 0`: abort with `plan has no '### Task N' headings`.
 
 ## Output

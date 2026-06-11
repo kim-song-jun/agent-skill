@@ -9,6 +9,7 @@ function runHook(event, payload) {
   return spawnSync(process.execPath, [HOOK, event], {
     input: JSON.stringify(payload),
     encoding: "utf-8",
+    env: { ...process.env, AGENT_POLICY_AUDIT: "0" },
   });
 }
 

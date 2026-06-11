@@ -52,6 +52,7 @@ test("gate-plan preserves spec review before quality reviewer gates after coordi
     [
       ["reviewer", "reviewer", "spec", "VERIFICATION_AUDIT"],
       ["reviewer", "reviewer", "quality", "VERIFICATION_AUDIT"],
+      ["reviewer", "quality-debt-reviewer", "quality", "VERIFICATION_AUDIT"],
       ["reviewer", "verification-reviewer", "quality", "VERIFICATION_AUDIT"],
       ["reviewer", "qa-reviewer", "quality", "QA_AUDIT"],
       ["reviewer", "design-reviewer", "quality", "VERIFICATION_AUDIT"],
@@ -77,6 +78,7 @@ test("gate-plan can emit a stable task description for every dispatch", () => {
     plan.dispatches.map((dispatch) => descriptionForDispatch(dispatch, { taskId: "12", title: "Update checkout CTA" })),
     [
       "Review Task 12: Update checkout CTA",
+      "Quality Debt Review Task 12: Update checkout CTA",
       "Verification Review Task 12: Update checkout CTA",
       "QA Review Task 12: Update checkout CTA",
       "Design Review Task 12: Update checkout CTA",
@@ -93,9 +95,23 @@ test("gate-plan exposes gate criteria for coordinator and audit verdict collecti
   assert.deepEqual(plan.requiredAudits, {
     ORCHESTRATION_AUDIT: ["orchestrator"],
     QA_AUDIT: ["qa-reviewer"],
-    VERIFICATION_AUDIT: ["reviewer", "reviewer", "verification-reviewer", "design-reviewer"],
+    VERIFICATION_AUDIT: ["reviewer", "reviewer", "quality-debt-reviewer", "verification-reviewer", "design-reviewer"],
   });
+  assert.match(plan.passCriteria.join("\n"), /Quality debt reviewer/);
   assert.match(plan.passCriteria.join("\n"), /ORCHESTRATION_AUDIT.*passed.*skipped/);
   assert.match(plan.passCriteria.join("\n"), /QA_AUDIT.*qa-reviewer/);
   assert.match(plan.passCriteria.join("\n"), /VERIFICATION_AUDIT.*verification-reviewer/);
+});
+
+test("gate-plan can be augmented by dynamic orchestration roles", () => {
+  const plan = buildGatePlan({
+    files: ["docs/usage.md"],
+    gates: { specReview: false, qualityReview: true },
+    requiredReviewerRoles: ["qa-reviewer"],
+    requiredCoordinatorRoles: ["orchestrator"],
+  });
+
+  assert.equal(plan.dispatches[0].role, "orchestrator");
+  assert.ok(plan.reviewers.includes("qa-reviewer"));
+  assert.ok(plan.requiredAudits.QA_AUDIT.includes("qa-reviewer"));
 });
