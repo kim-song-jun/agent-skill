@@ -29,8 +29,8 @@ function makeFixture({ readme, readmeKo }) {
       ],
     }),
   );
-  writeRel(root, "plugins/harness-builder/plugin.json", JSON.stringify({ name: "harness-builder", version: "0.3.0" }));
-  writeRel(root, "plugins/harness-floor/plugin.json", JSON.stringify({ name: "harness-floor", version: "0.5.1" }));
+  writeRel(root, "plugins/harness-builder/plugin.json", JSON.stringify({ name: "harness-builder", version: "0.6.0" }));
+  writeRel(root, "plugins/harness-floor/plugin.json", JSON.stringify({ name: "harness-floor", version: "0.6.0" }));
   writeRel(root, "README.md", readme);
   writeRel(root, "README.ko.md", readmeKo);
   writeRel(root, "CHANGELOG.md", "# Changelog\n\nDate-stamped tags exist for each release candidate.\n\n## Unreleased\n");
@@ -71,8 +71,8 @@ test("release-candidate report validates current checkout evidence", () => {
   assert.match(report.git.head, /^[0-9a-f]{40}$/);
   assert.match(report.recommendedTag, /^rc-2026-06-02-[0-9a-f]{7}$/);
   assert.equal(report.plugins.count, 19);
-  assert.equal(report.plugins.manifests.find((plugin) => plugin.name === "harness-builder").version, "0.3.0");
-  assert.equal(report.plugins.manifests.find((plugin) => plugin.name === "harness-floor").version, "0.5.1");
+  assert.equal(report.plugins.manifests.find((plugin) => plugin.name === "harness-builder").version, "0.6.0");
+  assert.equal(report.plugins.manifests.find((plugin) => plugin.name === "harness-floor").version, "0.6.0");
   assert.ok(report.gateCommands.includes("./scripts/release-smoke.sh --fast --with-live-cli"));
   assert.ok(report.gateCommands.includes("node scripts/github-governance-check.mjs"));
   assert.ok(report.gateCommands.includes("node scripts/docs-structure-check.mjs"));

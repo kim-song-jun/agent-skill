@@ -1,6 +1,11 @@
 {
   "name": "harness-floor-copilot",
-  "version": "0.1.0",
+  "version": "0.6.0",
   "description": "visual-qa scaffold for GitHub Copilot CLI — emits .visual-qa.json + Playwright MCP entry",
-  "keywords": ["visual-qa", "copilot", "github", "playwright"]
+  "keywords": [
+    "visual-qa",
+    "copilot",
+    "github",
+    "playwright"
+  ]
 }

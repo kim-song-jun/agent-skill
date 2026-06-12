@@ -1,6 +1,10 @@
 {
   "name": "harness-builder-codex",
-  "version": "0.1.0",
+  "version": "0.6.0",
   "description": "Run agent-init for Codex CLI projects — emits AGENTS.md + .codex/skills/",
-  "keywords": ["harness", "agent-init", "codex"]
+  "keywords": [
+    "harness",
+    "agent-init",
+    "codex"
+  ]
 }

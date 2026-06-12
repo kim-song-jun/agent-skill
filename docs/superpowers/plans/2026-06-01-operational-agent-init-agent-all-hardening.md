@@ -31,7 +31,7 @@ Verification evidence:
 
 - `node scripts/release-audit.mjs`: Claude 82/82 and Codex 75/75 readiness checks passing, including the final `scripts/release-smoke.sh` gate contract, public PR CI and local release gate contract, GitHub governance/docs-structure contracts, release publish preflight contract, target project smoke contract, `scripts/release-candidate.mjs` evidence generator contract, `scripts/release-provenance.mjs` manifest/checksum generation, doctor recovery guidance, Codex floor-conditional language guidance, Claude companion root guidance, `/agent-handoff` handoff/resume contracts, Codex thrift advisory summariser contract, the user objective release matrix, the release candidate lifecycle, and public CLI executable/shebang packaging.
 - `node scripts/release-fixture-smoke.mjs`: Claude marketplace dry-run, Claude operational/lite render output, Claude terminal `install-platform.sh --platform=claude` operational/builder/lite fixtures, Claude/Codex operational and builder-heavy complete persona foundation/orchestration matrix checks, Claude/Codex approved foundation auto-update fixtures, Codex operational/lite/builder/floor/thrift/debug fresh fixtures, and Claude/Codex install→uninstall plus `--force-root-clean` roundtrip fixtures passing.
-- `node --test`: 1981/1981 passing.
+- `node --test`: 1983/1983 passing.
 - `./scripts/release-smoke.sh --fast --with-live-cli`: 503/503 passing with Claude Code and Codex CLI live probes.
 - `node scripts/sync-lib.mjs --check`: 91 vendored files match source.
 

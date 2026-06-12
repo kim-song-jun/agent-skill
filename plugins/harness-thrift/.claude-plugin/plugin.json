@@ -1,6 +1,12 @@
 {
   "name": "harness-thrift",
-  "version": "0.1.0",
+  "version": "0.6.0",
   "description": "Theme B — cost-conscious long-session optimisation: context-mode aggressive integration, prompt cache priming, automatic summariser hooks, end-of-session audit",
-  "keywords": ["harness", "thrift", "cost-optimization", "context-mode", "summariser"]
+  "keywords": [
+    "harness",
+    "thrift",
+    "cost-optimization",
+    "context-mode",
+    "summariser"
+  ]
 }
