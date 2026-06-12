@@ -6,6 +6,23 @@
 
 ## 미출시
 
+## Agent-skill v0.6.1 patch release — 2026-06-12
+
+- `.thrift.json`이 없는 프로젝트에서 큰 출력 명령이 반복되면 Claude
+  context-mode router가 자동으로 `/thrift`를 추천합니다. 훅은 advisory-only
+  동작을 유지하며 `.agent-skill/recommendations/` 아래에 durable 추천
+  메모를 남깁니다.
+- `/agent-all` medium/large wave 기본값에 generic `dev` 역할을 포함해
+  기본 dev 작업이 조용히 누락되지 않게 했고, async loop runner용
+  `evaluateLoopAsync`를 추가했습니다.
+- Codex sequential dispatch prompt에 task 문서 참조를 포함하고, 현재 Codex
+  loop 문서에서 지원되지 않는 legacy agent-hook 안내를 제거했습니다.
+- Cursor/Copilot/Gemini visual QA comprehensive mode가 `verdict.json`을 통해
+  `critical`과 `major` 회귀를 모두 gate하도록 맞췄습니다.
+- 공개 예시와 fixture의 사내/로컬 프로젝트명을 generic Enterprise
+  Django/Vue 예시로 바꾸고, 로컬 경로나 client name이 없는 한국어 사용자
+  매뉴얼을 다시 생성했습니다.
+
 ## Agent-skill v0.6.0 release train — 2026-06-12
 
 - Top-level planning docs 추가: `PROJECT_PLAN.md`, `ROADMAP.md`, generated
@@ -90,7 +107,7 @@
 - Deploy branch를 local-only release evidence에서 공개 PR smoke CI + authoritative local release gate로 확장. release-audit는 이제 `tests/manual-checklist.md`의 public PR CI/local release 계약을 검증.
 - `.github/workflows/*.yml` 변경을 감지하고 GitHub CLI auth에 `workflow` scope가 없으면 push 전에 실패시키는 no-push branch publishing preflight `scripts/release-publish-preflight.mjs` 추가.
 - 실제 대상 프로젝트용 no-write rollout 리허설 `scripts/target-project-smoke.mjs` 추가. Claude/Codex `install-platform.sh --dry-run`과 operational doctor 증거를 묶고, stale scaffold에는 권장 refresh 명령을 출력.
-- Claude/Codex harness 요구사항을 authoritative gate에 직접 매핑하는 release-audited User Objective Release Matrix 추가: heavy 기본값 + lite opt-out, 승인된 foundation 자동 갱신, superpowers/context-mode 활성화, persona 세분화, orchestration gate, POSCO MDS-style Django/Vue routing, Codex current-CLI parity, doctor/cleanup, HOME config 안전성, deployable release gate 포함.
+- Claude/Codex harness 요구사항을 authoritative gate에 직접 매핑하는 release-audited User Objective Release Matrix 추가: heavy 기본값 + lite opt-out, 승인된 foundation 자동 갱신, superpowers/context-mode 활성화, persona 세분화, orchestration gate, Enterprise Django/Vue routing, Codex current-CLI parity, doctor/cleanup, HOME config 안전성, deployable release gate 포함.
 - clean SHA 증거, 버전/changelog 정렬, live CLI probe 캡처, date-stamped release-candidate tag, rollout/update 경로, 이전 verified tag/SHA rollback을 다루는 release-audited Release Candidate Lifecycle 추가.
 - clean SHA 준비 상태, marketplace/manifest 정렬, README/README.ko Versioning 일치, changelog 준비 상태, stale release wording, 권장 date-stamped RC tag 이름, 필수 Claude/Codex gate 명령을 tag claim 전에 검증하는 release-candidate evidence generator `scripts/release-candidate.mjs` 추가.
 - `harness-debug-codex` 추가: Codex CLI용 `/debug` 포트. `debug-codex` skill 계약, `run /debug` 공개 진입점, 구조화된 오류 파싱, 가설 상태 유지, superpowers fallback 포함.
@@ -111,7 +128,7 @@
 - Claude QA, 기본 reviewer, 전문 reviewer persona도 Codex와 같은 Phase 4 machine-token 출력 계약을 release fixture와 release audit에서 증명하도록 강화.
 - Claude 터미널 `install-platform.sh --theme=builder`가 이제 진짜 builder-only heavy scaffold를 설치하고, floor config를 생략하며, builder-profile doctor를 실행하도록 고정. release fixture도 이를 증명.
 - Codex builder/lite 루트 `AGENTS.md`가 이제 floor가 설치된 경우에만 `.agent-all.json` language 정렬을 안내하도록 변경. builder-only 설치가 없는 floor config를 암시하지 않도록 release fixture와 release audit에서 고정.
-- Codex debug 포트를 마켓플레이스, Codex 설치 그룹, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, 공개 검증 문서에 등록. 현재 suite: 1983/1983 통과; fast release smoke: 503/503 통과.
+- Codex debug 포트를 마켓플레이스, Codex 설치 그룹, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, 공개 검증 문서에 등록. 현재 suite: 1991/1991 통과; fast release smoke: 504/504 통과.
 - Claude/Codex 터미널 operational bootstrap이 `claude` 사용 가능 시 승인된 foundation(`superpowers`, `context-mode`)만 자동 갱신하도록 변경. `--update-foundations` strict 모드와 `--no-update-foundations` opt-out 포함.
 - 기본 foundation auto-refresh에서 승인된 갱신이 실패해도 Claude/Codex bootstrap은 degraded foundation mode로 계속 진행하도록 강화. strict 실패는 `--update-foundations`에서만 유지.
 - `/agent-init` 기본값을 운영형/무거운 scaffold로 변경하고, 최소 경로는 `/agent-init --lite`로 제공.

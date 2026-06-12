@@ -21,8 +21,8 @@
   },
   "waves": {
     "small":  { "maxParallel": 2,  "rolesAllowed": ["dev", "reviewer"] },
-    "medium": { "maxParallel": 4,  "rolesAllowed": ["frontend-dev", "backend-dev", "designer", "reviewer", "quality-debt-reviewer"] },
-    "large":  { "maxParallel": 8,  "rolesAllowed": ["frontend-dev", "backend-dev", "designer", "qa-*", "reviewer", "quality-debt-reviewer", "doc-writer"] }
+    "medium": { "maxParallel": 4,  "rolesAllowed": ["dev", "frontend-dev", "backend-dev", "designer", "reviewer", "quality-debt-reviewer"] },
+    "large":  { "maxParallel": 8,  "rolesAllowed": ["dev", "frontend-dev", "backend-dev", "designer", "qa-*", "reviewer", "quality-debt-reviewer", "doc-writer"] }
   },
   "loop": {
     "maxIter": 1,

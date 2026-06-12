@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildWaves } from "../../../plugins/harness-floor/skills/agent-all/lib/wave-builder.mjs";
+import { DEFAULTS } from "../../../plugins/harness-floor/skills/agent-all/lib/config-loader.mjs";
 
 const waveConfig = { maxParallel: 2, rolesAllowed: ["dev", "reviewer"] };
 
@@ -50,4 +51,13 @@ test("rolesAllowed: tasks tagged with a role not in rolesAllowed are dropped", (
   const result = buildWaves(tasks, waveConfig);
   const allIds = result.flat().map(t => t.id);
   assert.deepEqual(allIds, [1]);
+});
+
+test("default large wave includes generic dev fallback role", () => {
+  const tasks = [
+    { id: 1, files: ["src/a.ts"], role: "dev" },
+  ];
+  const result = buildWaves(tasks, DEFAULTS.waves.large);
+  assert.equal(result.length, 1);
+  assert.equal(result[0][0].id, 1);
 });

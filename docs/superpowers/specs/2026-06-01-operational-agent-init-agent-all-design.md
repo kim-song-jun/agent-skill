@@ -3,7 +3,7 @@
 **Date:** 2026-06-01  
 **Status:** Implemented and release-audited
 **Scope:** Claude Code + Codex hard enforcement, Gemini soft rules  
-**Driver:** POSCO `posco/posco-mds` operating lessons: task ledger, pathspec commits, handoff discipline, role-specific review gates, context-mode, and superpowers integration.
+**Driver:** enterprise monorepo operating lessons: task ledger, pathspec commits, handoff discipline, role-specific review gates, context-mode, and superpowers integration.
 
 ## 1. Summary
 
@@ -13,7 +13,7 @@ The default `/agent-init` becomes an **operational/heavy profile**. It scaffolds
 
 The `/agent-all` pipeline becomes task-ledger-driven. Even free-form prompts create a task document, keep progress snapshots current, enforce dangerous-command policy, verify pathspec commits, and dispatch reviewer personas based on changed files.
 
-The core principle is practical: POSCO-style discipline should be the default because it prevents real failure modes in shared, multi-session projects. Small projects opt out with `--lite`.
+The core principle is practical: enterprise-style discipline should be the default because it prevents real failure modes in shared, multi-session projects. Small projects opt out with `--lite`.
 
 ## 2. Goals
 
@@ -494,7 +494,7 @@ Manual checklist:
 
 ## 13. Release and Migration
 
-Target version: `v0.6.0` or next minor release.
+Target version: `v0.6.1` or next minor release.
 
 README updates:
 

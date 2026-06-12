@@ -4,7 +4,7 @@
 
 **Status:** Approved (brainstorming complete, awaiting plan)
 **Date:** 2026-05-17
-**Author:** kimsongjun (sungjun@molcube.com)
+**Author:** kimsongjun
 **Theme:** C of 3 (cost-unrestricted patterns). Combined sub-spec covering C-2 and C-3.
 
 **Note (2026-05-18):** `/harness-init` was renamed to `/agent-init` in harness-builder v0.2.0. References below to the old name reflect the original design and remain accurate for that timeframe. Treat `harness-init` and `agent-init` as the same skill in current code.

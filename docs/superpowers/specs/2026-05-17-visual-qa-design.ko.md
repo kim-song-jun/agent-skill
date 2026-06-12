@@ -4,7 +4,7 @@
 
 **상태:** 승인됨 (브레인스토밍 완료, 계획 대기 중)
 **날짜:** 2026-05-17
-**작성자:** kimsongjun (sungjun@molcube.com)
+**작성자:** kimsongjun
 **테마:** 3개 중 C (비용 제한 없는 패턴). C 내의 3개 중 하위 스펙 C-1.
 
 **참고 (2026-05-18):** `/harness-init`은 harness-builder v0.2.0에서 `/agent-init`으로 이름이 변경되었습니다. 아래 참고 사항은 원래 설계를 반영하며 해당 시점에서 정확합니다. 현재 코드에서는 `harness-init`과 `agent-init`을 같은 스킬로 취급하세요.

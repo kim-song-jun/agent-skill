@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { render } from "../../plugins/harness-builder/skills/agent-init/lib/render.mjs";
@@ -87,6 +87,34 @@ test("Claude native hook entrypoints are syntax-valid JavaScript", () => {
   });
   assert.equal(malformed.status, 0, malformed.stderr);
   assert.equal(malformed.stdout, "");
+});
+
+test("Claude native context router recommends /thrift after repeated large-output work", () => {
+  const router = resolve("plugins/harness-builder/skills/agent-init/templates/hooks/context-mode-router.mjs");
+  const target = mkdtempSync(resolve(tmpdir(), "agent-skill-thrift-recommend-"));
+  const runRouter = (command) => spawnSync(process.execPath, [router], {
+    input: JSON.stringify({ tool_input: { command } }),
+    encoding: "utf-8",
+    env: { ...process.env, CLAUDE_PROJECT_DIR: target },
+  });
+
+  try {
+    const first = runRouter("git status --short");
+    assert.equal(first.status, 0, first.stderr);
+    assert.match(first.stdout, /context_guidance/);
+    assert.doesNotMatch(first.stdout, /run \/thrift/);
+
+    runRouter("git diff --stat");
+    const third = runRouter("rg TODO");
+    assert.equal(third.status, 0, third.stderr);
+    assert.match(third.stdout, /run \/thrift/);
+
+    const recommendation = resolve(target, ".agent-skill/recommendations/thrift.md");
+    assert.equal(existsSync(recommendation), true);
+    assert.match(readFileSync(recommendation, "utf-8"), /\/thrift recommended/);
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
 });
 
 test("Claude native /agent-init floor seed config matches --qa comprehensive contract", () => {

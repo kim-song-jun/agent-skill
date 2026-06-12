@@ -36,7 +36,7 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.claudePlatform.details, /post-install Claude platform doctor coverage/);
   assert.match(result.checks.claudePlatform.details, /root foundation activation/);
   assert.match(result.checks.claudePlatform.details, /complete persona foundation\/orchestration matrix/);
-  assert.match(result.checks.claudePlatform.details, /POSCO MDS Django\/Vue routing proof/);
+  assert.match(result.checks.claudePlatform.details, /Enterprise Django\/Vue routing proof/);
   assert.match(result.checks.claudePlatform.details, /no HOME patching/);
   assert.match(result.checks.claudePlatformBuilder.summary, /Claude platform builder fixture: ok \(28\/28 file checks\)/);
   assert.match(result.checks.claudePlatformBuilder.details, /only builder-heavy artifacts/);
@@ -62,7 +62,7 @@ test("release fixture smoke validates Claude dry-run and Codex fresh fixtures", 
   assert.match(result.checks.codexOperational.details, /role gate matrix, QA personas/);
   assert.match(result.checks.codexOperational.details, /root foundation activation/);
   assert.match(result.checks.codexOperational.details, /complete persona foundation\/orchestration matrix/);
-  assert.match(result.checks.codexOperational.details, /POSCO MDS Django\/Vue routing proof/);
+  assert.match(result.checks.codexOperational.details, /Enterprise Django\/Vue routing proof/);
   assert.match(result.checks.codexOperational.details, /base\/specialized reviewer audit tokens/);
   assert.match(result.checks.codexOperational.details, /floor, thrift, debug, executable hooks\/task checker, configs/);
   assert.match(result.checks.codexOperational.details, /post-install operational doctor coverage/);

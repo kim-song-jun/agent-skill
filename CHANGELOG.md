@@ -6,6 +6,24 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.1 patch release — 2026-06-12
+
+- Added an automatic `/thrift` recommendation from the Claude context-mode
+  router after repeated large-output commands when `.thrift.json` is not
+  present; the hook remains advisory-only and writes a durable recommendation
+  note under `.agent-skill/recommendations/`.
+- Fixed `/agent-all` large/medium wave defaults so generic `dev` tasks are not
+  silently dropped, and added async loop-runner support via
+  `evaluateLoopAsync`.
+- Tightened Codex sequential dispatch prompts with task document references and
+  updated current Codex loop docs to avoid unsupported legacy agent-hook
+  instructions.
+- Made Cursor/Copilot/Gemini visual QA comprehensive mode gate both `critical`
+  and `major` regressions through `verdict.json`.
+- Replaced private/local project examples with a generic Enterprise Django/Vue
+  fixture and regenerated the Korean user manual without local paths or client
+  names.
+
 ## Agent-skill v0.6.0 release train — 2026-06-12
 
 - Added top-level planning docs: `PROJECT_PLAN.md`, `ROADMAP.md`, generated
@@ -90,7 +108,7 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Evolved the deploy branch from local-only release evidence to public PR smoke CI plus an authoritative local release gate; release-audit now verifies the public PR CI/local release contract in `tests/manual-checklist.md`.
 - Added `scripts/release-publish-preflight.mjs`, a no-push branch publishing preflight that still detects `.github/workflows/*.yml` changes and fails early when GitHub CLI auth lacks `workflow` scope.
 - Added `scripts/target-project-smoke.mjs`, a no-write rollout rehearsal for real target projects that combines Claude/Codex `install-platform.sh --dry-run` with operational doctor evidence and recommended refresh commands for stale scaffolds.
-- Added a release-audited User Objective Release Matrix mapping the Claude/Codex harness requirements to authoritative gates: heavy default + lite opt-out, approved foundation auto-update, superpowers/context-mode activation, persona segmentation, orchestration gates, POSCO MDS-style Django/Vue routing, Codex current-CLI parity, doctor/cleanup, HOME config safety, and the deployable release gate.
+- Added a release-audited User Objective Release Matrix mapping the Claude/Codex harness requirements to authoritative gates: heavy default + lite opt-out, approved foundation auto-update, superpowers/context-mode activation, persona segmentation, orchestration gates, Enterprise Django/Vue routing, Codex current-CLI parity, doctor/cleanup, HOME config safety, and the deployable release gate.
 - Added a release-audited Release Candidate Lifecycle covering clean-SHA evidence, version/changelog alignment, live CLI probe capture, date-stamped release-candidate tagging, rollout/update paths, and rollback to a previous verified tag/SHA.
 - Added `scripts/release-candidate.mjs`, a release-candidate evidence generator that verifies clean-SHA readiness, marketplace/manifest alignment, README/README.ko Versioning agreement, changelog readiness, stale release wording, recommended date-stamped RC tag names, and required Claude/Codex gate commands before a tag claim.
 - Added `harness-debug-codex`, a Codex CLI port of `/debug` with the `debug-codex` skill contract, `run /debug` public entrypoint, structured error parsing, hypothesis state persistence, and superpowers fallback.
@@ -111,7 +129,7 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 - Claude QA, base, and specialized reviewer personas now have the same Phase 4 machine-token output contract coverage in release fixtures and release audit as Codex.
 - Claude terminal `install-platform.sh --theme=builder` now installs a true builder-only heavy scaffold, skips floor configs, runs the builder-profile doctor, and is covered by release fixtures.
 - Codex builder/lite root `AGENTS.md` now uses floor-conditional `.agent-all.json` language guidance so builder-only installs no longer imply a missing floor config exists; release fixtures and release audit pin the contract.
-- Registered the Codex debug port in the marketplace, Codex plugin install group, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, and public verification docs. Current suite: 1983/1983 passing; fast release smoke: 503/503 passing.
+- Registered the Codex debug port in the marketplace, Codex plugin install group, `install-platform.sh --platform=codex --theme=all|debug`, post-install doctor, release fixture smoke, release audit, release smoke, and public verification docs. Current suite: 1991/1991 passing; fast release smoke: 504/504 passing.
 - Made Claude/Codex terminal operational bootstrap auto-refresh only approved foundations (`superpowers`, `context-mode`) when `claude` is available, with `--update-foundations` strict mode and `--no-update-foundations` opt-out.
 - Hardened foundation auto-refresh so default Claude/Codex bootstrap continues in degraded foundation mode if the approved update fails; strict failure remains opt-in through `--update-foundations`.
 - Changed `/agent-init` default to operational/heavy scaffold with `/agent-init --lite` as the minimal path.

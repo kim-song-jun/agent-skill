@@ -5,14 +5,21 @@
 2. If `priorRunDir`: read its `report.json` and diff per-issue. Bucket each
    issue as `new`, `resolved`, or `unchanged` (compare by
    `{component, state, breakpoint, severity, descriptionHash}`).
-3. Render `templates/report.md.hbs` with the merged data. Pass the Markdown
+3. **Comprehensive-mode verdict.** When `state.mode === "comprehensive"`:
+   compute `verdict` with `lib/verdict.mjs`, using
+   `config.comprehensive.verdict.failOn ?? ["critical", "major"]`, write
+   `<slug-dir>/verdict.json` through the same redaction gate, and set
+   `state.verdict`. On a first run, use `firstRunVerdict()` with
+   `config.comprehensive.verdict.firstRun`.
+4. Render `templates/report.md.hbs` with the merged data. Pass the Markdown
    through `redactArtifactContent({ artifactPath: "<slug-dir>/report.md", content, config })`,
    append a redaction audit summary when findings exist, and write only the
    redacted content to `<slug-dir>/report.md`.
-4. Render `<slug-dir>/report.json` (structured form, next run's prior), pass it
+5. Render `<slug-dir>/report.json` (structured form, next run's prior), pass it
    through the same redaction gate, and block the write on high-severity
    secret/privacy findings.
-5. Push `{phase: 4, completedAt, issueCount, newCount, resolvedCount}` to state.
+6. Push `{phase: 4, completedAt, issueCount, newCount, resolvedCount}` to state.
+   In comprehensive mode, also persist `verdict` and the `verdict.json` path.
 
 ## Shell helpers
 

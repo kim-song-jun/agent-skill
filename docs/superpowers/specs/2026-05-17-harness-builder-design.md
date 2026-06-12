@@ -4,7 +4,7 @@
 
 **Status:** Approved (brainstorming complete, awaiting plan)
 **Date:** 2026-05-17
-**Author:** kimsongjun (sungjun@molcube.com)
+**Author:** kimsongjun
 **Theme:** A of 3 (per-project harness builder)
 
 **Note (2026-05-18):** `/harness-init` was renamed to `/agent-init` in harness-builder v0.2.0. References below to the old name reflect the original design and remain accurate for that timeframe. Treat `harness-init` and `agent-init` as the same skill in current code.
@@ -81,7 +81,7 @@ my-project/
 
 ### 4.1 Repo Layout
 
-The repo at `C:\Users\kinso\Documents\molcube\agent-skill\` is a Claude Code plugin marketplace containing one plugin (`harness-builder`) for now; themes B and C will add sibling plugins later.
+The repo at `/path/to/agent-skill/` is a Claude Code plugin marketplace containing one plugin (`harness-builder`) for now; themes B and C will add sibling plugins later.
 
 ```
 agent-skill/

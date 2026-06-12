@@ -1,17 +1,17 @@
 {
-  "name": "posco-mds-django-vue",
-  "description": "POSCO MDS-style Django plus Vue monorepo change set: user-visible frontend, API/security, data/migration, and shared orchestration files.",
+  "name": "enterprise-django-vue",
+  "description": "Enterprise Django plus Vue monorepo change set: user-visible frontend, API/security, data/migration, and shared orchestration files.",
   "changedFiles": [
-    "frontend/src/views/mds/ShipmentList.vue",
-    "frontend/src/router/modules/mds.ts",
+    "frontend/src/views/orders/OrderList.vue",
+    "frontend/src/router/modules/orders.ts",
     "frontend/src/stores/auth.ts",
-    "frontend/src/api/mds.ts",
-    "backend/apps/mds/views.py",
-    "backend/apps/mds/viewsets.py",
-    "backend/apps/mds/serializers.py",
-    "backend/apps/mds/models.py",
-    "backend/apps/mds/migrations/0042_sync_status.py",
-    "backend/apps/mds/fixtures/mds_status_codes.json",
+    "frontend/src/api/orders.ts",
+    "backend/apps/orders/views.py",
+    "backend/apps/orders/viewsets.py",
+    "backend/apps/orders/serializers.py",
+    "backend/apps/orders/models.py",
+    "backend/apps/orders/migrations/0042_sync_status.py",
+    "backend/apps/orders/fixtures/order_status_codes.json",
     "docker-compose.yml"
   ],
   "expectedReviewers": [

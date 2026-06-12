@@ -12,8 +12,8 @@ export const DEFAULTS = {
   },
   waves: {
     small:  { maxParallel: 2, rolesAllowed: ["dev", "reviewer"] },
-    medium: { maxParallel: 4, rolesAllowed: ["frontend-dev", "backend-dev", "designer", "reviewer"] },
-    large:  { maxParallel: 8, rolesAllowed: ["frontend-dev", "backend-dev", "designer", "qa-*", "reviewer", "doc-writer"] },
+    medium: { maxParallel: 4, rolesAllowed: ["dev", "frontend-dev", "backend-dev", "designer", "reviewer"] },
+    large:  { maxParallel: 8, rolesAllowed: ["dev", "frontend-dev", "backend-dev", "designer", "qa-*", "reviewer", "doc-writer"] },
   },
   loop: { breakCondition: "npm test", stableIters: 1, maxRuntimeSec: null, maxRepeatedFailureSignature: 3 },
   gates: { specReview: true, qualityReview: true, blockOnCritical: true },

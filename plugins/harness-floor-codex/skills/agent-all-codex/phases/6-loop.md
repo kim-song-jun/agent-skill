@@ -30,21 +30,13 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
      `.agent-skill/runs/<run-id>/verification-evidence.jsonl`. Exit 0 only
      when the evidence status is `passed`.
 
-   - **`visual-qa`**: treat as `verify:web-ui` evidence, then dispatch via
-     the same strategy Phase 3 uses for
-     implementers — `agent` hook (preferred) with role `visual-qa`, or
-     sequential `.codex/skills/visual-qa-codex/SKILL.md` fallback —
-     invoking the skill with a fresh per-iter slug:
+   - **`visual-qa`**: treat as `verify:web-ui` evidence, then invoke the
+     sequential `.codex/skills/visual-qa-codex/SKILL.md` helper with a fresh
+     per-iter slug. Current Codex CLI hooks do not expose a supported
+     Task-style agent dispatch surface, so this path intentionally uses
+     prompt-level sequential execution:
 
      ```
-     # agent-hook path
-     agent({
-       role: "visual-qa-runner",
-       prompt: `Invoke visual-qa-codex skill:
-                  --slug=loop-iter-${state.iter} --force --yes${spec.spec ? " --spec=" + spec.spec : ""}
-                Report STATUS: passed | STATUS: failed.`
-     })
-
      # sequential path
      invokeSkill(".codex/skills/visual-qa-codex/SKILL.md",
        ["--slug=loop-iter-${state.iter}", "--force", "--yes"])

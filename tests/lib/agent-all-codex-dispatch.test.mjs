@@ -345,6 +345,7 @@ test("sequential-dispatch: buildSkillPrompt includes task metadata", () => {
     task: {
       id: "t-1",
       title: "Fix login",
+      path: ".agent-skill/tasks/T-20260612-001-fix-login.md",
       files: ["src/auth.js", "src/login.js"],
       body: "Detailed description",
     },
@@ -352,6 +353,7 @@ test("sequential-dispatch: buildSkillPrompt includes task metadata", () => {
   });
   assert.match(prompt, /Task ID: t-1/);
   assert.match(prompt, /Title:   Fix login/);
+  assert.match(prompt, /Task doc: \.agent-skill\/tasks\/T-20260612-001-fix-login\.md/);
   assert.match(prompt, /Plan: docs\/plan\.md/);
   assert.match(prompt, /- src\/auth\.js/);
   assert.match(prompt, /Detailed description/);
@@ -379,6 +381,7 @@ test("sequential-dispatch: buildSkillPrompt includes the dispatch contract", () 
   assert.match(prompt, /DO NOT:[\s\S]*destructive commands/i);
   assert.match(prompt, /DO NOT:[\s\S]*self-commit/i);
   assert.match(prompt, /Self-Audit/);
+  assert.match(prompt, /Reusable references:[\s\S]*Task doc:/);
   assert.match(prompt, /Do not self-commit/i);
 });
 

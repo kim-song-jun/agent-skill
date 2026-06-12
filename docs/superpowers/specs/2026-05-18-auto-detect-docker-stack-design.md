@@ -9,7 +9,7 @@
 `agent-init` Phase 1 currently calls `detectStack(dir)` which returns a single
 string from `{typescript, javascript, python, rust, go, unknown}`. The detector
 has no awareness of Docker or compose, so projects whose primary runtime is a
-container (the common case in `molcube`-style setups) lose that information when
+container (the common case in Dockerized setups) lose that information when
 `CLAUDE.md` and `.agent-init-state.json` are written. The brainstorming step
 asks the user for `deploy_targets` as free text but never captures the runtime
 layer underneath.

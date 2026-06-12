@@ -433,7 +433,7 @@ test("harness-builder-codex: AGENTS.md renders execution discipline and dispatch
     assert.match(body, /owned files/i);
     assert.match(body, /forbidden files/i);
     assert.match(body, /Do not self-commit/i);
-    assert.doesNotMatch(body, /POSCO|LIMS|MDS|Lot 번호|Outline DB|xlsx SSOT/);
+    assert.doesNotMatch(body, /PRIVATE_PROJECT|CLIENT_INTERNAL|sample-private-dataset/);
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

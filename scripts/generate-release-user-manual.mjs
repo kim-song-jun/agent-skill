@@ -4,18 +4,18 @@ import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const ROOT = resolve(dirname(new URL(import.meta.url).pathname), "..");
-const RELEASE = "v0.6.0";
-const RELEASE_URL = "https://github.com/kim-song-jun/agent-skill/releases/tag/v0.6.0";
+const RELEASE = "v0.6.1";
+const RELEASE_URL = "https://github.com/kim-song-jun/agent-skill/releases/tag/v0.6.1";
 const OUT_DIR = resolve(
   ROOT,
   process.argv.find((arg) => arg.startsWith("--out-dir="))?.slice("--out-dir=".length)
-    || ".agent-skill/releases/v0.6.0/user-manual",
+    || ".agent-skill/releases/v0.6.1/user-manual",
 );
 const CARD_DIR = join(OUT_DIR, "cards");
 const PAGE_DIR = join(OUT_DIR, "pages");
 const FONT_KO = "/System/Library/Fonts/AppleSDGothicNeo.ttc";
-const FONT_MONO = existsSync("/Users/sungjun/Library/Fonts/MesloLGSDZNerdFontMono-Bold.ttf")
-  ? "/Users/sungjun/Library/Fonts/MesloLGSDZNerdFontMono-Bold.ttf"
+const FONT_MONO = existsSync("/System/Library/Fonts/SFNSMono.ttf")
+  ? "/System/Library/Fonts/SFNSMono.ttf"
   : FONT_KO;
 const W = 1240;
 const H = 1754;
@@ -49,7 +49,7 @@ function buildManual() {
     claudeStatus,
     quickStart: [
       ["1", "Claude Code를 재시작", "플러그인 업데이트는 재시작 후 적용됩니다."],
-      ["2", "프로젝트 열기", "/Users/sungjun/Documents/molcube/posco/posco-mds 에서는 init이 이미 끝났습니다."],
+      ["2", "프로젝트 열기", "이미 scaffold가 설치된 프로젝트에서는 init을 다시 하지 않습니다."],
       ["3", "작업 요청", '/agent-all "원하는 작업" --loop --qa 로 시작합니다.'],
       ["4", "결과 확인", "테스트, QA, 리뷰 gate가 통과할 때까지 반복됩니다."],
     ],
@@ -64,7 +64,7 @@ function buildManual() {
       ["UI 작업", '/agent-all "모바일 상품 카드 정리" --loop --qa', "완료 후 /visual-qa 로 주요 화면만 다시 확인합니다."],
       ["버그 수정", '/debug "재현 명령 또는 에러 메시지"', "원인을 좁힌 뒤 /agent-all 로 수정과 검증을 맡깁니다."],
       ["데이터 검증", "/data-runner sql <task-doc>", "쿼리, notebook, artifact diff를 작업 증거로 남깁니다."],
-      ["긴 작업", "/thrift audit", "세션이 길어질 때 맥락과 비용 낭비를 줄입니다."],
+      ["긴 작업", "/thrift", "세션이 길어지면 자동 추천을 따르거나 직접 켜서 맥락과 비용 낭비를 줄입니다."],
     ],
   };
 }
@@ -75,9 +75,9 @@ function summariseClaudePlugins() {
     return "Claude plugin list 확인 실패: 수동으로 `claude plugin list`를 실행하세요.";
   }
   const blocks = res.stdout.split(/\n\s*\n/).filter((block) => block.includes("@agent-skill"));
-  const bad = blocks.filter((block) => !block.includes("Version: 0.6.0") || !block.includes("Status: ✔ enabled"));
+  const bad = blocks.filter((block) => !block.includes("Version: 0.6.1") || !block.includes("Status: ✔ enabled"));
   if (blocks.length === 19 && bad.length === 0) {
-    return "로컬 Claude user scope에 agent-skill 플러그인 19개가 모두 v0.6.0으로 설치되어 있습니다.";
+    return "로컬 Claude user scope에 agent-skill 플러그인 19개가 모두 v0.6.1으로 설치되어 있습니다.";
   }
   return `Claude plugin list에서 agent-skill ${blocks.length}/19개가 보입니다. 빠진 항목은 marketplace update 후 plugin update/install이 필요합니다.`;
 }
@@ -90,16 +90,16 @@ function writeMarkdown(data) {
 
 ## 지금 바로 써도 되나요?
 
-네. 현재 로컬 Claude에는 \`agent-skill\` 플러그인 19개가 모두 \`0.6.0\`으로 설치되어 있습니다.
+현재 확인 상태: ${data.claudeStatus}
 
 단, Claude Code 플러그인 업데이트는 재시작 후 적용되므로 **Claude Code를 한 번 재시작**하세요.
 
-\`/Users/sungjun/Documents/molcube/posco/posco-mds\` 프로젝트는 이미 Claude/Codex scaffold가 설치되어 있으므로 **init을 다시 하지 않습니다.**
+이미 Claude/Codex scaffold가 설치된 프로젝트는 **init을 다시 하지 않습니다.**
 
 ## 3분 시작
 
 1. Claude Code를 재시작합니다.
-2. POSCO MDS 프로젝트를 엽니다.
+2. 이미 scaffold가 설치된 프로젝트를 엽니다.
 3. 아래처럼 작업을 요청합니다.
 
 \`\`\`text
@@ -116,7 +116,7 @@ function writeMarkdown(data) {
 
 | 상황 | init 필요 여부 | 무엇을 하면 되나 |
 |---|---:|---|
-| POSCO MDS처럼 이미 설치된 프로젝트 | 아니오 | Claude Code 재시작 후 바로 \`/agent-all\` 사용 |
+| 이미 scaffold가 설치된 프로젝트 | 아니오 | Claude Code 재시작 후 바로 \`/agent-all\` 사용 |
 | 새 프로젝트 | 예 | \`install-platform.sh --platform=claude --target=/path --lang=ko\` 1회 실행 |
 | Claude 플러그인만 업데이트한 경우 | 아니오 | 기존 프로젝트 파일은 그대로 두고 Claude Code만 재시작 |
 | 프로젝트 scaffold가 깨졌거나 삭제된 경우 | 예 | 같은 installer를 \`--force\`로 다시 실행 |
@@ -164,6 +164,8 @@ ${data.commands.map(([command, use, example]) => `| \`${command}\` | ${use} | \`
 
 긴 로그를 그대로 대화에 붙이지 말고 파일이나 명령으로 넘기세요. \`/thrift\`는 큰 출력과 오래된 맥락을 요약해 다음 작업에 필요한 정보만 남기는 데 도움이 됩니다.
 
+기본 scaffold는 세션이 길어졌는데 아직 \`/thrift\`가 켜져 있지 않으면 \`/thrift\` 실행을 추천합니다. 이미 \`.thrift.json\`이 있는 프로젝트에서는 \`/thrift summarise\`와 \`/compact\` 안내가 임계값에 맞춰 동작합니다.
+
 ## 새 프로젝트 설치
 
 Claude 프로젝트:
@@ -185,7 +187,7 @@ bash /path/to/agent-skill/scripts/install-platform.sh \\
 - 큰 로그를 대화에 붙이지 말고 파일 경로나 실패 명령만 전달합니다.
 - 작업 요청에 성공 조건을 같이 적어 반복 횟수를 줄입니다.
 - UI 검증은 관련 화면 중심으로 요청합니다.
-- 긴 작업 전후에 \`/thrift\`를 사용해 맥락을 정리합니다.
+- 긴 작업 전후에 \`/thrift\`를 사용해 맥락을 정리합니다. 추천 알림이 뜨면 그 시점에 켜면 됩니다.
 - 같은 실패가 반복되면 \`/debug\`로 원인을 먼저 좁힙니다.
 
 ## 문제가 생기면
@@ -209,7 +211,7 @@ function renderCards(data) {
   const cards = [
     ["01-quick-start", "바로 시작", data.quickStart.map(([, title, body]) => `${title}\n${body}`).join("\n\n")],
     ["02-command-map", "명령 지도", data.commands.map(([command, use, example]) => `${command} — ${use}\n${example}`).join("\n\n")],
-    ["03-init-decision", "init 판단표", "이미 설치된 POSCO MDS: init 불필요\n새 프로젝트: init 1회 필요\n플러그인 업데이트만 한 경우: Claude Code 재시작\nscaffold가 깨진 경우: --force로 재설치"],
+    ["03-init-decision", "init 판단표", "이미 설치된 프로젝트: init 불필요\n새 프로젝트: init 1회 필요\n플러그인 업데이트만 한 경우: Claude Code 재시작\nscaffold가 깨진 경우: --force로 재설치"],
   ];
   return cards.map(([name, title, body]) => {
     const out = join(CARD_DIR, `${name}.png`);
@@ -221,8 +223,8 @@ function renderCards(data) {
 function renderPages(data, cards) {
   const pages = [];
   pages.push(page("01-start", [
-    bigTitle("agent-skill v0.6.0", "사용설명서"),
-    callout(70, 360, 1100, 230, "결론", "POSCO MDS 프로젝트는 init을 다시 하지 않습니다. Claude Code를 재시작한 뒤 바로 /agent-all을 쓰면 됩니다."),
+    bigTitle("agent-skill v0.6.1", "사용설명서"),
+    callout(70, 360, 1100, 230, "결론", "이미 scaffold가 설치된 프로젝트는 init을 다시 하지 않습니다. Claude Code를 재시작한 뒤 바로 /agent-all을 쓰면 됩니다."),
     stepList(660, data.quickStart),
   ]));
   pages.push(page("02-quick", [
@@ -254,7 +256,7 @@ function renderPages(data, cards) {
       ["로그 붙여넣기 줄이기", "큰 로그는 파일 경로나 실패 명령으로 전달합니다. 필요한 요약만 대화에 남깁니다."],
       ["성공 조건 같이 쓰기", "요청에 원하는 결과와 확인 기준을 같이 적으면 반복 횟수가 줄어듭니다."],
       ["UI 검증 범위 좁히기", "관련 화면, 주요 breakpoint, 핵심 interaction을 먼저 검증합니다."],
-      ["/thrift 사용", "긴 세션은 요약과 audit로 다음 작업에 필요한 정보만 남깁니다."],
+      ["/thrift 추천", "세션이 길어지고 아직 켜져 있지 않으면 기본 hook이 /thrift 실행을 추천합니다."],
       ["/debug 먼저 사용", "같은 실패가 반복되면 구현을 계속 밀지 말고 원인을 좁힙니다."],
       ["새 init 남발 금지", "이미 설치된 프로젝트에 init을 반복하지 않아도 됩니다."],
     ]),
@@ -263,7 +265,7 @@ function renderPages(data, cards) {
     heading("문제가 생기면"),
     commandBox(90, 230, "claude plugin list\nclaude plugin marketplace update agent-skill\nclaude plugin update harness-builder@agent-skill"),
     sectionAt(650, "확인할 것", [
-      "agent-skill 플러그인이 Version: 0.6.0인지 확인합니다.",
+      "agent-skill 플러그인이 Version: 0.6.1인지 확인합니다.",
       "Status가 enabled인지 확인합니다.",
       "업데이트 후 Claude Code를 재시작합니다.",
       "프로젝트 파일이 없어졌을 때만 install-platform.sh를 다시 실행합니다.",
@@ -277,7 +279,7 @@ function page(name, elements) {
   const out = join(PAGE_DIR, `${name}.png`);
   run("magick", ["-size", `${W}x${H}`, "xc:#f8fafc", out]);
   rect(out, 0, 0, W, 42, "#2563eb", 0);
-  text(out, "agent-skill v0.6.0 user manual", 70, 30, 24, "#ffffff", 1080);
+  text(out, "agent-skill v0.6.1 user manual", 70, 30, 24, "#ffffff", 1080);
   for (const element of elements) element(out);
   text(out, `2026-06-12 · ${RELEASE}`, 70, 1710, 22, "#64748b", 800);
   return out;
@@ -332,7 +334,7 @@ function callout(x, y, width, height, title, body) {
 function decisionTable() {
   return (out) => {
     const rows = [
-      ["POSCO MDS처럼 이미 설치됨", "아니오", "Claude Code 재시작 후 바로 사용"],
+      ["이미 scaffold가 설치됨", "아니오", "Claude Code 재시작 후 바로 사용"],
       ["새 프로젝트", "예", "install-platform.sh 1회 실행"],
       ["플러그인만 업데이트", "아니오", "프로젝트 파일은 그대로 둠"],
       ["scaffold 파일 삭제/손상", "예", "--force로 재설치"],

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   computeFailureSignature,
   evaluateLoop,
+  evaluateLoopAsync,
   formatMaxIter,
   isUnlimitedMaxIter,
 } from "../../../plugins/harness-floor/skills/agent-all/lib/loop-evaluator.mjs";
@@ -23,6 +24,29 @@ test("breakCondition exits non-0 → continue", () => {
   const verdict = evaluateLoop(state, { stableIters: 1, maxIter: 5, maxCostUSD: 100 }, mockRunner([1]));
   assert.equal(verdict.action, "continue");
   assert.equal(verdict.consecutivePass, 0);
+});
+
+test("async breakCondition runner is supported through evaluateLoopAsync", async () => {
+  const state = { iter: 0, consecutivePass: 0, costUSD: 0 };
+  const verdict = await evaluateLoopAsync(
+    state,
+    { stableIters: 1, maxIter: 5, maxCostUSD: 100 },
+    async () => ({ exitCode: 0, verifierSummary: "async verifier passed" }),
+  );
+  assert.equal(verdict.action, "break");
+  assert.equal(verdict.loopState.lastVerifierSummary, "async verifier passed");
+});
+
+test("sync evaluateLoop refuses async runners instead of treating Promise as failure", () => {
+  const state = { iter: 0, consecutivePass: 0, costUSD: 0 };
+  assert.throws(
+    () => evaluateLoop(
+      state,
+      { stableIters: 1, maxIter: 5, maxCostUSD: 100 },
+      async () => ({ exitCode: 0 }),
+    ),
+    /evaluateLoopAsync/,
+  );
 });
 
 test("stableIters=2 requires 2 consecutive passes", () => {

@@ -182,10 +182,10 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}` to `phases`, exit norm
 5. Wrap the runner so the policy engine also sees the break-condition result
    before `evaluateLoop` decides whether to continue:
    ```javascript
-   import { evaluateLoop, formatMaxIter } from "./lib/loop-evaluator.mjs";
+   import { evaluateLoopAsync, formatMaxIter } from "./lib/loop-evaluator.mjs";
    import { computeFailureSignature } from "./lib/loop-evaluator.mjs";
-   const policyRunner = () => {
-     const result = runner();
+   const policyRunner = async () => {
+     const result = await runner();
      const exitCode = result?.exitCode ?? 1;
      const failureSignature = exitCode === 0 ? null : computeFailureSignature({ ...result, exitCode });
      const afterPolicy = evaluatePolicyEvent({
@@ -215,7 +215,7 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}` to `phases`, exit norm
      }
      return result;
    };
-   const verdict = evaluateLoop(
+   const verdict = await evaluateLoopAsync(
      {
        iter: state.iter,
        consecutivePass: state.consecutivePass ?? 0,

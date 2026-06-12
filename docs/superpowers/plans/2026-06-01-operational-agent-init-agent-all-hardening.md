@@ -25,14 +25,14 @@ Completed scope:
 - Claude/Codex doctor output now carries release-audited recovery steps: missing artifacts point back to the matching `install-platform.sh` profile command, stale generated guidance points to a forced profile refresh, JSON failures ask for syntax repair, and foundation warnings print both the updater and the direct `/plugin install ...` next steps.
 - Claude/Codex release fixtures now verify root guidance itself carries explicit foundation activation: named `superpowers:*` workflows for brainstorming, planning, orchestration, and verification, plus context-mode/file-backed handling for bulky context. This prevents persona files from being strong while root memory silently regresses.
 - Current release-doc contract pins stale test-count regressions so future changes must update public verification evidence.
-- POSCO MDS-style Django/Vue monorepo routing is now a named fixture: Claude and Codex classifier/gate-plan tests require the same orchestrator, frontend, backend, security, data, QA, design, integration, and verification gates, and release-fixture smoke proves that operational installs keep this routing evidence.
+- Enterprise Django/Vue monorepo routing is now a named fixture: Claude and Codex classifier/gate-plan tests require the same orchestrator, frontend, backend, security, data, QA, design, integration, and verification gates, and release-fixture smoke proves that operational installs keep this routing evidence.
 
 Verification evidence:
 
 - `node scripts/release-audit.mjs`: Claude 82/82 and Codex 75/75 readiness checks passing, including the final `scripts/release-smoke.sh` gate contract, public PR CI and local release gate contract, GitHub governance/docs-structure contracts, release publish preflight contract, target project smoke contract, `scripts/release-candidate.mjs` evidence generator contract, `scripts/release-provenance.mjs` manifest/checksum generation, doctor recovery guidance, Codex floor-conditional language guidance, Claude companion root guidance, `/agent-handoff` handoff/resume contracts, Codex thrift advisory summariser contract, the user objective release matrix, the release candidate lifecycle, and public CLI executable/shebang packaging.
 - `node scripts/release-fixture-smoke.mjs`: Claude marketplace dry-run, Claude operational/lite render output, Claude terminal `install-platform.sh --platform=claude` operational/builder/lite fixtures, Claude/Codex operational and builder-heavy complete persona foundation/orchestration matrix checks, Claude/Codex approved foundation auto-update fixtures, Codex operational/lite/builder/floor/thrift/debug fresh fixtures, and Claude/Codex install→uninstall plus `--force-root-clean` roundtrip fixtures passing.
-- `node --test`: 1983/1983 passing.
-- `./scripts/release-smoke.sh --fast --with-live-cli`: 503/503 passing with Claude Code and Codex CLI live probes.
+- `node --test`: 1991/1991 passing.
+- `./scripts/release-smoke.sh --fast --with-live-cli`: 504/504 passing with Claude Code and Codex CLI live probes.
 - `node scripts/sync-lib.mjs --check`: 91 vendored files match source.
 
 ## Scope Decomposition

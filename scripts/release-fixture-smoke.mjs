@@ -10,8 +10,8 @@ import { classifyChangedFiles as classifyCodexChangedFiles } from "../plugins/ha
 import { buildGatePlan as buildCodexGatePlan } from "../plugins/harness-floor-codex/skills/agent-all-codex/lib/gate-plan.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const POSCO_MDS_DJANGO_VUE = JSON.parse(
-  readFileSync(resolve(ROOT, "tests/fixtures/project-shapes/posco-mds-django-vue.json"), "utf-8"),
+const ENTERPRISE_DJANGO_VUE = JSON.parse(
+  readFileSync(resolve(ROOT, "tests/fixtures/project-shapes/enterprise-django-vue.json"), "utf-8"),
 );
 
 const CLAUDE_ESSENTIALS = [
@@ -591,7 +591,7 @@ function checkClaudePlatformInstall(root) {
       ...implementationRoutingChecks("CLAUDE.md", claude),
       ...implementationRoutingChecks(".claude platform orchestrator", orchestrator),
       ...personaFoundationMatrixChecks("Claude", "agent", roleBodies, /CLAUDE\.md[\s\S]{0,160}docs\/tasks/),
-      ...poscoMdsDjangoVueRoutingChecks("Claude", classifyClaudeChangedFiles, buildClaudeGatePlan),
+      ...enterpriseDjangoVueRoutingChecks("Claude", classifyClaudeChangedFiles, buildClaudeGatePlan),
       [".claude platform frontend-dev embeds frontend discipline", /frontend layer[\s\S]{0,120}UI components[\s\S]{0,80}client-side logic[\s\S]{0,80}styles/.test(frontendDev)],
       [".claude platform backend-dev embeds backend discipline", /backend layer[\s\S]{0,120}APIs[\s\S]{0,80}business logic[\s\S]{0,80}migrations/.test(backendDev)],
       ["CLAUDE.md includes configured QA persona", /Configured QA Personas[\s\S]{0,120}auth/.test(claude)],
@@ -613,7 +613,7 @@ function checkClaudePlatformInstall(root) {
       ok,
       summary: `Claude platform fixture: ${ok ? "ok" : "failed"} (${CLAUDE_RENDER_PRESENT.length - missing.length}/${CLAUDE_RENDER_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh terminal install-platform Claude fixture produced operational scaffold, executable generated hooks and task checker, QA and base/specialized reviewer audit tokens, post-install Claude platform doctor coverage, role gate matrix, root foundation activation, complete persona foundation/orchestration matrix, POSCO MDS Django/Vue routing proof, QA persona propagation, and no HOME patching"
+        ? "fresh terminal install-platform Claude fixture produced operational scaffold, executable generated hooks and task checker, QA and base/specialized reviewer audit tokens, post-install Claude platform doctor coverage, role gate matrix, root foundation activation, complete persona foundation/orchestration matrix, Enterprise Django/Vue routing proof, QA persona propagation, and no HOME patching"
         : compactFailure(res, [...missing, ...failed]),
     };
   });
@@ -900,7 +900,7 @@ function checkCodexOperational(root) {
       ...implementationRoutingChecks("AGENTS.md", agents),
       ...implementationRoutingChecks(".codex orchestrator skill", orchestrator),
       ...personaFoundationMatrixChecks("Codex", "skill", roleBodies, /AGENTS\.md[\s\S]{0,160}docs\/tasks/),
-      ...poscoMdsDjangoVueRoutingChecks("Codex", classifyCodexChangedFiles, buildCodexGatePlan),
+      ...enterpriseDjangoVueRoutingChecks("Codex", classifyCodexChangedFiles, buildCodexGatePlan),
       [".codex frontend-dev skill embeds frontend responsibilities", /Implement UI components, routes, styles, client state/.test(frontendDev)],
       [".codex frontend-dev skill references role-matched superpowers", /superpowers:brainstorming[\s\S]{0,120}superpowers:test-driven-development[\s\S]{0,120}superpowers:verification-before-completion/.test(frontendDev)],
       [".codex backend-dev skill embeds backend responsibilities", /Implement APIs, services, jobs, migrations, persistence/.test(backendDev)],
@@ -923,7 +923,7 @@ function checkCodexOperational(root) {
       ok,
       summary: `Codex operational fixture: ${ok ? "ok" : "failed"} (${CODEX_OPERATIONAL_PRESENT.length - missing.length}/${CODEX_OPERATIONAL_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh git fixture received operational builder, role gate matrix, QA personas, root foundation activation, complete persona foundation/orchestration matrix, POSCO MDS Django/Vue routing proof, base/specialized reviewer audit tokens, floor, thrift, debug, executable hooks/task checker, configs, post-install operational doctor coverage, and sequential agent-all-codex prompt helper runs from the installed fixture with stack-specific frontend/backend role dispatch; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
+        ? "fresh git fixture received operational builder, role gate matrix, QA personas, root foundation activation, complete persona foundation/orchestration matrix, Enterprise Django/Vue routing proof, base/specialized reviewer audit tokens, floor, thrift, debug, executable hooks/task checker, configs, post-install operational doctor coverage, and sequential agent-all-codex prompt helper runs from the installed fixture with stack-specific frontend/backend role dispatch; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
         : compactFailure(res, [...missing, ...failedStdout, ...executableScriptErrors(target, CODEX_EXECUTABLE_GENERATED), agentAllRuntime.ok ? null : agentAllRuntime.details, visualQaRuntime.ok ? null : visualQaRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
@@ -1779,19 +1779,19 @@ function personaFoundationMatrixChecks(platform, noun, roleBodies, rootContextPa
   return checks;
 }
 
-function poscoMdsDjangoVueRoutingChecks(label, classifyChangedFiles, buildGatePlan) {
-  const classification = classifyChangedFiles(POSCO_MDS_DJANGO_VUE.changedFiles);
+function enterpriseDjangoVueRoutingChecks(label, classifyChangedFiles, buildGatePlan) {
+  const classification = classifyChangedFiles(ENTERPRISE_DJANGO_VUE.changedFiles);
   const gatePlan = buildGatePlan({
-    files: POSCO_MDS_DJANGO_VUE.changedFiles,
+    files: ENTERPRISE_DJANGO_VUE.changedFiles,
     gates: { specReview: true, qualityReview: true },
-    taskId: "posco-mds",
-    title: "POSCO MDS Django/Vue workflow",
+    taskId: "enterprise-django-vue",
+    title: "Enterprise Django/Vue workflow",
   });
 
   return [
-    [`${label} routes POSCO MDS Django/Vue reviewers`, sameJson(classification.reviewers, POSCO_MDS_DJANGO_VUE.expectedReviewers)],
-    [`${label} routes POSCO MDS Django/Vue coordinator`, sameJson(classification.coordinators, POSCO_MDS_DJANGO_VUE.expectedCoordinators)],
-    [`${label} gate plan preserves POSCO MDS Django/Vue dispatch order`, sameJson(projectDispatches(gatePlan.dispatches), POSCO_MDS_DJANGO_VUE.expectedDispatches)],
+    [`${label} routes Enterprise Django/Vue reviewers`, sameJson(classification.reviewers, ENTERPRISE_DJANGO_VUE.expectedReviewers)],
+    [`${label} routes Enterprise Django/Vue coordinator`, sameJson(classification.coordinators, ENTERPRISE_DJANGO_VUE.expectedCoordinators)],
+    [`${label} gate plan preserves Enterprise Django/Vue dispatch order`, sameJson(projectDispatches(gatePlan.dispatches), ENTERPRISE_DJANGO_VUE.expectedDispatches)],
   ];
 }
 

@@ -71,7 +71,7 @@ export function resolveSkillPath(role, projectRoot) {
  * @param {string[]} [args.task.files=[]]
  * @param {string[]} [args.task.forbiddenFiles=[]]
  * @param {string} [args.task.body=""]
- * @param {object} [args.plan]      — context (path, summary)
+ * @param {object} [args.plan]      — context (path, summary, taskPath)
  * @param {string} [args.workingDirectory]
  * @returns {string}
  */
@@ -86,6 +86,7 @@ export function buildSkillPrompt(args) {
   const forbiddenFiles = Array.isArray(task.forbiddenFiles) ? task.forbiddenFiles : [];
   const bodyText = task.body || "(no body provided)";
   const planRef = plan?.path ? `Plan: ${plan.path}` : "Plan: (inline)";
+  const taskRef = task.path || task.taskPath || task.docPath || plan?.taskPath || plan?.taskDocPath || null;
   const workingDirectory = args.workingDirectory || plan?.workingDirectory || process.cwd();
   const roleSkill = skillBody
     ? [
@@ -140,6 +141,7 @@ export function buildSkillPrompt(args) {
     "  - Include a concise Self-Audit covering requested scope, files changed, verification run, unprocessed items, and shortcuts.",
     "  - End with the required JSON line.",
     "- Reusable references:",
+    `  - Task doc: ${taskRef || "(inline; no task doc path provided)"}`,
     `  - ${planRef}`,
     `  - Role skill: ${skillPath || "(inline)"}`,
     "",
@@ -305,7 +307,10 @@ export function buildSequentialInvocation(opts) {
   const subcommand = opts.subcommand || DEFAULT_SUBCOMMAND;
   const prompt = buildSkillPrompt({
     task: opts.task,
-    plan: opts.plan,
+    plan: {
+      ...(opts.plan ?? {}),
+      taskPath: opts.task.path || opts.task.taskPath || opts.task.docPath || opts.plan?.taskPath || opts.plan?.taskDocPath,
+    },
     skillPath,
     skillBody: opts.skillBody,
     workingDirectory: opts.workingDirectory,

@@ -14,8 +14,10 @@ Thumbs.db
 .claude/.harness-state.json
 .claude/.agent-init-state.json
 .agent-skill/evals/
+.agent-skill/recommendations/
 .agent-skill/releases/
 .agent-skill/runs/
+.agent-skill/state/
 
 # Local QA/debug run artifacts
 /.playwright-mcp/

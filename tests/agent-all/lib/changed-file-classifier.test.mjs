@@ -4,8 +4,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { classifyChangedFiles } from "../../../plugins/harness-floor/skills/agent-all/lib/changed-file-classifier.mjs";
 
-const POSCO_MDS_DJANGO_VUE = JSON.parse(
-  readFileSync(resolve("tests/fixtures/project-shapes/posco-mds-django-vue.json"), "utf-8"),
+const ENTERPRISE_DJANGO_VUE = JSON.parse(
+  readFileSync(resolve("tests/fixtures/project-shapes/enterprise-django-vue.json"), "utf-8"),
 );
 
 test("frontend UI files add design and QA reviewers plus base reviewers", () => {
@@ -248,9 +248,9 @@ test("auth, API route, and security-ish backend files add security reviewer", ()
   );
 });
 
-test("POSCO MDS-style Django and Vue monorepo changes route every required gate", () => {
-  assert.deepEqual(classifyChangedFiles(POSCO_MDS_DJANGO_VUE.changedFiles), {
-    reviewers: POSCO_MDS_DJANGO_VUE.expectedReviewers,
-    coordinators: POSCO_MDS_DJANGO_VUE.expectedCoordinators,
+test("Enterprise Django and Vue monorepo changes route every required gate", () => {
+  assert.deepEqual(classifyChangedFiles(ENTERPRISE_DJANGO_VUE.changedFiles), {
+    reviewers: ENTERPRISE_DJANGO_VUE.expectedReviewers,
+    coordinators: ENTERPRISE_DJANGO_VUE.expectedCoordinators,
   });
 });

@@ -56,6 +56,17 @@ for (const platform of PLATFORMS) {
     }
   });
 
+  test(`visual-qa-${platform}: comprehensive verdict gates critical and major regressions`, () => {
+    const aggregate = readFileSync(resolve(ROOT, "phases/4-aggregate.md"), "utf-8");
+    const summary = readFileSync(resolve(ROOT, "phases/5-summary.md"), "utf-8");
+    assert.match(aggregate, /lib\/verdict\.mjs|computeVerdict/);
+    assert.match(aggregate, /verdict\.json/);
+    assert.match(aggregate, /\["critical", "major"\]/);
+    assert.match(summary, /Comprehensive mode/);
+    assert.match(summary, /verdict\.pass/);
+    assert.match(summary, /\["critical", "major"\]/);
+  });
+
   test(`visual-qa-${platform}: phase 3 documents platform dispatch primitive`, () => {
     const body = readFileSync(resolve(ROOT, "phases/3-capture.md"), "utf-8");
     const expectations = {

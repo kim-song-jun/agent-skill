@@ -259,6 +259,6 @@ test("agent-init root guidance carries domain-neutral execution discipline", () 
     assert.match(body, /owned files/i);
     assert.match(body, /forbidden files/i);
     assert.match(body, /Do not self-commit/i);
-    assert.doesNotMatch(body, /POSCO|LIMS|MDS|Lot 번호|Outline DB|xlsx SSOT/);
+    assert.doesNotMatch(body, /PRIVATE_PROJECT|CLIENT_INTERNAL|sample-private-dataset/);
   }
 });

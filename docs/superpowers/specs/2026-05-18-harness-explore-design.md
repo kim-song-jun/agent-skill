@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-18
 **Status:** Design only — no implementation in this iteration
-**Author:** kimsongjun (sungjun@molcube.com)
+**Author:** kimsongjun
 **Purpose:** Define the fourth pillar plugin in the harness family —
 exploration-focused. Where `harness-builder` installs scaffolding,
 `harness-floor` runs cost-unrestricted multi-agent pipelines, and

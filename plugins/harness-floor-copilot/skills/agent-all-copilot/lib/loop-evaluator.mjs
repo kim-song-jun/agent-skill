@@ -163,7 +163,7 @@ function runtimeBudgetExceeded(state, limits) {
   return Boolean(budget && budget.elapsedRuntimeSec >= budget.maxRuntimeSec);
 }
 
-export function evaluateLoop(state, limits, runner) {
+function preflightLoopVerdict(state, limits) {
   if (maxIterExceeded(state, limits)) {
     return exhaustedVerdict(
       state,
@@ -188,8 +188,14 @@ export function evaluateLoop(state, limits, runner) {
       "Stop the loop and ask the user before spending more wall-clock time.",
     );
   }
+  return null;
+}
 
-  const result = runner();
+function isPromiseLike(value) {
+  return Boolean(value && typeof value.then === "function");
+}
+
+function evaluateLoopResult(state, limits, result) {
   if (result?.action === "interrupted") {
     const loopState = buildLoopState({
       state,
@@ -268,4 +274,23 @@ export function evaluateLoop(state, limits, runner) {
     failureSignatures,
     loopState,
   };
+}
+
+export function evaluateLoop(state, limits, runner) {
+  const preflight = preflightLoopVerdict(state, limits);
+  if (preflight) return preflight;
+
+  const result = runner();
+  if (isPromiseLike(result)) {
+    throw new Error("evaluateLoop received an async runner; use evaluateLoopAsync and await the verdict");
+  }
+  return evaluateLoopResult(state, limits, result);
+}
+
+export async function evaluateLoopAsync(state, limits, runner) {
+  const preflight = preflightLoopVerdict(state, limits);
+  if (preflight) return preflight;
+
+  const result = await runner();
+  return evaluateLoopResult(state, limits, result);
 }
