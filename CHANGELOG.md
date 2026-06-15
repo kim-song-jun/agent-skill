@@ -6,6 +6,24 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.4 — 2026-06-15
+
+- Restored the agent-all SSOT pipeline contract to all four ports
+  (codex/copilot/cursor/gemini), which had silently dropped mandatory points:
+  the orchestrator-routing seam (evidence-producing work routes to the
+  platform's fan-out, not the code-shipping pipeline), the audit-token gate
+  (a wave passes only if every reviewer/coordinator/qa dispatch emitted its
+  `*_AUDIT` token), orchestrator-owned commits (subagents may not self-commit),
+  and the Phase-5 `validateTaskLedger` acceptance gate — each adapted to the
+  platform's dispatch idiom.
+- Vendored the contract libs via sync-lib so the gates actually run:
+  `task-ledger.mjs` into all four ports; `gate-plan.mjs` +
+  `changed-file-classifier.mjs` into copilot/gemini (cursor unions inline).
+- Added `tests/lib/port-ssot-contract.test.mjs` (16 tests) that fails CI if any
+  port drops a contract point again — the contract is now mechanically enforced
+  rather than relying on manual port fidelity.
+- Suite: 2017/2017 passing; fast release smoke 505/505 passing.
+
 ## Agent-skill v0.6.3 — 2026-06-15
 
 - thrift hook robustness: the cost-estimator now falls back to a default rate

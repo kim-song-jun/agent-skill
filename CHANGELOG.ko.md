@@ -6,6 +6,22 @@
 
 ## 미출시
 
+## Agent-skill v0.6.4 — 2026-06-15
+
+- 4개 포트(codex/copilot/cursor/gemini)가 조용히 떨궜던 agent-all SSOT
+  파이프라인 계약을 복원했습니다: orchestrator-routing seam(evidence-producing
+  작업은 code-shipping 파이프라인이 아니라 플랫폼의 fan-out으로 라우팅),
+  audit-token 게이트(모든 reviewer/coordinator/qa dispatch가 `*_AUDIT` 토큰을
+  emit해야만 wave 통과), orchestrator-owned commit(서브에이전트 self-commit
+  금지), Phase-5 `validateTaskLedger` 수용 게이트 — 각 플랫폼 dispatch idiom에
+  맞게 적응.
+- 게이트가 실제로 실행되도록 계약 lib를 sync-lib로 벤더링: `task-ledger.mjs`를
+  4개 포트 전부, `gate-plan.mjs` + `changed-file-classifier.mjs`를
+  copilot/gemini에(cursor는 inline union).
+- 포트가 계약점을 다시 떨구면 CI가 잡는 `tests/lib/port-ssot-contract.test.mjs`
+  (16개)를 추가 — 수동 포트 충실도가 아니라 기계적으로 강제.
+- Suite: 2017/2017 통과; fast release smoke 505/505 통과.
+
 ## Agent-skill v0.6.3 — 2026-06-15
 
 - thrift 훅 robustness: cost-estimator가 unknown 모델에서 throw 대신 default
