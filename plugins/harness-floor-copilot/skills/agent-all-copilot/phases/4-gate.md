@@ -9,36 +9,144 @@ Push `{phase: 4, completedAt}` and exit.
 
 For each wave with `status === "completed"`:
 
-1. Compute the wave diff via `read_bash`:
-   `git diff <wave.startCommit>..<wave.endCommit>`.
-2. Read `const orchestration = wave.orchestration ?? state.orchestration`.
-   Union dynamic reviewer/coordinator roles from
-   `orchestration.requiredAgents` into the gate dispatch list before invoking
-   reviewers. Dynamic `orchestrator`, `design-reviewer`, `qa-reviewer`,
-   `security-reviewer`, `data-reviewer`, and `integration-dev` selections
-   must keep their role, reason, wave, and cost estimate in
-   `.agent-skill/runs/<run-id>/spawn-log.jsonl`; if a gate dispatch was not
-   already policy-evaluated in Phase 3, emit a compatible `BeforeAgentSpawn`
-   policy entry before invoking it.
-3. If `gates.specReview`: dispatch a `task` invocation with prompt
-   "MODE=spec — verify diff matches plan section..." passing the diff +
-   plan section. Capture `agentId`. Await.
-4. If `gates.qualityReview`: dispatch a `task` with `MODE=quality`. Await.
-5. Collect verdicts via `read_agent`. Bucket issues by severity.
-6. If any critical AND `blockOnCritical === true`:
+1. Compute the wave diff and changed-file list:
+   ```bash
+   git diff <wave.baseCommit>..<wave.endCommit>
+   git diff --name-only <wave.baseCommit>..<wave.endCommit>
+   ```
+   `wave.baseCommit` is the pre-wave commit captured by Phase 3 before
+   orchestrator-created task commits. For older state without `baseCommit`,
+   fall back to `git diff <wave.startCommit>^..<wave.endCommit>` and
+   `git diff --name-only <wave.startCommit>^..<wave.endCommit>` when
+   `wave.startCommit` has a parent. If `wave.startCommit` is a root commit
+   with no parent, use the empty-tree hash
+   (`4b825dc642cb6eb9a060e54bf8d69288fbee4904`) as the diff base.
+
+2. Build the deterministic gate plan:
+   ```javascript
+   import { buildGatePlan } from "./lib/gate-plan.mjs";
+   const orchestration = wave.orchestration ?? state.orchestration ?? null;
+   const requiredReviewerRoles = (orchestration?.requiredAgents ?? [])
+     .filter((agent) => agent.kind === "reviewer")
+     .map((agent) => agent.role);
+   const requiredCoordinatorRoles = (orchestration?.requiredAgents ?? [])
+     .filter((agent) => agent.kind === "coordinator")
+     .map((agent) => agent.role);
+   const gatePlan = buildGatePlan({
+     files,
+     gates: config.gates,
+     taskId,
+     title,
+     requiredReviewerRoles,
+     requiredCoordinatorRoles,
+   });
+   ```
+   `gatePlan.dispatches` is the source of truth for Phase 4 ordering.
+   `lib/gate-plan.mjs` uses `classifyChangedFiles(files)` internally, then
+   unions any dynamic roles persisted by Phase 3. It dispatches coordinators
+   before reviewers and includes the description prefix plus required audit
+   token, gate reason, and pass criteria for each dispatch.
+   When `gates.qualityReview !== false`, the plan must include
+   `quality-debt-reviewer` even if the classifier finds no domain-specific
+   reviewer.
+
+3. Dispatch every `gatePlan.dispatches[]` entry in order as a Copilot `task`
+   invocation. Tag each with `context.agentAllGate = "<wave>:<mode>"` so
+   `list_agents()` filtering can disambiguate:
+   - `kind=coordinator`, `role=orchestrator`: description prefix
+     `Orchestration Gate Task <N>: <title>`. Prompt it to identify HOT files,
+     unsafe ownership overlap, retry sequencing, and pathspec commit risk
+     before reviewer dispatch. It **must emit**
+     `ORCHESTRATION_AUDIT: passed|failed|skipped`.
+   - `mode=spec`: description prefix `Spec Review Task <N>: <title>`. Prompt
+     includes the plan section for this wave, the diff, and a request to flag
+     spec deviations.
+   - `mode=quality`: dispatch one reviewer `task` per returned reviewer
+     persona. Prompt includes the wave's plan section, diff, changed-file
+     list, and persona context when available.
+   - Each prompt MUST copy `dispatch.requiredAudit`, `dispatch.gateReason`,
+     and `dispatch.passCriteria` so the reviewer knows why the classifier
+     selected that gate and what evidence can pass it.
+   - `qa-reviewer` audits **user-side flow only** — completeness of
+     scenarios, persona-perspective edge cases, would-this-confuse-the-user
+     concerns. NOT tech-stack verification. It **must emit**
+     `QA_AUDIT: passed|failed|skipped`.
+   - Technical reviewers (including `verification-reviewer`,
+     `quality-debt-reviewer`, `data-reviewer`, `design-reviewer`,
+     `integration-dev`, `security-reviewer`) **must emit**
+     `VERIFICATION_AUDIT: passed|failed|skipped`.
+   - Append each dynamic gate `task` spawn to
+     `.agent-skill/runs/<run-id>/spawn-log.jsonl` with role, reason, wave,
+     and cost estimate. If a dispatch was not already policy-evaluated in
+     Phase 3, emit a compatible `BeforeAgentSpawn` policy entry before
+     invoking it.
+
+4. Collect verdicts via `read_agent`. Bucket issues by severity
+   (`critical | major | minor`).
+
+4b. **Classifier-based gate.** Wave passes Phase 4 iff:
+   - `ORCHESTRATION_AUDIT ∈ {passed, skipped}` for every coordinator
+     dispatch, AND
+   - `VERIFICATION_AUDIT ∈ {passed, skipped}` for the
+     `verification-reviewer` dispatch, AND
+   - `QA_AUDIT ∈ {passed, skipped}` for `qa-reviewer` when the classifier
+     returned `qa-reviewer`, AND
+   - `quality-debt-reviewer` reports no unapproved quality debt; every
+     accepted exception must be recorded in the task doc
+     `Quality Debt Exceptions` table with reason, owner, follow-up issue,
+     and expiry, AND
+   - no returned coordinator reports HOT-file ownership conflicts, unsafe
+     retry sequencing, or pathspec commit risk, AND
+   - no returned reviewer persona reports blocking issues.
+
+   A reviewer returning untokenized prose (no `*_AUDIT:` line) must NOT
+   pass the gate — treat as a `failed` audit and re-dispatch.
+
+   Tech success != user-flow success. A `passed` Verification audit
+   alongside a `failed` QA audit fails the wave; the QA defect report
+   becomes input to the next iteration's plan.
+
+5. If any critical AND `blockOnCritical === true`:
    - Dispatch an implementer `task` with the critical issues.
-   - Re-dispatch reviewers afterward.
-   - Up to 3 retry cycles. If still failing: abort, push
-     `{phase: 4, status: "blocked"}`, exit code 2.
-7. Record `state.waves[i].gateVerdict = {issues, retries, finalStatus}`.
-8. Push `{phase: 4, completedAt}` once all waves processed.
+   - Re-dispatch classifier-selected reviewer `task`s afterward.
+   - Up to 3 retry cycles. If the same issue repeats through 3 retry
+     cycles, update `state.orchestration.failureSignatures` and stop the
+     retry loop. Escalate to a planner/user decision instead of dispatching
+     more implementers.
+   - If still failing: abort, push `{phase: 4, status: "blocked"}`,
+     exit code 2.
+6. Record `state.waves[i].gateVerdict = {issues, retries, finalStatus}`.
+   Keep `state.orchestration.blockedReasons` in sync with any critical
+   repeated-failure, budget, or policy block.
+7. Push `{phase: 4, completedAt}` once all waves processed.
 
-## Copilot-specific
+## Dispatch Prompt Contract (mandatory)
 
-Both `spec` and `quality` reviewers are dispatched as separate `task`
-invocations — they run concurrently if multiple waves' gates are processed
-back-to-back. Tag each with `context.agentAllGate = "<wave>:<mode>"` so
-`list_agents()` filtering can disambiguate.
+Every reviewer `task(...)` invocation in this phase MUST include a prompt
+containing:
+
+- Working directory: the repository root where review commands must run.
+- Owned files or line ranges: the changed-file list and the diff range under
+  review; reviewers may inspect related files but must not edit unless
+  explicitly dispatched for a retry fix.
+- Forbidden files or areas: files outside the wave diff, files owned by other
+  active agents, and any path not needed for the review verdict.
+- DO NOT:
+  - Do not run destructive commands, force-push, or reset shared state.
+  - Do not rewrite implementation code during review unless the orchestrator
+    dispatched a retry implementer.
+  - Do not stage broad changes or self-commit.
+  - Do not revert unrelated user or other-agent edits.
+- Expected output: verdict, issues by severity, audit token
+  (`VERIFICATION_AUDIT`, `QA_AUDIT`, or `ORCHESTRATION_AUDIT`),
+  verification evidence checked, and a concise `Self-Audit` covering
+  reviewed scope, unreviewed items, shortcuts, and next action.
+- Reusable references: task doc, plan section, diff command, changed-file
+  list, `dispatch.requiredAudit`, `dispatch.gateReason`,
+  `dispatch.passCriteria`, and relevant root guidance.
+
+Do not self-commit from a reviewer subagent. Report findings and verification
+evidence back to the orchestrator for retry or pathspec commit review.
 
 ## Output
 

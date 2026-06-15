@@ -38,6 +38,11 @@
 
 4. For each wave:
 
+   Capture `baseCommit` before any subprocess is spawned:
+   `run_shell_command("git rev-parse HEAD")` → store as `wave.baseCommit`.
+   Phase 4 uses this to compute the gate diff including the first
+   coordinator-created task commit.
+
    a. Print: `Wave <i+1>/<N> — <waves[i].length> tasks in parallel (subprocesses)`.
 
    b. For each task in the wave, spawn a subprocess via `run_shell_command`:
@@ -70,18 +75,38 @@
       ```
 
    d. For each task, `read_file('/tmp/agent-all/wave-<i>/task-<id>.json')`.
-      Extract `{status, commits, costUSD, exitCode}`. If file missing
+      Extract `{status, changedFiles, costUSD, exitCode}`. If file missing
       (subprocess crashed): synthesize `{status: "failed", exitCode: -1}`.
 
-   e. Record per-subprocess usage as `agent-cost-telemetry/v1`, append
+   e. **Orchestrator-owned commit (E3).** After reading each subprocess result,
+      the coordinator MUST:
+      - Inspect `changedFiles` reported by the subprocess and run
+        `run_shell_command("git diff --name-only")` to see the actual diff.
+      - Stage ONLY task-owned pathspecs:
+        `run_shell_command("git add -- <task-owned-pathspecs>")`.
+      - If the diff includes unreported or forbidden files (files outside the
+        task's declared ownership), do NOT commit; re-dispatch the subprocess
+        with a scoping error or escalate to the user.
+      - Create the task commit:
+        `run_shell_command("git commit -m 'Task <id>: <title>' -- <task-owned-pathspecs>")`.
+      - Record the coordinator-created commit SHA on that task:
+        `run_shell_command("git rev-parse HEAD")` → `task.commits = [sha]`.
+      Implementer subprocesses are explicitly forbidden from self-committing or
+      staging broad changes. `commits` in the wave record are coordinator-created
+      pathspec commits only, never subprocess self-commits.
+
+   f. Record per-subprocess usage as `agent-cost-telemetry/v1`, append
       `.agent-skill/runs/<run-id>/cost-telemetry.jsonl`, mirror the latest
       summary to `state.costTelemetry.summary`, and accumulate
       `state.costUSD += sum(costUSD)` for backward compatibility. If
       `state.costUSD > config.defaults.maxCostUSD`: push
       `{phase: 3, status: "cost-cap"}`, abort.
 
-   f. Capture wave result:
-      `{index: i, orchestration: state.orchestration, tasks: [...], status: "completed" | "incomplete", maxParallelUsed: actual}`.
+   g. Capture wave result:
+      `{index: i, baseCommit, startCommit, endCommit, orchestration: state.orchestration, tasks: [...], status: "completed" | "incomplete", maxParallelUsed: actual}`.
+      `commits` are coordinator-created pathspec commits (step e), not subprocess
+      self-commits. Derive `startCommit` and `endCommit` from the first and last
+      coordinator-created commit SHAs in `tasks[].commits`.
 
 5. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
 
@@ -96,6 +121,30 @@
 ## Output
 
 Print one line per wave: `Wave <i>: <completed>/<total> succeeded (parallel=<actual>), ~$<wave.costUSD>`.
+
+## Dispatch Prompt Contract (mandatory)
+
+Every `gemini chat` subprocess's prompt MUST include:
+
+- Working directory: the repository root where commands must run.
+- Owned files or line ranges: the task's declared files, or an explicit note
+  that no files were declared and the subprocess must ask before broad edits.
+- Forbidden files or areas: files owned by other active wave tasks plus any
+  out-of-scope paths.
+- DO NOT:
+  - Do not run destructive commands, force-push, or reset shared state.
+  - Do not edit outside the owned files without reporting the expansion.
+  - Do not stage broad changes or self-commit.
+  - Do not revert unrelated user or other-agent edits.
+- Expected output: `STATUS`, changed files, verification evidence, blockers,
+  and a concise `Self-Audit` covering requested scope, processed items,
+  unprocessed items, shortcuts, and next action.
+- Reusable references: task doc, plan path, relevant root guidance, and any
+  files/functions/commands the coordinator already identified.
+
+Do not self-commit from an implementer subprocess. The coordinator owns
+pathspec commit review after it inspects changed files and verification
+evidence (step 4e above).
 
 ## Per-subagent verification (safety net for unattended runs)
 

@@ -30,6 +30,18 @@ Write the prompt verbatim to a new file via `apply_patch`:
 
 ### Branch C — `prompt` with brainstormFirst true (default)
 
+**0. Orchestrator routing check (do this first).** Judge the deliverable
+against `references/orchestrator-routing.md`. If the intent is
+*evidence-producing* — research, an audit across many units, a
+design/findings report, with no durable code change yet — the `task` tool
+fan-out is the correct orchestrator, **not** `/agent-all-copilot`. In that
+case: recommend it to the user; if they agree, STOP this pipeline and
+instruct them to run a `task`-dispatched sweep that writes a
+`validateTaskDoc`-compliant task doc under `.agent-skill/tasks/`, then
+re-enter with `/agent-all-copilot <taskdoc> --no-brainstorm` (resumes at
+Branch A — no double-planning). Only continue to step 1 below when the
+deliverable is a durable, gated code change that ships as a PR.
+
 Copilot has no `superpowers:brainstorming` skill. The coordinator runs a
 structured Q&A in chat with the user:
 

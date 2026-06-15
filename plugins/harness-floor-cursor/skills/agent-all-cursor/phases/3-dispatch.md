@@ -37,6 +37,9 @@
    Workflow remains a sibling route that hands off through a task doc.
 
 4. For each wave:
+   - Capture `baseCommit` before any implementer dispatch:
+     `git rev-parse HEAD`. Store on the wave record so Phase 4 can diff
+     from the pre-wave state.
    - Print: `Wave <i+1>/<N> — <waves[i].length> tasks in parallel`.
    - For each task in the wave, **invoke `@agent-all-implementer`** with
      this task as a chat message body (task title, files, role, the plan
@@ -45,8 +48,17 @@
    - If the plan left `role: dev`, use `state.orchestration.requiredAgents`
      to choose or validate the implementer role for that task.
    - Wait for all background invocations to settle.
+   - After each `@agent-all-implementer` settles, the coordinator MUST inspect
+     the reported changed files and `git diff`, stage ONLY task-owned pathspecs,
+     create the task commit, and record the orchestrator-created commit SHA on
+     that task. Implementer subagents are explicitly forbidden from self-committing
+     or staging broad changes. If the diff includes unreported or forbidden files,
+     do not commit; re-dispatch or escalate. Commits recorded in `tasks[].commits`
+     are coordinator-created pathspec commits — not subagent self-commits.
    - Capture wave result:
-     `{index: i, orchestration: state.orchestration, tasks: [{id, status, commits}], status: "completed" | "incomplete"}`.
+     `{index: i, baseCommit, startCommit, endCommit, orchestration: state.orchestration, tasks: [{id, status, changedFiles, commits}], status: "completed" | "incomplete"}`.
+     Derive `startCommit` and `endCommit` from the first and last
+     coordinator-created commit SHAs in `tasks[].commits`.
 
 5. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
 
@@ -88,6 +100,29 @@ while remaining:
     wave.push(t); for f of t.files: used.add(f)
   waves.push(wave); remaining = remaining.filter(t => !wave.includes(t))
 ```
+
+## Dispatch Prompt Contract (mandatory)
+
+Every `@agent-all-implementer` chat message body MUST include:
+
+- Working directory: the repository root where commands must run.
+- Owned files or line ranges: the task's declared files, or an explicit note
+  that no files were declared and the subagent must ask before broad edits.
+- Forbidden files or areas: files owned by other active wave tasks plus any
+  out-of-scope paths.
+- DO NOT:
+  - Do not run destructive commands, force-push, or reset shared state.
+  - Do not edit outside the owned files without reporting the expansion.
+  - Do not stage broad changes or self-commit.
+  - Do not revert unrelated user or other-agent edits.
+- Expected output: `STATUS`, changed files, verification evidence, blockers,
+  and a concise `Self-Audit` covering requested scope, processed items,
+  unprocessed items, shortcuts, and next action.
+- Reusable references: task doc, plan path, relevant root guidance, and any
+  files/functions/commands the coordinator already identified.
+
+Do not self-commit from an implementer subagent. The coordinator owns pathspec
+commit review after it inspects changed files and verification evidence.
 
 ## Per-subagent verification (safety net for unattended runs)
 

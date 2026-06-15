@@ -30,6 +30,25 @@ Write the prompt verbatim via `apply_patch`:
 
 ### Branch C — `prompt` with brainstormFirst true (default)
 
+**0. Orchestrator routing check (do this first).** Judge the deliverable
+against `references/orchestrator-routing.md`. If the intent is
+*evidence-producing* — research, an audit across many units, a design or
+findings report with no durable code change yet — a Codex research sweep
+(`codex exec <research-prompt>`) is the correct vehicle, **not**
+`/agent-all-codex`. The code-shipping pipeline must not be used to produce
+reports or gather evidence.
+
+In that case: recommend it to the user; if they agree, STOP this pipeline
+and instruct them to run a `codex exec` research sweep that writes a
+`validateTaskDoc`-compliant task doc under `.agent-skill/tasks/`, then
+re-enter with `/agent-all-codex <taskdoc> --no-brainstorm` (resumes at
+Branch A — no double-planning). Only continue to step 1 below when the
+deliverable is a durable, gated code change that ships as a PR.
+
+This routing decision must be surfaced as an `agent-interaction/v1` decision
+with two option ids (`"continue-code-pipeline"` and `"route-to-research-sweep"`)
+rendered via `lib/interactions/renderer-codex.mjs`.
+
 Codex has no `superpowers:brainstorming` equivalent. The coordinator runs
 a structured Q&A using `ask_user`:
 
