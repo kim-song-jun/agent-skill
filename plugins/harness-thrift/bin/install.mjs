@@ -11,7 +11,7 @@
 //
 // What gets installed to <target>:
 //   .thrift.json                                       (config seed)
-//   .claude/hooks/thrift-*.mjs                         (5 hook scripts, chmod +x)
+//   .claude/hooks/thrift-*.mjs                         (all hook scripts, chmod +x)
 //   .claude/hooks/lib/*.mjs                            (lib modules the hooks import)
 //   .claude/hooks/audit-report.md.hbs                  (audit template the audit hook reads)
 //

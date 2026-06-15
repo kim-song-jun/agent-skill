@@ -12,21 +12,6 @@ import {
 } from "../../plugins/harness-floor-codex/skills/visual-qa-codex/lib/dispatch-strategy.mjs";
 
 import {
-  buildPageTaskId,
-  buildDispatchArgs,
-  buildDispatchShellCommand,
-  dispatchPageAgent,
-} from "../../plugins/harness-floor-codex/skills/visual-qa-codex/lib/codex-agent-dispatch.mjs";
-
-import {
-  buildVisualQaPrefix,
-  buildWaitArgs,
-  buildWaitShellCommand,
-  parseWaitResponse,
-  waitForPageAgents,
-} from "../../plugins/harness-floor-codex/skills/visual-qa-codex/lib/codex-agent-wait.mjs";
-
-import {
   resolvePageSkillPath,
   buildPagePrompt,
   buildSequentialPageInvocation,
@@ -110,117 +95,6 @@ test("vqa dispatch-strategy: legacy agent hook still falls back to sequential", 
   } finally {
     rmSync(t, { recursive: true, force: true });
   }
-});
-
-// ---------------------------------------------------------------------------
-// codex-agent-dispatch.mjs (visual-qa)
-// ---------------------------------------------------------------------------
-
-test("vqa codex-agent-dispatch: buildPageTaskId composes prefix + page", () => {
-  assert.equal(buildPageTaskId("home"), "visual-qa/page/home");
-  assert.equal(buildPageTaskId("login"), "visual-qa/page/login");
-});
-
-test("vqa codex-agent-dispatch: buildPageTaskId validates input", () => {
-  assert.throws(() => buildPageTaskId(""), /pageName/);
-});
-
-test("vqa codex-agent-dispatch: buildDispatchArgs emits canonical argv with defaults", () => {
-  const argv = buildDispatchArgs({
-    pageName: "home",
-    body: { baseUrl: "http://localhost:3000", path: "/" },
-  });
-  assert.deepEqual(argv, [
-    "codex", "agent", "dispatch",
-    "--role", "visual-qa-page",
-    "--skill", ".codex/skills/visual-qa-page/SKILL.md",
-    "--task-id", "visual-qa/page/home",
-    "--body", JSON.stringify({ baseUrl: "http://localhost:3000", path: "/" }),
-  ]);
-});
-
-test("vqa codex-agent-dispatch: body required", () => {
-  assert.throws(() => buildDispatchArgs({ pageName: "home", body: null }), /body required/);
-});
-
-test("vqa codex-agent-dispatch: buildDispatchShellCommand shell-quotes", () => {
-  const cmd = buildDispatchShellCommand({
-    pageName: "home",
-    body: { msg: "it's tricky" },
-  });
-  assert.match(cmd, /^'codex' 'agent' 'dispatch'/);
-  assert.match(cmd, /it'\\''s tricky/);
-});
-
-test("vqa codex-agent-dispatch: dispatchPageAgent parses JSON", async () => {
-  const runner = async () => ({
-    stdout: JSON.stringify({ agentId: "p-1", taskId: "visual-qa/page/home", started: true }),
-    stderr: "", status: 0,
-  });
-  const r = await dispatchPageAgent({
-    pageName: "home", body: {},
-  }, runner);
-  assert.equal(r.agentId, "p-1");
-});
-
-test("vqa codex-agent-dispatch: dispatchPageAgent throws on non-zero", async () => {
-  const runner = async () => ({ stdout: "", stderr: "boom", status: 1 });
-  await assert.rejects(
-    dispatchPageAgent({ pageName: "home", body: {} }, runner),
-    /boom/,
-  );
-});
-
-// ---------------------------------------------------------------------------
-// codex-agent-wait.mjs (visual-qa)
-// ---------------------------------------------------------------------------
-
-test("vqa codex-agent-wait: buildVisualQaPrefix", () => {
-  assert.equal(buildVisualQaPrefix(), "visual-qa/page/");
-});
-
-test("vqa codex-agent-wait: buildWaitArgs defaults to visual-qa prefix", () => {
-  const argv = buildWaitArgs({});
-  assert.equal(argv[argv.indexOf("--task-prefix") + 1], "visual-qa/page/");
-});
-
-test("vqa codex-agent-wait: buildWaitArgs accepts custom prefix", () => {
-  const argv = buildWaitArgs({ taskPrefix: "visual-qa/page/home" });
-  assert.equal(argv[argv.indexOf("--task-prefix") + 1], "visual-qa/page/home");
-});
-
-test("vqa codex-agent-wait: buildWaitShellCommand shell-quotes", () => {
-  const cmd = buildWaitShellCommand({});
-  assert.match(cmd, /^'codex' 'agent' 'wait'/);
-});
-
-test("vqa codex-agent-wait: parseWaitResponse normalizes captures/analyses", () => {
-  const stdout = JSON.stringify([
-    { agentId: "p1", status: "completed", captures: ["a.png"], analyses: ["a.md"],
-      costUSD: 0.1, errors: [] },
-  ]);
-  const r = parseWaitResponse(stdout);
-  assert.equal(r[0].captures.length, 1);
-  assert.equal(r[0].analyses[0], "a.md");
-  assert.equal(r[0].costUSD, 0.1);
-});
-
-test("vqa codex-agent-wait: parseWaitResponse handles agents envelope", () => {
-  const stdout = JSON.stringify({ agents: [{ agentId: "x", status: "completed" }] });
-  const r = parseWaitResponse(stdout);
-  assert.equal(r[0].agentId, "x");
-});
-
-test("vqa codex-agent-wait: waitForPageAgents happy path", async () => {
-  const runner = async (cmd) => {
-    assert.match(cmd, /codex.*agent.*wait/);
-    return {
-      stdout: JSON.stringify([{ agentId: "p1", status: "completed" }]),
-      stderr: "", status: 0,
-    };
-  };
-  const r = await waitForPageAgents({}, runner);
-  assert.equal(r.length, 1);
 });
 
 // ---------------------------------------------------------------------------

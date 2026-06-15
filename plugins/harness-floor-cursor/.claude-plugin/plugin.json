@@ -1,6 +1,6 @@
 {
   "name": "harness-floor-cursor",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "visual-qa scaffold for Cursor — emits .visual-qa.json + Playwright MCP entry for .cursor/mcp.json",
   "keywords": [
     "visual-qa",

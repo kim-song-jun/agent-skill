@@ -7,7 +7,11 @@
 // Input: PreToolUse hook payload (JSON via stdin) with tool_input.file_path.
 
 import { readFileSync, statSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// dirname of THIS hook on disk (Node 18/20-safe; import.meta.dirname is Node >=21).
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 const STATE_PATH = resolve(process.env.CLAUDE_PROJECT_DIR || ".", ".thrift-state.json");
 const COERCE_THRESHOLD_BYTES = 200 * 80; // ~200 lines × 80 chars/line
@@ -35,12 +39,16 @@ async function main() {
   // Record telemetry.
   try {
     const { readState, writeState, recordCoercion } = await import(
-      resolve(import.meta.dirname || ".", "../../lib/metrics-collector.mjs")
+      resolve(HERE, "../../lib/metrics-collector.mjs")
     );
     const state = readState(STATE_PATH);
     recordCoercion(state, {
       tool: "Read",
       suggestion: `ctx_execute_file(path: ${JSON.stringify(filePath)})`,
+      // Correlation key: the target the suggestion pointed at. A later
+      // PostToolUse hook (thrift-posttool-coercion-outcome) flips accepted
+      // to true if the model actually routes this path through a ctx tool.
+      target: filePath,
       accepted: false,
     });
     writeState(STATE_PATH, state);

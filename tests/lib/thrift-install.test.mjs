@@ -124,7 +124,7 @@ test("install: --no-instrument skips settings.local.json patch", () => {
   }
 });
 
-test("install: default run patches .claude/settings.local.json with 5 thrift hooks", () => {
+test("install: default run patches .claude/settings.local.json with 6 thrift hooks", () => {
   const target = makeTmp();
   try {
     const res = runInstall([target]);
@@ -132,13 +132,15 @@ test("install: default run patches .claude/settings.local.json with 5 thrift hoo
     const sp = resolve(target, ".claude/settings.local.json");
     assert.ok(existsSync(sp), "settings.local.json should be written");
     const settings = JSON.parse(readFileSync(sp, "utf-8"));
-    // 2 PreToolUse + 1 PostToolUse + 1 SessionStart + 1 SessionEnd = 5
+    // 2 PreToolUse + 2 PostToolUse + 1 SessionStart + 1 SessionEnd = 6
     let total = 0;
     for (const arr of Object.values(settings.hooks)) total += arr.length;
-    assert.equal(total, 5);
+    assert.equal(total, 6);
     assert.ok(settings.hooks.PreToolUse?.some((e) =>
       e.hooks.some((h) => /thrift-pretool-bash-telemetry/.test(h.command))));
-    assert.match(res.stdout, /applied=5/);
+    assert.ok(settings.hooks.PostToolUse?.some((e) =>
+      e.hooks.some((h) => /thrift-posttool-coercion-outcome/.test(h.command))));
+    assert.match(res.stdout, /applied=6/);
   } finally {
     rmSync(target, { recursive: true, force: true });
   }
@@ -152,7 +154,7 @@ test("install: --uninstall removes thrift hook registrations only", () => {
 
     const res = runInstall([target, "--uninstall"]);
     assert.equal(res.status, 0, `stderr: ${res.stderr}\nstdout: ${res.stdout}`);
-    assert.match(res.stdout, /removed=5/);
+    assert.match(res.stdout, /removed=6/);
 
     const settings = JSON.parse(readFileSync(resolve(target, ".claude/settings.local.json"), "utf-8"));
     assert.doesNotMatch(JSON.stringify(settings), /thrift-/);

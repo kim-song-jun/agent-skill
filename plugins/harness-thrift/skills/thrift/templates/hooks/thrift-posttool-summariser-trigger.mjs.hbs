@@ -6,6 +6,10 @@
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// dirname of THIS hook on disk (Node 18/20-safe; import.meta.dirname is Node >=21).
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 const ROOT = process.env.CLAUDE_PROJECT_DIR || ".";
 const STATE_PATH = resolve(ROOT, ".thrift-state.json");
@@ -24,13 +28,13 @@ async function main() {
   const outputBytes = typeof output === "string" ? output.length : JSON.stringify(output).length;
 
   const { readState, writeState, recordTurn, metricsSinceLastSummary } = await import(
-    resolve(import.meta.dirname || ".", "../../lib/metrics-collector.mjs")
+    resolve(HERE, "../../lib/metrics-collector.mjs")
   );
   const { loadConfig } = await import(
-    resolve(import.meta.dirname || ".", "../../lib/config-loader.mjs")
+    resolve(HERE, "../../lib/config-loader.mjs")
   );
   const { shouldFireSummariser, estimateTokensFromBytes } = await import(
-    resolve(import.meta.dirname || ".", "../../lib/threshold-evaluator.mjs")
+    resolve(HERE, "../../lib/threshold-evaluator.mjs")
   );
 
   const configRes = loadConfig(CONFIG_PATH);

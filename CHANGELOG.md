@@ -6,6 +6,27 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.5 — 2026-06-15
+
+- thrift hooks: applied the Node 18/20-safe `fileURLToPath(import.meta.url)`
+  dirname pattern to the remaining four hook templates (only the audit hook had
+  it), and added a spawn test asserting every installed hook resolves its
+  `./lib/` imports.
+- Codex port cleanup: removed the four dead `codex agent dispatch`/`wait`
+  wrappers (Codex 0.139.0 has no `agent` subcommand; the live path is sequential
+  `codex exec`) along with their tests and the doc-contract entries.
+- thrift-codex Phase-0 hook gate: rewritten around verified Codex 0.139.0
+  behaviour — it now probes actual `[hooks]` support (version + the
+  `--dangerously-bypass-hook-trust` capability), hard-aborts when unsupported
+  (the append-only patcher cannot fail later), adds a hook-TRUST advisory
+  (untrusted hooks are silently inert; the tool never auto-passes the bypass
+  flag), and drops the false "Phase 2 will reject" claim.
+- thrift coercion telemetry: added a PostToolUse `coercion-outcome` correlation
+  hook so `coercionAcceptRate` reflects real acceptance (was structurally pinned
+  at 0%) — the read-coerce suggestion now carries a target and a later
+  `ctx_execute`/`ctx_execute_file` on that target marks it accepted.
+- Suite: 1991/1991 passing; fast release smoke 471/471 passing.
+
 ## Agent-skill v0.6.4 — 2026-06-15
 
 - Restored the agent-all SSOT pipeline contract to all four ports

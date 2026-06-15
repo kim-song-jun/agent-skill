@@ -105,3 +105,40 @@ test("thrift hook spawn: a hook rendered WITHOUT the lib copy + import rewrite s
     rmSync(seed, { recursive: true, force: true });
   }
 });
+
+test("thrift hook spawn: ALL installed hooks resolve their lib imports (no ERR_MODULE_NOT_FOUND)", () => {
+  // Guards the dirname fix (HERE = dirname(fileURLToPath(import.meta.url))) across
+  // every hook template — on Node 18/20 the old `import.meta.dirname || "."`
+  // fell back to CWD and broke the sibling-lib imports. Each hook is fed an
+  // empty JSON payload; it may early-return, but it must never fail to RESOLVE
+  // its `./lib/*` imports.
+  const target = tmp("thrift-all-");
+  try {
+    const inst = spawnSync("node", [INSTALL, target], { encoding: "utf-8" });
+    assert.equal(inst.status, 0, `install failed: ${inst.stderr}`);
+    const hooks = [
+      "thrift-sessionend-audit.mjs",
+      "thrift-posttool-summariser-trigger.mjs",
+      "thrift-posttool-coercion-outcome.mjs",
+      "thrift-pretool-bash-telemetry.mjs",
+      "thrift-pretool-read-coerce.mjs",
+      "thrift-sessionstart-cache-prime.mjs",
+    ];
+    for (const h of hooks) {
+      const hookPath = join(target, ".claude/hooks", h);
+      assert.ok(existsSync(hookPath), `${h} must be installed`);
+      const res = spawnSync("node", [hookPath], {
+        encoding: "utf-8",
+        input: "{}",
+        env: { ...process.env, CLAUDE_PROJECT_DIR: target },
+      });
+      assert.doesNotMatch(
+        res.stderr,
+        /Cannot find module|ERR_MODULE_NOT_FOUND/,
+        `${h} must resolve its ./lib/ imports (got: ${res.stderr.slice(0, 200)})`,
+      );
+    }
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+});

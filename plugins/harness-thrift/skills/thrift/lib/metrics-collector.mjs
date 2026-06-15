@@ -10,7 +10,7 @@
 //     "tokensOut": <int>,
 //     "modelCalls": [{model, tokensInUncached, tokensInCached, tokensOut, at}],
 //     "summarisers": [{at, reason, tokensBefore, tokensAfter, savedRatio}],
-//     "coercions": [{at, tool, suggestion, accepted}],
+//     "coercions": [{at, tool, suggestion, target, accepted}],
 //     "cachePrimes": [{at, cohort, costUSD}],
 //     "phases": [{phase, completedAt}],
 //     "thresholds": {summariserTokenThreshold, summariserTurnThreshold}
@@ -87,13 +87,34 @@ export function recordSummariser(state, { reason, tokensBefore, tokensAfter }) {
   return state;
 }
 
-export function recordCoercion(state, { tool, suggestion, accepted }) {
-  state.coercions.push({
+export function recordCoercion(state, { tool, suggestion, target, accepted }) {
+  const entry = {
     at: new Date().toISOString(),
     tool,
     suggestion,
     accepted,
-  });
+  };
+  // `target` is optional (older callers / hooks may omit it). Only persist
+  // it when supplied so the entry shape stays backward-compatible.
+  if (target !== undefined) entry.target = target;
+  state.coercions.push(entry);
+  return state;
+}
+
+// Correlate a later acceptance signal with an earlier suggestion. Finds the
+// most-recent unaccepted coercion whose `target` matches and flips it to
+// accepted:true. Idempotent and a safe no-op when nothing matches (e.g. the
+// model used a ctx tool on a file we never suggested coercing).
+export function markCoercionAccepted(state, { target }) {
+  if (target === undefined || target === null) return state;
+  if (!Array.isArray(state.coercions)) return state;
+  for (let i = state.coercions.length - 1; i >= 0; i--) {
+    const c = state.coercions[i];
+    if (c && c.target === target && !c.accepted) {
+      c.accepted = true;
+      return state;
+    }
+  }
   return state;
 }
 

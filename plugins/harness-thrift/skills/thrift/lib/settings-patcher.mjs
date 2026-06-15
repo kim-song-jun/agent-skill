@@ -112,6 +112,13 @@ export function buildStandardThriftHooks({ hooksDir }) {
     ],
     PostToolUse: [
       { hooks: [{ type: "command", command: cmd("thrift-posttool-summariser-trigger") }] },
+      // Correlates a context-mode coercion suggestion with the model actually
+      // routing the target through a ctx tool — flips coercionAcceptRate off 0%.
+      // Matcher covers bare ctx_execute[_file] and their MCP wrappers.
+      {
+        matcher: "ctx_execute_file|ctx_execute|mcp__.*context-mode.*ctx_execute",
+        hooks: [{ type: "command", command: cmd("thrift-posttool-coercion-outcome") }],
+      },
     ],
     SessionStart: [
       { hooks: [{ type: "command", command: cmd("thrift-sessionstart-cache-prime") }] },

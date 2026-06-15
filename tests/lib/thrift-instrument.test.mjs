@@ -20,13 +20,18 @@ test("settings-patcher: patches into empty settings", () => {
   try {
     const hooks = buildStandardThriftHooks({ hooksDir: ".claude/hooks" });
     const res = patchSettings({ settingsPath: sp, hooksToAdd: hooks });
-    assert.equal(res.applied, 5); // 2 PreToolUse + 1 PostToolUse + 1 SessionStart + 1 SessionEnd
+    assert.equal(res.applied, 6); // 2 PreToolUse + 2 PostToolUse + 1 SessionStart + 1 SessionEnd
     assert.equal(res.skipped, 0);
     const written = JSON.parse(readFileSync(sp, "utf-8"));
     assert.ok(written.hooks.PreToolUse.length === 2);
-    assert.ok(written.hooks.PostToolUse.length === 1);
+    assert.ok(written.hooks.PostToolUse.length === 2);
     assert.ok(written.hooks.SessionStart.length === 1);
     assert.ok(written.hooks.SessionEnd.length === 1);
+    // The coercion-outcome PostToolUse entry carries a matcher covering the
+    // context-mode coercion tools.
+    assert.ok(written.hooks.PostToolUse.some((e) =>
+      e.hooks.some((h) => /thrift-posttool-coercion-outcome/.test(h.command))
+      && /ctx_execute/.test(e.matcher || "")));
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -62,7 +67,7 @@ test("settings-patcher: skips already-registered entries on re-run", () => {
     patchSettings({ settingsPath: sp, hooksToAdd: hooks });
     const res2 = patchSettings({ settingsPath: sp, hooksToAdd: hooks });
     assert.equal(res2.applied, 0);
-    assert.equal(res2.skipped, 5);
+    assert.equal(res2.skipped, 6);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -74,7 +79,7 @@ test("settings-patcher: dry-run does not write", () => {
   try {
     const hooks = buildStandardThriftHooks({ hooksDir: ".claude/hooks" });
     const res = patchSettings({ settingsPath: sp, hooksToAdd: hooks, dryRun: true });
-    assert.equal(res.applied, 5);
+    assert.equal(res.applied, 6);
     assert.ok(!existsSync(sp), "should not have written file in dry-run");
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -112,7 +117,7 @@ test("settings-patcher: unpatch removes only thrift entries", () => {
     const before = JSON.parse(readFileSync(sp, "utf-8"));
     assert.ok(before.hooks.PreToolUse.length === 3, `expected 3 entries before unpatch, got ${before.hooks.PreToolUse.length}`);
     const res = unpatchSettings({ settingsPath: sp });
-    assert.equal(res.removed, 5);
+    assert.equal(res.removed, 6);
     const after = JSON.parse(readFileSync(sp, "utf-8"));
     // User-hook entry preserved
     assert.equal(after.hooks.PreToolUse.length, 1);

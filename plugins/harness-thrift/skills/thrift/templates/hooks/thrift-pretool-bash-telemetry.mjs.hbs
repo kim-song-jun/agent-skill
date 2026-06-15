@@ -8,7 +8,11 @@
 // Output: passes through (exit 0); appends a coercion record to .thrift-state.json.
 
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// dirname of THIS hook on disk (Node 18/20-safe; import.meta.dirname is Node >=21).
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 const STATE_PATH = resolve(process.env.CLAUDE_PROJECT_DIR || ".", ".thrift-state.json");
 
@@ -32,7 +36,7 @@ async function main() {
   if (likelyLarge) {
     // Lazy import to keep startup fast for the common no-op case.
     const { readState, writeState, recordCoercion } = await import(
-      resolve(import.meta.dirname || ".", "../../lib/metrics-collector.mjs")
+      resolve(HERE, "../../lib/metrics-collector.mjs")
     );
     const state = readState(STATE_PATH);
     recordCoercion(state, {

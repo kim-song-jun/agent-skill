@@ -11,6 +11,7 @@ import {
   recordTurn,
   recordSummariser,
   recordCoercion,
+  markCoercionAccepted,
   recordCachePrime,
   recordPhase,
   metricsSinceLastSummary,
@@ -84,12 +85,61 @@ test("metrics-collector: recordSummariser captures savedRatio", () => {
 
 test("metrics-collector: recordCoercion + recordCachePrime + recordPhase", () => {
   const s = freshState();
-  recordCoercion(s, { tool: "Bash", suggestion: "ctx_execute", accepted: true });
+  recordCoercion(s, { tool: "Read", suggestion: "ctx_execute_file(path: \"/a/big.log\")", target: "/a/big.log", accepted: false });
   recordCachePrime(s, { cohort: "session", costUSD: 0.001 });
   recordPhase(s, 0);
   assert.equal(s.coercions.length, 1);
+  assert.equal(s.coercions[0].target, "/a/big.log");
+  assert.equal(s.coercions[0].accepted, false);
   assert.equal(s.cachePrimes.length, 1);
   assert.equal(s.phases.length, 1);
+});
+
+test("metrics-collector: recordCoercion stays backward-compatible when target omitted", () => {
+  const s = freshState();
+  recordCoercion(s, { tool: "Bash", suggestion: "ctx_execute", accepted: true });
+  assert.equal(s.coercions.length, 1);
+  // No target key when the caller didn't pass one.
+  assert.ok(!("target" in s.coercions[0]), "target must be absent when not supplied");
+  assert.equal(s.coercions[0].accepted, true);
+});
+
+test("metrics-collector: markCoercionAccepted flips the matching unaccepted entry", () => {
+  const s = freshState();
+  recordCoercion(s, { tool: "Read", suggestion: "x", target: "/a/big.log", accepted: false });
+  recordCoercion(s, { tool: "Read", suggestion: "y", target: "/b/other.log", accepted: false });
+  markCoercionAccepted(s, { target: "/a/big.log" });
+  assert.equal(s.coercions[0].accepted, true, "matching target flips to accepted");
+  assert.equal(s.coercions[1].accepted, false, "non-matching target untouched");
+});
+
+test("metrics-collector: markCoercionAccepted flips most-recent unaccepted match only", () => {
+  const s = freshState();
+  // Two suggestions for the same target; only the most-recent unaccepted one flips.
+  recordCoercion(s, { tool: "Read", suggestion: "first", target: "/a/big.log", accepted: false });
+  recordCoercion(s, { tool: "Read", suggestion: "second", target: "/a/big.log", accepted: false });
+  markCoercionAccepted(s, { target: "/a/big.log" });
+  assert.equal(s.coercions[0].accepted, false, "earlier duplicate stays unaccepted");
+  assert.equal(s.coercions[1].accepted, true, "most-recent match flips");
+});
+
+test("metrics-collector: markCoercionAccepted is a no-op when nothing matches", () => {
+  const s = freshState();
+  recordCoercion(s, { tool: "Read", suggestion: "x", target: "/a/big.log", accepted: false });
+  markCoercionAccepted(s, { target: "/never/suggested.log" });
+  assert.equal(s.coercions[0].accepted, false);
+  // Missing/undefined target is also a safe no-op.
+  markCoercionAccepted(s, {});
+  assert.equal(s.coercions[0].accepted, false);
+});
+
+test("metrics-collector: markCoercionAccepted is idempotent", () => {
+  const s = freshState();
+  recordCoercion(s, { tool: "Read", suggestion: "x", target: "/a/big.log", accepted: false });
+  markCoercionAccepted(s, { target: "/a/big.log" });
+  markCoercionAccepted(s, { target: "/a/big.log" }); // second call must not toggle anything new
+  assert.equal(s.coercions.filter((c) => c.accepted).length, 1);
+  assert.equal(s.coercions[0].accepted, true);
 });
 
 test("metrics-collector: metricsSinceLastSummary counts only post-summariser turns", async () => {
@@ -150,4 +200,35 @@ test("audit-renderer: report renders summariser table when fires present", () =>
   assert.ok(out.includes("Tool coercions"));
   assert.match(out, /Bash.*ctx_execute.*true/);
   assert.match(out, /Phase 5/);
+});
+
+test("audit-renderer: coercionAcceptRate is 0% while suggestion is unaccepted", () => {
+  // Mirrors the PreToolUse-only world: a suggestion was recorded but the
+  // model never routed it through a ctx tool, so acceptance stays false.
+  const s = freshState();
+  recordCoercion(s, { tool: "Read", suggestion: "ctx_execute_file", target: "/a/big.log", accepted: false });
+  const ctx = buildAuditContext({ state: s, config: DEFAULTS, now: new Date() });
+  assert.equal(ctx.coercionAcceptRate, 0);
+});
+
+test("audit-renderer: end-to-end — markCoercionAccepted lifts coercionAcceptRate off 0%", () => {
+  // recordCoercion (PreToolUse suggestion) → markCoercionAccepted (PostToolUse
+  // correlation) → coercionAcceptRate reflects REAL acceptance.
+  const s = freshState();
+  recordCoercion(s, { tool: "Read", suggestion: "ctx_execute_file", target: "/a/big.log", accepted: false });
+  recordCoercion(s, { tool: "Read", suggestion: "ctx_execute_file", target: "/b/other.log", accepted: false });
+
+  // Before the PostToolUse correlation fires, the rate is pinned at 0%.
+  let ctx = buildAuditContext({ state: s, config: DEFAULTS, now: new Date() });
+  assert.equal(ctx.coercionAcceptRate, 0);
+
+  // The model actually used a ctx tool on /a/big.log — correlate it.
+  markCoercionAccepted(s, { target: "/a/big.log" });
+  ctx = buildAuditContext({ state: s, config: DEFAULTS, now: new Date() });
+  assert.equal(ctx.coercionAcceptRate, 50); // 1 of 2 accepted
+
+  // The second target also gets routed through a ctx tool.
+  markCoercionAccepted(s, { target: "/b/other.log" });
+  ctx = buildAuditContext({ state: s, config: DEFAULTS, now: new Date() });
+  assert.equal(ctx.coercionAcceptRate, 100); // 2 of 2 accepted
 });

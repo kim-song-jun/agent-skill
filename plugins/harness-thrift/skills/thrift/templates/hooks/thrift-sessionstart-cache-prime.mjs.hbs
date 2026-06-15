@@ -7,7 +7,11 @@
 // system+tools). This hook records the SessionStart event for the audit.
 
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// dirname of THIS hook on disk (Node 18/20-safe; import.meta.dirname is Node >=21).
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 const ROOT = process.env.CLAUDE_PROJECT_DIR || ".";
 const CONFIG_PATH = resolve(ROOT, ".thrift.json");
@@ -15,10 +19,10 @@ const STATE_PATH = resolve(ROOT, ".thrift-state.json");
 
 async function main() {
   const { loadConfig } = await import(
-    resolve(import.meta.dirname || ".", "../../lib/config-loader.mjs")
+    resolve(HERE, "../../lib/config-loader.mjs")
   );
   const { readState, writeState, recordPhase, recordCachePrime } = await import(
-    resolve(import.meta.dirname || ".", "../../lib/metrics-collector.mjs")
+    resolve(HERE, "../../lib/metrics-collector.mjs")
   );
 
   const cr = loadConfig(CONFIG_PATH);

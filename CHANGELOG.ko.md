@@ -6,6 +6,25 @@
 
 ## 미출시
 
+## Agent-skill v0.6.5 — 2026-06-15
+
+- thrift 훅: 나머지 4개 훅 템플릿에 Node 18/20-safe `fileURLToPath(import.meta.url)`
+  dirname 패턴을 적용(기존엔 audit 훅만 적용)하고, 설치된 모든 훅이 `./lib/`
+  import을 해소하는지 검증하는 spawn 테스트를 추가했습니다.
+- Codex 포트 정리: 죽은 `codex agent dispatch`/`wait` 래퍼 4개를 제거했습니다
+  (Codex 0.139.0엔 `agent` 서브커맨드가 없고 실제 경로는 순차 `codex exec`) —
+  관련 테스트와 doc-contract 항목도 함께 제거.
+- thrift-codex Phase-0 훅 게이트: 검증된 Codex 0.139.0 동작에 맞게 재작성 —
+  실제 `[hooks]` 지원(버전 + `--dangerously-bypass-hook-trust` 능력)을 probe하고,
+  미지원 시 hard-abort(append-only patcher는 나중에 실패할 수 없음), hook-TRUST
+  안내 추가(untrusted 훅은 silently inert; 도구가 bypass 플래그를 자동 사용하지
+  않음), 거짓 "Phase 2가 reject한다" 주장 제거.
+- thrift coercion telemetry: PostToolUse `coercion-outcome` 상관 훅을 추가해
+  `coercionAcceptRate`가 실제 수락을 반영(구조적으로 0% 고정이었음) —
+  read-coerce 제안이 target을 담고, 이후 그 target에 대한
+  `ctx_execute`/`ctx_execute_file`가 accepted로 표시합니다.
+- Suite: 1991/1991 통과; fast release smoke 471/471 통과.
+
 ## Agent-skill v0.6.4 — 2026-06-15
 
 - 4개 포트(codex/copilot/cursor/gemini)가 조용히 떨궜던 agent-all SSOT

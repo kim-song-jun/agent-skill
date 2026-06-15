@@ -1,0 +1,64 @@
+#!/usr/bin/env node
+// thrift-posttool-coercion-outcome — correlates a context-mode coercion
+// SUGGESTION (recorded at PreToolUse by thrift-pretool-read-coerce) with the
+// model's actual LATER behaviour. Acceptance is unknowable at suggestion time:
+// it only becomes true once the model routes the same target file through a
+// context-mode tool (ctx_execute_file / ctx_execute / an MCP context-mode tool).
+//
+// When such a tool fires, this hook reads the target path from tool_input and
+// flips the most-recent matching unaccepted coercion to accepted:true so the
+// audit's coercionAcceptRate reflects REAL acceptance instead of being pinned
+// at 0%.
+//
+// Input: PostToolUse hook payload (JSON via stdin) with tool_name + tool_input.
+
+import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// dirname of THIS hook on disk (Node 18/20-safe; import.meta.dirname is Node >=21).
+const HERE = dirname(fileURLToPath(import.meta.url));
+
+const STATE_PATH = resolve(process.env.CLAUDE_PROJECT_DIR || ".", ".thrift-state.json");
+
+// A context-mode coercion tool is the bare ctx_execute_file / ctx_execute, or
+// any MCP wrapper of them (e.g. mcp__plugin_context-mode_context-mode__ctx_execute_file).
+function isCoercionTool(toolName) {
+  if (!toolName || typeof toolName !== "string") return false;
+  if (toolName === "ctx_execute_file" || toolName === "ctx_execute") return true;
+  // MCP form: mcp__<server-with-context-mode>__ctx_execute[ _file ].
+  return /^mcp__.*context-mode.*ctx_execute(_file)?$/.test(toolName);
+}
+
+async function main() {
+  let payload = {};
+  try {
+    const stdin = readFileSync(0, "utf-8");
+    if (stdin.trim()) payload = JSON.parse(stdin);
+  } catch {
+    process.exit(0);
+  }
+
+  const toolName = payload?.tool_name;
+  if (!isCoercionTool(toolName)) process.exit(0);
+
+  // ctx_execute_file takes `path`; some variants surface `file_path`.
+  const target = payload?.tool_input?.path || payload?.tool_input?.file_path;
+  if (!target) process.exit(0);
+
+  // Record telemetry — never fail the hook on a telemetry error.
+  try {
+    const { readState, writeState, markCoercionAccepted } = await import(
+      resolve(HERE, "../../lib/metrics-collector.mjs")
+    );
+    const state = readState(STATE_PATH);
+    markCoercionAccepted(state, { target });
+    writeState(STATE_PATH, state);
+  } catch {
+    // Don't fail the hook on telemetry error.
+  }
+
+  process.exit(0);
+}
+
+main().catch(() => process.exit(0));
