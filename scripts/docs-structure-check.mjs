@@ -12,6 +12,8 @@ const REQUIRED_DOCS = [
   "CHANGELOG.ko.md",
   "PROJECT_PLAN.md",
   "ROADMAP.md",
+  "docs/USER_MANUAL.md",
+  "docs/USER_MANUAL.ko.md",
   "docs/USAGE.md",
   "docs/USAGE.ko.md",
   "docs/architecture/README.md",
@@ -46,6 +48,8 @@ const LINK_SOURCE_FILES = [
   "README.ko.md",
   "PROJECT_PLAN.md",
   "ROADMAP.md",
+  "docs/USER_MANUAL.md",
+  "docs/USER_MANUAL.ko.md",
   "docs/USAGE.md",
   "docs/USAGE.ko.md",
   "docs/architecture/README.md",
@@ -214,4 +218,3 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   process.exit(report.ok ? 0 : 1);
 }
-

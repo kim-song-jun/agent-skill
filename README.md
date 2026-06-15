@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1991%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-19-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1998%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-19-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..." --loop --qa` per feature; the agent brainstorms → plans → writes → tests → **visually QAs every page** → opens the PR — and keeps iterating until tests AND the UI both pass — without you babysitting every turn.
 
@@ -27,6 +27,21 @@ Works on Claude Code today, with cross-platform ports for **Cursor, GitHub Copil
 3. **One-flag end-to-end verification.** `--qa` wires the loop's "done" check to **tests + visual UI check**: visual-qa crawls every page, DOM-walks every interactive element, shallow-clicks each button, screenshots every state, diffs vs baseline — and only breaks the loop when both tests and the UI verdict pass. Compose with `/thrift` + `/goal` for unattended overnight runs. See [Self-sustaining workflows](#self-sustaining-workflows).
 
 That's it. The rest of this README is reference material — skim the parts you need.
+
+---
+
+## Start Here
+
+The detailed image-backed user manual is [docs/USER_MANUAL.md](docs/USER_MANUAL.md). It walks through global plugin install versus per-project `/agent-init`, when init is needed again, good `/agent-all` request examples, automatic `/thrift` recommendations, and the real support level for each platform.
+
+![agent-skill quick start](docs/assets/user-manual/cards/01-quick-start.png)
+
+Short version:
+
+- **Claude Code plugin install is machine/user scope.** Restart Claude Code or run `/reload-plugins` after installing or updating.
+- **`/agent-init` is project scope.** New git repos need it once; projects that already have the scaffold do not need init again after a plugin update.
+- **Daily work starts with `/agent-all "..." --loop --qa`.** Use `--qa` by default for UI work.
+- When sessions get long and large output repeats, the context-mode router recommends `/thrift`.
 
 ---
 
@@ -812,7 +827,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 - **GitHub governance** — see [docs/github-governance.md](docs/github-governance.md) for public PR smoke CI, issue templates, PR template, and label taxonomy.
 - **Release provenance** — run `node scripts/release-provenance.mjs --release=<rc-tag>` to write `release-manifest.json` plus `release-manifest.sha256`; installers can re-check it with `--verify-checksums` / `--verify-provenance`.
 - **All 19 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
-- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1991 tests, all green.
+- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 1998 tests, all green.
 - **Per-platform porting** — see specs ending in `-impl-spec.md` or `-decomposition.md` under `docs/superpowers/specs/`.
 - **Skill utility benchmark** — see [docs/superpowers/specs/2026-06-11-skill-utility-benchmark.md](docs/superpowers/specs/2026-06-11-skill-utility-benchmark.md) and run `node scripts/skill-eval.mjs --smoke`.
 - **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for raw design docs per plugin.
@@ -824,7 +839,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 | Layer | Status | Note |
 |---|---|---|
-| Unit/integration tests | ✅ **1991/1991 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-candidate evidence, provenance manifests, public GitHub governance, docs structure, release publish preflight, target-project smoke, skill-eval, command-surface, doctor, cleanup, and visual-qa regressions |
+| Unit/integration tests | ✅ **1998/1998 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-candidate evidence, provenance manifests, public GitHub governance, docs structure, release publish preflight, target-project smoke, skill-eval, command-surface, doctor, cleanup, and visual-qa regressions |
 | Release gate | ✅ PR smoke + local gate verified | Public PR CI now covers smoke/docs/templates drift via `.github/workflows/smoke.yml`, `.github/workflows/docs.yml`, and `.github/workflows/templates.yml`; deployment still uses local release-candidate evidence, release-audit, release provenance manifest/checksum evidence, fresh fixtures, `./scripts/release-smoke.sh --fast --with-live-cli`, target-project smoke, `node --test`, vendored-lib sync, and support matrix drift checks |
 | Project install renderers (Claude + 5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
 | Marketplace registration | ✅ 19 plugins listed | sync between local + origin |
@@ -834,7 +849,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 | `/thrift` compact delivery | ⚠️ API-gated advisory path | Claude/Codex both write durable summary files and prompt `/compact`; programmatic compact injection connects when host CLIs expose a stable API |
 | Provider-backed thrift summarizers | ✅ release-scoped | Claude's optional `@anthropic-ai/sdk` summarizer path is implemented and tested; Codex ships a dependency-free heuristic summarizer with configurable `gpt-5-nano` model metadata and OpenAI-rate audit heuristics |
 
-Versioning: `harness-builder` at `v0.6.1`, `harness-floor` at `v0.6.1`, and the other 17 installable `agent-skill` plugins at `v0.6.1` on the same release train. Internal artifact/config schema versions remain separate compatibility contracts.
+Versioning: `harness-builder` at `v0.6.2`, `harness-floor` at `v0.6.2`, and the other 17 installable `agent-skill` plugins at `v0.6.2` on the same release train. Internal artifact/config schema versions remain separate compatibility contracts.
 
 ### Release Candidate Lifecycle
 
@@ -891,7 +906,7 @@ node scripts/skill-eval.mjs --smoke --no-write --json  # CI-safe utility benchma
 node scripts/skill-eval.mjs --full       # manual/full benchmark; writes .agent-skill/evals/<date>/
 node scripts/release-publish-preflight.mjs --base=origin/main
 node scripts/target-project-smoke.mjs --target=/path/to/project --platform=claude,codex --lang=ko
-node --test                              # 1991/1991 must pass
+node --test                              # 1998/1998 must pass
 node scripts/sync-lib.mjs --check        # vendored shared libs in sync
 node scripts/generate-support-matrix.mjs --check
 ```

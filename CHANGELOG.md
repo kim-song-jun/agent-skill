@@ -6,6 +6,26 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.2 — 2026-06-15
+
+- Fixed five audited install-path / safety defects so the documented skill
+  paths work on a real (non-source-checkout) install: `/agent-init` now
+  resolves harness-floor config templates against the installed plugin path
+  (`plugin-scan` `installPaths` + `resolvePluginRoot`) and fails loudly instead
+  of writing an empty `.visual-qa.json` / `.agent-all.json`; `/thrift` Phase 2
+  delegates to the bundled installer and copies the hook libs (no more silent
+  `ERR_MODULE_NOT_FOUND`); `/debug` and `debug-codex` git-bisect materialise
+  their run script on disk; and `agent-all-cursor` aborts on a dirty tree
+  instead of `git stash`. Added a render+spawn regression guard for the thrift
+  hooks and install-path tests for `plugin-scan`.
+- Added image-backed user manuals at `docs/USER_MANUAL.md` and
+  `docs/USER_MANUAL.ko.md`, promoted the release manual cards/pages into
+  `docs/assets/user-manual/`, and linked the beginner path from README and
+  usage docs.
+- Filed the remaining cross-platform audit findings as tracked issues
+  (#27–#35, label `audit/v0.6.1`). Suite: 1998/1998 passing; fast release
+  smoke 505/505 passing.
+
 ## Agent-skill v0.6.1 patch release — 2026-06-12
 
 - Added an automatic `/thrift` recommendation from the Claude context-mode

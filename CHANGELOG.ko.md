@@ -6,6 +6,25 @@
 
 ## 미출시
 
+## Agent-skill v0.6.2 — 2026-06-15
+
+- 실제(소스 체크아웃이 아닌) 설치 환경에서 문서화된 스킬 경로가 동작하도록
+  감사에서 확인된 install-path/안전 결함 5건을 수정했습니다: `/agent-init`은
+  harness-floor 설정 템플릿을 설치된 플러그인 경로로 해석하고(`plugin-scan`
+  `installPaths` + `resolvePluginRoot`) 빈 `.visual-qa.json` / `.agent-all.json`을
+  쓰는 대신 명시적으로 실패합니다; `/thrift` Phase 2는 번들 installer에
+  위임하고 훅 lib를 복사합니다(더 이상 silent `ERR_MODULE_NOT_FOUND` 없음);
+  `/debug`와 `debug-codex` git-bisect는 run 스크립트를 디스크에 생성합니다;
+  `agent-all-cursor`는 dirty 트리에서 `git stash` 대신 abort합니다. thrift 훅
+  render+spawn 회귀 가드와 `plugin-scan` install-path 테스트를 추가했습니다.
+- 이미지가 포함된 사용자 설명서를 `docs/USER_MANUAL.md`와
+  `docs/USER_MANUAL.ko.md`에 추가하고, 릴리즈 매뉴얼 카드/페이지를
+  `docs/assets/user-manual/`로 승격했으며, README와 usage 문서에서 초보자
+  경로를 바로 연결했습니다.
+- 나머지 크로스플랫폼 감사 발견 사항을 추적 이슈(#27–#35, 라벨
+  `audit/v0.6.1`)로 등록했습니다. Suite: 1998/1998 통과; fast release smoke
+  505/505 통과.
+
 ## Agent-skill v0.6.1 patch release — 2026-06-12
 
 - `.thrift.json`이 없는 프로젝트에서 큰 출력 명령이 반복되면 Claude
