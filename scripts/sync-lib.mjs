@@ -116,6 +116,20 @@ const TASK_DOC_WRITER_TARGETS = [
   "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/task-doc-writer.mjs",
 ].map((p) => resolve(repoRoot, p));
 
+// task-ledger validator (REQUIRED_SECTIONS + validateTaskDoc/validateTaskLedger).
+// Pure, platform-agnostic — vendored to every port so the Phase-5 acceptance
+// gate (restored to the ports) can actually run it instead of being advisory.
+const TASK_LEDGER_LIB_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/task-ledger.mjs",
+);
+const TASK_LEDGER_LIB_TARGETS = [
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/task-ledger.mjs",
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/task-ledger.mjs",
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/task-ledger.mjs",
+  "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/task-ledger.mjs",
+].map((p) => resolve(repoRoot, p));
+
 const VERIFICATION_ADAPTER_SOURCE = resolve(
   repoRoot,
   "plugins/harness-floor/skills/agent-all/lib/verification-adapters",
@@ -212,6 +226,10 @@ const CHANGED_FILE_CLASSIFIER_SOURCE = resolve(
 );
 const CHANGED_FILE_CLASSIFIER_TARGETS = [
   "plugins/harness-floor-codex/skills/agent-all-codex/lib/changed-file-classifier.mjs",
+  // copilot + gemini ports import gate-plan.mjs (which depends on this) in their
+  // restored Phase 4 audit-token gate — vendor it so the import resolves.
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/changed-file-classifier.mjs",
+  "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/changed-file-classifier.mjs",
 ].map((p) => resolve(repoRoot, p));
 
 const GATE_PLAN_SOURCE = resolve(
@@ -220,6 +238,9 @@ const GATE_PLAN_SOURCE = resolve(
 );
 const GATE_PLAN_TARGETS = [
   "plugins/harness-floor-codex/skills/agent-all-codex/lib/gate-plan.mjs",
+  // copilot + gemini restored Phase 4 imports buildGatePlan from ./lib/gate-plan.mjs.
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/gate-plan.mjs",
+  "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/gate-plan.mjs",
 ].map((p) => resolve(repoRoot, p));
 
 const COORDINATOR_AUDIT_VALIDATOR_SOURCE = resolve(
@@ -423,6 +444,19 @@ function collectDrift() {
       drift.push({ file: "task-doc-writer.mjs", dest: destPath, reason: "missing", sourceContent: taskDocWriterSrc });
     } else if (destContent !== taskDocWriterSrc) {
       drift.push({ file: "task-doc-writer.mjs", dest: destPath, reason: "diverged", sourceContent: taskDocWriterSrc });
+    }
+  }
+  const taskLedgerLibSrc = readOrNull(TASK_LEDGER_LIB_SOURCE);
+  if (taskLedgerLibSrc == null) {
+    console.error(`Source missing: ${TASK_LEDGER_LIB_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of TASK_LEDGER_LIB_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "task-ledger.mjs", dest: destPath, reason: "missing", sourceContent: taskLedgerLibSrc });
+    } else if (destContent !== taskLedgerLibSrc) {
+      drift.push({ file: "task-ledger.mjs", dest: destPath, reason: "diverged", sourceContent: taskLedgerLibSrc });
     }
   }
   // verification adapter runtime libs (Claude source → all platform agent-all copies).
@@ -699,6 +733,7 @@ function totalChecked() {
     + TASK_ID_TARGETS.length
     + TASK_REGISTRY_TARGETS.length
     + TASK_DOC_WRITER_TARGETS.length
+    + TASK_LEDGER_LIB_TARGETS.length
     + VERIFICATION_ADAPTER_FILES.length * VERIFICATION_ADAPTER_TARGETS.length
     + DATA_HELPER_FILES.length * DATA_HELPER_TARGETS.length
     + SECURITY_HELPER_FILES.length * SECURITY_HELPER_TARGETS.length

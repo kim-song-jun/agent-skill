@@ -36,18 +36,25 @@
    Workflow remains a sibling route that hands off through a task doc.
 
 4. For each wave:
-   a. Print: `Wave <i+1>/<N> — <waves[i].length> tasks in parallel`.
-   b. For each task in the wave, call:
+   a. **Capture `baseCommit` before implementation:**
+      ```bash
+      git rev-parse HEAD
+      ```
+      Store as `wave.baseCommit`. Phase 4 uses this as the diff base to
+      include the first orchestrator-created task commit in gate diffs.
+   b. Print: `Wave <i+1>/<N> — <waves[i].length> tasks in parallel`.
+   c. For each task in the wave, build the prompt with the mandatory Dispatch
+      Prompt Contract below (including the commit-ownership directive), then call:
       ```
       task({
-        prompt: "<task body: title, files, role, plan section>",
+        prompt: "<task body: title, files, role, plan section + Dispatch Prompt Contract>",
         context: { agentAllWave: i, agentAllTask: t.id, planKey: "agent-all/plan" },
       })
       ```
       If the plan left `role: dev`, use `state.orchestration.requiredAgents`
       to choose or validate the implementer role for that task.
       Capture each returned `agentId`.
-   c. Wait for all `agentId`s in the wave to settle. Two strategies:
+   d. Wait for all `agentId`s in the wave to settle. Two strategies:
       - **Hook strategy** (preferred if `subagentStop` is registered): the
         hook writes per-agent completion to `store_memory` with key
         `agent-all/wave/<i>/agent/<agentId>`. Coordinator polls memory
@@ -55,14 +62,33 @@
       - **Polling strategy** (fallback): call `list_agents()` every 2s and
         filter for agents whose `parentTask = "agent-all/wave/<i>/<t.id>"`.
         Wave done when all show `status: "completed" | "blocked" | "failed"`.
-   d. For each finished agent, call `read_agent(agentId)` to extract
-      `status`, `commits`, `cost`. Record reported or estimated usage as
+   e. **Orchestrator-owned commit (mandatory).** After each implementation
+      `task` returns, the orchestrator (not the subagent) MUST:
+      1. Inspect the reported changed files and run `git diff` to see all
+         unstaged/staged changes.
+      2. Stage only task-owned pathspecs:
+         `git add -- <task.files…>`.
+      3. Create the task commit:
+         `git commit -m "<task title>" -- <task.files…>`.
+      4. Record the orchestrator-created commit SHA on that task record.
+      If `git diff` reveals unreported or forbidden files (owned by other
+      active tasks or outside the task's declared scope), do **not** commit;
+      re-dispatch the task with the conflict described, or escalate to the
+      user. Subagent implementation `task`s are explicitly forbidden from
+      self-committing or staging broad changes — the commit-ownership
+      directive in the Dispatch Prompt Contract below enforces this.
+      `commits` on the wave record are orchestrator-created pathspec commits,
+      not subagent self-commits.
+   f. For each finished agent, call `read_agent(agentId)` to extract
+      `status`, `cost`. Record reported or estimated usage as
       `agent-cost-telemetry/v1`, append
       `.agent-skill/runs/<run-id>/cost-telemetry.jsonl`, mirror the latest
       summary to `state.costTelemetry.summary`, and accumulate `state.costUSD`
       for backward compatibility.
-   e. Capture wave result:
-      `{index: i, orchestration: state.orchestration, tasks: [{id, agentId, status, commits, costUSD}], status: "completed" | "incomplete"}`.
+   g. Capture wave result:
+      `{index: i, baseCommit, startCommit, endCommit, orchestration: state.orchestration, tasks: [{id, agentId, status, changedFiles, commits, costUSD}], status: "completed" | "incomplete"}`.
+      Derive `startCommit` and `endCommit` from the first and last
+      orchestrator-created commit SHAs recorded in `tasks[].commits`.
 
 5. If `state.costUSD > config.defaults.maxCostUSD` after the wave: push
    `{phase: 3, status: "cost-cap"}`, abort.
@@ -80,6 +106,31 @@
 ## Output
 
 Print one line per wave: `Wave <i>: <completed>/<total> tasks succeeded, ~$<wave.costUSD>`.
+
+## Dispatch Prompt Contract (mandatory)
+
+Every implementation `task(...)` invocation's prompt MUST include:
+
+- Working directory: the repository root where commands must run.
+- Owned files or line ranges: the task's declared files, or an explicit note
+  that no files were declared and the subagent must ask before broad edits.
+- Forbidden files or areas: files owned by other active wave tasks plus any
+  out-of-scope paths.
+- DO NOT:
+  - Do not run destructive commands, force-push, or reset shared state.
+  - Do not edit outside the owned files without reporting the expansion.
+  - Do not stage broad changes or self-commit. The orchestrator owns all
+    `git add` and `git commit` operations after inspecting your changed files.
+  - Do not revert unrelated user or other-agent edits.
+- Expected output: `STATUS`, changed files list, verification evidence,
+  blockers, and a concise `Self-Audit` covering requested scope, processed
+  items, unprocessed items, shortcuts, and next action.
+- Reusable references: task doc, plan path, relevant root guidance, and any
+  files/functions/commands the orchestrator already identified.
+
+Do not self-commit from an implementation subagent. The orchestrator owns
+pathspec commit review after it inspects changed files and verification
+evidence.
 
 ## Per-subagent verification (safety net for unattended runs)
 

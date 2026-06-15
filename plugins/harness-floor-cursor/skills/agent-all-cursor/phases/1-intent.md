@@ -30,6 +30,18 @@ Write the prompt verbatim to a new file:
 
 ### Branch C — `prompt` with brainstormFirst true (default)
 
+**0. Orchestrator routing check (do this first).** Judge the deliverable against
+`references/orchestrator-routing.md`. If the intent is *evidence-producing* —
+research, an audit across many units, a design/findings report, with no durable
+code change yet — Cursor's built-in background-agent fan-out is the correct
+mechanism, **not** `/agent-all-cursor`. In that case: recommend it to the user;
+if they agree, STOP this pipeline and instruct them to run a background fan-out
+sweep that writes a `validateTaskDoc`-compliant task doc under
+`.agent-skill/tasks/`, then re-enter with the `agent-all-cursor` skill passing
+`<taskdoc> --no-brainstorm` (resumes at Branch A — no double-planning). Only
+continue to step 1 below when the deliverable is a durable, gated code change
+that ships as a PR.
+
 Cursor has no programmatic brainstorming skill. The coordinator instead
 opens a structured Q&A in chat using the same axes as
 `superpowers:brainstorming` (problem → constraints → options → tradeoffs →
