@@ -6,6 +6,26 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.3 — 2026-06-15
+
+- thrift hook robustness: the cost-estimator now falls back to a default rate
+  and surfaces a `warnings` array on an unknown model instead of throwing (the
+  throw silently killed the end-of-session audit); the SessionEnd audit hook
+  logs a diagnostic instead of swallowing every error and resolves its dir via
+  `fileURLToPath(import.meta.url)` so sibling-lib imports work on Node 18/20 LTS.
+- `/agent-all` Phase 0 now verifies the governance hook **file** exists and is
+  executable (not just the settings entry); `agent-init`'s self-update command
+  honors `$AGENT_SKILL_REPO` so a fork/transfer no longer 404s; `agent-all-codex`
+  points its roster-missing recovery at the real `/codex-init` (no `--theme`
+  flag). Closes the agent-init papercut issue (#33).
+- Added a real-install integration test that scaffolds from a cache-style
+  plugin layout (not the source checkout) and exercises the install-aware floor
+  template resolution + fail-loud guard; added `harness-core/lib/security` as a
+  sync-lib drift target (the one runtime consumer that was unguarded).
+- Empirically confirmed (local codex 0.139.0) that Codex supports a hook-trust
+  model and has no `agent` subcommand; recorded on #31.
+  Suite: 2001/2001 passing; fast release smoke 505/505 passing.
+
 ## Agent-skill v0.6.2 — 2026-06-15
 
 - Fixed five audited install-path / safety defects so the documented skill

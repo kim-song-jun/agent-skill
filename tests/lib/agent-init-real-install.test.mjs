@@ -31,7 +31,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 const REPO = resolve(".");
-const VER = "0.6.2";
+const VER = "0.6.3";
 
 function tmp(prefix) {
   return mkdtempSync(join(tmpdir(), prefix));

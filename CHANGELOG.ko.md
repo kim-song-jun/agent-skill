@@ -6,6 +6,26 @@
 
 ## 미출시
 
+## Agent-skill v0.6.3 — 2026-06-15
+
+- thrift 훅 robustness: cost-estimator가 unknown 모델에서 throw 대신 default
+  rate로 fallback하고 `warnings`를 반환합니다(throw가 end-of-session audit를
+  조용히 죽였음); SessionEnd audit 훅은 에러를 삼키지 않고 진단을 출력하며,
+  `fileURLToPath(import.meta.url)`로 디렉터리를 해석해 Node 18/20 LTS에서도
+  sibling-lib import가 동작합니다.
+- `/agent-all` Phase 0가 거버넌스 훅 **파일** 존재+실행권한을 검증합니다(설정
+  항목만이 아니라); `agent-init` self-update 명령이 `$AGENT_SKILL_REPO`를
+  존중해 fork/이관 시 404가 나지 않습니다; `agent-all-codex`의 roster-missing
+  복구가 실제 `/codex-init`을 가리킵니다(`--theme` 플래그 없음). agent-init
+  papercut 이슈(#33) 종료.
+- 소스 체크아웃이 아닌 캐시형 플러그인 레이아웃에서 floor 템플릿 install-aware
+  해석 + fail-loud 가드를 검증하는 실설치 통합 테스트를 추가했고,
+  `harness-core/lib/security`를 sync-lib drift 대상으로 추가했습니다(미보호이던
+  유일한 런타임 소비자).
+- 로컬 codex 0.139.0로 Codex가 hook-trust 모델을 지원하고 `agent` 서브커맨드가
+  없음을 경험적으로 확인(#31에 기록). Suite: 2001/2001 통과; fast release smoke
+  505/505 통과.
+
 ## Agent-skill v0.6.2 — 2026-06-15
 
 - 실제(소스 체크아웃이 아닌) 설치 환경에서 문서화된 스킬 경로가 동작하도록
