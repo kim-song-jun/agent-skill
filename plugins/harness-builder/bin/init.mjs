@@ -13,7 +13,9 @@ import {
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { homedir } from "node:os";
 import { detectProject } from "../skills/agent-init/lib/detect-stack.mjs";
+import { scanPlugins, resolvePluginRoot } from "../skills/agent-init/lib/plugin-scan.mjs";
 import {
   FOUNDATION_MARKETPLACES,
   FOUNDATION_PLUGINS,
@@ -29,6 +31,43 @@ const here = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = resolve(here, "..");
 const repoRoot = resolve(pluginRoot, "../..");
 const templatesDir = resolve(pluginRoot, "skills/agent-init/templates");
+
+// The floor config templates ship inside the *harness-floor* plugin, a
+// different plugin from harness-builder. In a source checkout it sits at the
+// repo-relative `plugins/harness-floor/`; after a real plugin install there is
+// NO such sibling — harness-floor lives at its own cache install path. Resolve
+// the source layout first (the documented use of this bin is release fixtures /
+// source checkouts), then fall back to the installed location.
+function resolveFloorRoot() {
+  const sourceRoot = resolve(repoRoot, "plugins/harness-floor");
+  if (existsSync(resolve(sourceRoot, "skills/agent-all/templates/agent-all.config.json.hbs"))) {
+    return sourceRoot;
+  }
+  try {
+    const ip = JSON.parse(
+      readFileSync(resolve(homedir(), ".claude/plugins/installed_plugins.json"), "utf-8"),
+    );
+    const { installPaths } = scanPlugins({ installedPlugins: ip, enabledPlugins: {}, required: [] });
+    const installed = resolvePluginRoot(installPaths, "harness-floor");
+    if (installed && existsSync(installed)) return installed;
+  } catch {
+    // installed_plugins.json absent/unreadable (e.g. not a Claude Code host) —
+    // fall through and let readFloorTemplate fail loudly with the source path.
+  }
+  return sourceRoot;
+}
+
+// Read a harness-floor-bundled template, failing loudly (not with an opaque
+// ENOENT or a silently-empty config) when it cannot be located.
+function readFloorTemplate(floorRoot, relFromFloor) {
+  const p = resolve(floorRoot, relFromFloor);
+  if (!existsSync(p)) {
+    throw new Error(
+      `cannot locate harness-floor template at ${p} — install/enable the harness-floor plugin (or run from a source checkout), then re-run`,
+    );
+  }
+  return readFileSync(p, "utf-8");
+}
 
 const BASE_AGENTS = [
   { name: "planner", when: "decompose a request into a plan" },
@@ -350,16 +389,17 @@ function buildWrites(target, ctx) {
   }
 
   if (ctx.floorTheme) {
+    const floorRoot = resolveFloorRoot();
     planned.push({
       rel: ".visual-qa.json",
       outPath: resolve(target, ".visual-qa.json"),
-      rendered: render(readFileSync(resolve(repoRoot, "plugins/harness-floor/skills/visual-qa/templates/visual-qa.config.json.hbs"), "utf-8"), ctx),
+      rendered: render(readFloorTemplate(floorRoot, "skills/visual-qa/templates/visual-qa.config.json.hbs"), ctx),
       kind: "text",
     });
     planned.push({
       rel: ".agent-all.json",
       outPath: resolve(target, ".agent-all.json"),
-      rendered: render(readFileSync(resolve(repoRoot, "plugins/harness-floor/skills/agent-all/templates/agent-all.config.json.hbs"), "utf-8"), ctx),
+      rendered: render(readFloorTemplate(floorRoot, "skills/agent-all/templates/agent-all.config.json.hbs"), ctx),
       kind: "text",
     });
   }

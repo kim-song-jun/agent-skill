@@ -62,13 +62,33 @@
    - Else if `theme === "floor"` and `floorTheme === true`: continue to 8a and 8b.
    - Backwards compat: if `theme === "legacy-visual-qa"`: render only `.visual-qa.json` (legacy behavior); skip 8b.
 
+   **Resolve the harness-floor template root before 8a/8b.** Steps 8a/8b render
+   templates that ship inside the *harness-floor* plugin (a different plugin
+   from this one), so they must be located at harness-floor's install path —
+   NOT a source-checkout sibling `plugins/harness-floor/`, which does not exist
+   after a real plugin install. Use the `installPaths` captured by Phase 1's
+   `plugin_scan` (`scanPlugins` records every installed plugin's `installPath`):
+   ```javascript
+   import { resolvePluginRoot } from "./lib/plugin-scan.mjs";
+   // installed layout → ~/.claude/plugins/cache/agent-skill/harness-floor/<ver>/
+   let floorRoot = resolvePluginRoot(plugin_scan.installPaths, "harness-floor");
+   // source-checkout fallback (running agent-init from this repo, not an install)
+   if (!floorRoot) floorRoot = "plugins/harness-floor";
+   ```
+   When you go to render a template below, **verify the resolved file exists on
+   disk first**. If it does not (harness-floor not installed and not a source
+   checkout), **abort steps 8a/8b loudly** — print
+   `cannot locate harness-floor templates at <floorRoot> — install/enable harness-floor, then re-run`
+   and do NOT write an empty or built-in-only `.visual-qa.json` / `.agent-all.json`
+   (a silent empty config is the failure mode this guards against).
+
 8a. If theme is `floor` OR legacy `--visual-qa`: render `.visual-qa.json`.
     - Verify `harness-floor` plugin enabled. If not: print install command, continue (degraded).
-    - Render `plugins/harness-floor/skills/visual-qa/templates/visual-qa.config.json.hbs` with `{baseUrl: "http://localhost:3000", model: "claude-sonnet-4-6"}`. Write to `.visual-qa.json`.
+    - Render `<floorRoot>/skills/visual-qa/templates/visual-qa.config.json.hbs` with `{baseUrl: "http://localhost:3000", model: "claude-sonnet-4-6"}`. Write to `.visual-qa.json`. (Abort loudly per the resolution note if the template is not found.)
     - Append `.visual-qa-state.json` to `.gitignore` (idempotent).
 
 8b. If theme is `floor` (NOT legacy `--visual-qa` alone): render `.agent-all.json` and enable Floor CLAUDE section.
-    - Render `plugins/harness-floor/skills/agent-all/templates/agent-all.config.json.hbs` with `{maxIter: 10, maxCostUSD: 500, waveSize: "large", breakCondition: "npm test", language: ctx.interactionLang}` and write to `.agent-all.json` at project root.
+    - Render `<floorRoot>/skills/agent-all/templates/agent-all.config.json.hbs` with `{maxIter: 10, maxCostUSD: 500, waveSize: "large", breakCondition: "npm test", language: ctx.interactionLang}` and write to `.agent-all.json` at project root. (Abort loudly per the resolution note if the template is not found.)
     - Append `.agent-all-state.json` to `.gitignore` (idempotent — same pattern as `.agent-init-state.json` and `.visual-qa-state.json`).
     - Do not mutate Phase 2 render context here; `floorTheme` was resolved in Phase 1 before `CLAUDE.md` rendered.
 
