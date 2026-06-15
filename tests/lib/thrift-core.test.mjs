@@ -168,11 +168,20 @@ test("cost-estimator: cached hits produce savings", () => {
   assert.ok(r.savedRatio > 0.5 && r.savedRatio < 0.6, `savedRatio ${r.savedRatio}`);
 });
 
-test("cost-estimator: rejects unknown model", () => {
-  assert.throws(
-    () => estimate({ tokensInUncached: 1, tokensInCached: 0, tokensOut: 1, model: "claude-fake-5" }),
-    /unknown model rate/,
-  );
+test("cost-estimator: unknown model falls back to a default rate and warns (does not throw)", () => {
+  // Previously threw — which silently killed the end-of-session audit (the
+  // audit hook swallows the error). Now it must degrade to a best-effort
+  // estimate at the fallback (sonnet) rate and surface a warning.
+  const r = estimate({ tokensInUncached: 1_000_000, tokensInCached: 0, tokensOut: 0, model: "claude-fake-5" });
+  assert.equal(r.actualUSD, 3); // 1M uncached × $3/M (sonnet fallback)
+  assert.ok(Array.isArray(r.warnings) && r.warnings.length === 1, "must surface one warning");
+  assert.match(r.warnings[0], /unknown model rate.*claude-fake-5/);
+  assert.match(r.warnings[0], /claude-sonnet-4-6/);
+});
+
+test("cost-estimator: known model carries no warnings", () => {
+  const r = estimate({ tokensInUncached: 0, tokensInCached: 0, tokensOut: 0, model: "claude-sonnet-4-6" });
+  assert.deepEqual(r.warnings, []);
 });
 
 test("cost-estimator: estimateSession aggregates per-model", () => {

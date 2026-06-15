@@ -4,23 +4,28 @@
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
+// dirname of THIS hook on disk — use fileURLToPath (all supported Node)
+// rather than `import.meta.dirname` (Node >=21); the old `|| "."` fallback
+// resolved to CWD on Node 18/20 LTS and broke the sibling lib/ imports.
+const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = process.env.CLAUDE_PROJECT_DIR || ".";
 const CONFIG_PATH = resolve(ROOT, ".thrift.json");
 const STATE_PATH = resolve(ROOT, ".thrift-state.json");
 
 async function main() {
   const { loadConfig } = await import(
-    resolve(import.meta.dirname || ".", "../../lib/config-loader.mjs")
+    resolve(HERE, "../../lib/config-loader.mjs")
   );
   const { readState, writeState, recordPhase } = await import(
-    resolve(import.meta.dirname || ".", "../../lib/metrics-collector.mjs")
+    resolve(HERE, "../../lib/metrics-collector.mjs")
   );
   const { buildAuditContext } = await import(
-    resolve(import.meta.dirname || ".", "../../lib/audit-renderer.mjs")
+    resolve(HERE, "../../lib/audit-renderer.mjs")
   );
   const { render } = await import(
-    resolve(import.meta.dirname || ".", "../../lib/render.mjs")
+    resolve(HERE, "../../lib/render.mjs")
   );
 
   const cr = loadConfig(CONFIG_PATH);
@@ -32,7 +37,7 @@ async function main() {
 
   const ctx = buildAuditContext({ state, config, now: new Date() });
 
-  const tplPath = resolve(import.meta.dirname || ".", "../audit-report.md.hbs");
+  const tplPath = resolve(HERE, "../audit-report.md.hbs");
   let tpl;
   try {
     tpl = readFileSync(tplPath, "utf-8");
@@ -53,4 +58,9 @@ async function main() {
   process.exit(0);
 }
 
-main().catch(() => process.exit(0));
+main().catch((err) => {
+  // Surface a diagnostic instead of silently swallowing — a broken audit must
+  // be visible. Still exit 0 so a failed audit never fails the session.
+  process.stderr.write(`<system-reminder>thrift audit hook failed: ${err?.message || err}</system-reminder>\n`);
+  process.exit(0);
+});

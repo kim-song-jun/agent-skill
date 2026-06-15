@@ -130,7 +130,9 @@ Same as Claude port. Additional Codex-specific notes:
 - If `--dispatch=agent-hook` was forced: abort because current Codex hooks
   do not expose that dispatch surface.
 - If `.codex/skills/<role>/SKILL.md` missing for any wave's task role:
-  abort with `/codex-init --theme=floor required to seed skill roster`.
+  abort with `Run /codex-init first to seed the skill roster.` (matches the
+  Phase-0 preflight recovery; `codex-init` has no `--theme` flag — that is an
+  `install-platform.sh` option, not a `codex-init` argument).
 - `shell_command` timeout (default 30s) extended to 300s for `git push`.
 
 ## When done

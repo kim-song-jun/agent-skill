@@ -19,15 +19,23 @@ const RATES = {
 
 export const SUPPORTED_MODELS = Object.keys(RATES);
 
-function rateOrThrow(model) {
-  if (!RATES[model]) {
-    throw new Error(`unknown model rate: ${model}. Supported: ${SUPPORTED_MODELS.join(", ")}`);
-  }
-  return RATES[model];
+// Mid-tier fallback so a brand-new/unknown model ID yields a best-effort
+// estimate instead of throwing — aligns with visual-qa's fallback+warn
+// philosophy. Throwing here previously killed the whole end-of-session audit
+// (the audit hook swallows the throw), so a new model ID meant the audit
+// silently produced nothing.
+const FALLBACK_MODEL = "claude-sonnet-4-6";
+
+function rateFor(model) {
+  if (RATES[model]) return { rate: RATES[model], warning: null };
+  return {
+    rate: RATES[FALLBACK_MODEL],
+    warning: `unknown model rate: ${model} — using ${FALLBACK_MODEL} rates for an approximate estimate. Supported: ${SUPPORTED_MODELS.join(", ")}`,
+  };
 }
 
 export function estimate({ tokensInUncached, tokensInCached, tokensOut, model }) {
-  const r = rateOrThrow(model);
+  const { rate: r, warning } = rateFor(model);
   const actualIn = (tokensInUncached * r.in + tokensInCached * r.cacheRead) / 1_000_000;
   const actualOut = (tokensOut * r.out) / 1_000_000;
   const actualUSD = actualIn + actualOut;
@@ -48,6 +56,7 @@ export function estimate({ tokensInUncached, tokensInCached, tokensOut, model })
       cachedIn: Number(((tokensInCached * r.cacheRead) / 1_000_000).toFixed(6)),
       out: Number(actualOut.toFixed(6)),
     },
+    warnings: warning ? [warning] : [],
   };
 }
 
@@ -56,10 +65,12 @@ export function estimateSession(records) {
   let actualUSD = 0;
   let baselineUSD = 0;
   const perModel = {};
+  const warnings = [];
   for (const rec of records) {
     const r = estimate(rec);
     actualUSD += r.actualUSD;
     baselineUSD += r.baselineUSD;
+    for (const w of r.warnings) if (!warnings.includes(w)) warnings.push(w);
     perModel[rec.model] ??= { actualUSD: 0, baselineUSD: 0, calls: 0 };
     perModel[rec.model].actualUSD += r.actualUSD;
     perModel[rec.model].baselineUSD += r.baselineUSD;
@@ -70,5 +81,6 @@ export function estimateSession(records) {
     baselineUSD: Number(baselineUSD.toFixed(6)),
     savedRatio: baselineUSD > 0 ? Number((1 - actualUSD / baselineUSD).toFixed(4)) : 0,
     perModel,
+    warnings,
   };
 }

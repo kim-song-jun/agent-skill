@@ -18,8 +18,13 @@ export const FOUNDATIONS = [
 export const FOUNDATION_MARKETPLACES = [...new Set(FOUNDATIONS.map((foundation) => foundation.marketplace))];
 export const FOUNDATION_PLUGINS = FOUNDATIONS.map((foundation) => foundation.plugin);
 
+// Repo slug for the self-update command. Defaults to the canonical upstream,
+// but is overridable via $AGENT_SKILL_REPO so forks / transfers / renames do
+// not bake a dead `raw.githubusercontent.com` path into every scaffolded
+// CLAUDE.md (the update command 404s otherwise).
+export const UPDATE_REPO = process.env.AGENT_SKILL_REPO || "kim-song-jun/agent-skill";
 export const UPDATE_COMMAND =
-  "bash <(curl -fsSL https://raw.githubusercontent.com/kim-song-jun/agent-skill/main/scripts/update.sh) --foundations-only";
+  `bash <(curl -fsSL https://raw.githubusercontent.com/${UPDATE_REPO}/main/scripts/update.sh) --foundations-only`;
 
 export function scanFoundationState({ installedPluginIds = [] } = {}) {
   const missing = FOUNDATIONS
