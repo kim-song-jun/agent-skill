@@ -1,5 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, existsSync, readFileSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import {
   inputBisect,
@@ -107,12 +110,19 @@ test("bisector: gitBisect drives full plan via spawn stub and returns firstBad",
     }
     return { status: 0, stdout: "", stderr: "" };
   };
-  const r = gitBisect({
-    command: "make test",
-    knownGood: "v1.0.0",
-    knownBad: "HEAD",
-    spawn,
-  });
+  const tmp = mkdtempSync(join(tmpdir(), "bisect-full-"));
+  let r;
+  try {
+    r = gitBisect({
+      command: "make test",
+      knownGood: "v1.0.0",
+      knownBad: "HEAD",
+      spawn,
+      cwd: tmp,
+    });
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
   assert.equal(r.ok, true);
   assert.equal(r.firstBad, "deadbeef0000000000000000000000000000000");
   // Verify start/bad/good/run + reset were each invoked.
@@ -133,12 +143,65 @@ test("bisector: gitBisect always runs bisect reset even if an early step errors"
     }
     return { status: 0, stdout: "", stderr: "" };
   };
-  const r = gitBisect({
-    command: "x",
-    knownGood: "v1",
-    knownBad: "HEAD",
-    spawn,
-  });
+  const tmp = mkdtempSync(join(tmpdir(), "bisect-reset-"));
+  let r;
+  try {
+    r = gitBisect({
+      command: "x",
+      knownGood: "v1",
+      knownBad: "HEAD",
+      spawn,
+      cwd: tmp,
+    });
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
   assert.equal(r.ok, false);
   assert.ok(calls.includes("bisect reset"), `reset missing; calls=${calls.join("|")}`);
+});
+
+// ---------- gitBisect materialises + cleans up the run script (regression) ----------
+
+test("bisector: gitBisect writes an executable run script before 'run' and removes it after", () => {
+  const tmp = mkdtempSync(join(tmpdir(), "bisect-script-"));
+  const scriptPath = join(tmp, ".debug-bisect-script.sh");
+  const observed = {};
+  const spawn = (bin, args) => {
+    if (args[0] === "bisect" && args[1] === "run") {
+      // At the moment `git bisect run` fires, the script MUST exist on disk,
+      // be executable, and contain the failing command — otherwise the real
+      // git invocation errors file-not-found (the bug this guards against).
+      observed.existedDuringRun = existsSync(scriptPath);
+      if (observed.existedDuringRun) {
+        observed.contents = readFileSync(scriptPath, "utf-8");
+        observed.mode = statSync(scriptPath).mode & 0o777;
+      }
+      return {
+        status: 0,
+        stdout: "abc1230000000000000000000000000000000000 is the first bad commit\n",
+        stderr: "",
+      };
+    }
+    return { status: 0, stdout: "", stderr: "" };
+  };
+
+  let r;
+  try {
+    r = gitBisect({
+      command: "npm test -- --runInBand",
+      knownGood: "v1.0.0",
+      knownBad: "HEAD",
+      spawn,
+      cwd: tmp,
+    });
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+
+  assert.equal(r.ok, true);
+  assert.equal(observed.existedDuringRun, true, "script must exist on disk when 'bisect run' fires");
+  assert.match(observed.contents, /^#!\/usr\/bin\/env bash/, "script needs a bash shebang");
+  assert.match(observed.contents, /npm test -- --runInBand/, "script must carry the failing command");
+  assert.ok((observed.mode & 0o100) !== 0, "script must be owner-executable");
+  assert.equal(existsSync(scriptPath), false, "script must be removed after bisect completes");
 });

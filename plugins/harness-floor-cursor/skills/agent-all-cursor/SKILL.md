@@ -117,7 +117,7 @@ a non-default value already lives in config.
 
 ## On error
 
-- Dirty git tree → abort with `git stash` instruction.
+- Dirty git tree → abort (never `git stash` — it buries other sessions' uncommitted work in a shared tree; matches the canonical `/agent-all` contract).
 - `.cursor/agents/` missing `agent-all-*` → run `cursor-init --theme=floor` (future flag) or install this skill via `node plugins/harness-floor-cursor/bin/init.mjs` (future flag).
 - `.agent-all.json` missing → warn + use built-ins from `templates/agent-all.config.json.hbs`.
 - Wave task BLOCKED 3× → mark wave incomplete, surface to user.

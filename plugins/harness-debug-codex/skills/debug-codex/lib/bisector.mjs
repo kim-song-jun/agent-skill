@@ -18,6 +18,8 @@
 // is responsible for writing progress to `.debug-state.json`.
 
 import { spawnSync as nodeSpawnSync } from "node:child_process";
+import { writeFileSync, rmSync } from "node:fs";
+import { isAbsolute, join } from "node:path";
 
 // --- Delta-debugging ddmin ---
 // Classic Zeller/Hildebrandt algorithm: try to reduce the input to a
@@ -106,11 +108,30 @@ export function gitBisect({
   knownBad,
   spawn = nodeSpawnSync,
   cwd = process.cwd(),
+  writeScript = true,
 }) {
   const plan = buildGitBisectPlan({ command, knownGood, knownBad });
   const results = [];
   let firstBad = null;
+
+  // `git bisect run <scriptPath>` executes a script file per revision — its
+  // exit status decides good/bad. buildGitBisectPlan only NAMES the script;
+  // it must actually exist on disk or `bisect run` fails file-not-found.
+  // Materialise it here from the run step's inlineCommand, then remove it.
+  const runStep = plan.find((s) => s.purpose === "run");
+  const scriptRel = runStep.args[runStep.args.length - 1];
+  const scriptPath = isAbsolute(scriptRel)
+    ? scriptRel
+    : join(cwd, scriptRel.replace(/^\.[\\/]/, ""));
+  let scriptWritten = false;
+
   try {
+    if (writeScript) {
+      writeFileSync(scriptPath, `#!/usr/bin/env bash\n${runStep.inlineCommand}\n`, {
+        mode: 0o755,
+      });
+      scriptWritten = true;
+    }
     for (const step of plan) {
       if (step.purpose === "reset") continue; // run in finally
       const res = spawn(step.bin, step.args, { cwd, encoding: "utf-8" });
@@ -133,6 +154,14 @@ export function gitBisect({
       results.push({ step: "reset", status: reset.status });
     } catch {
       // non-fatal
+    }
+    // Remove the materialised run script so it never lingers in the worktree.
+    if (scriptWritten) {
+      try {
+        rmSync(scriptPath, { force: true });
+      } catch {
+        // non-fatal
+      }
     }
   }
 }
