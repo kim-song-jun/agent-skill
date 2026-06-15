@@ -151,6 +151,10 @@ const SECURITY_HELPER_TARGETS = [
   "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/security",
   "plugins/harness-debug/skills/debug/lib/security",
   "plugins/harness-debug-codex/skills/debug-codex/lib/security",
+  // harness-core consumes these at runtime: lib/interactions/interaction-log-writer.mjs
+  // imports ../security/{artifact-redactor,redact-report-writer}.mjs. It was the
+  // only consumer NOT guarded here, so security-lib drift went uncaught until runtime.
+  "plugins/harness-core/lib/security",
 ].map((p) => resolve(repoRoot, p));
 const SECURITY_HELPER_FILES = [
   "artifact-redactor.mjs",
