@@ -1,6 +1,6 @@
 {
   "name": "harness-builder-gemini",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "description": "Run agent-init for Gemini CLI (a.k.a. 'antigravity') — emits GEMINI.md + .gemini/skills/",
   "keywords": [
     "harness",

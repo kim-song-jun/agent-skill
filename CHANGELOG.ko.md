@@ -6,6 +6,18 @@
 
 ## 미출시
 
+## Agent-skill v0.6.6 — 2026-06-16
+
+- visual-qa 포트: `element-identity.mjs`와 `targets-filter.mjs` leaf lib를 4개
+  포트 전부에 벤더링했습니다. 각 포트의 `shallow-clicker.mjs`가 이들을
+  import하는데 벤더링되지 않아 모든 visual-qa 포트에서 dangling import
+  (ERR_MODULE_NOT_FOUND)였습니다. sync-lib 타깃으로 추가하고, 각 포트의
+  shallow-clicker를 import하는 drift-guard 테스트를 더했습니다.
+- `vendor-sync` 테스트를 강화: bare "OK" 부분문자열(드리프트 안내 출력에도
+  등장) 대신 "OK — N vendored files match source" 계약(N > 0 + 드리프트 없음)을
+  명시적으로 검증합니다.
+- Suite: 1999/1999 통과; fast release smoke 471/471 통과.
+
 ## Agent-skill v0.6.5 — 2026-06-15
 
 - thrift 훅: 나머지 4개 훅 템플릿에 Node 18/20-safe `fileURLToPath(import.meta.url)`

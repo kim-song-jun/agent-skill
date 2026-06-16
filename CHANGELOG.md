@@ -6,6 +6,18 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.6 — 2026-06-16
+
+- visual-qa ports: vendored the `element-identity.mjs` and `targets-filter.mjs`
+  leaf libs into all four ports. Each port's `shallow-clicker.mjs` imports them
+  but they were never vendored — a dangling import (ERR_MODULE_NOT_FOUND) in
+  every visual-qa port. Added them as sync-lib targets + a drift-guard test that
+  imports each port's shallow-clicker.
+- Hardened the `vendor-sync` test to assert the explicit "OK — N vendored files
+  match source" contract (with N > 0 and no drift) instead of a bare "OK"
+  substring that also appears in drift-guidance output.
+- Suite: 1999/1999 passing; fast release smoke 471/471 passing.
+
 ## Agent-skill v0.6.5 — 2026-06-15
 
 - thrift hooks: applied the Node 18/20-safe `fileURLToPath(import.meta.url)`
