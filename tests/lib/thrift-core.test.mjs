@@ -174,7 +174,8 @@ test("cost-estimator: unknown model falls back to a default rate and warns (does
   // estimate at the fallback (sonnet) rate and surface a warning.
   const r = estimate({ tokensInUncached: 1_000_000, tokensInCached: 0, tokensOut: 0, model: "claude-fake-5" });
   assert.equal(r.actualUSD, 3); // 1M uncached × $3/M (sonnet fallback)
-  assert.ok(Array.isArray(r.warnings) && r.warnings.length === 1, "must surface one warning");
+  assert.ok(Array.isArray(r.warnings), "warnings must be an array");
+  assert.equal(r.warnings.length, 1, `must surface exactly one warning, got: ${JSON.stringify(r.warnings)}`);
   assert.match(r.warnings[0], /unknown model rate.*claude-fake-5/);
   assert.match(r.warnings[0], /claude-sonnet-4-6/);
 });

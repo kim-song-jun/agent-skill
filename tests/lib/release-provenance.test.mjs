@@ -41,7 +41,10 @@ test("release provenance manifest includes every marketplace plugin checksum", (
     assert.match(plugin.checksum, /^sha256:[0-9a-f]{64}$/);
     assert.match(plugin.path, /^plugins\//);
   }
-  assert.match(["signed", "unsigned", "none", "unknown"].join(","), new RegExp(manifest.signedTag.status));
+  assert.ok(
+    ["signed", "unsigned", "none", "unknown"].includes(manifest.signedTag.status),
+    `signedTag.status must be a known enum value, got: ${manifest.signedTag.status}`,
+  );
 });
 
 test("release provenance writes manifest and verifies checksum sidecar", () => {

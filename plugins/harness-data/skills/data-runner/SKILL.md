@@ -39,7 +39,8 @@ Planned family names reserved by the workflow: `data-init`, `data-analyze`,
 ## Task Document Check
 
 Before generating commands, make sure the task doc contains these data fields,
-using `.agent-skill/tasks/_template.md` `Data Task Addendum` if needed:
+using `.agent-skill/tasks/_template.md` `Data Task Addendum` if needed.
+Note: `.agent-skill/tasks/_template.md` is a runtime-rendered artifact produced by `/agent-init` — it is not present in the repo and must be generated before `/data-runner` can reference it.
 
 - Dataset / Source
 - Data Snapshot

@@ -6,6 +6,24 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.7 — 2026-06-16
+
+- Test-integrity sweep across all 176 test files: strengthened 50 weak test
+  cases that would have passed while the real contract was broken — replaced
+  non-discriminating substring assertions with full success patterns, upgraded
+  existence-only checks to parse/byte/behaviour assertions, and made
+  regex/SUT-behaviour assertions real (positive + negative). Genuinely
+  fabricated Copilot/Gemini CLI-surface assertions were left flagged for the
+  blocked #27/#28 live-CLI spike rather than re-guessed.
+- Finished the #34 residuals: `.agents/plugins/marketplace.json` is now
+  checksum-guarded by release-provenance + release-audit; README documents the
+  honest platform-degradation boundaries (/explore Claude-only, /debug
+  Claude+Codex, no programmatic background-subagent await on Cursor/Gemini);
+  the decision-surfacing design record and data-runner SKILL were corrected to
+  match reality; and the dead `redactJsonArtifact` export was removed (zero
+  callers) from the security lib + all vendored copies.
+- Suite: 1999/1999 passing; fast release smoke 471/471 passing.
+
 ## Agent-skill v0.6.6 — 2026-06-16
 
 - visual-qa ports: vendored the `element-identity.mjs` and `targets-filter.mjs`

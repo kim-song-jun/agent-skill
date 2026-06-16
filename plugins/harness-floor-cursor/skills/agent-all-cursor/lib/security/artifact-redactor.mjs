@@ -48,22 +48,3 @@ export function assertRedactionAllowed(result) {
   );
 }
 
-export function redactJsonArtifact({
-  artifactPath,
-  value,
-  config = {},
-  now = new Date(),
-} = {}) {
-  const result = redactArtifactContent({
-    artifactPath,
-    content: JSON.stringify(value),
-    config,
-    now,
-  });
-  assertRedactionAllowed(result);
-  return {
-    ...result,
-    value: JSON.parse(result.content),
-  };
-}
-

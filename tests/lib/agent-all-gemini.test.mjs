@@ -57,7 +57,7 @@ test("agent-all-gemini: phase 3 uses subprocess dispatch pattern", () => {
 
 test("agent-all-gemini: phase 0 probes subprocess health", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "phases/0-preflight.md"), "utf-8");
-  assert.ok(body.includes("sanity"), "subprocess sanity probe");
+  assert.match(body, /Probe subprocess sanity/, "subprocess sanity probe");
   assert.ok(body.includes("command -v gemini"), "gemini binary check");
 });
 

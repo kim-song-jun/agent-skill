@@ -16,6 +16,7 @@ export const RELEASE_MANIFEST_SCHEMA_VERSION = "agent-skill-release-manifest/v1"
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_MARKETPLACE = ".claude-plugin/marketplace.json";
+const AGENTS_MARKETPLACE = ".agents/plugins/marketplace.json";
 const DEFAULT_MANIFEST = "release-manifest.json";
 const DEFAULT_SHA = "release-manifest.sha256";
 
@@ -33,6 +34,11 @@ export function buildReleaseManifest(options = {}) {
     file.includes("/templates/") || file.includes("/__snapshots__/")
   ));
 
+  const agentsMarketplacePath = AGENTS_MARKETPLACE;
+  const agentsMarketplaceChecksum = existsSync(resolve(root, agentsMarketplacePath))
+    ? checksumFile(resolve(root, agentsMarketplacePath))
+    : null;
+
   const manifest = {
     schemaVersion: RELEASE_MANIFEST_SCHEMA_VERSION,
     release,
@@ -44,6 +50,10 @@ export function buildReleaseManifest(options = {}) {
       path: marketplacePath,
       checksum: checksumFile(resolve(root, marketplacePath)),
       pluginCount: plugins.length,
+    },
+    agentsMarketplace: {
+      path: agentsMarketplacePath,
+      checksum: agentsMarketplaceChecksum,
     },
     plugins,
     checksums: {
@@ -91,6 +101,7 @@ export function verifyReleaseManifest(options = {}) {
   checks.push(checkManifestSha(root, manifestPath));
   checks.push(checkGitCommit(root, manifest));
   checks.push(checkMarketplaceConsistency(root, manifest));
+  checks.push(checkAgentsMarketplaceChecksum(root, manifest));
   checks.push(checkPluginChecksums(root, manifest));
   checks.push(checkAggregateChecksums(root, manifest));
   checks.push(checkSignedTag(manifest, Boolean(options.requireSignedTag)));
@@ -129,6 +140,7 @@ export function summarizeManifestForAudit(root = ROOT) {
     signedTag: manifest.signedTag,
     manifestConsistency: manifest.tests.manifestConsistency,
     marketplaceChecksum: manifest.marketplace.checksum,
+    agentsMarketplaceChecksum: manifest.agentsMarketplace?.checksum || null,
     vendoredLibChecksum: manifest.checksums.vendoredLibs.checksum,
     templateSnapshotChecksum: manifest.checksums.templateSnapshots.checksum,
   };
@@ -317,6 +329,27 @@ function checkMarketplaceConsistency(root, manifest) {
     details: missing.length === 0 && extra.length === 0
       ? `${marketplaceNames.size} plugins matched`
       : `missing: ${missing.join(", ")}; extra: ${extra.join(", ")}`,
+  };
+}
+
+function checkAgentsMarketplaceChecksum(root, manifest) {
+  const path = manifest.agentsMarketplace?.path || AGENTS_MARKETPLACE;
+  const absPath = resolve(root, path);
+  if (!existsSync(absPath)) {
+    return {
+      ok: false,
+      severity: "error",
+      name: "agents marketplace checksum",
+      details: `${path} missing`,
+    };
+  }
+  const current = checksumFile(absPath);
+  const recorded = manifest.agentsMarketplace?.checksum;
+  return {
+    ok: current === recorded,
+    severity: "error",
+    name: "agents marketplace checksum",
+    details: current === recorded ? `matched (${path})` : `expected ${recorded}, got ${current}`,
   };
 }
 

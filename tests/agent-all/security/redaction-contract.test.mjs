@@ -10,9 +10,8 @@ function read(rel) {
 }
 
 test("security redaction helpers are available in core, floor, platform, and debug runtimes", () => {
-  const required = [
+  const scanners = [
     "plugins/harness-core/lib/security/redaction-scanner.mjs",
-    "plugins/harness-core/lib/security/artifact-redactor.mjs",
     "plugins/harness-floor/skills/agent-all/lib/security/redaction-scanner.mjs",
     "plugins/harness-floor-codex/skills/agent-all-codex/lib/security/redaction-scanner.mjs",
     "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/security/redaction-scanner.mjs",
@@ -21,8 +20,17 @@ test("security redaction helpers are available in core, floor, platform, and deb
     "plugins/harness-debug/skills/debug/lib/security/redaction-scanner.mjs",
     "plugins/harness-debug-codex/skills/debug-codex/lib/security/redaction-scanner.mjs",
   ];
+  const others = [
+    "plugins/harness-core/lib/security/artifact-redactor.mjs",
+  ];
 
-  for (const rel of required) {
+  for (const rel of scanners) {
+    assert.equal(existsSync(resolve(ROOT, rel)), true, `${rel} should exist`);
+    const body = readFileSync(resolve(ROOT, rel), "utf-8");
+    assert.match(body, /export function scanTextForRedactions/, `${rel} must export scanTextForRedactions`);
+    assert.match(body, /export function summarizeRedactionFindings/, `${rel} must export summarizeRedactionFindings`);
+  }
+  for (const rel of others) {
     assert.equal(existsSync(resolve(ROOT, rel)), true, `${rel} should exist`);
   }
 });

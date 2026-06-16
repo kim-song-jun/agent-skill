@@ -6,6 +6,21 @@
 
 ## 미출시
 
+## Agent-skill v0.6.7 — 2026-06-16
+
+- 176개 테스트 파일 전수 무결성 점검: 실제 계약이 깨져도 통과하던 약한 테스트
+  50개를 강화 — 비변별 부분문자열 단언을 완전한 success 패턴으로, 존재-여부만
+  보던 검사를 parse/byte/동작 단언으로, regex/SUT-동작 단언을 실제(positive +
+  negative)로 교체했습니다. 진짜 날조된 Copilot/Gemini CLI-표면 단언은 차단된
+  #27/#28 live-CLI spike 대상으로 flag만 남기고 재추측하지 않았습니다.
+- #34 잔여 마무리: `.agents/plugins/marketplace.json`을 release-provenance +
+  release-audit로 checksum 가드; README에 정직한 플랫폼 degradation 경계 명시
+  (/explore=Claude 전용, /debug=Claude+Codex, Cursor/Gemini는 background
+  subagent를 프로그램적으로 await 불가); decision-surfacing 설계기록과
+  data-runner SKILL을 실제와 일치하도록 정정; 죽은 `redactJsonArtifact` export
+  (0 caller)를 security lib + 모든 벤더 복사본에서 제거.
+- Suite: 1999/1999 통과; fast release smoke 471/471 통과.
+
 ## Agent-skill v0.6.6 — 2026-06-16
 
 - visual-qa 포트: `element-identity.mjs`와 `targets-filter.mjs` leaf lib를 4개

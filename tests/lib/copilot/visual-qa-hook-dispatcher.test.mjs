@@ -20,8 +20,14 @@ test("vq dispatch: appends normalized payload", async () => {
   });
   assert.equal(r.ok, true);
   assert.equal(r.agentId, "p1");
-  const parsed = JSON.parse(readFileSync(inbox, "utf-8").trim());
+  const lines = readFileSync(inbox, "utf-8").split("\n").filter(Boolean);
+  assert.equal(lines.length, 1);
+  const parsed = JSON.parse(lines[0]);
+  assert.equal(parsed.agentId, "p1");
   assert.equal(parsed.status, "completed");
+  assert.equal(parsed.costUSD, 1);
+  assert.ok(parsed.finishedAt);
+  assert.ok(parsed.raw);
 });
 
 test("vq dispatch: no inbox dir → no-inbox-dir", async () => {

@@ -71,6 +71,6 @@ test("agent-all-copilot: all template files exist", () => {
 test("agent-all-copilot: porting-notes references source-of-truth", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "references/porting-notes.md"), "utf-8");
   assert.ok(body.includes("Claude Code"));
-  assert.ok(body.includes("task"));
+  assert.match(body, /`task` tool/);
   assert.ok(body.includes("1 week"));
 });

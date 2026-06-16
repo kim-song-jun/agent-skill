@@ -47,7 +47,7 @@ test("install creates .claude/settings.local.json when the settings directory is
     assert.ok(existsSync(settingsPath(dir)), "settings.local.json should be created");
     const s = JSON.parse(readFileSync(settingsPath(dir), "utf-8"));
     assert.equal(s.hooks.PreToolUse[0].matcher, "Task");
-    assert.match(commandOf(s.hooks.PostToolUse[0]), /PostToolUse/);
+    assert.match(commandOf(s.hooks.PostToolUse[0]), /floor-policy-hook\.mjs.*PostToolUse/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

@@ -130,9 +130,9 @@ test("readme files describe the current Codex config surface and current test co
     assert.match(body, /scripts\/release-smoke\.sh --fast/);
     assert.match(body, /scripts\/release-smoke\.sh --fast --with-live-cli/);
     assert.match(body, /with-live-cli[\s\S]{0,260}(Claude plugin marketplace\/install|Claude plugin marketplace\/install 명령 표면)/i);
-    assert.match(body, /harness-builder[\s\S]{0,120}v0\.6\.6/i);
-    assert.match(body, /harness-floor[\s\S]{0,120}v0\.6\.6/i);
-    assert.match(body, /(other 17 installable|나머지 설치 가능한)[\s\S]{0,180}v0\.6\.6/i);
+    assert.match(body, /harness-builder[\s\S]{0,120}v0\.6\.7/i);
+    assert.match(body, /harness-floor[\s\S]{0,120}v0\.6\.7/i);
+    assert.match(body, /(other 17 installable|나머지 설치 가능한)[\s\S]{0,180}v0\.6\.7/i);
     assert.doesNotMatch(body, /other Claude Code core plugins at `v0\.2\.0`|나머지 Claude Code 코어 플러그인 `v0\.2\.0`/i);
     assert.match(body, /\/thrift` compact (delivery|전달)[\s\S]{0,220}API-gated advisory path/i);
     assert.match(body, /Provider-backed thrift summarizer/i);
@@ -466,7 +466,7 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /public CLI script executable\/shebang packaging/i);
   assert.match(plan, /generated hook\/task-checker executable packaging/i);
   assert.match(plan, /Claude\/Codex QA and base\/specialized reviewer audit-token contracts/i);
-  assert.match(plan, /Claude 82\/82 and Codex 75\/75 readiness checks passing/i);
+  assert.match(plan, /Claude 83\/83 and Codex 76\/76 readiness checks passing/i);
   assert.match(plan, /public PR CI and local release gate/i);
   assert.match(plan, /release publish preflight/i);
   assert.match(plan, /target project smoke/i);

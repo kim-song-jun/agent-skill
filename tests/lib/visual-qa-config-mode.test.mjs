@@ -37,7 +37,7 @@ test("loadConfig: mode=declared requires pages", () => {
   });
   const r = loadConfig(p, {});
   assert.equal(r.ok, false);
-  assert.ok(r.errors.some((e) => e.path === "pages"));
+  assert.ok(r.errors.some((e) => e.path === "pages"), `expected a 'pages' error, got: ${JSON.stringify(r.errors)}`);
 });
 
 test("loadConfig: mode=comprehensive does NOT require pages", () => {
@@ -60,7 +60,7 @@ test("loadConfig: mode=comprehensive requires non-empty scope.include", () => {
   });
   const r = loadConfig(p, {});
   assert.equal(r.ok, false);
-  assert.ok(r.errors.some((e) => e.path === "comprehensive.scope.include"));
+  assert.ok(r.errors.some((e) => e.path === "comprehensive.scope.include"), `expected a 'comprehensive.scope.include' error, got: ${JSON.stringify(r.errors)}`);
 });
 
 test("loadConfig: mode=comprehensive missing comprehensive.scope.include also fails", () => {
@@ -71,7 +71,7 @@ test("loadConfig: mode=comprehensive missing comprehensive.scope.include also fa
   });
   const r = loadConfig(p, {});
   assert.equal(r.ok, false);
-  assert.ok(r.errors.some((e) => e.path === "comprehensive.scope.include"));
+  assert.ok(r.errors.some((e) => e.path === "comprehensive.scope.include"), `expected a 'comprehensive.scope.include' error, got: ${JSON.stringify(r.errors)}`);
 });
 
 test("loadConfig: unknown mode value rejected", () => {
@@ -83,7 +83,7 @@ test("loadConfig: unknown mode value rejected", () => {
   });
   const r = loadConfig(p, {});
   assert.equal(r.ok, false);
-  assert.ok(r.errors.some((e) => e.path === "mode"));
+  assert.ok(r.errors.some((e) => e.path === "mode"), `expected a 'mode' error, got: ${JSON.stringify(r.errors)}`);
 });
 
 test("loadConfig: comprehensive auto-scaffold config (from break-resolver) validates clean", async () => {

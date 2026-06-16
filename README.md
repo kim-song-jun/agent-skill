@@ -638,6 +638,8 @@ Each tool invokes skills its own way. The harness is the same; the entry point d
 
 `/explore` ships for Claude Code today. `/debug` ships for Claude Code and Codex CLI; Cursor/Copilot/Gemini debug ports remain on the porting roadmap.
 
+**Honest platform degradation:** `/explore` and `/debug` are Claude Code-only (or Claude Code + Codex CLI for `/debug`). Cursor and Gemini CLI do not have a programmatic mechanism to await the result of background subagents — floor workflows on those platforms use prompt-level sequential dispatch rather than native Task-tool subagents, so the hard hook enforcement (PreToolUse/PostToolUse on `Task`) and automatic subagent-result collection that underpin Phase 3a/3b/3c and Phase 4 are unavailable. Decision-surfacing and reviewer-audit enforcement are prompt-level only on Cursor, Gemini CLI, VS Code Copilot, and Copilot CLI.
+
 ---
 
 ## Updating on other tools
@@ -849,7 +851,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 | `/thrift` compact delivery | ⚠️ API-gated advisory path | Claude/Codex both write durable summary files and prompt `/compact`; programmatic compact injection connects when host CLIs expose a stable API |
 | Provider-backed thrift summarizers | ✅ release-scoped | Claude's optional `@anthropic-ai/sdk` summarizer path is implemented and tested; Codex ships a dependency-free heuristic summarizer with configurable `gpt-5-nano` model metadata and OpenAI-rate audit heuristics |
 
-Versioning: `harness-builder` at `v0.6.6`, `harness-floor` at `v0.6.6`, and the other 17 installable `agent-skill` plugins at `v0.6.6` on the same release train. Internal artifact/config schema versions remain separate compatibility contracts.
+Versioning: `harness-builder` at `v0.6.7`, `harness-floor` at `v0.6.7`, and the other 17 installable `agent-skill` plugins at `v0.6.7` on the same release train. Internal artifact/config schema versions remain separate compatibility contracts.
 
 ### Release Candidate Lifecycle
 

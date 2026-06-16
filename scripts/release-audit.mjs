@@ -987,6 +987,7 @@ export function runReleaseAudit({ root = ROOT, platforms = DEFAULT_PLATFORMS } =
     const checks = [];
 
     checks.push(checkMarketplace(marketplace, contract.marketplacePlugins));
+    checks.push(checkAgentsMarketplaceExists(root));
     checks.push(checkExecutableScripts(root, PUBLIC_CLI_SCRIPTS));
     checks.push(checkReleaseProvenance(root));
     for (const file of contract.requiredFiles) {
@@ -1027,6 +1028,18 @@ function checkMarketplace(marketplace, expectedPlugins) {
     ok: missing.length === 0,
     name: `marketplace lists ${expectedPlugins.join(", ")}`,
     details: missing.length === 0 ? "all present" : `missing: ${missing.join(", ")}`,
+  };
+}
+
+function checkAgentsMarketplaceExists(root) {
+  const path = ".agents/plugins/marketplace.json";
+  const ok = existsSync(resolve(root, path));
+  return {
+    ok,
+    name: ".agents/plugins/marketplace.json exists and is checksum-guarded",
+    details: ok
+      ? "present (checksum guarded via release-provenance agentsMarketplace field)"
+      : `missing: ${path}`,
   };
 }
 

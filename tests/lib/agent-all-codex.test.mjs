@@ -55,7 +55,7 @@ test("agent-all-codex: phase headings match contract", () => {
 
 test("agent-all-codex: phase 3 documents sequential dispatch", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "phases/3-dispatch.md"), "utf-8");
-  assert.ok(body.includes("sequential"), "sequential dispatch");
+  assert.match(body, /sequential.*dispatch|dispatch.*sequential/i, "sequential dispatch must be the documented strategy");
   assert.ok(body.includes(".codex/skills/<role>/SKILL.md"), "role skill invocation");
   assert.ok(!body.includes("[[hooks.agent]]"), "must not document legacy agent hook");
 });

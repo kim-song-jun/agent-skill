@@ -68,7 +68,9 @@ test("harness-floor-cursor: --force overwrites", () => {
     const res = runInit("cursor", [target, "--force"]);
     assert.equal(res.status, 0, res.stderr);
     const out = readFileSync(resolve(target, ".visual-qa.json"), "utf-8");
-    assert.ok(out.includes("baseUrl"), "should render fresh template");
+    assert.ok(!out.includes("old:true"), "old sentinel content must be gone");
+    const parsed = JSON.parse(out);
+    assert.ok(Object.prototype.hasOwnProperty.call(parsed, "baseUrl"), "should render fresh template with baseUrl key");
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

@@ -67,6 +67,9 @@ test("dispatch: normalizes agent_id / id keys", async () => {
   assert.equal(r2.agentId, "y");
   const lines = readFileSync(inbox, "utf-8").split("\n").filter(Boolean);
   assert.equal(lines.length, 2);
+  // Verify the written record uses the normalized `agentId` key (not agent_id / id).
+  assert.equal(JSON.parse(lines[0]).agentId, "x");
+  assert.equal(JSON.parse(lines[1]).agentId, "y");
 });
 
 test("dispatch: multiple calls append cleanly", async () => {

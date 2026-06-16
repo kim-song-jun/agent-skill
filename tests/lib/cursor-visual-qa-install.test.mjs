@@ -65,7 +65,11 @@ test("visual-qa install: installed report-renderer renders fixture report", () =
     const fx = resolve("tests/fixtures/cursor-visual-qa/report.json");
     const r = spawnSync("node", [renderer, fx], { encoding: "utf-8" });
     assert.equal(r.status, 0, r.stderr);
-    assert.ok(r.stdout.includes("Visual QA Report"));
+    // Assert that the installed renderer actually expands the template — not just
+    // that it emits the literal template text (which would also include "Visual QA Report").
+    assert.match(r.stdout, /^# Visual QA Report — 2026-05-18-abc1234/m);
+    assert.ok(r.stdout.includes("http://localhost:3000"), "baseUrl must be expanded");
+    assert.match(r.stdout, /Total issues:\*\* 2/);
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

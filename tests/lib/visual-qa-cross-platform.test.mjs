@@ -19,7 +19,7 @@ for (const platform of PLATFORMS) {
   test(`visual-qa-${platform}: SKILL.md graduates to full pipeline`, () => {
     const md = readFileSync(resolve(ROOT, "SKILL.md"), "utf-8");
     assert.match(md, new RegExp(`^---\\nname: visual-qa-${platform}`));
-    assert.ok(md.includes("6-phase") || md.includes("Pipeline"));
+    assert.match(md, /^## Pipeline$/m);
     assert.ok(md.includes("0-preflight"), "should reference 0-preflight phase file");
     assert.ok(md.includes("3-capture"), "should reference 3-capture phase file");
     assert.ok(md.includes("5-summary"), "should reference 5-summary phase file");
@@ -59,7 +59,7 @@ for (const platform of PLATFORMS) {
   test(`visual-qa-${platform}: comprehensive verdict gates critical and major regressions`, () => {
     const aggregate = readFileSync(resolve(ROOT, "phases/4-aggregate.md"), "utf-8");
     const summary = readFileSync(resolve(ROOT, "phases/5-summary.md"), "utf-8");
-    assert.match(aggregate, /lib\/verdict\.mjs|computeVerdict/);
+    assert.match(aggregate, /lib\/verdict\.mjs/);
     assert.match(aggregate, /verdict\.json/);
     assert.match(aggregate, /\["critical", "major"\]/);
     assert.match(summary, /Comprehensive mode/);
@@ -106,7 +106,7 @@ for (const platform of PLATFORMS) {
 
   test(`visual-qa-${platform}: porting-notes documents graduation`, () => {
     const body = readFileSync(resolve(ROOT, "references/porting-notes.md"), "utf-8");
-    assert.ok(body.includes("Graduation") || body.includes("scaffold"));
-    assert.ok(body.includes("6-phase") || body.includes("Phase contract"));
+    assert.match(body, /^## Graduation/m);
+    assert.match(body, /6-phase/);
   });
 }

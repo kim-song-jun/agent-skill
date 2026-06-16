@@ -322,7 +322,9 @@ test("appendVerificationEvidence writes normalized evidence entries", () => {
 
   assert.equal(entry.evidence.adapter, "verify:api-contract");
   assert.equal(entry.evidence.timestamp, "2026-06-11T00:00:00.000Z");
-  assert.equal(readFileSync(entry.path, "utf-8").trim().includes("contract passed"), true);
+  const writtenEntry = JSON.parse(readFileSync(entry.path, "utf-8").trim().split("\n").at(-1));
+  assert.equal(writtenEntry.summary, "contract passed");
+  assert.equal(writtenEntry.schemaVersion, "verification-evidence/v1");
 });
 
 test("appendVerificationEvidence masks medium privacy findings before JSONL write", () => {

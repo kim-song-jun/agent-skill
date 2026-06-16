@@ -92,8 +92,11 @@ test("runFleet enforces SIGTERM after timeoutMs (via mock sleep binary)", { time
     const elapsed = Date.now() - start;
     assert.equal(results.length, 1);
     assert.equal(results[0].timedOut, true);
-    // SIGTERM means exit by signal, not normal exit code.
-    assert.ok(results[0].signal === "SIGTERM" || results[0].signal === "SIGKILL" || results[0].exitCode != null);
+    // Process must have been terminated by signal (SIGTERM or SIGKILL), not by normal exit.
+    assert.ok(
+      results[0].signal === "SIGTERM" || results[0].signal === "SIGKILL",
+      `expected SIGTERM or SIGKILL, got signal=${results[0].signal} exitCode=${results[0].exitCode}`,
+    );
     assert.ok(elapsed < 5_000, `expected fast kill, got ${elapsed}ms`);
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -124,4 +127,6 @@ test("__internal.buildArgs includes --skill-roster when provided", async () => {
   assert.equal(args[args.indexOf("--skill-roster") + 1], "/path/to/roster");
   assert.ok(args.includes("--output-json"));
   assert.ok(args.includes("--timeout"));
+  // 60_000 ms → "60" seconds passed to the CLI
+  assert.equal(args[args.indexOf("--timeout") + 1], "60");
 });

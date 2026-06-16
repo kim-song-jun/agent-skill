@@ -628,6 +628,8 @@ Claude 또는 Codex 프로젝트 설치 후 plugin-local doctor(`node /path/to/h
 
 `/explore`는 오늘 Claude Code 전용. `/debug`는 Claude Code와 Codex CLI에서 출시됨; Cursor/Copilot/Gemini debug 포트는 포팅 로드맵에 유지.
 
+**플랫폼별 정직한 한계:** `/explore`와 `/debug`는 Claude Code 전용 (또는 `/debug`의 경우 Claude Code + Codex CLI). Cursor와 Gemini CLI는 백그라운드 subagent의 결과를 프로그래밍 방식으로 await하는 메커니즘이 없으므로 — floor 워크플로가 해당 플랫폼에서는 native Task-tool subagent 대신 프롬프트 수준의 순차 dispatch를 사용하고, Phase 3a/3b/3c와 Phase 4의 기반이 되는 하드 hook 강제(Task에 대한 PreToolUse/PostToolUse)와 자동 subagent 결과 수집은 사용 불가. Decision-surfacing과 reviewer-audit 강제는 Cursor, Gemini CLI, VS Code Copilot, Copilot CLI에서 프롬프트 수준에만 적용됨.
+
 ---
 
 ## 다른 도구에서 업데이트
@@ -840,7 +842,7 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 | `/thrift` compact 전달 | ⚠️ API-gated advisory path | Claude/Codex 모두 durable summary 파일을 쓰고 `/compact` 사용을 안내; programmatic compact injection은 host CLI가 안정 API를 노출하면 연결 |
 | Provider-backed thrift summarizer | ✅ release-scoped | Claude의 선택적 `@anthropic-ai/sdk` summarizer 경로는 구현/테스트 완료; Codex는 dependency-free heuristic summarizer, configurable `gpt-5-nano` model metadata, OpenAI-rate audit heuristic을 제공 |
 
-버전: `harness-builder` `v0.6.6`, `harness-floor` `v0.6.6`, 나머지 설치 가능한 `agent-skill` 플러그인 17개도 같은 release train의 `v0.6.6`으로 배포합니다. 내부 artifact/config schema version은 별도의 호환성 계약으로 유지됩니다.
+버전: `harness-builder` `v0.6.7`, `harness-floor` `v0.6.7`, 나머지 설치 가능한 `agent-skill` 플러그인 17개도 같은 release train의 `v0.6.7`으로 배포합니다. 내부 artifact/config schema version은 별도의 호환성 계약으로 유지됩니다.
 
 ### 릴리즈 후보 라이프사이클
 

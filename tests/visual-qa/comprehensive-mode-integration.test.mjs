@@ -143,6 +143,7 @@ test("integration: second run with no DOM changes → cache hits, verdict pass v
   cache = recordHit(cache, hash1, { verdict: "pass", issues: [] });
   const hit = lookup(cache, hash2);
   assert.ok(hit, "cache should return a hit on second pass");
+  assert.deepEqual(hit.priorAnalysis, { verdict: "pass", issues: [] }, "cached prior analysis should be retrievable");
 
   // Issue set unchanged → verdict pass
   const v = computeVerdict({

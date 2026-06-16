@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, existsSync } from "node:fs";
+import { mkdtempSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -15,15 +15,22 @@ function freshMirror() {
 
 test("storeRepoMemory: writes to both when both available", async () => {
   const mirror = freshMirror();
+  const value = [{ page: "home" }];
   const r = await storeRepoMemory({
     key: "visual-qa/matrix",
-    value: [{ page: "home" }],
+    value,
     toolCaller: async () => ({}),
     fileMirror: mirror,
   });
   assert.equal(r.ok, true);
   assert.equal(r.source, "both");
-  assert.ok(existsSync(mirror.pathFor("visual-qa/matrix")));
+  // Existence alone does not confirm the correct value was written — verify content.
+  assert.ok(existsSync(mirror.pathFor("visual-qa/matrix")), "mirror file must exist");
+  assert.deepEqual(
+    JSON.parse(readFileSync(mirror.pathFor("visual-qa/matrix"), "utf-8")),
+    value,
+    "mirror file content must match stored value",
+  );
 });
 
 test("recallRepoMemory: file fallback when memory empty", async () => {

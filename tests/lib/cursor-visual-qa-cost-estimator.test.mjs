@@ -26,6 +26,9 @@ test("MODEL_PRICES includes sonnet + haiku", () => {
 });
 
 test("unknown model falls back to default price", () => {
+  // DEFAULT_PRICE is 0.012 — contract is that unknown models use the same
+  // per-capture rate as sonnet, not just any positive number.
   const c = estimateCost(new Array(5).fill({}), "unknown-model");
-  assert.ok(c > 0);
+  assert.equal(c, 5 * MODEL_PRICES["claude-sonnet-4-6"],
+    "unknown model should fall back to the same price as claude-sonnet-4-6 (DEFAULT_PRICE)");
 });

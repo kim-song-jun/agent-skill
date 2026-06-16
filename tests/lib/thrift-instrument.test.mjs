@@ -23,10 +23,10 @@ test("settings-patcher: patches into empty settings", () => {
     assert.equal(res.applied, 6); // 2 PreToolUse + 2 PostToolUse + 1 SessionStart + 1 SessionEnd
     assert.equal(res.skipped, 0);
     const written = JSON.parse(readFileSync(sp, "utf-8"));
-    assert.ok(written.hooks.PreToolUse.length === 2);
-    assert.ok(written.hooks.PostToolUse.length === 2);
-    assert.ok(written.hooks.SessionStart.length === 1);
-    assert.ok(written.hooks.SessionEnd.length === 1);
+    assert.equal(written.hooks.PreToolUse.length, 2, "expected 2 PreToolUse entries");
+    assert.equal(written.hooks.PostToolUse.length, 2, "expected 2 PostToolUse entries");
+    assert.equal(written.hooks.SessionStart.length, 1, "expected 1 SessionStart entry");
+    assert.equal(written.hooks.SessionEnd.length, 1, "expected 1 SessionEnd entry");
     // The coercion-outcome PostToolUse entry carries a matcher covering the
     // context-mode coercion tools.
     assert.ok(written.hooks.PostToolUse.some((e) =>
@@ -115,7 +115,7 @@ test("settings-patcher: unpatch removes only thrift entries", () => {
     const hooks = buildStandardThriftHooks({ hooksDir: ".claude/hooks" });
     patchSettings({ settingsPath: sp, hooksToAdd: hooks });
     const before = JSON.parse(readFileSync(sp, "utf-8"));
-    assert.ok(before.hooks.PreToolUse.length === 3, `expected 3 entries before unpatch, got ${before.hooks.PreToolUse.length}`);
+    assert.equal(before.hooks.PreToolUse.length, 3, `expected 3 entries before unpatch, got ${before.hooks.PreToolUse.length}`);
     const res = unpatchSettings({ settingsPath: sp });
     assert.equal(res.removed, 6);
     const after = JSON.parse(readFileSync(sp, "utf-8"));

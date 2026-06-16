@@ -41,19 +41,22 @@ This design closes those gaps **without forking** `superpowers`. The harness inj
 
 ### 4.1 Components
 
+> **Implementation note (post-design):** The `plugins/_shared/` location below was the original planned layout but was **not used**. During implementation the shared lib was vendored as per-skill `lib/` copies instead (e.g. `plugins/harness-floor/skills/agent-all/lib/`, `plugins/harness-floor-codex/skills/agent-all-codex/lib/`). `scripts/sync-lib.mjs` keeps those copies in sync. There is no `plugins/_shared/` directory in the repo.
+
 ```
-plugins/_shared/lib/decisions/
+plugins/harness-floor/skills/agent-all/lib/decisions/
   schema.mjs              JSON schema + validator for decision payload
-  renderer.mjs            payload → AskUserQuestion (CC) / stdin (other CLIs)
+  renderer.mjs            payload → AskUserQuestion (Claude) / prompt choices (Codex et al.)
+  markdown-log-writer.mjs append the resolved interaction to the run log
   non-tty-resolver.mjs    auto-pick recommended, append to state log
   addendum.md             prompt text injected into Task tool prompts
 
-plugins/_shared/lib/policy/
-  verification-validator.mjs    PostToolUse: STATUS=DONE → verify log present?
-  reviewer-audit-validator.mjs  PostToolUse: reviewer → 'VERIFICATION_AUDIT: ...' present?
+plugins/harness-floor/skills/agent-all/lib/policy/
+  coordinator-audit-validator.mjs  PostToolUse: reviewer → 'VERIFICATION_AUDIT: ...' present?
 
-plugins/_shared/hooks/
-  floor-policy.mjs        single file. Routes PreToolUse + PostToolUse internally.
+plugins/harness-floor/bin/
+  floor-policy-hook.mjs   single file. Routes PreToolUse + PostToolUse internally.
+  install-floor-policy.mjs  writes hook registration into project settings.local.json
 
 plugins/harness-floor/skills/agent-all/lib/
   decision-router.mjs     wave coord: scoping → batched ask → re-dispatch
@@ -61,6 +64,8 @@ plugins/harness-floor/skills/agent-all/lib/
 plugins/harness-floor/skills/agent-all/phases/
   3-dispatch.md           updated with 3a/3b/3c sub-phases (see §6)
 ```
+
+*(Per-platform ports — `harness-floor-codex`, etc. — carry their own `lib/` copies of the policy and interaction libs, vendored by `sync-lib.mjs`.)*
 
 ### 4.2 Data flow
 
@@ -145,7 +150,7 @@ Constraints:
 
 ## 7. Hook protocol
 
-A single file `plugins/_shared/hooks/floor-policy.mjs` exports both `PreToolUse` and `PostToolUse` handlers. Registered via the sentinel-prefix protocol from `2026-05-18-hook-precedence-integration.md`. Sentinel: `floor-policy-`.
+A single file `plugins/harness-floor/bin/floor-policy-hook.mjs` (the standalone floor install path; `/agent-init` installs the equivalent `agent-policy-hook.mjs`) routes both `PreToolUse` and `PostToolUse` internally. Registered via the sentinel-prefix protocol from `2026-05-18-hook-precedence-integration.md`. Sentinel: `floor-policy-`.
 
 ### 7.1 PreToolUse routing
 

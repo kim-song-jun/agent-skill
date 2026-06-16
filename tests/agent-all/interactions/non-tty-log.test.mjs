@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -89,9 +89,18 @@ test("interaction log writer honors configured artifact root", () => {
       interaction,
       result: { action: "selected", selectedOptionId: "resume", reason: "recommended option auto-selected" },
       source: "test",
+      now: new Date("2026-06-11T00:00:00.000Z"),
     });
 
-    assert.equal(path, join(cwd, ".ops/runs/run-14/interactions.jsonl"));
+    const expectedPath = join(cwd, ".ops/runs/run-14/interactions.jsonl");
+    assert.equal(path, expectedPath);
+    // Verify the file was actually written at the custom root with correct content
+    assert.equal(existsSync(path), true);
+    const entry = JSON.parse(readFileSync(path, "utf-8").trim());
+    assert.equal(entry.schemaVersion, "agent-interaction-log/v1");
+    assert.equal(entry.interaction.kind, "resume");
+    assert.equal(entry.result.selectedOptionId, "resume");
+    assert.equal(entry.timestamp, "2026-06-11T00:00:00.000Z");
   } finally {
     rmSync(cwd, { recursive: true, force: true });
   }

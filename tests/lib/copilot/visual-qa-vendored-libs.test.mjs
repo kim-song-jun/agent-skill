@@ -24,24 +24,31 @@ test("visual-qa-copilot matrix-builder: builds matrix from config", async () => 
     pages: [{ name: "home", path: "/", components: [] }],
   });
   assert.equal(m.length, 1);
-  assert.equal(m[0].kind, "page");
+  assert.deepEqual(m[0], { kind: "page", page: "home", bp: "desktop" });
 });
 
-test("visual-qa-copilot cost-estimator: returns positive cost", async () => {
-  const { estimateCost } = await import(`../../../${VENDORED}/cost-estimator.mjs`);
-  assert.ok(estimateCost([{}, {}, {}], "claude-sonnet-4-6") > 0);
+test("visual-qa-copilot cost-estimator: returns model-specific per-capture cost", async () => {
+  const { estimateCost, MODEL_PRICES } = await import(`../../../${VENDORED}/cost-estimator.mjs`);
+  // 3 captures × sonnet rate — confirms model lookup and multiplication, not just any positive number.
+  const sonnetRate = MODEL_PRICES["claude-sonnet-4-6"];
+  assert.equal(estimateCost([{}, {}, {}], "claude-sonnet-4-6"), 3 * sonnetRate);
+  // Verify a different model produces a different (and correct) cost.
+  const haikuRate = MODEL_PRICES["claude-haiku-4-5"];
+  assert.equal(estimateCost([{}], "claude-haiku-4-5"), haikuRate);
 });
 
 test("visual-qa-copilot diff-runs: detects new/resolved/unchanged", async () => {
   const { diffRuns } = await import(`../../../${VENDORED}/diff-runs.mjs`);
-  const current = [
-    { page: "p", component: "c", state: "default", bp: "d", category: "a11y", description: "x" },
-  ];
-  const prior = { issues: [
-    { page: "p", component: "c", state: "default", bp: "d", category: "layout", description: "y" },
-  ] };
+  const currentIssue = { page: "p", component: "c", state: "default", bp: "d", category: "a11y", description: "x" };
+  const priorIssue = { page: "p", component: "c", state: "default", bp: "d", category: "layout", description: "y" };
+  const current = [currentIssue];
+  const prior = { issues: [priorIssue] };
   const d = diffRuns(current, prior);
+  // Counts correct.
   assert.equal(d.new.length, 1);
   assert.equal(d.resolved.length, 1);
   assert.equal(d.unchanged.length, 0);
+  // Items are correctly bucketed — the a11y issue is new, the layout issue is resolved.
+  assert.equal(d.new[0].category, "a11y", "new bucket must contain the current a11y issue");
+  assert.equal(d.resolved[0].category, "layout", "resolved bucket must contain the prior layout issue");
 });

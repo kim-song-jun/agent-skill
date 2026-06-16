@@ -88,8 +88,12 @@ test("non-Claude renderers expose prompt or markdown surfaces with option ids", 
 
   assert.deepEqual(renderCodexInteraction(interaction).optionIdOrder, ["agent-all", "verify"]);
   assert.match(renderCopilotInteraction(interaction), /agent-all: Resume agent-all/);
-  assert.match(renderCursorInteraction(interaction), /Non-TTY policy/);
-  assert.match(renderGeminiInteraction(interaction), /Resume/);
+  // Cursor delegates to the same Copilot renderer — verify the discriminating id:label pairs are present
+  assert.match(renderCursorInteraction(interaction), /agent-all: Resume agent-all/);
+  assert.match(renderCursorInteraction(interaction), /verify: Verify first/);
+  // Gemini delegates to the same Copilot renderer — verify the discriminating id:label pairs are present
+  assert.match(renderGeminiInteraction(interaction), /agent-all: Resume agent-all/);
+  assert.match(renderGeminiInteraction(interaction), /verify: Verify first/);
 });
 
 test("interaction helpers are vendored to core and platform agent-all runtimes", async () => {

@@ -96,6 +96,10 @@ test("skill eval writes summary, JSON, JSONL, and artifact manifest", () => {
     assert.ok(existsSync(result.output.summaryJson));
     assert.ok(existsSync(result.output.runsJsonl));
     assert.ok(existsSync(result.output.artifactManifest));
+    const manifest = JSON.parse(readFileSync(result.output.artifactManifest, "utf-8"));
+    assert.match(manifest.schemaVersion, /^agent-skill-eval-report\/v1-fixture-manifest/);
+    assert.ok(Array.isArray(manifest.fixtures), "artifact manifest must have a fixtures array");
+    assert.equal(manifest.fixtures.length, 3, "fixture manifest should list all 3 smoke fixtures");
 
     const summary = readFileSync(result.output.summaryMd, "utf-8");
     assert.match(summary, /Skill Utility Eval Summary/);

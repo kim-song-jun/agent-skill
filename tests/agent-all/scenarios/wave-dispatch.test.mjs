@@ -43,14 +43,20 @@ test("--loop 3 iterations: breakCondition fails twice then passes", () => {
 
   let v = evaluateLoop(state, { stableIters: 1, maxIter: 5, maxCostUSD: 100 }, runner);
   assert.equal(v.action, "continue");
+  assert.equal(v.consecutivePass, 0, "first fail must reset consecutivePass to 0");
+  assert.equal(v.exitCode, 1, "first fail must surface exitCode 1");
   state = { ...state, iter: 1, consecutivePass: 0 };
 
   v = evaluateLoop(state, { stableIters: 1, maxIter: 5, maxCostUSD: 100 }, runner);
   assert.equal(v.action, "continue");
+  assert.equal(v.consecutivePass, 0, "second fail must keep consecutivePass at 0");
+  assert.equal(v.exitCode, 1, "second fail must surface exitCode 1");
   state = { ...state, iter: 2, consecutivePass: 0 };
 
   v = evaluateLoop(state, { stableIters: 1, maxIter: 5, maxCostUSD: 100 }, runner);
   assert.equal(v.action, "break");
+  assert.equal(v.consecutivePass, 1, "first pass with stableIters=1 must yield consecutivePass 1");
+  assert.equal(v.exitCode, 0, "break result must surface exitCode 0");
 });
 
 test("--max-iter=2 exhausted: 2 failing iters then 3rd evaluation says exhausted", () => {

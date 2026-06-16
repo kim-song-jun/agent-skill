@@ -26,7 +26,12 @@ test("each-block expands issues with severity + category", () => {
   const md = renderReport(fixture);
   for (const issue of fixture.issues) {
     assert.ok(md.includes(issue.description), `issue description missing: ${issue.description}`);
-    assert.ok(md.includes(issue.severity));
+    // Assert the issue BLOCK HEADER is rendered, not just that the severity word
+    // appears somewhere (it also appears in the summary "**Major:** 1" section).
+    assert.ok(
+      md.includes(`### ${issue.severity} — ${issue.category}`),
+      `issue block header missing for severity=${issue.severity} category=${issue.category}`,
+    );
   }
 });
 

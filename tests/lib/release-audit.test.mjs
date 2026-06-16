@@ -18,10 +18,10 @@ test("release audit reports Claude and Codex as independently ready", () => {
   assert.equal(result.ok, true);
   assert.equal(result.platforms.claude.ok, true);
   assert.equal(result.platforms.codex.ok, true);
-  assert.equal(result.platforms.claude.checks.length, 82);
-  assert.equal(result.platforms.codex.checks.length, 75);
-  assert.match(result.platforms.claude.summary, /Claude: ok \(82\/82 checks\)/);
-  assert.match(result.platforms.codex.summary, /Codex: ok \(75\/75 checks\)/);
+  assert.equal(result.platforms.claude.checks.length, 83);
+  assert.equal(result.platforms.codex.checks.length, 76);
+  assert.match(result.platforms.claude.summary, /Claude: ok \(83\/83 checks\)/);
+  assert.match(result.platforms.codex.summary, /Codex: ok \(76\/76 checks\)/);
   for (const platform of Object.values(result.platforms)) {
     const names = platform.checks.map((check) => check.name);
     const duplicateNames = names.filter((name, index) => names.indexOf(name) !== index);

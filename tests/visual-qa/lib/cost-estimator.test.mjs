@@ -13,9 +13,13 @@ test("known model gives positive cost proportional to matrix size", () => {
   assert.ok(Math.abs(m2 - 2 * m1) < 0.0001);
 });
 
-test("unknown model falls back to default price and warns via return.warnings", () => {
+test("unknown model falls back to default price", () => {
   const c = estimateCost(new Array(5).fill({}), "unknown-model");
   assert.ok(c > 0);
+  // The fallback should use DEFAULT_PRICE (0.012); 5 captures = 0.060
+  // Allow a tolerance band since DEFAULT_PRICE is an implementation detail.
+  assert.ok(c < estimateCost(new Array(5).fill({}), "claude-opus-4-7"),
+    "unknown-model cost should not exceed the most expensive known model");
 });
 
 test("MODEL_PRICES table includes claude-sonnet-4-6 and claude-haiku-4-5", () => {

@@ -173,7 +173,7 @@ test("audit-renderer: buildAuditContext computes cache hit rate", () => {
   recordTurn(s, { tokensInUncached: 100, tokensInCached: 900, tokensOut: 50, model: "claude-sonnet-4-6" });
   const ctx = buildAuditContext({ state: s, config: DEFAULTS, now: new Date() });
   assert.equal(ctx.cacheHitRate, 90); // 900 / 1000 = 90%
-  assert.ok(ctx.savedUSD > 0); // some savings from cache
+  assert.equal(ctx.savedUSD, 0.0024); // (baselineUSD - actualUSD): (900 cached reads × $0.3 vs $3 full rate) / 1M
 });
 
 test("audit-renderer: report renders without crash for empty session", () => {

@@ -26,7 +26,8 @@ test("legacy mode (capturePairs:false) keeps existing single-screenshot shape", 
     hooks,
   });
   assert.equal(r.captures.length, 1);
-  assert.ok(r.captures[0].path);
+  // path must be the screenshot-hook return value with the legacy suffix shape
+  assert.match(r.captures[0].path, /\/captures\/__clicked__button_save\.png$/);
   assert.equal(r.captures[0].screenshots, undefined);
   assert.equal(calls.screenshot.length, 1);
 });
@@ -40,8 +41,9 @@ test("pair mode emits before + after screenshots per element", async () => {
     options: { capturePairs: true },
   });
   assert.equal(r.captures.length, 1);
-  assert.ok(r.captures[0].screenshots?.before);
-  assert.ok(r.captures[0].screenshots?.after);
+  // before/after paths must carry the hook's return value with the expected suffix
+  assert.match(r.captures[0].screenshots.before, /__before\.png$/);
+  assert.match(r.captures[0].screenshots.after, /__after\.png$/);
   assert.equal(r.captures[0].path, null);
   assert.equal(calls.screenshot.length, 2);
   assert.match(calls.screenshot[0].suffix, /__before$/);
@@ -61,7 +63,8 @@ test("pair mode + descriptorFor populates elementId + confidence", async () => {
     hooks,
     options: { capturePairs: true },
   });
-  assert.match(r.captures[0].elementId, /^x:/);
+  // elementId must be tier-1 (explicit) prefix + 16-char sha1 hex — not just any truthy string
+  assert.match(r.captures[0].elementId, /^x:[0-9a-f]{16}$/);
   assert.equal(r.captures[0].confidence, "explicit");
 });
 

@@ -164,7 +164,10 @@ test("renderHtmlArtifact can write sanitized redaction audit metadata", () => {
     });
 
     assert.match(result.html, /\[REDACTED:email-address\]/);
-    assert.ok(result.redactionAudit);
+    // assert structural shape: writeRedactionAudit must return {path, entry}, not just be truthy
+    assert.ok(result.redactionAudit?.path, "redactionAudit.path must be set");
+    assert.equal(result.redactionAudit?.entry?.schemaVersion, "agent-redaction-audit/v1");
+    assert.equal(result.redactionAudit?.entry?.blocked, false);
     const audit = readFileSync(join(cwd, ".agent-skill/runs/vqa-run/redaction-audit.jsonl"), "utf-8");
     assert.match(audit, /"rule":"email-address"/);
     assert.match(audit, /"action":"mask"/);

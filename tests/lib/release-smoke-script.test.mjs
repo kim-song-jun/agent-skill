@@ -53,9 +53,9 @@ test("release-smoke --fast runs Claude and Codex release gates without live CLIs
   assert.match(output, /DRY-RUN: install harness-builder-codex@agent-skill for Codex CLI/);
   assert.match(output, /DRY-RUN: install harness-debug-codex@agent-skill for Codex CLI/);
   assert.match(output, /release smoke: focused release contracts/);
-  assert.match(output, /tests 471/);
-  assert.match(output, /pass 471/);
-  assert.doesNotMatch(output, /tests 424|pass 424|tests 425|pass 425|tests 427|pass 427|tests 428|pass 428|tests 429|pass 429|tests 430|pass 430|tests 431|pass 431|tests 432|pass 432|tests 433|pass 433|tests 435|pass 435|tests 450|pass 450|tests 452|pass 452|tests 461|pass 461|tests 470|pass 470|tests 475|pass 475|tests 480|pass 480|tests 492|pass 492|tests 495|pass 495|tests 498|pass 498|tests 500|pass 500|tests 501|pass 501|tests 504|pass 504|tests 505|pass 505/);
+  assert.match(output, /ℹ tests 471\b/);
+  assert.match(output, /ℹ pass 471\b/);
+  assert.doesNotMatch(output, /ℹ tests (424|425|427|428|429|430|431|432|433|435|450|452|461|470|475|480|492|495|498|500|501|504|505)\b/);
   assert.match(output, /Claude native plugin manifests expose all release skills/);
   assert.match(output, /codex-init CLI help documents canonical release flags/);
   assert.match(output, /install-hook: planMerge is a no-op while Codex agent hooks are unsupported/);

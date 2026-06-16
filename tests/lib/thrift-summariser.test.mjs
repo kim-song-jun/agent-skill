@@ -69,8 +69,13 @@ test("summariser: reports tokens before + estimated after", async () => {
   });
   // Head is 24 turns × 300 bytes / 3 bytes/token = 2400 tokens
   assert.equal(r.tokensBefore, 2400);
-  // Summary is much smaller
-  assert.ok(r.tokensAfterEstimate < r.tokensBefore);
+  // tokensAfterEstimate = ceil(summaryText.length / 3). summaryText is the
+  // wrapper + "tiny summary" body — no tail token count is included. The
+  // wrapper alone is ~200 chars so the estimate is well under 200 tokens.
+  // Assert a tight upper bound so a regression (e.g., accidentally including
+  // all tail turns in the estimate) would be caught.
+  assert.ok(r.tokensAfterEstimate < r.tokensBefore, `tokensAfterEstimate (${r.tokensAfterEstimate}) should be less than tokensBefore (${r.tokensBefore})`);
+  assert.ok(r.tokensAfterEstimate < 300, `tokensAfterEstimate (${r.tokensAfterEstimate}) should be well under 300 (wrapper + "tiny summary" body only)`);
 });
 
 test("heuristicSummariseFn: extracts first sentence per turn", async () => {

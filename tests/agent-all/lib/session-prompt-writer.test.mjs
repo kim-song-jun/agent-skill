@@ -1,7 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  DANGEROUS_COMMAND_APPROVALS,
   renderSessionPrompt,
 } from "../../../plugins/harness-floor/skills/agent-all/lib/session-prompt-writer.mjs";
 
@@ -36,5 +35,6 @@ test("renders resumable session prompt with metadata and dangerous-command appro
   assert.match(out, /Non-TTY Selection/);
   assert.match(out, /User approval required \/ 사용자 승인 필요: git reset/);
   assert.match(out, /docker volume rm/);
-  assert.equal(DANGEROUS_COMMAND_APPROVALS.some((item) => item.pattern === "--apply"), true);
+  // Assert the rendered output includes --apply, not just the raw constant (behavior, not self-referential array check)
+  assert.match(out, /--apply/);
 });

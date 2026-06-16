@@ -127,7 +127,17 @@ test("parseTaskResult: missing STATUS records error", () => {
   assert.match(out.errors[0], /no STATUS/);
 });
 
-test("__internal: STATUS_RE + COMMITS_RE exposed for tooling", () => {
-  assert.ok(__internal.STATUS_RE);
-  assert.ok(__internal.COMMITS_RE);
+test("__internal: STATUS_RE + COMMITS_RE match the expected patterns", () => {
+  // STATUS_RE must match all three valid statuses and reject unknowns.
+  assert.ok(__internal.STATUS_RE.test("STATUS: completed"));
+  assert.ok(__internal.STATUS_RE.test("STATUS: blocked"));
+  assert.ok(__internal.STATUS_RE.test("STATUS: failed"));
+  assert.ok(!__internal.STATUS_RE.test("STATUS: unknown"),
+    "STATUS_RE must NOT match an unrecognised status value");
+  assert.ok(!__internal.STATUS_RE.test("STATUS:"),
+    "STATUS_RE must NOT match a bare STATUS: with no value");
+  // COMMITS_RE must capture the commits payload verbatim.
+  const m = "COMMITS: abc1234,def5678".match(__internal.COMMITS_RE);
+  assert.ok(m, "COMMITS_RE must match a COMMITS line");
+  assert.equal(m[1], "abc1234,def5678");
 });

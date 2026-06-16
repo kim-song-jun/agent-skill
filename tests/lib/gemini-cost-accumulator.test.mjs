@@ -41,13 +41,15 @@ test("extractCost: usage tokens × rate path (gemini-2.5-pro)", async () => {
 });
 
 test("extractCost: accepts alternate token keys (prompt_tokens, completion_tokens)", async () => {
-  const { extractCost } = await import(`../../${AGENT_ALL_COST}`);
+  const { extractCost, DEFAULT_RATES } = await import(`../../${AGENT_ALL_COST}`);
   const c = extractCost({
     model: "gemini-2.5-flash",
     usage: { prompt_tokens: 100, completion_tokens: 200 },
   });
   assert.equal(c.source, "tokens");
-  assert.ok(c.costUSD > 0);
+  const expected = 100 * DEFAULT_RATES["gemini-2.5-flash"].input
+    + 200 * DEFAULT_RATES["gemini-2.5-flash"].output;
+  assert.equal(c.costUSD, expected);
 });
 
 test("extractCost: transcript-length fallback when no tokens/cost", async () => {
@@ -73,14 +75,15 @@ test("estimateFromTranscript: text length × fallback rate", async () => {
 });
 
 test("CostAccumulator: tracks total and breakdown", async () => {
-  const { CostAccumulator } = await import(`../../${AGENT_ALL_COST}`);
+  const { CostAccumulator, FALLBACK_CHAR_RATE } = await import(`../../${AGENT_ALL_COST}`);
   const acc = new CostAccumulator({ maxCostUSD: 1.0 });
   acc.add(1, { costUSD: 0.3 });
   acc.add(2, { costUSD: 0.2 });
   acc.add(3, { transcript: "hello world" });
   const s = acc.summary();
   assert.equal(s.taskCount, 3);
-  assert.ok(s.totalUSD >= 0.5);
+  const expectedTotal = 0.3 + 0.2 + "hello world".length * FALLBACK_CHAR_RATE;
+  assert.equal(s.totalUSD, expectedTotal);
   assert.equal(s.bySource.explicit, 2);
   assert.equal(s.bySource.fallback, 1);
 });

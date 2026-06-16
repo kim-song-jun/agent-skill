@@ -180,18 +180,25 @@ test("harness-builder-claude: shell init writes operational scaffold and runs do
     assert.equal(agentAll.language, "ko");
     assert.deepEqual(agentAll.artifact, { root: ".agent-skill", exportDocs: false });
     assert.equal(visualQa.output.dir, ".agent-skill/reports/visual-qa");
-    assert.ok(JSON.stringify(settings).includes("agent-policy-hook.mjs"));
     assert.ok(
       (settings.hooks.PreToolUse || []).some(
-        (group) => group.matcher === "Task" && JSON.stringify(group).includes("PreToolUse"),
+        (group) =>
+          group.matcher === "Task" &&
+          (group.hooks || []).some(
+            (h) => typeof h.command === "string" && /agent-policy-hook\.mjs/.test(h.command) && /PreToolUse/.test(h.command),
+          ),
       ),
-      "operational Claude settings should register Task PreToolUse policy hook",
+      "operational Claude settings should register Task PreToolUse hook command referencing agent-policy-hook.mjs PreToolUse",
     );
     assert.ok(
       (settings.hooks.PostToolUse || []).some(
-        (group) => group.matcher === "Task" && JSON.stringify(group).includes("PostToolUse"),
+        (group) =>
+          group.matcher === "Task" &&
+          (group.hooks || []).some(
+            (h) => typeof h.command === "string" && /agent-policy-hook\.mjs/.test(h.command) && /PostToolUse/.test(h.command),
+          ),
       ),
-      "operational Claude settings should register Task PostToolUse policy hook",
+      "operational Claude settings should register Task PostToolUse hook command referencing agent-policy-hook.mjs PostToolUse",
     );
     assert.match(policyHook, /ORCHESTRATION_AUDIT/);
     assert.match(policyHook, /QA_AUDIT/);

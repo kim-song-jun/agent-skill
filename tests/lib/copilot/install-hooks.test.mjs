@@ -157,9 +157,12 @@ test("installHooks: writes pretty-printed JSON for diffability", () => {
   const { hooksFile, inbox } = fresh();
   installHooks({ hooksFile, inbox, label: "agent-all" });
   const raw = readFileSync(hooksFile, "utf-8");
-  // 2-space indent + multiple lines → at least one newline.
-  assert.ok(raw.includes("\n"));
-  assert.ok(raw.includes("  ")); // indentation
+  // Must be valid JSON that round-trips.
+  const parsed = JSON.parse(raw);
+  // Re-stringify with 2-space indent and compare — proves the written form
+  // is indented (not compact), which is the diffability contract.
+  assert.equal(raw, JSON.stringify(parsed, null, 2),
+    "hooks file must be written as JSON.stringify(…, null, 2) for diffability");
 });
 
 test("__internal: DEFAULT_DISPATCHERS resolves both plugin paths", () => {

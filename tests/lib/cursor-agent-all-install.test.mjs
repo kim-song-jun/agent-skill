@@ -33,6 +33,18 @@ test("agent-all install: ships template files + vendored lib modules", () => {
     for (const f of expected) {
       assert.ok(existsSync(resolve(target, f)), `missing ${f}`);
     }
+
+    // Templated files must have had their {{...}} placeholders replaced.
+    const agentAllJson = readFileSync(resolve(target, ".agent-all.json"), "utf-8");
+    assert.doesNotMatch(agentAllJson, /\{\{/, ".agent-all.json must have no unrendered placeholders");
+    // Must be valid JSON and contain rendered values (not template literals).
+    const agentAllParsed = JSON.parse(agentAllJson);
+    assert.equal(typeof agentAllParsed.defaults.maxIter, "number", ".agent-all.json defaults.maxIter must be a rendered number");
+    assert.equal(typeof agentAllParsed.defaults.maxCostUSD, "number", ".agent-all.json defaults.maxCostUSD must be a rendered number");
+
+    const mdcContent = readFileSync(resolve(target, ".cursor/rules/agent-all.mdc"), "utf-8");
+    assert.doesNotMatch(mdcContent, /\{\{/, ".cursor/rules/agent-all.mdc must have no unrendered placeholders");
+    assert.match(mdcContent, /alwaysApply:\s*true/, ".cursor/rules/agent-all.mdc must contain alwaysApply: true");
   } finally {
     rmSync(target, { recursive: true, force: true });
   }
@@ -74,7 +86,10 @@ test("agent-all install: installed lib modules are runnable (round-trip)", () =>
     const parsed = JSON.parse(r.stdout);
     assert.equal(parsed.ok, true);
     assert.equal(parsed.warning, true);
-    assert.ok(parsed.config.defaults);
+    // Verify the installed config-loader returns the real DEFAULTS shape, not just any truthy object.
+    assert.equal(typeof parsed.config.defaults.maxIter, "number", "DEFAULTS.defaults.maxIter should be a number");
+    assert.equal(typeof parsed.config.defaults.maxCostUSD, "number", "DEFAULTS.defaults.maxCostUSD should be a number");
+    assert.ok(["small", "medium", "large"].includes(parsed.config.defaults.waveSize), "DEFAULTS.defaults.waveSize should be small|medium|large");
   } finally {
     rmSync(target, { recursive: true, force: true });
   }

@@ -25,7 +25,14 @@ for (const f of FILES) {
 test("agent-all-copilot config-loader: imports load and basic load works", async () => {
   const mod = await import(`../../../${VENDORED}/config-loader.mjs`);
   assert.equal(typeof mod.loadConfig, "function");
-  assert.ok(mod.DEFAULTS.defaults.waveSize);
+  // DEFAULTS.defaults.waveSize must be one of the valid size strings.
+  assert.ok(["small", "medium", "large"].includes(mod.DEFAULTS.defaults.waveSize),
+    "waveSize must be small|medium|large");
+  // loadConfig on a missing path returns defaults without errors.
+  const r = mod.loadConfig("/nonexistent/path/config.json");
+  assert.equal(r.ok, true, "loadConfig on missing file must return ok=true with defaults");
+  assert.ok(r.config, "loadConfig on missing file must return a config object");
+  assert.equal(r.config.defaults.waveSize, mod.DEFAULTS.defaults.waveSize);
 });
 
 test("agent-all-copilot wave-builder: buildWaves runs", async () => {

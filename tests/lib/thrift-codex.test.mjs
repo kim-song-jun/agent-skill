@@ -22,10 +22,10 @@ function tmp() {
 
 // ---------- plugin scaffold layout ----------
 
-test("plugin.json exists with correct name and v0.6.6", () => {
+test("plugin.json exists with correct name and v0.6.7", () => {
   const p = JSON.parse(readFileSync(resolve(PLUGIN_ROOT, ".claude-plugin/plugin.json"), "utf-8"));
   assert.equal(p.name, "harness-thrift-codex");
-  assert.equal(p.version, "0.6.6");
+  assert.equal(p.version, "0.6.7");
   assert.match(p.description, /Codex/);
   assert.ok(p.keywords.includes("codex"));
 });
@@ -182,8 +182,9 @@ test("cost-estimator: estimateSession aggregates per-model", () => {
     { tokensInUncached: 200_000, tokensInCached: 0, tokensOut: 1_000, model: "gpt-5-nano" },
   ];
   const r = estimateSession(records);
-  assert.ok(r.actualUSD > 0);
-  assert.ok(r.baselineUSD >= r.actualUSD);
+  assert.equal(r.actualUSD, 2.2612);
+  assert.equal(r.baselineUSD, 2.5112);
+  assert.ok(r.baselineUSD > r.actualUSD, "cached reads must reduce cost vs baseline");
   assert.equal(r.perModel["gpt-5"].calls, 2);
   assert.equal(r.perModel["gpt-5-nano"].calls, 1);
 });
