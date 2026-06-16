@@ -142,6 +142,21 @@ const VERIFICATION_ADAPTER_TARGETS = [
 ].map((p) => resolve(repoRoot, p));
 const VERIFICATION_ADAPTER_FILES = ["schema.mjs", "evidence-writer.mjs", "registry.mjs"];
 
+// Leaf visual-qa libs each port's shallow-clicker imports (computeElementIdentity,
+// resolveTarget/parseAction) but that were never vendored — a dangling
+// import / ERR_MODULE_NOT_FOUND in all four visual-qa ports until now.
+const VISUAL_QA_SHARED_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/visual-qa/lib",
+);
+const VISUAL_QA_SHARED_TARGETS = [
+  "plugins/harness-floor-cursor/skills/visual-qa-cursor/lib",
+  "plugins/harness-floor-copilot/skills/visual-qa-copilot/lib",
+  "plugins/harness-floor-codex/skills/visual-qa-codex/lib",
+  "plugins/harness-floor-gemini/skills/visual-qa-gemini/lib",
+].map((p) => resolve(repoRoot, p));
+const VISUAL_QA_SHARED_FILES = ["element-identity.mjs", "targets-filter.mjs"];
+
 const DATA_HELPER_SOURCE = resolve(
   repoRoot,
   "plugins/harness-floor/skills/agent-all/lib/data",
@@ -477,6 +492,24 @@ function collectDrift() {
       }
     }
   }
+  // shared visual-qa leaf libs (Claude source → all platform visual-qa copies).
+  for (const file of VISUAL_QA_SHARED_FILES) {
+    const sourcePath = resolve(VISUAL_QA_SHARED_SOURCE, file);
+    const sourceContent = readOrNull(sourcePath);
+    if (sourceContent == null) {
+      console.error(`Source missing: ${sourcePath}`);
+      process.exit(2);
+    }
+    for (const dest of VISUAL_QA_SHARED_TARGETS) {
+      const destPath = resolve(dest, file);
+      const destContent = readOrNull(destPath);
+      if (destContent == null) {
+        drift.push({ file, dest: destPath, reason: "missing", sourceContent });
+      } else if (destContent !== sourceContent) {
+        drift.push({ file, dest: destPath, reason: "diverged", sourceContent });
+      }
+    }
+  }
   // data verification helper libs (Claude source → all platform agent-all copies).
   for (const file of DATA_HELPER_FILES) {
     const sourcePath = resolve(DATA_HELPER_SOURCE, file);
@@ -735,6 +768,7 @@ function totalChecked() {
     + TASK_DOC_WRITER_TARGETS.length
     + TASK_LEDGER_LIB_TARGETS.length
     + VERIFICATION_ADAPTER_FILES.length * VERIFICATION_ADAPTER_TARGETS.length
+    + VISUAL_QA_SHARED_FILES.length * VISUAL_QA_SHARED_TARGETS.length
     + DATA_HELPER_FILES.length * DATA_HELPER_TARGETS.length
     + SECURITY_HELPER_FILES.length * SECURITY_HELPER_TARGETS.length
     + INTERACTION_HELPER_FILES.length * INTERACTION_HELPER_TARGETS.length
