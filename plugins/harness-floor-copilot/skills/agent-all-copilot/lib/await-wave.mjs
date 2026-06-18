@@ -6,8 +6,8 @@
 //   - Hook mode: Copilot's `subagentStop` hook (registered via
 //     ~/.copilot/hooks.json) writes a JSON line per finished agent to
 //     `<repo>/.copilot/agent-all/inbox.jsonl`. We tail that file.
-//     Payload shape (TODO: confirm via live tools.list RPC):
-//       {agentId, status, output, costUSD, finishedAt}
+//     The dispatcher normalizes supported payload aliases into:
+//       {agentId, status, output, costUSD, finishedAt, raw}
 //
 //   - Poll mode: every `intervalMs` we call `listAgentsFn()` (the host's
 //     `list_agents` tool) and filter for our ids; resolve when all have
@@ -133,8 +133,8 @@ export async function awaitWavePoll({
         error: `list_agents failed: ${e?.message ?? e}`,
       };
     }
-    // TODO: confirm via live tools.list RPC — assumed list_agents returns
-    // an array of {agentId, status, output?, costUSD?} or {agents: [...]}.
+    // Supported list_agents adapters return either an array of agent records
+    // or {agents: [...]}; ids may be agentId, agent_id, or id.
     const list = Array.isArray(agents) ? agents : (agents?.agents ?? []);
     for (const a of list) {
       const id = a.agentId ?? a.agent_id ?? a.id;

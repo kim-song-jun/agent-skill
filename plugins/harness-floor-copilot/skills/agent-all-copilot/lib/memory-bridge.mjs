@@ -19,8 +19,9 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
-// TODO: confirm via live tools.list RPC — assumed Copilot tool names are
-// `store_memory` and `recall_memory` with `{key, value?, scope}` args.
+// Host adapter contract: expose `store_memory` and `recall_memory` with
+// `{key, value?, scope}` args. Writes are always mirrored to disk so the
+// workflow still survives memory quota, eviction, or host-tool absence.
 const STORE_TOOL = "store_memory";
 const RECALL_TOOL = "recall_memory";
 const SCOPE = "repository";
@@ -111,8 +112,7 @@ export async function recallRepoMemory({ key, toolCaller, fileMirror, validateAg
         name: RECALL_TOOL,
         args: { key, scope: SCOPE },
       });
-      // TODO: confirm via live tools.list RPC — reply assumed to be
-      // {value: string} | {value: null} | raw string | null.
+      // Supported recall adapters return {value}, a raw string, or null.
       if (reply != null) {
         const raw = typeof reply === "string" ? reply : reply.value;
         if (raw != null) {

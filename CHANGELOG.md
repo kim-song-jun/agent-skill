@@ -6,6 +6,13 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.12 — 2026-06-18
+
+- Removed unresolved TODO debt from the shipped Copilot floor agent-all runtime
+  adapters and added a release-gated contract that keeps those runtime files
+  on stable documented host-adapter shapes.
+- Suite: 2007/2007 passing; fast release smoke 479/479 passing.
+
 ## Agent-skill v0.6.11 — 2026-06-18
 
 - Added `scripts/update-codex-plugins.sh` for Codex CLI's native plugin

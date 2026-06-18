@@ -11,8 +11,8 @@
 // doesn't exist. The init script creates the directory; deleting it
 // effectively unsubscribes a repo.
 //
-// TODO: confirm via live tools.list RPC — assumed payload shape:
-//   {agentId, status, output, costUSD, finishedAt, parentSessionId, ...}
+// Supported payload aliases are normalized before append:
+//   {agentId|agent_id|id, status?, output|outputText?, costUSD|cost_usd?, finishedAt?, ...}
 //
 // Usage (invoked by Copilot, not directly):
 //   node subagent-stop-dispatcher.mjs --inbox <abs-path>

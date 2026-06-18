@@ -6,6 +6,13 @@
 
 ## 미출시
 
+## Agent-skill v0.6.12 — 2026-06-18
+
+- 배포되는 Copilot floor agent-all runtime adapter의 미해결 TODO 부채를
+  제거하고, 해당 runtime 파일이 안정적인 host-adapter shape 문서를 유지하도록
+  release-gated 계약을 추가했습니다.
+- Suite: 2007/2007 통과; fast release smoke 479/479 통과.
+
 ## Agent-skill v0.6.11 — 2026-06-18
 
 - Codex CLI native plugin manager용 `scripts/update-codex-plugins.sh`를

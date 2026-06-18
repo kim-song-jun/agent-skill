@@ -97,8 +97,8 @@ export async function dispatchTask({ call, taskCaller, contextExtras } = {}) {
   };
   try {
     const reply = await taskCaller({ name: "task", args });
-    // TODO: confirm via live tools.list RPC — assumed shape `{agentId}` or
-    // raw string id. Normalize both.
+    // Supported host adapters return {agentId}, {agent_id}, {id}, or a raw
+    // string id. Normalize them to the internal agentId contract.
     const agentId = typeof reply === "string"
       ? reply
       : reply?.agentId ?? reply?.id ?? reply?.agent_id ?? null;

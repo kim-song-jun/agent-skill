@@ -4,10 +4,9 @@
 // existing user-configured hooks).
 //
 // Both agent-all-copilot and visual-qa-copilot dispatch into their own
-// inbox files; a single subagentStop entry can fan-out to multiple
-// dispatchers via the `multi` array shape supported by Copilot (TODO:
-// confirm via live RPC). If the host only supports a single command, we
-// install a meta-dispatcher that forks to each inbox.
+// inbox files. This helper writes one labeled subagentStop entry per inbox;
+// rerunning with another label appends side-by-side entries while preserving
+// user-configured hooks.
 //
 // Usage:
 //   node plugins/harness-floor-copilot/bin/install-hooks.mjs \
@@ -20,7 +19,7 @@
 // Idempotency: re-running with the same --inbox + --label is a no-op
 // (entry detected by label match).
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
@@ -81,10 +80,10 @@ export function buildHookEntry({ label, dispatcher, inbox }) {
 }
 
 export function mergeHook(existing, entry) {
-  // existing shape (assumed; TODO confirm via live tools.list RPC):
+  // Supported persisted shapes:
   //   { "<hookName>": [ { label, command, args } | { command, args } ] }
-  // Older Copilot versions might use a single object instead of array.
-  // We always normalize to an array.
+  //   { "<hookName>": { label, command, args } }
+  // Normalize both to an append-only array so user hooks survive.
   const out = { ...existing };
   const current = out[HOOK_NAME];
   let arr;

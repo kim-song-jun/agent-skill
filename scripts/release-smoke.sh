@@ -133,6 +133,7 @@ run_step "focused release contracts" \
     tests/lib/release-install-scripts.test.mjs \
     tests/lib/update-script-contract.test.mjs \
     tests/lib/codex-native-update-script.test.mjs \
+    tests/lib/copilot/agent-all-runtime-debt.test.mjs \
     tests/lib/release-doc-contract.test.mjs \
     tests/lib/skill-eval.test.mjs \
     tests/lib/github-governance.test.mjs \
