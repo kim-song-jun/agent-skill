@@ -26,7 +26,7 @@ All six phases (0 preflight → 5 audit) are supported.
 Once registered in the marketplace:
 
 ```
-codex plugins install harness-thrift-codex
+codex plugin add harness-thrift-codex@agent-skill
 ```
 
 Then in your project:

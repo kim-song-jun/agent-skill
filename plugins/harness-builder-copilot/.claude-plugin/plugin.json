@@ -1,6 +1,6 @@
 {
   "name": "harness-builder-copilot",
-  "version": "0.6.10",
+  "version": "0.6.11",
   "description": "Run agent-init for GitHub Copilot CLI — emits .github/copilot-instructions.md + AGENTS.md",
   "keywords": [
     "harness",

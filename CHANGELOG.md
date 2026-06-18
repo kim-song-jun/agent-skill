@@ -6,6 +6,13 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.11 — 2026-06-18
+
+- Added `scripts/update-codex-plugins.sh` for Codex CLI's native plugin
+  manager, including marketplace registration fallback, forced plugin refresh,
+  and `codex plugin list` verification.
+- Suite: 2006/2006 passing; fast release smoke 478/478 passing.
+
 ## Agent-skill v0.6.10 — 2026-06-18
 
 - Corrected the Codex Quickstart and README platform guidance for Codex CLI

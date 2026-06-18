@@ -6,6 +6,13 @@
 
 ## 미출시
 
+## Agent-skill v0.6.11 — 2026-06-18
+
+- Codex CLI native plugin manager용 `scripts/update-codex-plugins.sh`를
+  추가했습니다. marketplace 등록 fallback, 강제 plugin refresh, `codex plugin
+  list` 검증을 포함합니다.
+- Suite: 2006/2006 통과; fast release smoke 478/478 통과.
+
 ## Agent-skill v0.6.10 — 2026-06-18
 
 - Codex CLI 0.140.0의 native `codex plugin marketplace` /

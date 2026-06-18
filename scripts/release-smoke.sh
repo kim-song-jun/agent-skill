@@ -118,6 +118,9 @@ run_step "Claude marketplace dry-run" \
 run_step "Codex marketplace dry-run" \
   bash "$REPO_ROOT/scripts/install-all.sh" --dry-run --cli=codex
 
+run_step "Codex native plugin updater dry-run" \
+  bash "$REPO_ROOT/scripts/update-codex-plugins.sh" --dry-run
+
 run_step "focused release contracts" \
   node --test \
     tests/lib/agent-init-dry-run-contract.test.mjs \
@@ -129,6 +132,7 @@ run_step "focused release contracts" \
     tests/lib/release-command-surface.test.mjs \
     tests/lib/release-install-scripts.test.mjs \
     tests/lib/update-script-contract.test.mjs \
+    tests/lib/codex-native-update-script.test.mjs \
     tests/lib/release-doc-contract.test.mjs \
     tests/lib/skill-eval.test.mjs \
     tests/lib/github-governance.test.mjs \

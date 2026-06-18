@@ -8,7 +8,16 @@ Codex의 skill 및 prompt-level surface를 따릅니다.
 
 ## 설치
 
-Codex CLI 0.140.0 이상은 native plugin manager를 포함합니다. marketplace를 한
+Codex CLI 0.140.0 이상은 native plugin manager를 포함합니다. `agent-skill`
+checkout에서 native updater를 사용합니다.
+
+```bash
+git clone https://github.com/kim-song-jun/agent-skill /tmp/agent-skill
+cd /tmp/agent-skill
+./scripts/update-codex-plugins.sh
+```
+
+수동 fallback도 같은 단수형 Codex plugin surface를 사용합니다. marketplace를 한
 번 등록합니다.
 
 ```bash
@@ -21,7 +30,7 @@ codex plugin marketplace add https://github.com/kim-song-jun/agent-skill
 codex plugin marketplace upgrade agent-skill
 ```
 
-그 다음 Codex plugin set을 설치합니다.
+그 다음 Codex plugin set을 설치하거나 갱신합니다.
 
 ```bash
 codex plugin add harness-builder-codex@agent-skill

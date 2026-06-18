@@ -8,7 +8,16 @@ uses Codex's current skill and prompt-level surfaces.
 
 ## Install
 
-Codex CLI 0.140.0 and newer include a native plugin manager. Register the
+Codex CLI 0.140.0 and newer include a native plugin manager. From an
+`agent-skill` checkout, use the native updater:
+
+```bash
+git clone https://github.com/kim-song-jun/agent-skill /tmp/agent-skill
+cd /tmp/agent-skill
+./scripts/update-codex-plugins.sh
+```
+
+Manual fallback uses the same singular Codex plugin surface. Register the
 marketplace once:
 
 ```bash
@@ -21,7 +30,7 @@ If the marketplace is already configured, refresh its snapshot instead:
 codex plugin marketplace upgrade agent-skill
 ```
 
-Then install the Codex plugin set:
+Then install or refresh the Codex plugin set:
 
 ```bash
 codex plugin add harness-builder-codex@agent-skill
