@@ -45,7 +45,7 @@ function makeTmp() {
 test("plugin.json: name + version match the spec", () => {
   const p = JSON.parse(readFileSync(resolve(PLUGIN_ROOT, ".claude-plugin/plugin.json"), "utf-8"));
   assert.equal(p.name, "harness-thrift-cursor");
-  assert.equal(p.version, "0.6.7");
+  assert.equal(p.version, "0.6.8");
   assert.match(p.description, /Cursor/);
   assert.match(p.description, /advisory/i);
   assert.ok(Array.isArray(p.keywords) && p.keywords.includes("cursor"));
@@ -53,9 +53,9 @@ test("plugin.json: name + version match the spec", () => {
 
 // ---------- SKILL.md ----------
 
-test("SKILL.md: has thrift-cursor name frontmatter", () => {
+test("SKILL.md: has canonical thrift name frontmatter", () => {
   const md = readFileSync(resolve(SKILL_ROOT, "SKILL.md"), "utf-8");
-  assert.match(md, /^---\nname: thrift-cursor/);
+  assert.match(md, /^---\nname: thrift/);
   assert.match(md, /Cursor port/);
   assert.match(md, /advisory/i);
 });

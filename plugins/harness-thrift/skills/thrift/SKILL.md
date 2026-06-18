@@ -1,11 +1,9 @@
 ---
 name: thrift
 description: >
-  Cost-conscious long-session optimisation. Aggressive context-mode integration,
-  prompt cache priming, automatic summariser hooks, end-of-session audit.
-  Use /thrift to set up; /thrift summarise to manually trigger; /thrift audit
-  for ad-hoc cost report. Designed for sessions ≥1 hour where context
-  accumulation drives cost.
+  Use when a long scaffolded agent session needs cost control, context growth
+  management, summarisation, prompt cache priming, or an end-of-session cost
+  audit.
 ---
 
 # /thrift

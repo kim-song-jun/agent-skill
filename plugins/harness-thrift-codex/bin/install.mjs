@@ -12,6 +12,7 @@
 //
 // What gets installed to <target>:
 //   .thrift.json                                       (config seed)
+//   .codex/skills/thrift/                              (project-local skill)
 //   .codex/hooks/thrift-*.toml                         (rendered TOML snippets — for reference)
 //
 // And — unless --no-instrument:
@@ -22,7 +23,7 @@
 // pass --config or run without --no-instrument only after the target
 // config exists and command-hook instrumentation is approved.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, cpSync, rmSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
@@ -32,6 +33,7 @@ import { patchCodexConfig, buildStandardThriftCodexHooks } from "../skills/thrif
 const here = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = resolve(here, "..");
 const SKILL_ROOT = resolve(pluginRoot, "skills/thrift-codex");
+const SKILL_DEST = ".codex/skills/thrift";
 const HOOK_TEMPLATES_DIR = resolve(SKILL_ROOT, "templates/hooks");
 const CONFIG_TEMPLATE = resolve(SKILL_ROOT, "templates/thrift.config.json.hbs");
 
@@ -108,6 +110,22 @@ function writeRendered({ srcPath, dstPath, ctx, force, dryRun }) {
   return rendered;
 }
 
+function installSkill({ target, force, dryRun }) {
+  const dstPath = resolve(target, SKILL_DEST);
+  if (existsSync(dstPath) && !force) {
+    console.error(`Refusing to overwrite ${dstPath} (use --force)`);
+    process.exit(2);
+  }
+  if (dryRun) {
+    console.log(`${existsSync(dstPath) ? "would replace" : "would install"} ${dstPath}`);
+    return;
+  }
+  mkdirSync(dirname(dstPath), { recursive: true });
+  if (existsSync(dstPath)) rmSync(dstPath, { recursive: true, force: true });
+  cpSync(SKILL_ROOT, dstPath, { recursive: true });
+  console.log(`${force ? "replaced" : "installed"} ${dstPath}`);
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const target = resolve(args.target);
@@ -117,6 +135,8 @@ function main() {
   }
   const hooksDir = resolve(target, ".codex/hooks");
   const ctx = loadCtx(args.ctxPath, { hooksDir });
+
+  installSkill({ target, force: args.force, dryRun: args.dryRun });
 
   // 1. Render config seed
   writeRendered({
@@ -192,6 +212,7 @@ function main() {
   console.log("");
   console.log("Thrift-codex install summary:");
   console.log(`  target:       ${target}`);
+  console.log(`  skill:        ${SKILL_DEST}/`);
   console.log(`  config:       .thrift.json`);
   console.log(`  snippets:     ${hookFiles.length} TOML snippet(s) + ${hookBodies.length} hook body .mjs in .codex/hooks/`);
   console.log(`  codex config: ${codexConfigPath}`);

@@ -7,7 +7,7 @@
 // time. So this installer primarily:
 //
 //   1. Verifies the target is a git repo (warn-only).
-//   2. Installs `.codex/skills/debug-codex/` into the target project.
+//   2. Installs `.codex/skills/debug/` into the target project.
 //   3. Creates `.debug-artifacts/` and `.agent-skill/reports/debug/` directories so
 //      Phase 1 and Phase 5 have somewhere to write.
 //   4. Writes a `.gitignore` entry for `.debug-artifacts/` so the
@@ -77,7 +77,7 @@ function ensureDir(target, sub, dryRun) {
 }
 
 function installSkill(target, { dryRun, force }) {
-  const dest = resolve(target, ".codex/skills/debug-codex");
+  const dest = resolve(target, ".codex/skills/debug");
   if (!existsSync(SKILL_SOURCE)) {
     console.error(`Error: source skill directory missing: ${SKILL_SOURCE}`);
     process.exit(2);
@@ -170,7 +170,7 @@ function main() {
   console.log("");
   console.log("Debug install summary:");
   console.log(`  target:       ${target}`);
-  console.log(`  skill:        .codex/skills/debug-codex/`);
+  console.log(`  skill:        .codex/skills/debug/`);
   console.log(`  artifacts:    .debug-artifacts/   (raw logs land here at Phase 1)`);
   console.log(`  docs:         .agent-skill/reports/debug/         (debug-log.md land here at Phase 5)`);
   console.log(`  gitignore:    ${args.noGitignore ? "skipped" : "patched (.debug-artifacts/)"}`);

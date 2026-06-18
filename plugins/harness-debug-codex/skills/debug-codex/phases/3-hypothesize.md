@@ -39,7 +39,7 @@ mechanical.
      these in order of easiest-to-test first" recommendation as an
      `agent-interaction/v1` decision
      (`id: "debug:hypothesis-candidate"`) through
-     `../agent-all-codex/lib/interactions/renderer-codex.mjs` and let
+     `../agent-all/lib/interactions/renderer-codex.mjs` and let
      them pick. High-risk experiments must use option `risk: "high"`
      and cannot be auto-selected by `resolveNonTtyInteraction()`.
 

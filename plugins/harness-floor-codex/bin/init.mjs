@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// harness-floor-codex install — emits visual-qa-codex + agent-all-codex
+// harness-floor-codex install — emits visual-qa + agent-all
 // config seeds into the target project. Also prints the Playwright MCP
 // snippet (TOML) for the user to merge into ~/.codex/config.toml.
 // Codex agent-dispatch hooks are not emitted because current Codex hooks
@@ -29,10 +29,10 @@ const INSTALL_MAP = {
 
 const SKILL_DIR_MAP = {
   "visual-qa": [
-    { srcDir: "skills/visual-qa-codex", dstDir: ".codex/skills/visual-qa-codex" },
+    { srcDir: "skills/visual-qa-codex", dstDir: ".codex/skills/visual-qa" },
   ],
   "agent-all": [
-    { srcDir: "skills/agent-all-codex", dstDir: ".codex/skills/agent-all-codex" },
+    { srcDir: "skills/agent-all-codex", dstDir: ".codex/skills/agent-all" },
   ],
 };
 

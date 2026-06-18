@@ -130,8 +130,9 @@ test("doctor validates an installed Codex operational scaffold", () => {
     assert.equal(data.platform, "codex");
     assert.equal(data.profile, "operational");
     assert.ok(data.summary.passed >= 20, "expected a broad Codex operational check set");
-    assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug-codex/SKILL.md"), "operational doctor must validate debug skill");
-    assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug-codex/lib/debug-artifacts.mjs"), "operational doctor must validate debug artifact helper");
+    assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug/SKILL.md"), "operational doctor must validate debug skill");
+    assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug/lib/debug-artifacts.mjs"), "operational doctor must validate debug artifact helper");
+    assert.ok(data.checks.some((check) => check.path === ".codex/skills/thrift/SKILL.md"), "operational doctor must validate thrift skill");
     assert.ok(data.checks.some((check) => check.path === ".agent-skill/reports/debug/index.md"), "operational doctor must validate debug docs");
     assert.deepEqual(data.failures, []);
     const foundationWarning = data.warnings.find((warning) => /foundations missing: superpowers, context-mode/.test(warning.message));
@@ -196,7 +197,7 @@ test("doctor accepts Codex lite but fails the same target when operational is re
 
     assert.notEqual(operational.status, 0, "lite scaffold must not satisfy operational checks");
     const output = `${operational.stdout}\n${operational.stderr}`;
-    assert.match(output, /\.codex\/skills\/agent-all-codex\/SKILL\.md|\.agent-all\.json/);
+    assert.match(output, /\.codex\/skills\/agent-all\/SKILL\.md|\.agent-all\.json/);
     assert.match(output, /fix: \.\/scripts\/install-platform\.sh --platform=codex --target=<project> --force # restores \.agent-all\.json/);
   } finally {
     rmSync(target, { recursive: true, force: true });
@@ -235,11 +236,11 @@ test("doctor validates a Codex debug-only scaffold without requiring builder fil
     const data = JSON.parse(auto.stdout);
     assert.equal(data.ok, true);
     assert.equal(data.profile, "debug");
-    assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug-codex/SKILL.md"));
-    assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug-codex/lib/debug-artifacts.mjs"));
+    assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug/SKILL.md"));
+    assert.ok(data.checks.some((check) => check.path === ".codex/skills/debug/lib/debug-artifacts.mjs"));
     assert.ok(!data.checks.some((check) => check.path === "AGENTS.md"), "debug profile must not require builder root guidance");
 
-    rmSync(resolve(target, ".codex/skills/debug-codex"), { recursive: true, force: true });
+    rmSync(resolve(target, ".codex/skills/debug"), { recursive: true, force: true });
     const broken = spawnSync(process.execPath, [
       DOCTOR,
       "--platform=codex",
@@ -253,11 +254,11 @@ test("doctor validates a Codex debug-only scaffold without requiring builder fil
 
     assert.notEqual(broken.status, 0, "missing debug skill must fail debug doctor");
     const brokenData = JSON.parse(broken.stdout);
-    const debugFailure = brokenData.failures.find((failure) => failure.path === ".codex/skills/debug-codex/SKILL.md");
+    const debugFailure = brokenData.failures.find((failure) => failure.path === ".codex/skills/debug/SKILL.md");
     assert.ok(debugFailure);
     assert.equal(
       debugFailure.fix,
-      "./scripts/install-platform.sh --platform=codex --target=<project> --theme=debug --force # restores .codex/skills/debug-codex/SKILL.md",
+      "./scripts/install-platform.sh --platform=codex --target=<project> --theme=debug --force # restores .codex/skills/debug/SKILL.md",
     );
   } finally {
     rmSync(target, { recursive: true, force: true });

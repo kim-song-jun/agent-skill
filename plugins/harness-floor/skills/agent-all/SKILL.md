@@ -1,6 +1,6 @@
 ---
 name: agent-all
-description: Cost-unrestricted multi-agent pipeline. Drives intent→plan→wave-dispatch→gate→PR over the .claude/agents/ roster, with optional --loop until a break-condition succeeds (bounded by optional max-iter, max-cost, and max-runtime policy). Requires /agent-init scaffolding.
+description: Use when a scaffolded project needs a full feature, bugfix, or task run from intent through planning, implementation, review, verification, and optional PR creation.
 ---
 
 # /agent-all

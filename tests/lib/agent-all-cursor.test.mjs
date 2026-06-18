@@ -7,7 +7,7 @@ const SKILL_ROOT = "plugins/harness-floor-cursor/skills/agent-all-cursor";
 
 test("agent-all-cursor: SKILL.md exists with name frontmatter", () => {
   const md = readFileSync(resolve(SKILL_ROOT, "SKILL.md"), "utf-8");
-  assert.match(md, /^---\nname: agent-all-cursor/);
+  assert.match(md, /^---\nname: agent-all/);
   assert.ok(md.includes("prompt-template approach"));
 });
 

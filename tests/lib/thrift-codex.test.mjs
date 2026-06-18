@@ -22,18 +22,18 @@ function tmp() {
 
 // ---------- plugin scaffold layout ----------
 
-test("plugin.json exists with correct name and v0.6.7", () => {
+test("plugin.json exists with correct name and v0.6.8", () => {
   const p = JSON.parse(readFileSync(resolve(PLUGIN_ROOT, ".claude-plugin/plugin.json"), "utf-8"));
   assert.equal(p.name, "harness-thrift-codex");
-  assert.equal(p.version, "0.6.7");
+  assert.equal(p.version, "0.6.8");
   assert.match(p.description, /Codex/);
   assert.ok(p.keywords.includes("codex"));
 });
 
 test("SKILL.md exists with name frontmatter and Codex-specific surface", () => {
   const md = readFileSync(resolve(SKILL_ROOT, "SKILL.md"), "utf-8");
-  assert.match(md, /^---\nname: thrift-codex/);
-  assert.ok(md.includes("Codex CLI port"));
+  assert.match(md, /^---\nname: thrift\n/);
+  assert.ok(md.includes("Codex CLI"));
   assert.ok(md.includes("~/.codex/config.toml"));
   assert.ok(md.includes("[hooks]"));
 });

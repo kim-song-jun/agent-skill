@@ -260,16 +260,16 @@ policy/interaction/spawn log, PR body를 scan합니다. High-severity secret
 Codex CLI 프로젝트에서는 Codex 전용 builder/floor 포트를 사용합니다:
 
 ```
-/codex-init
-/codex-init --lite
-/codex-init --lang=ko
-/codex-init --update-foundations
+/agent-init
+/agent-init --lite
+/agent-init --lang=ko
+/agent-init --update-foundations
 run /agent-all for "Hard refactor that needs second-opinion"
 ```
 
-`/codex-init`은 `AGENTS.md`, `.codex/skills/*`, `.codex/hooks/agent-policy-hook.mjs`를 쓰고, `[[hooks.PreToolUse]]` 같은 현재 Codex command hook 형식의 `~/.codex/config.toml` 스니펫을 출력합니다. `/codex-init --lite`는 루트 `AGENTS.md`와 planner/dev/reviewer 스킬만 쓰는 Codex 경량 경로입니다. Codex floor 워크플로는 현재 Codex command hook이 Claude Code의 Task-style subagent dispatch 표면을 제공하지 않기 때문에 프롬프트/순차 dispatch로 동작합니다.
+`/agent-init`은 `AGENTS.md`, `.codex/skills/*`, `.codex/hooks/agent-policy-hook.mjs`를 쓰고, `[[hooks.PreToolUse]]` 같은 현재 Codex command hook 형식의 `~/.codex/config.toml` 스니펫을 출력합니다. `/agent-init --lite`는 루트 `AGENTS.md`와 planner/dev/reviewer 스킬만 쓰는 Codex 경량 경로입니다. Codex floor 워크플로는 현재 Codex command hook이 Claude Code의 Task-style subagent dispatch 표면을 제공하지 않기 때문에 프롬프트/순차 dispatch로 동작합니다.
 
-`/codex-init --lang=ko`는 Codex 상호작용 언어를 `AGENTS.md`에 기록합니다. floor 번들을 설치할 때 `.agent-all.json` `language`도 같은 값으로 유지하세요. `/codex-init --update-foundations`는 승인된 foundation(`superpowers@claude-plugins-official`, `context-mode@context-mode`)만 갱신하며 전역 Codex config를 패치하지 않습니다.
+`/agent-init --lang=ko`는 Codex 상호작용 언어를 `AGENTS.md`에 기록합니다. floor 번들을 설치할 때 `.agent-all.json` `language`도 같은 값으로 유지하세요. `/agent-init --update-foundations`는 승인된 foundation(`superpowers@claude-plugins-official`, `context-mode@context-mode`)만 갱신하며 전역 Codex config를 패치하지 않습니다.
 
 대상 저장소에 shell로 설치할 때는 platform renderer를 사용합니다. Claude는 `/agent-init`과 같은 project-local bootstrapper를 쓰고, Codex 및 다른 도구는 각 플랫폼 전용 renderer를 사용합니다:
 
@@ -285,7 +285,7 @@ run /agent-all for "Hard refactor that needs second-opinion"
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --theme=debug
 ```
 
-기본 renderer 경로는 operational scaffold를 설치합니다. Claude가 아닌 플랫폼은 기본으로 무거운 builder + floor + thrift 번들을 설치하며, Codex `all`은 debug skill도 함께 설치합니다. `--theme=debug`는 `run /debug "<failing command>"`용 `.codex/skills/debug-codex/`, `.debug-artifacts/`, `.agent-skill/reports/debug/`만 설치합니다. Claude `--theme=builder`는 `.visual-qa.json`/`.agent-all.json` 없이 무거운 builder scaffold만 설치합니다. `--lang=ko|en|auto`는 생성된 루트 지침을 맞추고, floor config가 설치될 때는 `.agent-all.json` language 값도 함께 맞춥니다. `--lite`는 builder-only 경로이며 floor/thrift/debug 파일과 전역 Codex config 스니펫을 건너뜁니다. Claude/Codex operational 설치는 가능할 때 승인된 foundation(`superpowers@claude-plugins-official`, `context-mode@context-mode`)만 자동 갱신하고, `claude` CLI가 없거나 승인된 foundation 갱신이 실패하면 degraded foundation 경고를 출력한 뒤 계속 진행합니다. Lite는 기본 자동 foundation 갱신을 건너뛰며, 무거운 artifact 설치 없이 strict foundation 갱신이 필요하면 `--lite --update-foundations`를 함께 사용하세요. `--update-foundations`는 갱신 실패를 strict 실패로 만들 때, `--no-update-foundations`는 opt-out할 때, `--dry-run`은 `claude` 호출 없이 승인된 계획만 볼 때 사용하세요. Claude와 Codex `all`, `builder`, `--lite`, 그리고 Codex `--theme=debug` 설치는 post-install doctor를 자동 실행하며, 검증을 의도적으로 미룰 때만 `--no-doctor`를 넘기세요.
+기본 renderer 경로는 operational scaffold를 설치합니다. Claude가 아닌 플랫폼은 기본으로 무거운 builder + floor + thrift 번들을 설치하며, Codex `all`은 debug skill도 함께 설치합니다. `--theme=debug`는 `run /debug "<failing command>"`용 `.codex/skills/debug/`, `.debug-artifacts/`, `.agent-skill/reports/debug/`만 설치합니다. Claude `--theme=builder`는 `.visual-qa.json`/`.agent-all.json` 없이 무거운 builder scaffold만 설치합니다. `--lang=ko|en|auto`는 생성된 루트 지침을 맞추고, floor config가 설치될 때는 `.agent-all.json` language 값도 함께 맞춥니다. `--lite`는 builder-only 경로이며 floor/thrift/debug 파일과 전역 Codex config 스니펫을 건너뜁니다. Claude/Codex operational 설치는 가능할 때 승인된 foundation(`superpowers@claude-plugins-official`, `context-mode@context-mode`)만 자동 갱신하고, `claude` CLI가 없거나 승인된 foundation 갱신이 실패하면 degraded foundation 경고를 출력한 뒤 계속 진행합니다. Lite는 기본 자동 foundation 갱신을 건너뛰며, 무거운 artifact 설치 없이 strict foundation 갱신이 필요하면 `--lite --update-foundations`를 함께 사용하세요. `--update-foundations`는 갱신 실패를 strict 실패로 만들 때, `--no-update-foundations`는 opt-out할 때, `--dry-run`은 `claude` 호출 없이 승인된 계획만 볼 때 사용하세요. Claude와 Codex `all`, `builder`, `--lite`, 그리고 Codex `--theme=debug` 설치는 post-install doctor를 자동 실행하며, 검증을 의도적으로 미룰 때만 `--no-doctor`를 넘기세요.
 
 릴리즈 artifact는 provenance manifest로 설치/갱신 전에 검증할 수 있습니다:
 

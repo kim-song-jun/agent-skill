@@ -1,13 +1,12 @@
 ---
-name: thrift-codex
+name: thrift
 description: >
-  Codex CLI port of /thrift — cost-conscious long-session optimisation.
-  TOML hooks in ~/.codex/config.toml, OpenAI cost table, session-priming
-  variant of Phase 4. Same six-phase pipeline as harness-thrift (CC);
-  see plugins/harness-thrift/skills/thrift/SKILL.md for source-of-truth.
+  Use when a long Codex CLI session needs cost control, context growth
+  management, summarisation, prompt cache priming, or an end-of-session cost
+  audit.
 ---
 
-# /thrift-codex
+# /thrift
 
 Bootstraps cost-conscious patterns in the current project on Codex CLI.
 Reads `.thrift.json` (or seeds it), patches `~/.codex/config.toml`'s
@@ -25,15 +24,15 @@ run /thrift summarise
 run /thrift audit
 ```
 
-This routes to the local `thrift-codex` workflow contract below. The
-Codex-specific skill name remains visible so installed files, release audits,
-and phase paths can stay platform-explicit.
+The installed project-local skill is named `thrift`. The source directory
+remains `thrift-codex` only to identify the Codex implementation inside this
+repository.
 
 ```
-/thrift-codex                          # one-time setup; idempotent
-/thrift-codex summarise                # manual summariser trigger
-/thrift-codex audit                    # write audit report now
-/thrift-codex --force                  # re-seed .thrift.json
+/thrift                          # one-time setup; idempotent
+/thrift summarise                # manual summariser trigger
+/thrift audit                    # write audit report now
+/thrift --force                  # re-seed .thrift.json
 ```
 
 ## Flags

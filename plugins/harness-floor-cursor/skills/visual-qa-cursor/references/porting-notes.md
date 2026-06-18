@@ -18,7 +18,7 @@ All 6 phases (0-preflight, 1-config, 2-discover, 3-capture+analyze,
 `plugins/harness-floor/skills/visual-qa/SKILL.md`. Differences concentrate
 in Phase 3:
 
-| Aspect | Claude Code (`/visual-qa`) | Cursor (`visual-qa-cursor`) |
+| Aspect | Claude Code (`/visual-qa`) | Cursor (`/visual-qa` port) |
 |---|---|---|
 | Page subagent dispatch | `Skill: dispatching-parallel-agents` + `Task` tool per page | `@visual-qa-page` invocations with `is_background: true` |
 | Awaiter | `await Promise.all(tasks)` in orchestrator | Cursor planner; coordinator waits for all background chats |

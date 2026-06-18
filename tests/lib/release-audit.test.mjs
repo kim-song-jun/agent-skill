@@ -742,7 +742,7 @@ test("release audit fails incomplete Codex slash-command skill surfaces", () => 
     (check) => !check.ok && check.name.includes("codex-init/SKILL.md"),
   );
   assert.ok(failed, JSON.stringify(result.platforms.codex.checks, null, 2));
-  assert.match(failed.details, /\/codex-init/);
+  assert.match(failed.details, /\/agent-init/);
 
   const staleEntrypoint = result.platforms.codex.checks.find(
     (check) => !check.ok && check.name.includes("agent-all-codex/SKILL.md"),

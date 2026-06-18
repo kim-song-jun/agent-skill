@@ -1,16 +1,11 @@
 ---
-name: thrift-copilot
+name: thrift
 description: >
-  Cost-conscious long-session optimisation for GitHub Copilot CLI. Aggressive
-  context-mode integration (when context-mode-copilot is installed), automatic
-  summariser hooks via .github/hooks/*.json, end-of-session audit, and
-  store_memory mirroring for cross-session continuity. Phase 4 cache prime is
-  disabled by default because Copilot intermediates the underlying model
-  layer. Use /thrift-copilot to set up; /thrift-copilot summarise to manually
-  trigger; /thrift-copilot audit for ad-hoc cost report.
+  Use when a long GitHub Copilot CLI session needs cost control, context growth
+  management, summarisation, memory mirroring, or an end-of-session cost audit.
 ---
 
-# /thrift-copilot
+# /thrift (Copilot port)
 
 Bootstraps cost-conscious patterns in a Copilot-CLI project. Reads
 `.thrift.json` (or seeds it), patches `.github/hooks/thrift-*.json` with

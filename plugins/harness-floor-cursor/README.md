@@ -42,13 +42,13 @@ Open Cursor chat in the target repository and invoke the coordinator:
 @agent-all-coordinator run /agent-all using .agent-skill/tasks/12-fix-login.md --loop --max-iter=5
 ```
 
-For visual checks, ask Cursor to follow `visual-qa-cursor`; the installed
+For visual checks, ask Cursor to follow `/visual-qa`; the installed
 `visual-qa-page` background agent handles page-level capture and analysis.
 
 ## Runtime Shape
 
-`agent-all-cursor` runs intent -> plan -> background implementer dispatch ->
-review gate -> PR summary. `visual-qa-cursor` runs config -> discover ->
+The Cursor `/agent-all` port runs intent -> plan -> background implementer dispatch ->
+review gate -> PR summary. The Cursor `/visual-qa` port runs config -> discover ->
 capture -> aggregate -> summary. Cursor handles parallelism by matching
 `.cursor/agents/*.md` descriptions and using `is_background: true`; the
 installed libs handle config loading, state, report rendering, and result

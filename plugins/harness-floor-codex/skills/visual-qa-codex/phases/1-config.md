@@ -74,7 +74,7 @@
 
 4. Unless `--yes` or the estimate is within `--budget`, build an
    `agent-interaction/v1` confirmation and render it with
-   `../agent-all-codex/lib/interactions/renderer-codex.mjs`. Use
+   `../agent-all/lib/interactions/renderer-codex.mjs`. Use
    `kind: "budget_warning"` when cost or capture count is high; use
    `kind: "confirmation"` otherwise. Append the result to
    `.agent-skill/runs/<run-id>/interactions.jsonl` with

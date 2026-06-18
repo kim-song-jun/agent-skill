@@ -1,6 +1,6 @@
 ---
 name: visual-qa
-description: Cost-unrestricted visual QA. Drives Playwright MCP to capture a configured matrix of screenshots (pages × components × states × breakpoints + flows), runs LLM analysis per image, diffs vs prior run, writes a markdown+JSON report. Supports two modes — `declared` (manual selector list) and `comprehensive` (crawl + DOM walk auto-discovery, shallow click expansion, baseline-relative verdict). Requires `.visual-qa.json` at project root.
+description: Use when a scaffolded project needs browser screenshot capture, visual regression review, UI state coverage, or Playwright-backed visual QA evidence.
 ---
 
 # /visual-qa

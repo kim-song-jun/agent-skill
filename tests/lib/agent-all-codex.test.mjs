@@ -14,8 +14,8 @@ const ENTERPRISE_DJANGO_VUE = JSON.parse(
 
 test("agent-all-codex: SKILL.md exists with name frontmatter", () => {
   const md = readFileSync(resolve(SKILL_ROOT, "SKILL.md"), "utf-8");
-  assert.match(md, /^---\nname: agent-all-codex/);
-  assert.ok(md.includes("Codex CLI port"));
+  assert.match(md, /^---\nname: agent-all/);
+  assert.ok(md.includes("Codex CLI"));
   assert.ok(md.includes("current Codex hooks"));
   assert.ok(md.includes("sequential"));
 });
@@ -186,7 +186,7 @@ test("agent-all-codex: all template files exist", () => {
   }
 });
 
-test("agent-all-codex: hook snippet does not emit unsupported agent hook", () => {
+test("/agent-all Codex hook snippet does not emit unsupported agent hook", () => {
   const body = readFileSync(
     resolve(SKILL_ROOT, "templates/codex-hooks-snippet.toml.hbs"),
     "utf-8",

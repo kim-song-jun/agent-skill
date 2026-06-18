@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// harness-floor-gemini — Phase 3 wave dispatcher for /agent-all-gemini.
+// harness-floor-gemini — Phase 3 wave dispatcher for /agent-all.
 //
 // Spawns N parallel `gemini chat` subprocesses (one per wave task),
 // awaits them via PID wait OR tmp-file polling, then aggregates results.

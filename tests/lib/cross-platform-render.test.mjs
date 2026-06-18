@@ -129,7 +129,7 @@ const CASES = [
   },
   {
     tpl: "plugins/harness-floor-copilot/skills/agent-all-copilot/templates/pr-body.md.hbs",
-    contains: ["agent-all-copilot", "GitHub Copilot CLI", "## Summary", "## Iteration"],
+    contains: ["`/agent-all`", "GitHub Copilot CLI", "## Summary", "## Iteration"],
   },
   {
     tpl: "plugins/harness-floor-codex/skills/agent-all-codex/templates/agent-all.config.json.hbs",
@@ -137,7 +137,7 @@ const CASES = [
   },
   {
     tpl: "plugins/harness-floor-codex/skills/agent-all-codex/templates/pr-body.md.hbs",
-    contains: ["agent-all-codex", "Codex CLI", "## Summary", "## Iteration"],
+    contains: ["`/agent-all`", "Codex CLI", "## Summary", "## Iteration"],
   },
   {
     tpl: "plugins/harness-floor-codex/skills/agent-all-codex/templates/codex-hooks-snippet.toml.hbs",
@@ -150,7 +150,7 @@ const CASES = [
   },
   {
     tpl: "plugins/harness-floor-gemini/skills/agent-all-gemini/templates/pr-body.md.hbs",
-    contains: ["agent-all-gemini", "Gemini CLI", "## Summary", "## Iteration"],
+    contains: ["`/agent-all`", "Gemini CLI", "## Summary", "## Iteration"],
   },
   // visual-qa full-port templates
   {

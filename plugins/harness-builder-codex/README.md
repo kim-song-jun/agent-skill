@@ -66,7 +66,7 @@ thrift config files, task templates, and generated helper scripts. Root
 
 ## Usage
 
-Run `/codex-init` inside Codex CLI. The skill scaffolds:
+Run `/agent-init` inside Codex CLI. The skill scaffolds:
 
 - Project purpose
 - Size (small/medium/large)
@@ -78,7 +78,7 @@ Run `/codex-init` inside Codex CLI. The skill scaffolds:
 Lite mode:
 
 ```
-/codex-init --lite
+/agent-init --lite
 ```
 
 Lite mode keeps root guidance and the minimal skill roster, and skips task
@@ -87,7 +87,7 @@ ledger, policy hooks, and config patch prompts.
 Language:
 
 ```
-/codex-init --lang=ko
+/agent-init --lang=ko
 ```
 
 Records the selected interaction language in `AGENTS.md`. Keep `.agent-all.json`
@@ -97,8 +97,8 @@ prompts use the same language.
 Foundation updates:
 
 ```
-/codex-init --update-foundations
-/codex-init --dry-run --update-foundations
+/agent-init --update-foundations
+/agent-init --dry-run --update-foundations
 ```
 
 This prints the approved foundation update plan and updates/installs only

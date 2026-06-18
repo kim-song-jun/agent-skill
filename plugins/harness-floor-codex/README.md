@@ -10,7 +10,7 @@ Emits:
 
 - `.visual-qa.json` at project root (capture matrix configuration)
 - `.agent-all.json` at project root
-- `.codex/skills/agent-all-codex/` and `.codex/skills/visual-qa-codex/`
+- `.codex/skills/agent-all/` and `.codex/skills/visual-qa/`
   workflow skill directories, including phases, templates, and runtime libs
 - `.codex/skills/visual-qa-page/SKILL.md` for sequential page dispatch
 - Playwright MCP snippet printed to stdout — merge into `~/.codex/config.toml`
@@ -23,7 +23,7 @@ Emits:
 
 ## Usage
 
-Run `agent-all-codex` or `visual-qa-codex` inside Codex CLI. The skills:
+Run `/agent-all` or `/visual-qa` inside Codex CLI. The skills:
 
 1. Load the generated `AGENTS.md`, workflow skills, and `.codex/skills/*` role guidance.
 2. Dispatch page/task work sequentially through Codex skill prompts.

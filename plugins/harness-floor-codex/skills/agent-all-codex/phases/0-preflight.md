@@ -8,7 +8,7 @@
    `shell_command("git status --porcelain")` empty. If not: abort
    `Stash or commit local changes first.`
 3. Confirm `.codex/skills/` contains at minimum `planner`, `dev`, `reviewer`
-   (each with `SKILL.md`). If not: abort `Run /codex-init first.`
+   (each with `SKILL.md`). If not: abort `Run /agent-init first.`
 4. **Detect dispatch strategy:**
    - Current Codex hooks do not expose the command surface needed for
      this pipeline's previous parallel agent dispatch design.

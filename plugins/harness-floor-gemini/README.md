@@ -6,9 +6,9 @@
 > surfaced by the coordinator and reviewers rather than blocked by the harness
 > layer.
 
-Operational floor support for Gemini CLI. Ships Gemini ports of
-`agent-all-gemini` and `visual-qa-gemini`, with project-local config seeds and
-a Playwright MCP snippet for manual merge into Gemini settings.
+Operational floor support for Gemini CLI. Ships Gemini ports of the canonical
+`/agent-all` and `/visual-qa` workflows, with project-local config seeds and a
+Playwright MCP snippet for manual merge into Gemini settings.
 
 Emits:
 
@@ -30,10 +30,10 @@ prints the settings snippet instead of patching global config.
 ## Usage
 
 Open Gemini CLI in the target repository and ask it to follow the generated
-workflow guidance for `agent-all-gemini` or `visual-qa-gemini`.
+workflow guidance for `/agent-all` or `/visual-qa`.
 
-`agent-all-gemini` runs intent -> plan -> subprocess wave dispatch -> gate ->
-PR. `visual-qa-gemini` runs config -> discover -> capture -> aggregate ->
+The Gemini `/agent-all` port runs intent -> plan -> subprocess wave dispatch -> gate ->
+PR. The Gemini `/visual-qa` port runs config -> discover -> capture -> aggregate ->
 summary. Both ports use `run_shell_command` helpers and output files to manage
 parallel subprocess work.
 

@@ -1,11 +1,9 @@
 ---
-name: thrift-gemini
+name: thrift
 description: >
-  Gemini CLI port of /thrift — cost-conscious long-session optimisation.
-  Patches ~/.gemini/settings.json hooks (BeforeTool/AfterTool/SessionStart)
-  with thrift telemetry + Vertex prompt-cache priming (minimum-token gated,
-  storage-time aware) + gemini-flash summariser advisory. See
-  plugins/harness-thrift/skills/thrift/SKILL.md for source-of-truth.
+  Use when a long Gemini CLI session needs cost control, context growth
+  management, summarisation, prompt cache priming, or an end-of-session cost
+  audit.
 ---
 
 # /thrift (Gemini port)

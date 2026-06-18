@@ -67,7 +67,7 @@ const CLAUDE_BUILDER_ABSENT = [
   ".visual-qa.json",
   ".agent-all.json",
   ".thrift.json",
-  ".codex/skills/debug-codex/SKILL.md",
+  ".codex/skills/debug/SKILL.md",
 ];
 
 const CLAUDE_LITE_PRESENT = [
@@ -123,12 +123,13 @@ const CODEX_OPERATIONAL_PRESENT = [
   ".codex/skills/design-reviewer/SKILL.md",
   ".codex/skills/security-reviewer/SKILL.md",
   ".codex/skills/data-reviewer/SKILL.md",
-  ".codex/skills/agent-all-codex/SKILL.md",
-  ".codex/skills/agent-all-codex/lib/sequential-dispatch.mjs",
-  ".codex/skills/visual-qa-codex/SKILL.md",
-  ".codex/skills/visual-qa-codex/lib/sequential-dispatch.mjs",
+  ".codex/skills/agent-all/SKILL.md",
+  ".codex/skills/agent-all/lib/sequential-dispatch.mjs",
+  ".codex/skills/visual-qa/SKILL.md",
+  ".codex/skills/visual-qa/lib/sequential-dispatch.mjs",
   ".codex/skills/visual-qa-page/SKILL.md",
-  ".codex/skills/debug-codex/SKILL.md",
+  ".codex/skills/thrift/SKILL.md",
+  ".codex/skills/debug/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
   ".codex/hooks/thrift-pretool-bash-telemetry.toml",
   ".agent-skill/tasks/index.md",
@@ -161,7 +162,8 @@ const CODEX_LITE_ABSENT = [
   ".codex/skills/design-reviewer/SKILL.md",
   ".codex/skills/security-reviewer/SKILL.md",
   ".codex/skills/data-reviewer/SKILL.md",
-  ".codex/skills/agent-all-codex/SKILL.md",
+  ".codex/skills/agent-all/SKILL.md",
+  ".codex/skills/thrift/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
   ".agent-skill/tasks/index.md",
   "scripts/agent-task-ledger-check.mjs",
@@ -196,10 +198,11 @@ const CODEX_BUILDER_ABSENT = [
   ".visual-qa.json",
   ".agent-all.json",
   ".thrift.json",
-  ".codex/skills/agent-all-codex/SKILL.md",
-  ".codex/skills/visual-qa-codex/SKILL.md",
+  ".codex/skills/agent-all/SKILL.md",
+  ".codex/skills/visual-qa/SKILL.md",
   ".codex/skills/visual-qa-page/SKILL.md",
-  ".codex/skills/debug-codex/SKILL.md",
+  ".codex/skills/thrift/SKILL.md",
+  ".codex/skills/debug/SKILL.md",
   ".codex/hooks/thrift-pretool-bash-telemetry.toml",
   ".debug-artifacts",
   ".agent-skill/reports/debug/index.md",
@@ -208,10 +211,10 @@ const CODEX_BUILDER_ABSENT = [
 const CODEX_FLOOR_PRESENT = [
   ".visual-qa.json",
   ".agent-all.json",
-  ".codex/skills/agent-all-codex/SKILL.md",
-  ".codex/skills/agent-all-codex/lib/sequential-dispatch.mjs",
-  ".codex/skills/visual-qa-codex/SKILL.md",
-  ".codex/skills/visual-qa-codex/lib/sequential-dispatch.mjs",
+  ".codex/skills/agent-all/SKILL.md",
+  ".codex/skills/agent-all/lib/sequential-dispatch.mjs",
+  ".codex/skills/visual-qa/SKILL.md",
+  ".codex/skills/visual-qa/lib/sequential-dispatch.mjs",
   ".codex/skills/visual-qa-page/SKILL.md",
 ];
 
@@ -222,7 +225,8 @@ const CODEX_FLOOR_ABSENT = [
   ".codex/skills/orchestrator/SKILL.md",
   ".codex/skills/frontend-dev/SKILL.md",
   ".codex/skills/backend-dev/SKILL.md",
-  ".codex/skills/debug-codex/SKILL.md",
+  ".codex/skills/thrift/SKILL.md",
+  ".codex/skills/debug/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
   ".codex/hooks/thrift-pretool-bash-telemetry.toml",
   ".debug-artifacts",
@@ -232,6 +236,7 @@ const CODEX_FLOOR_ABSENT = [
 
 const CODEX_THRIFT_PRESENT = [
   ".thrift.json",
+  ".codex/skills/thrift/SKILL.md",
   ".codex/hooks/thrift-pretool-bash-telemetry.toml",
   ".codex/hooks/thrift-pretool-read-coerce.toml",
   ".codex/hooks/thrift-posttool-summariser-trigger.toml",
@@ -246,9 +251,9 @@ const CODEX_THRIFT_ABSENT = [
   ".codex/skills/planner/SKILL.md",
   ".codex/skills/frontend-dev/SKILL.md",
   ".codex/skills/backend-dev/SKILL.md",
-  ".codex/skills/agent-all-codex/SKILL.md",
-  ".codex/skills/visual-qa-codex/SKILL.md",
-  ".codex/skills/debug-codex/SKILL.md",
+  ".codex/skills/agent-all/SKILL.md",
+  ".codex/skills/visual-qa/SKILL.md",
+  ".codex/skills/debug/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
   ".debug-artifacts",
   ".agent-skill/tasks/index.md",
@@ -256,11 +261,11 @@ const CODEX_THRIFT_ABSENT = [
 ];
 
 const CODEX_DEBUG_PRESENT = [
-  ".codex/skills/debug-codex/SKILL.md",
-  ".codex/skills/debug-codex/lib/debug-artifacts.mjs",
-  ".codex/skills/debug-codex/lib/error-parser.mjs",
-  ".codex/skills/debug-codex/lib/state-checkpoint.mjs",
-  ".codex/skills/debug-codex/phases/1-reproduce.md",
+  ".codex/skills/debug/SKILL.md",
+  ".codex/skills/debug/lib/debug-artifacts.mjs",
+  ".codex/skills/debug/lib/error-parser.mjs",
+  ".codex/skills/debug/lib/state-checkpoint.mjs",
+  ".codex/skills/debug/phases/1-reproduce.md",
   ".debug-artifacts",
   ".agent-skill/reports/debug/index.md",
 ];
@@ -271,8 +276,9 @@ const CODEX_DEBUG_ABSENT = [
   ".codex/skills/orchestrator/SKILL.md",
   ".codex/skills/frontend-dev/SKILL.md",
   ".codex/skills/backend-dev/SKILL.md",
-  ".codex/skills/agent-all-codex/SKILL.md",
-  ".codex/skills/visual-qa-codex/SKILL.md",
+  ".codex/skills/agent-all/SKILL.md",
+  ".codex/skills/visual-qa/SKILL.md",
+  ".codex/skills/thrift/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
   ".agent-skill/tasks/index.md",
   ".visual-qa.json",
@@ -309,9 +315,9 @@ const CODEX_UNINSTALL_REMOVED = [
   ".codex/skills/frontend-dev/SKILL.md",
   ".codex/skills/backend-dev/SKILL.md",
   ".codex/skills/quality-debt-reviewer/SKILL.md",
-  ".codex/skills/agent-all-codex/SKILL.md",
-  ".codex/skills/visual-qa-codex/SKILL.md",
-  ".codex/skills/debug-codex/SKILL.md",
+  ".codex/skills/agent-all/SKILL.md",
+  ".codex/skills/visual-qa/SKILL.md",
+  ".codex/skills/debug/SKILL.md",
   ".codex/hooks/agent-policy-hook.mjs",
   ".codex/hooks/thrift-pretool-bash-telemetry.toml",
   ".agent-skill/tasks/_template.md",
@@ -923,14 +929,14 @@ function checkCodexOperational(root) {
       ok,
       summary: `Codex operational fixture: ${ok ? "ok" : "failed"} (${CODEX_OPERATIONAL_PRESENT.length - missing.length}/${CODEX_OPERATIONAL_PRESENT.length} artifacts)`,
       details: ok
-        ? "fresh git fixture received operational builder, role gate matrix, QA personas, root foundation activation, complete persona foundation/orchestration matrix, Enterprise Django/Vue routing proof, base/specialized reviewer audit tokens, floor, thrift, debug, executable hooks/task checker, configs, post-install operational doctor coverage, and sequential agent-all-codex prompt helper runs from the installed fixture with stack-specific frontend/backend role dispatch; sequential visual-qa-codex page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
+        ? "fresh git fixture received operational builder, role gate matrix, QA personas, root foundation activation, complete persona foundation/orchestration matrix, Enterprise Django/Vue routing proof, base/specialized reviewer audit tokens, floor, thrift, debug, executable hooks/task checker, configs, post-install operational doctor coverage, and sequential /agent-all prompt helper runs from the installed fixture with stack-specific frontend/backend role dispatch; sequential /visual-qa page helper runs from the installed fixture; positional argv omits unsupported --prompt/--skill flags; no HOME patching"
         : compactFailure(res, [...missing, ...failedStdout, ...executableScriptErrors(target, CODEX_EXECUTABLE_GENERATED), agentAllRuntime.ok ? null : agentAllRuntime.details, visualQaRuntime.ok ? null : visualQaRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
 }
 
 function checkCodexAgentAllSequentialRuntime(target, { expectStackRoles = false } = {}) {
-  const helperRel = ".codex/skills/agent-all-codex/lib/sequential-dispatch.mjs";
+  const helperRel = ".codex/skills/agent-all/lib/sequential-dispatch.mjs";
   const helperPath = resolve(target, helperRel);
   if (!existsSync(helperPath)) {
     return { ok: false, details: `missing ${helperRel}` };
@@ -1136,14 +1142,14 @@ if (parsed.commits.length !== 0) {
     ok: res.status === 0,
     details: res.status === 0
       ? expectStackRoles
-        ? "sequential agent-all-codex prompt helper runs from the installed fixture and inlines frontend-dev/backend-dev role skills"
-        : "sequential agent-all-codex prompt helper runs from the installed fixture"
+        ? "sequential /agent-all prompt helper runs from the installed fixture and inlines frontend-dev/backend-dev role skills"
+        : "sequential /agent-all prompt helper runs from the installed fixture"
       : compactFailure(res, [`${helperRel} runtime probe failed`]),
   };
 }
 
 function checkCodexVisualQaSequentialRuntime(target) {
-  const helperRel = ".codex/skills/visual-qa-codex/lib/sequential-dispatch.mjs";
+  const helperRel = ".codex/skills/visual-qa/lib/sequential-dispatch.mjs";
   const helperPath = resolve(target, helperRel);
   if (!existsSync(helperPath)) {
     return { ok: false, details: `missing ${helperRel}` };
@@ -1264,7 +1270,7 @@ if (parsed.errors.length !== 0) {
   return {
     ok: res.status === 0,
     details: res.status === 0
-      ? "sequential visual-qa-codex page helper runs from the installed fixture"
+      ? "sequential /visual-qa page helper runs from the installed fixture"
       : compactFailure(res, [`${helperRel} runtime probe failed`]),
   };
 }
@@ -1375,7 +1381,7 @@ function checkCodexFloor(root) {
     const stdoutChecks = [
       ["reports floor theme", /theme:\s+floor/i.test(res.stdout)],
       ["prints Playwright MCP snippet", /\[mcp_servers\.playwright\]/.test(res.stdout)],
-      ["prints prompt-level floor hook guidance", /No hook snippet is emitted for agent-all-codex/i.test(res.stdout)],
+      ["prints prompt-level floor hook guidance", /No hook snippet is emitted for \/agent-all/i.test(res.stdout)],
       ["prints manual merge guidance", /Playwright MCP snippet and Codex floor guidance were printed to stdout for manual merge/i.test(res.stdout)],
       ["visual-qa is comprehensive", visualQa.value?.mode === "comprehensive"],
       ["agent-all config exists with waves", Boolean(agentAll.value?.waves)],
@@ -1396,7 +1402,7 @@ function checkCodexFloor(root) {
       ok,
       summary: `Codex floor fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
       details: ok
-        ? "fresh git fixture received only Codex floor artifacts, Playwright MCP/manual merge guidance, comprehensive visual-qa config, sequential agent-all-codex helper runtime, sequential visual-qa-codex helper runtime, and no global config side effects"
+        ? "fresh git fixture received only Codex floor artifacts, Playwright MCP/manual merge guidance, comprehensive visual-qa config, sequential /agent-all helper runtime, sequential /visual-qa helper runtime, and no global config side effects"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...visualQa.errors, ...agentAll.errors, ...failedStdout, agentAllRuntime.ok ? null : agentAllRuntime.details, visualQaRuntime.ok ? null : visualQaRuntime.details, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });
@@ -1416,7 +1422,7 @@ function checkCodexThrift(root) {
       ["prints manual merge guidance", /Merge them into Codex config only after global command-hook instrumentation is approved/i.test(res.stdout)],
       ["thrift config keeps summariser model", thrift.value?.summariser?.model === "gpt-5-nano"],
       ["thrift config keeps context-mode policy", thrift.value?.contextMode?.coerceReadWhenOutputExceeds === 200],
-      ["omits builder/floor summary", !/AGENTS\.md|\.visual-qa\.json|\.agent-all\.json|\.codex\/skills\//.test(res.stdout)],
+      ["omits builder/floor summary", !/AGENTS\.md|\.visual-qa\.json|\.agent-all\.json|\.codex\/skills\/(?:planner|agent-all|visual-qa|debug)\//.test(res.stdout)],
     ];
     const failedStdout = stdoutChecks.filter(([, pass]) => !pass).map(([name]) => name);
     const ok = res.status === 0
@@ -1444,7 +1450,7 @@ function checkCodexDebug(root) {
     const missing = missingFiles(target, CODEX_DEBUG_PRESENT);
     const unexpected = existingFiles(target, CODEX_DEBUG_ABSENT);
     const homeConfig = resolve(home, ".codex/config.toml");
-    const skill = readIfExists(resolve(target, ".codex/skills/debug-codex/SKILL.md"));
+    const skill = readIfExists(resolve(target, ".codex/skills/debug/SKILL.md"));
     const stdoutChecks = [
       ["reports debug theme", /theme:\s+debug/i.test(res.stdout)],
       ["runs debug-profile doctor", /profile:\s+debug/i.test(res.stdout)],
@@ -1464,7 +1470,7 @@ function checkCodexDebug(root) {
       ok,
       summary: `Codex debug fixture: ${ok ? "ok" : "failed"} (${total - missing.length - unexpected.length}/${total} file checks)`,
       details: ok
-        ? "fresh git fixture received only debug-codex artifacts, post-install debug doctor coverage, and no global config side effects"
+        ? "fresh git fixture received only /debug artifacts, post-install debug doctor coverage, and no global config side effects"
         : compactFailure(res, [...missing, ...unexpected.map((file) => `unexpected ${file}`), ...failedStdout, existsSync(homeConfig) ? "unexpected ~/.codex/config.toml" : null].filter(Boolean)),
     };
   });

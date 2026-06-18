@@ -58,7 +58,7 @@ follow-up after a research spike against a live Copilot CLI.
 
 ## Differences from Claude Code orchestrator
 
-| Aspect | Claude Code (`/agent-all`) | Copilot (`agent-all-copilot`) |
+| Aspect | Claude Code (`/agent-all`) | Copilot (`/agent-all` port) |
 |---|---|---|
 | Dispatch | `Task` tool (subagent-driven-development skill) | `task` tool directly |
 | Awaiter | Skill awaits per-task | `subagentStop` hook OR `list_agents` polling |

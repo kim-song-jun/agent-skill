@@ -35,13 +35,13 @@ against `references/orchestrator-routing.md`. If the intent is
 *evidence-producing* — research, an audit across many units, a design or
 findings report with no durable code change yet — a Codex research sweep
 (`codex exec <research-prompt>`) is the correct vehicle, **not**
-`/agent-all-codex`. The code-shipping pipeline must not be used to produce
+`/agent-all`. The code-shipping pipeline must not be used to produce
 reports or gather evidence.
 
 In that case: recommend it to the user; if they agree, STOP this pipeline
 and instruct them to run a `codex exec` research sweep that writes a
 `validateTaskDoc`-compliant task doc under `.agent-skill/tasks/`, then
-re-enter with `/agent-all-codex <taskdoc> --no-brainstorm` (resumes at
+re-enter with `/agent-all <taskdoc> --no-brainstorm` (resumes at
 Branch A — no double-planning). Only continue to step 1 below when the
 deliverable is a durable, gated code change that ships as a PR.
 

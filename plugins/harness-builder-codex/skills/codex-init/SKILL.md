@@ -1,12 +1,12 @@
 ---
-name: codex-init
+name: agent-init
 description: >
-  Scaffold AGENTS.md, .codex/skills/, an operational task ledger, a repo-local
-  Codex policy hook, and an operational Codex config snippet for a new or
-  existing project. Use --lite to opt out of the heavy operational artifacts.
+  Use when starting a new Codex CLI project or adopting Codex in an existing
+  repository that needs AGENTS.md, .codex/skills, task ledgers, policy hooks, or
+  harness scaffolding.
 ---
 
-# /codex-init
+# /agent-init
 
 You are scaffolding agent infrastructure for a Codex CLI project. The default
 profile is operational and heavy. `--lite` and `--theme=lite` write root
@@ -20,7 +20,7 @@ prints the approved foundation update plan, then updates/installs only
 `superpowers@claude-plugins-official` and `context-mode@context-mode`;
 `--dry-run --update-foundations` prints the same plan without mutation. This
 does not patch global CLI config files.
-When `/codex-init` is run through `scripts/install-platform.sh`, the wrapper
+When `/agent-init` is run through `scripts/install-platform.sh`, the wrapper
 runs the post-install doctor automatically for `all`, `builder`, `--lite`, and
 debug `--theme=debug` profiles, including the Codex debug doctor.
 For a manual skill run, re-run the same check with
@@ -51,7 +51,7 @@ may render the same object with `renderer-claude.mjs` and native
 `AskUserQuestion`. Non-TTY runs use `resolveNonTtyInteraction()` to select only
 low/medium-risk recommended defaults, block high-risk choices, and append
 `.agent-skill/runs/<run-id>/interactions.jsonl` with
-`appendInteractionLog({ source: "codex-init" })`.
+`appendInteractionLog({ source: "agent-init" })`.
 
 Run the project-detection helper to derive `stack`, `runtime`, `services`:
 
@@ -190,5 +190,5 @@ output.
 Print the detected stack, runtime, profile, roles scaffolded, and in the
 operational/default profile, the Codex config snippet for manual merge. Do not
 claim that global config was patched automatically. Include the post-install
-doctor command that matches the profile (`builder` for `/codex-init`, `lite`
+doctor command that matches the profile (`builder` for `/agent-init`, `lite`
 for `--lite`) so the user can re-run validation.

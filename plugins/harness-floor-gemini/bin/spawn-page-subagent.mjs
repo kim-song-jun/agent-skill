@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// harness-floor-gemini — Phase 3 page-subagent dispatcher for /visual-qa-gemini.
+// harness-floor-gemini — Phase 3 page-subagent dispatcher for /visual-qa.
 //
 // Spawns one `gemini chat` subprocess per page-group with rendered
 // page-prompt. Same await + collect pattern as spawn-wave.mjs but

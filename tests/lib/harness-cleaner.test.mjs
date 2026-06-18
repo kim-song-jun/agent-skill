@@ -112,10 +112,11 @@ test("cleaner removes Codex root guidance only when forceRoot is explicit", () =
     writeRel(
       target,
       "AGENTS.md",
-      "# Codex Project\n\n> Project memory for Codex CLI. Scaffolded by `/codex-init`.\n",
+      "# Codex Project\n\n> Project memory for Codex CLI. Scaffolded by `/agent-init`.\n",
     );
     writeRel(target, ".codex/skills/dev/SKILL.md", "---\nname: dev\n---\n");
-    writeRel(target, ".codex/skills/agent-all-codex/SKILL.md", "---\nname: agent-all-codex\n---\n");
+    writeRel(target, ".codex/skills/agent-all/SKILL.md", "---\nname: agent-all\n---\n");
+    writeRel(target, ".codex/skills/thrift/SKILL.md", "---\nname: thrift\n---\n");
     writeRel(target, ".codex/hooks/agent-policy-hook.mjs", "hook\n");
     writeRel(target, ".visual-qa.json", "{}\n");
     writeRel(target, ".agent-all.json", "{}\n");
@@ -125,7 +126,8 @@ test("cleaner removes Codex root guidance only when forceRoot is explicit", () =
     assert.ok(existsSync(resolve(target, "AGENTS.md")), "conservative cleanup must preserve root AGENTS.md");
     assert.ok(conservative.skipped.some((skip) => skip.rel === "AGENTS.md"));
     assert.ok(!existsSync(resolve(target, ".codex/skills/dev")));
-    assert.ok(!existsSync(resolve(target, ".codex/skills/agent-all-codex")));
+    assert.ok(!existsSync(resolve(target, ".codex/skills/agent-all")));
+    assert.ok(!existsSync(resolve(target, ".codex/skills/thrift")));
     assert.ok(!existsSync(resolve(target, ".visual-qa.json")));
 
     writeRel(target, ".codex/skills/dev/SKILL.md", "---\nname: dev\n---\n");

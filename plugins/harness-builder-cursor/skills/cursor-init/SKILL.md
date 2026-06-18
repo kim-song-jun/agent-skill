@@ -1,9 +1,9 @@
 ---
-name: cursor-init
-description: Scaffold instructions for using harness patterns inside Cursor — manual install today, automated render once Cursor exposes a plugin loader.
+name: agent-init
+description: Use when starting a Cursor project or adopting Cursor in an existing repository that needs project rules, background agents, or harness guidance.
 ---
 
-# Cursor Init
+# /agent-init
 
 Cursor has no plugin loader, so this skill is documentation. The plugin
 ships:
@@ -90,7 +90,7 @@ Example `ctx.json`:
 
 Cursor also reads `.claude/agents/` and `.codex/agents/` as subagent
 locations. If your project already has those (e.g., from running
-`/agent-init` for Claude Code or `/codex-init`), Cursor picks them up
+`/agent-init` for Claude Code or Codex), Cursor picks them up
 automatically — no separate install needed.
 
 ## Out of scope (MVP)

@@ -32,12 +32,12 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
      `.agent-skill/runs/<run-id>/verification-evidence.jsonl`. Exit 0 only
      when the evidence status is `passed`.
 
-   - **`visual-qa`**: treat as `verify:web-ui` evidence, then dispatch a background agent for the
-     `visual-qa-cursor` skill, with a fresh per-iter slug so each
+   - **`visual-qa`**: treat as `verify:web-ui` evidence, then ask the
+     Cursor visual-QA coordinator to run `/visual-qa`, with a fresh per-iter slug so each
      iteration's output doesn't clobber the previous one's baseline:
 
      ```
-     @visual-qa-cursor --slug=loop-iter-${state.iter} --force --yes
+     @visual-qa-coordinator run /visual-qa --slug=loop-iter-${state.iter} --force --yes
      ```
 
      Await its `STATUS:` line. `STATUS: passed` → runner exit 0;

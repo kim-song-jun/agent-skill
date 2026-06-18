@@ -145,7 +145,7 @@ test("agent-init docs route interactive choices through the shared interaction m
       label: "codex",
       renderer: /renderer-codex\.mjs/,
       files: ["plugins/harness-builder-codex/skills/codex-init/SKILL.md"],
-      source: /source: "codex-init"/,
+      source: /source: "agent-init"/,
     },
     {
       label: "cursor",

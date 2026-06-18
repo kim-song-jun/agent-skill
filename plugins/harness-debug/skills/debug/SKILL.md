@@ -1,12 +1,9 @@
 ---
 name: debug
 description: >
-  Six-phase debugging workflow with hypothesis state persistence,
-  structured error parsing, and git/input bisection. Use /debug to
-  start an investigation from a failing command; /debug --resume to
-  continue across sessions. Writes a durable log to
-  .agent-skill/reports/debug/<date>-<slug>.md at end. Wraps (does not replace)
-  superpowers:systematic-debugging when that skill is installed.
+  Use when investigating a failing command, flaky behavior, regression, or
+  unclear runtime error that needs reproducible debugging evidence and durable
+  hypothesis state.
 ---
 
 # /debug

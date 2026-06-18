@@ -1,12 +1,12 @@
 ---
-name: gemini-init
+name: agent-init
 description: >
-  Scaffold GEMINI.md and .gemini/skills/ for a new or existing project.
-  Use at the start of a Gemini CLI engagement to give the agent durable
-  project memory.
+  Use when starting a Gemini CLI project or adopting Gemini in an existing
+  repository that needs GEMINI.md, .gemini/skills, project memory, or harness
+  scaffolding.
 ---
 
-# Gemini Init
+# /agent-init
 
 You are scaffolding agent infrastructure for a Gemini CLI project.
 

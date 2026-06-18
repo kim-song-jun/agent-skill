@@ -41,13 +41,13 @@ test("usage docs present --lite as canonical and document uninstall cleanup symm
 test("usage docs describe Codex lite setup paths", () => {
   for (const path of ["docs/USAGE.md", "docs/USAGE.ko.md"]) {
     const body = read(path);
-    assert.match(body, /codex-init --lite/);
+    assert.match(body, /agent-init --lite/);
     assert.match(body, /install-platform\.sh[\s\S]{0,360}--platform=codex[\s\S]{0,180}--lite/);
     assert.match(body, /Codex[\s\S]{0,420}(lite|경량|가벼운)/i);
     assert.match(body, /lite[\s\S]{0,420}(automatic foundation update|자동 foundation 갱신)[\s\S]{0,420}--update-foundations/i);
     assert.match(body, /post-install doctor[\s\S]{0,260}(--no-doctor|검증을 의도적으로 미룰)/i);
     assert.match(body, /--profile=builder/);
-    assert.doesNotMatch(body, /codex-init --theme=lite/);
+    assert.doesNotMatch(body, /agent-init --theme=lite/);
   }
 });
 
@@ -64,8 +64,8 @@ test("usage docs describe agent-init language persistence", () => {
 
   for (const path of ["docs/USAGE.md", "docs/USAGE.ko.md", "plugins/harness-builder-codex/README.md"]) {
     const body = read(path);
-    assert.match(body, /codex-init --lang=ko/);
-    assert.match(body, /codex-init --update-foundations/);
+    assert.match(body, /agent-init --lang=ko/);
+    assert.match(body, /agent-init --update-foundations/);
   }
 });
 
@@ -111,7 +111,7 @@ test("user manuals are image-backed and explain install versus init", () => {
 test("readme files describe the current Codex config surface and current test count", () => {
   for (const path of ["README.md", "README.ko.md"]) {
     const body = read(path);
-    assert.match(body, /1999\/1999/);
+    assert.match(body, /2001\/2001/);
     assert.doesNotMatch(body, /1991\/1991|1991%20passing|1991 tests/);
     assert.doesNotMatch(body, /1871\/1871|1871%20passing|1871 tests|1872\/1872|1872%20passing|1872 tests|1927\/1927|1927%20passing|1927 tests|1932\/1932|1932%20passing|1932 tests|1962\/1962|1962%20passing|1962 tests|1972\/1972|1972%20passing|1972 tests|1974\/1974|1974%20passing|1974 tests|1977\/1977|1977%20passing|1977 tests/);
     assert.doesNotMatch(body, /1721\/1721|1721%20passing|1721 tests|1726\/1726|1726%20passing|1726 tests|1729\/1729|1729%20passing|1729 tests|1741\/1741|1741%20passing|1741 tests|1742\/1742|1742%20passing|1742 tests|1746\/1746|1746%20passing|1746 tests|1749\/1749|1749%20passing|1749 tests|1752\/1752|1752%20passing|1752 tests|1755\/1755|1755%20passing|1755 tests|1756\/1756|1756%20passing|1756 tests|1758\/1758|1758%20passing|1758 tests|1759\/1759|1759%20passing|1759 tests|1760\/1760|1760%20passing|1760 tests|1761\/1761|1761%20passing|1761 tests|1762\/1762|1762%20passing|1762 tests|1763\/1763|1763%20passing|1763 tests|1764\/1764|1764%20passing|1764 tests|1766\/1766|1766%20passing|1766 tests|1769\/1769|1769%20passing|1769 tests|1772\/1772|1772%20passing|1772 tests|1775\/1775|1775%20passing|1775 tests|1788\/1788|1788%20passing|1788 tests|1797\/1797|1797%20passing|1797 tests/);
@@ -130,9 +130,9 @@ test("readme files describe the current Codex config surface and current test co
     assert.match(body, /scripts\/release-smoke\.sh --fast/);
     assert.match(body, /scripts\/release-smoke\.sh --fast --with-live-cli/);
     assert.match(body, /with-live-cli[\s\S]{0,260}(Claude plugin marketplace\/install|Claude plugin marketplace\/install 명령 표면)/i);
-    assert.match(body, /harness-builder[\s\S]{0,120}v0\.6\.7/i);
-    assert.match(body, /harness-floor[\s\S]{0,120}v0\.6\.7/i);
-    assert.match(body, /(other 17 installable|나머지 설치 가능한)[\s\S]{0,180}v0\.6\.7/i);
+    assert.match(body, /harness-builder[\s\S]{0,120}v0\.6\.8/i);
+    assert.match(body, /harness-floor[\s\S]{0,120}v0\.6\.8/i);
+    assert.match(body, /(other 17 installable|나머지 설치 가능한)[\s\S]{0,180}v0\.6\.8/i);
     assert.doesNotMatch(body, /other Claude Code core plugins at `v0\.2\.0`|나머지 Claude Code 코어 플러그인 `v0\.2\.0`/i);
     assert.match(body, /\/thrift` compact (delivery|전달)[\s\S]{0,220}API-gated advisory path/i);
     assert.match(body, /Provider-backed thrift summarizer/i);
@@ -178,7 +178,7 @@ test("readme files describe release-safe update and per-platform install paths",
   assert.match(english, /--update-foundations[\s\S]{0,220}strict/i);
   assert.match(english, /--no-update-foundations[\s\S]{0,180}opt out/i);
   assert.match(english, /install-platform\.sh[\s\S]{0,520}--platform=codex[\s\S]{0,220}--theme=debug/i);
-  assert.match(english, /\.codex\/skills\/debug-codex[\s\S]{0,260}\.agent-skill\/reports\/debug/i);
+  assert.match(english, /\.codex\/skills\/debug[\s\S]{0,260}\.agent-skill\/reports\/debug/i);
   assert.match(english, /run \/debug[\s\S]{0,180}failing command/i);
   assert.match(english, /Codex `all`, `builder`, `--lite`, and Codex `--theme=debug` installs run the post-install doctor automatically/i);
   assert.match(english, /--no-doctor[\s\S]{0,120}deferring validation/i);
@@ -202,7 +202,7 @@ test("readme files describe release-safe update and per-platform install paths",
   assert.match(korean, /--update-foundations[\s\S]{0,260}strict/i);
   assert.match(korean, /--no-update-foundations[\s\S]{0,220}opt-out/i);
   assert.match(korean, /install-platform\.sh[\s\S]{0,620}--platform=codex[\s\S]{0,260}--theme=debug/i);
-  assert.match(korean, /\.codex\/skills\/debug-codex[\s\S]{0,300}\.agent-skill\/reports\/debug/i);
+  assert.match(korean, /\.codex\/skills\/debug[\s\S]{0,300}\.agent-skill\/reports\/debug/i);
   assert.match(korean, /run \/debug[\s\S]{0,220}failing command/i);
   assert.match(korean, /Codex `all`, `builder`, `--lite`, 그리고 Codex `--theme=debug` 설치는 post-install doctor를 자동 실행/i);
   assert.match(korean, /검증을 의도적으로 미룰[\s\S]{0,160}--no-doctor/i);
@@ -294,10 +294,10 @@ test("platform plugin READMEs match implemented builder and floor ports", () => 
 
   const floor = read("plugins/harness-floor-codex/README.md");
   assert.match(floor, /sequential/i);
-  assert.match(floor, /agent-all-codex/);
-  assert.match(floor, /visual-qa-codex/);
-  assert.match(floor, /\.codex\/skills\/agent-all-codex/);
-  assert.match(floor, /\.codex\/skills\/visual-qa-codex/);
+  assert.match(floor, /agent-all/);
+  assert.match(floor, /visual-qa/);
+  assert.match(floor, /\.codex\/skills\/agent-all/);
+  assert.match(floor, /\.codex\/skills\/visual-qa/);
   assert.doesNotMatch(floor, /\[\[hooks\.agent\]\]|scaffold-only|future per-platform spec/i);
 
   const thrift = read("plugins/harness-thrift-codex/README.md");
@@ -307,15 +307,15 @@ test("platform plugin READMEs match implemented builder and floor ports", () => 
   assert.match(thrift, /run \/thrift\s+# one-time setup/);
   assert.match(thrift, /run \/thrift summarise/);
   assert.match(thrift, /run \/thrift audit/);
-  assert.doesNotMatch(thrift, /^\/thrift-codex\s+#/m);
+  assert.doesNotMatch(thrift, /^\/thrift\s+#/m);
   assert.doesNotMatch(thrift, /MVP scope|follow-up plan|scaffold-only|TBD|placeholder/i);
 
   const debug = read("plugins/harness-debug-codex/README.md");
   assert.match(debug, /Codex CLI/i);
   assert.match(debug, /run \/debug/);
-  assert.match(debug, /debug-codex/);
+  assert.match(debug, /debug/);
   assert.match(debug, /install-platform\.sh --platform=codex --target=\/path\/to\/project --theme=debug/);
-  assert.match(debug, /\.codex\/skills\/debug-codex/);
+  assert.match(debug, /\.codex\/skills\/debug/);
   assert.match(debug, /\.debug-state\.json/);
   assert.match(debug, /structured error parsing/i);
   assert.doesNotMatch(debug, /codex plugins install/i);
@@ -324,7 +324,7 @@ test("platform plugin READMEs match implemented builder and floor ports", () => 
 
 test("non-Claude floor plugin READMEs match the implemented install and workflow surfaces", () => {
   const staleFloorClaims =
-    /Scaffold-level|MVP scope|scaffold-only|future per-platform spec|future spec|copilot plugin install|gemini extensions install|Run \/visual-qa/i;
+    /Scaffold-level|MVP scope|scaffold-only|future per-platform spec|future spec|copilot plugin install|gemini extensions install/i;
 
   const cases = [
     {
@@ -333,8 +333,8 @@ test("non-Claude floor plugin READMEs match the implemented install and workflow
       required: [
         /Operational floor support/i,
         /install-platform\.sh --platform=copilot --theme=floor --target=\/path\/to\/project/,
-        /agent-all-copilot/,
-        /visual-qa-copilot/,
+        /\/agent-all/,
+        /\/visual-qa/,
         /\.visual-qa\.json/,
         /\.agent-all\.json/,
         /\.github\/agent-all\/decision-protocol\.md/,
@@ -347,8 +347,8 @@ test("non-Claude floor plugin READMEs match the implemented install and workflow
       required: [
         /Operational floor support/i,
         /install-platform\.sh --platform=cursor --theme=floor --target=\/path\/to\/project/,
-        /agent-all-cursor/,
-        /visual-qa-cursor/,
+        /\/agent-all/,
+        /\/visual-qa/,
         /\.cursor\/agents\//,
         /\.cursor\/rules\/agent-all\.mdc/,
         /\.cursor\/visual-qa\/lib\//,
@@ -361,8 +361,8 @@ test("non-Claude floor plugin READMEs match the implemented install and workflow
       required: [
         /Operational floor support/i,
         /install-platform\.sh --platform=gemini --theme=floor --target=\/path\/to\/project/,
-        /agent-all-gemini/,
-        /visual-qa-gemini/,
+        /\/agent-all/,
+        /\/visual-qa/,
         /\.visual-qa\.json/,
         /\.agent-all\.json/,
         /\.gemini\/agent-all-decision-protocol\.md/,
@@ -404,10 +404,10 @@ test("Codex runtime specs describe the current sequential surface instead of sta
   const runtimeChecklist = read("docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md");
   assert.match(runtimeChecklist, /release-smoke\.sh --fast --with-live-cli/);
   assert.match(runtimeChecklist, /Claude plugin marketplace\/install/i);
-  assert.match(runtimeChecklist, /release fixture smoke[\s\S]{0,260}installed fixture[\s\S]{0,260}sequential agent-all-codex prompt helper/i);
+  assert.match(runtimeChecklist, /release fixture smoke[\s\S]{0,260}installed fixture[\s\S]{0,260}sequential \/agent-all prompt helper/i);
   assert.match(runtimeChecklist, /stack-specific Codex sequential role dispatch proof/i);
   assert.match(runtimeChecklist, /frontend-dev\/backend-dev role-skill inlining/i);
-  assert.match(runtimeChecklist, /release fixture smoke[\s\S]{0,360}installed fixture[\s\S]{0,360}sequential visual-qa-codex page helper/i);
+  assert.match(runtimeChecklist, /release fixture smoke[\s\S]{0,360}installed fixture[\s\S]{0,360}sequential \/visual-qa page helper/i);
   assert.match(runtimeChecklist, /codex exec[\s\S]{0,180}\[PROMPT\]/);
   assert.match(runtimeChecklist, /Manual Host UX Observation/i);
   assert.match(runtimeChecklist, /prompt-level|sequential/i);
@@ -429,10 +429,10 @@ test("Codex runtime specs describe the current sequential surface instead of sta
   }
 
   const agentAllSpec = read("docs/superpowers/specs/2026-05-18-agent-all-codex-impl-spec.md");
-  assert.match(agentAllSpec, /release fixture smoke[\s\S]{0,260}installed fixture[\s\S]{0,260}sequential agent-all-codex prompt helper/i);
+  assert.match(agentAllSpec, /release fixture smoke[\s\S]{0,260}installed fixture[\s\S]{0,260}sequential \/agent-all prompt helper/i);
 
   const visualQaSpec = read("docs/superpowers/specs/2026-05-18-visual-qa-codex-impl-spec.md");
-  assert.match(visualQaSpec, /release fixture smoke[\s\S]{0,360}installed fixture[\s\S]{0,360}sequential visual-qa-codex page helper/i);
+  assert.match(visualQaSpec, /release fixture smoke[\s\S]{0,360}installed fixture[\s\S]{0,360}sequential \/visual-qa page helper/i);
 
   for (const path of [
     "docs/superpowers/specs/2026-05-21-decision-surfacing-and-policy-hooks-design.md",
@@ -482,8 +482,8 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /release-fixture evidence[\s\S]{0,160}auto-update only approved `superpowers`\/`context-mode` foundations/i);
   assert.match(plan, /Claude\/Codex approved foundation auto-update fixtures/i);
   assert.match(plan, /release candidate lifecycle/i);
-  assert.match(plan, /node --test[\s\S]{0,120}1999\/1999/);
-  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}471\/471/);
+  assert.match(plan, /node --test[\s\S]{0,120}2001\/2001/);
+  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}473\/473/);
   assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|1758\/1758|1759\/1759|1760\/1760|1761\/1761|1762\/1762|1763\/1763|1764\/1764|1766\/1766|1972\/1972|1974\/1974|1977\/1977|412\/412|418\/418|421\/421|424\/424|425\/425|427\/427|428\/428|429\/429|430\/430|431\/431|432\/432|433\/433|435\/435|468\/468|480\/480|498\/498|500\/500/);
   assert.match(plan, /foundation auto-update/i);
   assert.match(plan, /install-platform\.sh --platform=codex --theme=all\|debug/);
@@ -506,8 +506,8 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.doesNotMatch(changelog, /^## \[Unreleased\]$/m);
   assert.match(changelog, /User Objective Release Matrix/);
   assert.match(changelog, /Release Candidate Lifecycle/);
-  assert.match(changelog, /1999\/1999 passing/);
-  assert.match(changelog, /471\/471 passing/);
+  assert.match(changelog, /Agent-skill v0\.6\.8[\s\S]{0,900}2001\/2001 passing/);
+  assert.match(changelog, /Agent-skill v0\.6\.8[\s\S]{0,900}473\/473 passing/);
   assert.doesNotMatch(changelog, /currently\s+mock toolCallers used in tests/i);
 
   const changelogKo = read("CHANGELOG.ko.md");
@@ -515,8 +515,8 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.doesNotMatch(changelogKo, /^## \[미출시\]$/m);
   assert.match(changelogKo, /User Objective Release Matrix/);
   assert.match(changelogKo, /Release Candidate Lifecycle/);
-  assert.match(changelogKo, /1999\/1999 통과/);
-  assert.match(changelogKo, /471\/471 통과/);
+  assert.match(changelogKo, /Agent-skill v0\.6\.8[\s\S]{0,900}2001\/2001 통과/);
+  assert.match(changelogKo, /Agent-skill v0\.6\.8[\s\S]{0,900}473\/473 통과/);
   assert.doesNotMatch(changelogKo, /현재 mock[\s\S]{0,80}toolCaller/i);
 });
 
@@ -608,7 +608,7 @@ test("manual release checklist is mapped to automated gates and Claude/Codex liv
   assert.match(body, /doctor-script\.test\.mjs/);
   assert.match(body, /release-smoke\.sh --fast --with-live-cli/);
   assert.match(body, /Claude slash-command metadata, headings, flags, and summary contracts/i);
-  assert.match(body, /Codex slash-command metadata, headings, flags, and summary contracts[\s\S]{0,160}\/debug-codex/i);
+  assert.match(body, /Codex slash-command metadata, headings, flags, and summary contracts[\s\S]{0,160}\/debug/i);
   assert.match(body, /node --test[\s\S]{0,480}claude-native-release-contract\.test\.mjs/);
   assert.match(body, /node --test[\s\S]{0,480}release-install-scripts\.test\.mjs/);
   assert.match(body, /Codex install renderers[\s\S]{0,180}builder, floor, thrift/i);
@@ -620,14 +620,14 @@ test("manual release checklist is mapped to automated gates and Claude/Codex liv
   assert.match(body, /Claude Code live session/i);
   assert.match(body, /Codex CLI live session/i);
   assert.match(body, /\/agent-init --lite/);
-  assert.match(body, /\/codex-init --lite/);
+  assert.match(body, /\/agent-init --lite/);
   assert.match(body, /run \/agent-all for "smoke task"/);
   assert.match(body, /run \/visual-qa for the configured project/);
   assert.match(body, /run \/debug "failing command"/);
   assert.match(body, /^run \/thrift$/m);
   assert.match(body, /run \/thrift summarise/);
   assert.match(body, /run \/thrift audit/);
-  assert.doesNotMatch(body, /\/agent-all-codex "smoke task"|codex exec "smoke task"|codex skill run/i);
+  assert.doesNotMatch(body, /\/agent-all "smoke task"|codex exec "smoke task"|codex skill run/i);
   assert.match(body, /codex exec[\s\S]{0,240}positional/i);
   assert.doesNotMatch(body, /^- \[ \]/m);
   assert.doesNotMatch(body, /Confirm that the slash command is discoverable/);
@@ -653,5 +653,5 @@ test("CLI runtime checklist points at the release readiness audit gate", () => {
   assert.match(body, /Run `run \/thrift`, `run \/thrift summarise`, and `run \/thrift audit`/);
   assert.match(body, /run \/thrift summarise/);
   assert.match(body, /run \/thrift audit/);
-  assert.doesNotMatch(body, /\/agent-all-codex "smoke task"|\/visual-qa-codex|\/thrift-codex|codex skill run/i);
+  assert.doesNotMatch(body, /\/agent-all "smoke task"|\/visual-qa-codex|\/thrift-codex|codex skill run/i);
 });

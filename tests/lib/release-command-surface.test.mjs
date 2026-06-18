@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
 const CODEX_INIT = resolve("plugins/harness-builder-codex/bin/init.mjs");
@@ -10,7 +10,21 @@ function read(path) {
   return readFileSync(resolve(path), "utf-8");
 }
 
-test("codex-init CLI help documents canonical release flags", () => {
+function collectFiles(root, predicate) {
+  const out = [];
+  for (const entry of readdirSync(resolve(root))) {
+    const path = `${root}/${entry}`;
+    const stats = statSync(resolve(path));
+    if (stats.isDirectory()) {
+      out.push(...collectFiles(path, predicate));
+    } else if (predicate(path)) {
+      out.push(path);
+    }
+  }
+  return out;
+}
+
+test("agent-init Codex CLI help documents canonical release flags", () => {
   const res = spawnSync(process.execPath, [CODEX_INIT, "--help"], {
     encoding: "utf-8",
   });
@@ -26,7 +40,7 @@ test("codex-init CLI help documents canonical release flags", () => {
   assert.doesNotMatch(output, /target directory does not exist/);
 });
 
-test("codex-init CLI rejects unknown flags before target resolution", () => {
+test("agent-init Codex CLI rejects unknown flags before target resolution", () => {
   const res = spawnSync(process.execPath, [CODEX_INIT, "--definitely-not-a-flag"], {
     encoding: "utf-8",
   });
@@ -52,4 +66,47 @@ test("Claude and Codex init skill docs expose the heavy default and lite opt-out
   assert.match(codex, /post-install doctor/i);
   assert.match(codex, /--theme=debug[\s\S]{0,140}debug doctor/i);
   assert.match(codex, /--profile=debug/);
+});
+
+test("platform skill ports expose canonical public command names", () => {
+  const cases = [
+    ["plugins/harness-builder/skills/agent-init/SKILL.md", "agent-init"],
+    ["plugins/harness-builder-codex/skills/codex-init/SKILL.md", "agent-init"],
+    ["plugins/harness-builder-copilot/skills/copilot-init/SKILL.md", "agent-init"],
+    ["plugins/harness-builder-cursor/skills/cursor-init/SKILL.md", "agent-init"],
+    ["plugins/harness-builder-gemini/skills/gemini-init/SKILL.md", "agent-init"],
+    ["plugins/harness-floor/skills/agent-all/SKILL.md", "agent-all"],
+    ["plugins/harness-floor-codex/skills/agent-all-codex/SKILL.md", "agent-all"],
+    ["plugins/harness-floor-copilot/skills/agent-all-copilot/SKILL.md", "agent-all"],
+    ["plugins/harness-floor-cursor/skills/agent-all-cursor/SKILL.md", "agent-all"],
+    ["plugins/harness-floor-gemini/skills/agent-all-gemini/SKILL.md", "agent-all"],
+    ["plugins/harness-floor/skills/visual-qa/SKILL.md", "visual-qa"],
+    ["plugins/harness-floor-codex/skills/visual-qa-codex/SKILL.md", "visual-qa"],
+    ["plugins/harness-floor-copilot/skills/visual-qa-copilot/SKILL.md", "visual-qa"],
+    ["plugins/harness-floor-cursor/skills/visual-qa-cursor/SKILL.md", "visual-qa"],
+    ["plugins/harness-floor-gemini/skills/visual-qa-gemini/SKILL.md", "visual-qa"],
+    ["plugins/harness-thrift/skills/thrift/SKILL.md", "thrift"],
+    ["plugins/harness-thrift-codex/skills/thrift-codex/SKILL.md", "thrift"],
+    ["plugins/harness-thrift-copilot/skills/thrift-copilot/SKILL.md", "thrift"],
+    ["plugins/harness-thrift-cursor/skills/thrift-cursor/SKILL.md", "thrift"],
+    ["plugins/harness-thrift-gemini/skills/thrift-gemini/SKILL.md", "thrift"],
+    ["plugins/harness-debug/skills/debug/SKILL.md", "debug"],
+    ["plugins/harness-debug-codex/skills/debug-codex/SKILL.md", "debug"],
+  ];
+
+  for (const [path, name] of cases) {
+    const body = read(path);
+    assert.match(body, new RegExp(`^---\\nname: ${name}\\n`, "m"), path);
+    assert.match(body, /^description:\s*(?:>\n\s*)?Use when\b/m, path);
+  }
+});
+
+test("active plugin docs do not expose platform-suffixed public slash commands", () => {
+  const files = collectFiles("plugins", (path) => /\.(md|hbs)$/.test(path));
+  const stalePublicCommand =
+    /(^|[\s`"'(])(?:\/(?:codex-init|agent-all-(?:codex|copilot|cursor|gemini)|visual-qa-(?:codex|copilot|cursor|gemini)|thrift-codex|debug-codex)|@visual-qa-(?:codex|copilot|cursor|gemini))\b/m;
+
+  for (const path of files) {
+    assert.doesNotMatch(read(path), stalePublicCommand, path);
+  }
 });

@@ -6,6 +6,20 @@
 
 ## 미출시
 
+## Agent-skill v0.6.8 — 2026-06-18
+
+- 플랫폼 포트의 공개 명령어 표면을 canonical 형태로 통일했습니다. Codex,
+  Copilot, Cursor, Gemini는 적용 가능한 곳에서 `/agent-init`, `/agent-all`,
+  `/visual-qa`, `/thrift`, `/debug`를 노출하고, 플랫폼별 plugin/source
+  디렉터리 이름은 내부 구현 식별자로만 유지합니다.
+- Codex 설치 renderer, doctor, cleanup 로직, 문서, 템플릿, release guard를
+  갱신해 설치된 스킬이 `.codex/skills/agent-all`,
+  `.codex/skills/visual-qa`, `.codex/skills/thrift`,
+  `.codex/skills/debug` 같은 canonical 경로에 배치되도록 했습니다.
+- active docs, 템플릿, skill metadata에 플랫폼 접미사가 붙은 공개 slash
+  command가 다시 새지 않도록 command-surface 회귀 테스트를 추가했습니다.
+- Suite: 2001/2001 통과; fast release smoke 473/473 통과.
+
 ## Agent-skill v0.6.7 — 2026-06-16
 
 - 176개 테스트 파일 전수 무결성 점검: 실제 계약이 깨져도 통과하던 약한 테스트

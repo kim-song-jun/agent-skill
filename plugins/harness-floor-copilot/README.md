@@ -5,9 +5,9 @@
 > It does not patch `~/.copilot/hooks.json`; use `bin/install-hooks.mjs` only
 > after reviewing the host hook surface for your Copilot CLI version.
 
-Operational floor support for GitHub Copilot CLI. Ships Copilot ports of
-`agent-all-copilot` and `visual-qa-copilot`, with project-local config seeds
-and a Playwright MCP snippet for manual merge.
+Operational floor support for GitHub Copilot CLI. Ships Copilot ports of the
+canonical `/agent-all` and `/visual-qa` workflows, with project-local config
+seeds and a Playwright MCP snippet for manual merge.
 
 Emits:
 
@@ -29,10 +29,10 @@ config files above.
 ## Usage
 
 Open Copilot CLI or Copilot chat in the target repository and ask it to follow
-the generated repo instructions for `agent-all-copilot` or `visual-qa-copilot`.
+the generated repo instructions for `/agent-all` or `/visual-qa`.
 
-`agent-all-copilot` runs the intent -> plan -> wave dispatch -> gate -> PR
-pipeline. `visual-qa-copilot` runs the config -> discover -> capture ->
+The Copilot `/agent-all` port runs the intent -> plan -> wave dispatch -> gate -> PR
+pipeline. The Copilot `/visual-qa` port runs the config -> discover -> capture ->
 aggregate -> summary pipeline and uses the Playwright MCP entry from
 `~/.copilot/mcp-config.json`.
 

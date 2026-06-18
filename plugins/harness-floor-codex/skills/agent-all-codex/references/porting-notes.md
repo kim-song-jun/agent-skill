@@ -17,7 +17,7 @@ only supported path:
 
 ## Phase Contract Preserved
 
-| Aspect | Claude Code (`/agent-all`) | Codex (`agent-all-codex`) |
+| Aspect | Claude Code (`/agent-all`) | Codex (`/agent-all` port) |
 |---|---|---|
 | Dispatch | `Task` tool (subagent-driven-development) | sequential `.codex/skills/<role>/SKILL.md` |
 | State persistence | `.agent-all-state.json` + `apply_patch` | Same |

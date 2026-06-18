@@ -1,11 +1,9 @@
 ---
-name: agent-all-cursor
+name: agent-all
 description: >
-  Cursor port of /agent-all (intent → plan → wave-dispatch → gate → PR pipeline).
-  Prompt-template approach — there is no programmatic runner. Cursor delegates
-  to `.cursor/agents/agent-all-*.md` subagents via description-matching and
-  parallelizes implementers/reviewers with `is_background: true`.
-  See plugins/harness-floor/skills/agent-all/SKILL.md for the source-of-truth pipeline.
+  Use when a Cursor project needs a full feature, bugfix, or task run from
+  intent through planning, background-agent execution, review, verification, and
+  optional PR creation.
 ---
 
 # /agent-all (Cursor port)
@@ -106,7 +104,7 @@ a non-default value already lives in config.
 
 ## Differences from the Claude Code orchestrator
 
-| Aspect | Claude Code (`/agent-all`) | Cursor (`agent-all-cursor`) |
+| Aspect | Claude Code (`/agent-all`) | Cursor (`/agent-all` port) |
 |---|---|---|
 | Phase runner | Read each phase file, execute steps | Read each phase file, write chat output |
 | Dispatch | `superpowers:subagent-driven-development` (`Task` tool) | Cursor planner matches `agent-all-implementer.description` |

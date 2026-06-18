@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-1999%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-19-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-2001%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-19-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **스스로 굴러가는 agent-first 워크플로.** 프로젝트당 `/agent-init` 한 번, 기능당 `/agent-all "..." --loop --qa` 한 번 — agent가 brainstorm → 계획 → 구현 → 테스트 → **모든 페이지 visual QA** → PR을 알아서 진행하고, **테스트와 UI 둘 다 통과할 때까지 알아서 반복**합니다. 매 턴 babysitting 필요 없음.
 
@@ -610,7 +610,7 @@ Claude 또는 Codex 프로젝트 설치 후 plugin-local doctor(`node /path/to/h
 | **Cursor** | `.cursor/rules/*.mdc`, `.cursor/agents/*.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | 모두 native. 병렬 subagent에 `is_background: true`. |
 | **Copilot CLI** | `.github/copilot-instructions.md`, `.github/hooks/*.json`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | Builder hook stub은 project-local; floor decision protocol은 기본 프롬프트 수준. 선택적 hook helper는 수동 hook 검토 필요. |
 | **VS Code Copilot** | `.github/copilot-instructions.md` | VS Code Copilot 확장이 이 파일을 자동 읽음. 이 editor-only 경로에는 floor, visual-qa, thrift, Copilot CLI 자동화 파일을 설치하지 않음. |
-| **Codex CLI** | `AGENTS.md`, `.codex/skills/<role>/SKILL.md`, `.codex/skills/debug-codex/SKILL.md`, `.codex/hooks/agent-policy-hook.mjs`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json`, `.debug-artifacts/`, `.agent-skill/reports/debug/` | `[mcp_servers.playwright]` 스니펫과 `[[hooks.PreToolUse]]` 같은 현재 command hook 스니펫을 stdout으로 출력. Floor 워크플로는 Codex command hook이 Claude Code의 Task-style subagent 표면을 제공하지 않으므로 프롬프트/순차 dispatch로 동작. Debug는 `run /debug "<failing command>"`로 실행. |
+| **Codex CLI** | `AGENTS.md`, `.codex/skills/<role>/SKILL.md`, `.codex/skills/debug/SKILL.md`, `.codex/hooks/agent-policy-hook.mjs`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json`, `.debug-artifacts/`, `.agent-skill/reports/debug/` | `[mcp_servers.playwright]` 스니펫과 `[[hooks.PreToolUse]]` 같은 현재 command hook 스니펫을 stdout으로 출력. Floor 워크플로는 Codex command hook이 Claude Code의 Task-style subagent 표면을 제공하지 않으므로 프롬프트/순차 dispatch로 동작. Debug는 `run /debug "<failing command>"`로 실행. |
 | **Gemini CLI** | `GEMINI.md`, `.gemini/skills/<role>/SKILL.md`, `.visual-qa.json`, `.agent-all.json`, `.thrift.json` | `mcpServers` 스니펫이 stdout으로 출력 — `~/.gemini/settings.json`에 **수동 merge**. |
 
 ### 설치 후 실제로 어떻게 사용하나?
@@ -819,7 +819,7 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 - **GitHub 거버넌스** — 공개 PR smoke CI, issue template, PR template, label taxonomy는 [docs/github-governance.md](docs/github-governance.md) 참조.
 - **Release provenance** — `node scripts/release-provenance.mjs --release=<rc-tag>`로 `release-manifest.json`과 `release-manifest.sha256`를 생성하고, 설치/갱신 시 `--verify-checksums` / `--verify-provenance`로 다시 검증할 수 있습니다.
 - **19개 플러그인 전체 목록** — [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json) 참조.
-- **변경 히스토리** — [CHANGELOG.md](CHANGELOG.md) 참조. 1999 tests, 모두 통과.
+- **변경 히스토리** — [CHANGELOG.md](CHANGELOG.md) 참조. 2001 tests, 모두 통과.
 - **플랫폼별 포팅** — `docs/superpowers/specs/`의 `-impl-spec.md` 또는 `-decomposition.md`로 끝나는 spec 참조.
 - **Skill utility benchmark** — [docs/superpowers/specs/2026-06-11-skill-utility-benchmark.md](docs/superpowers/specs/2026-06-11-skill-utility-benchmark.md) 참조, 실행은 `node scripts/skill-eval.mjs --smoke`.
 - **아키텍처 & 레이아웃** — 플러그인별 raw design 문서는 [docs/superpowers/specs/](docs/superpowers/specs/) 참조.
@@ -832,17 +832,17 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 
 | 레이어 | 상태 | 비고 |
 |---|---|---|
-| Unit/integration 테스트 | ✅ **1999/1999 통과** | Mock toolCaller + 격리된 lib 테스트; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-candidate evidence, provenance manifest, public GitHub governance, docs structure, release publish preflight, target-project smoke, skill-eval, command-surface, doctor, cleanup, visual-qa 회귀 포함 |
+| Unit/integration 테스트 | ✅ **2001/2001 통과** | Mock toolCaller + 격리된 lib 테스트; release-doc, policy, Codex hook-schema, task-ledger, Codex exec, release-audit, release-candidate evidence, provenance manifest, public GitHub governance, docs structure, release publish preflight, target-project smoke, skill-eval, command-surface, doctor, cleanup, visual-qa 회귀 포함 |
 | Release gate | ✅ PR smoke + local gate 검증 | 공개 PR CI는 `.github/workflows/smoke.yml`, `.github/workflows/docs.yml`, `.github/workflows/templates.yml`로 smoke/docs/templates drift를 검증; 배포는 여전히 local release-candidate evidence, release-audit, release provenance manifest/checksum evidence, fresh fixture, `./scripts/release-smoke.sh --fast --with-live-cli`, target-project smoke, `node --test`, vendored-lib sync, support matrix drift check로 검증 |
 | Project install 렌더러 (Claude + 5개 플랫폼) | ✅ end-to-end 검증 | `install-all.sh` + `install-platform.sh` |
 | 마켓플레이스 등록 | ✅ 19 플러그인 등록 | local + origin 동기화 |
 | Claude/Codex skills | ✅ 오늘 출시 | Claude core `harness-builder` / `harness-floor` / `harness-thrift` / `harness-explore` / `harness-debug` / `harness-data`; Codex는 `harness-debug-codex` 추가 |
-| Claude/Codex CLI 런타임 | ✅ live smoke probe 가능 | `./scripts/release-smoke.sh --fast --with-live-cli`이 설치된 `claude`/`codex` 버전, Claude plugin marketplace/install 명령 표면, Codex `exec [PROMPT]` 지원을 probe함; release fixture smoke도 Claude 터미널 `install-platform.sh --platform=claude` operational/builder/`--lite` 경로, Codex operational/lite/builder/floor/thrift/debug fresh install, Claude/Codex install→uninstall 및 `--force-root-clean` roundtrip, 설치된 Codex `agent-all-codex` 및 `visual-qa-codex` sequential helper, Codex debug-only fixture를 검증 |
+| Claude/Codex CLI 런타임 | ✅ live smoke probe 가능 | `./scripts/release-smoke.sh --fast --with-live-cli`이 설치된 `claude`/`codex` 버전, Claude plugin marketplace/install 명령 표면, Codex `exec [PROMPT]` 지원을 probe함; release fixture smoke도 Claude 터미널 `install-platform.sh --platform=claude` operational/builder/`--lite` 경로, Codex operational/lite/builder/floor/thrift/debug fresh install, Claude/Codex install→uninstall 및 `--force-root-clean` roundtrip, 설치된 Codex `/agent-all` 및 `/visual-qa` sequential helper, Codex debug-only fixture를 검증 |
 | 기타 CLI 런타임 | ⚠️ 수동 검증 유지 | Cursor/Copilot/Gemini 런타임 체크는 `docs/superpowers/specs/2026-05-18-cli-runtime-verification-checklist.md` 체크리스트에 유지 |
 | `/thrift` compact 전달 | ⚠️ API-gated advisory path | Claude/Codex 모두 durable summary 파일을 쓰고 `/compact` 사용을 안내; programmatic compact injection은 host CLI가 안정 API를 노출하면 연결 |
 | Provider-backed thrift summarizer | ✅ release-scoped | Claude의 선택적 `@anthropic-ai/sdk` summarizer 경로는 구현/테스트 완료; Codex는 dependency-free heuristic summarizer, configurable `gpt-5-nano` model metadata, OpenAI-rate audit heuristic을 제공 |
 
-버전: `harness-builder` `v0.6.7`, `harness-floor` `v0.6.7`, 나머지 설치 가능한 `agent-skill` 플러그인 17개도 같은 release train의 `v0.6.7`으로 배포합니다. 내부 artifact/config schema version은 별도의 호환성 계약으로 유지됩니다.
+버전: `harness-builder` `v0.6.8`, `harness-floor` `v0.6.8`, 나머지 설치 가능한 `agent-skill` 플러그인 17개도 같은 release train의 `v0.6.8`으로 배포합니다. 내부 artifact/config schema version은 별도의 호환성 계약으로 유지됩니다.
 
 ### 릴리즈 후보 라이프사이클
 
@@ -899,7 +899,7 @@ node scripts/skill-eval.mjs --smoke --no-write --json  # CI-safe utility benchma
 node scripts/skill-eval.mjs --full       # 수동/full benchmark; .agent-skill/evals/<date>/ 기록
 node scripts/release-publish-preflight.mjs --base=origin/main
 node scripts/target-project-smoke.mjs --target=/path/to/project --platform=claude,codex --lang=ko
-node --test                              # 1999/1999 통과 필수
+node --test                              # 2001/2001 통과 필수
 node scripts/sync-lib.mjs --check        # vendored shared libs 동기화 확인
 node scripts/generate-support-matrix.mjs --check
 ```

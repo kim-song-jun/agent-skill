@@ -59,9 +59,9 @@ parallel work.
 `scripts/install-platform.sh --platform=codex --target=<repo> --theme=floor`
 installs the runnable floor skill directories:
 
-- `.codex/skills/agent-all-codex/SKILL.md`
-- `.codex/skills/agent-all-codex/phases/*`
-- `.codex/skills/agent-all-codex/lib/*`
+- `.codex/skills/agent-all/SKILL.md`
+- `.codex/skills/agent-all/phases/*`
+- `.codex/skills/agent-all/lib/*`
 - `.agent-all.json`
 - shared reviewer/page skills required by the floor workflow
 
@@ -72,8 +72,8 @@ config files.
 
 Current automated coverage lives in:
 
-- `tests/lib/agent-all-codex.test.mjs`
-- `tests/lib/agent-all-codex-dispatch.test.mjs`
+- `tests/lib/agent-all.test.mjs`
+- `tests/lib/agent-all-dispatch.test.mjs`
 - `tests/lib/release-install-scripts.test.mjs`
 - `tests/lib/release-fixture-smoke.test.mjs`
 - `tests/lib/release-doc-contract.test.mjs`
@@ -87,13 +87,13 @@ Key assertions:
 - Codex changed-file classification matches the Claude source of truth.
 - Current hook snippets do not emit the unsupported legacy agent hook shape.
 - Sequential command generation uses `codex exec`.
-- Release fixture smoke imports the installed fixture's sequential agent-all-codex prompt helper and validates implementer/reviewer prompt contracts plus changedFiles/verification parsing.
+- Release fixture smoke imports the installed fixture's sequential /agent-all prompt helper and validates implementer/reviewer prompt contracts plus changedFiles/verification parsing.
 - Live release smoke probes `codex exec [OPTIONS] [PROMPT]`.
 
 ## Automated Runtime Evidence
 
 The release fixture smoke gate installs into a fresh Codex operational fixture,
-imports the installed fixture's sequential agent-all-codex prompt helper, and
+imports the installed fixture's sequential /agent-all prompt helper, and
 validates the implementer prompt contract, reviewer prompt contract,
 `changedFiles` parsing, verification parsing, and no synthetic commit output.
 

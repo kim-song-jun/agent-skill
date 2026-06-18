@@ -6,6 +6,21 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.8 — 2026-06-18
+
+- Canonicalized the public command surface across platform ports: Codex,
+  Copilot, Cursor, and Gemini now expose `/agent-init`, `/agent-all`,
+  `/visual-qa`, `/thrift`, and `/debug` where applicable, while keeping
+  platform-specific plugin/source directory names internal.
+- Updated Codex install renderers, doctors, cleanup logic, docs, templates, and
+  release guards so installed skills land under canonical paths such as
+  `.codex/skills/agent-all`, `.codex/skills/visual-qa`, `.codex/skills/thrift`,
+  and `.codex/skills/debug`.
+- Added command-surface regression coverage to prevent platform-suffixed public
+  slash commands from leaking back into active docs, templates, and skill
+  metadata.
+- Suite: 2001/2001 passing; fast release smoke 473/473 passing.
+
 ## Agent-skill v0.6.7 — 2026-06-16
 
 - Test-integrity sweep across all 176 test files: strengthened 50 weak test

@@ -32,7 +32,7 @@
    `.agent-skill/runs/<run-id>/spawn-log.jsonl` with role, reason, wave, and
    cost estimate. Emit compatible `BeforeAgentSpawn` policy entries with wave
    spawn count and same-role spawn count when policy logging is available.
-   Do not invoke the built-in `Workflow` tool inside `/agent-all-copilot`;
+   Do not invoke the built-in `Workflow` tool inside `/agent-all`;
    Workflow remains a sibling route that hands off through a task doc.
 
 4. For each wave:

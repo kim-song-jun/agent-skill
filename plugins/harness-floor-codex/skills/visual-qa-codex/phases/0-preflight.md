@@ -19,7 +19,7 @@
      default option `abort`, and options `abort` (recommended, low risk)
      and `continue` (medium risk).
    - Render with
-     `../agent-all-codex/lib/interactions/renderer-codex.mjs` and append
+     `../agent-all/lib/interactions/renderer-codex.mjs` and append
      the result to `.agent-skill/runs/<run-id>/interactions.jsonl` with
      `appendInteractionLog({ source: "visual-qa" })`.
    - If `--yes` or non-TTY, resolve through `resolveNonTtyInteraction()`;

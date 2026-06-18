@@ -665,8 +665,8 @@ const PLATFORM_CONTRACTS = {
       {
         file: "plugins/harness-builder-codex/skills/codex-init/SKILL.md",
         patterns: [
-          /^---\nname: codex-init\n/m,
-          /^# \/codex-init$/m,
+          /^---\nname: agent-init\n/m,
+          /^# \/agent-init$/m,
           /default[\s\S]{0,140}operational and heavy/i,
           /--lite/,
           /--theme=lite/,
@@ -708,8 +708,8 @@ const PLATFORM_CONTRACTS = {
       {
         file: "plugins/harness-floor-codex/skills/agent-all-codex/SKILL.md",
         patterns: [
-          /^---\nname: agent-all-codex\n/m,
-          /^# \/agent-all-codex$/m,
+          /^---\nname: agent-all\n/m,
+          /^# \/agent-all$/m,
           /--loop/,
           /--qa/,
           /--dispatch=sequential/,
@@ -723,8 +723,8 @@ const PLATFORM_CONTRACTS = {
       {
         file: "plugins/harness-floor-codex/skills/visual-qa-codex/SKILL.md",
         patterns: [
-          /^---\nname: visual-qa-codex\n/m,
-          /^# \/visual-qa-codex$/m,
+          /^---\nname: visual-qa\n/m,
+          /^# \/visual-qa$/m,
           /comprehensive/,
           /--budget=<USD>/,
           /--dispatch=sequential/,
@@ -738,8 +738,8 @@ const PLATFORM_CONTRACTS = {
       {
         file: "plugins/harness-thrift-codex/skills/thrift-codex/SKILL.md",
         patterns: [
-          /^---\nname: thrift-codex\n/m,
-          /^# \/thrift-codex$/m,
+          /^---\nname: thrift\n/m,
+          /^# \/thrift$/m,
           /^run \/thrift(?:\s+#.*)?$/m,
           /run \/thrift summarise/,
           /run \/thrift audit/,
@@ -766,8 +766,8 @@ const PLATFORM_CONTRACTS = {
       {
         file: "plugins/harness-debug-codex/skills/debug-codex/SKILL.md",
         patterns: [
-          /^---\nname: debug-codex\n/m,
-          /^# \/debug-codex$/m,
+          /^---\nname: debug\n/m,
+          /^# \/debug$/m,
           /^run \/debug "(?:<failing command>|[^"]+)"$/m,
           /run \/debug --resume/,
           /\.debug-state\.json/,
@@ -792,9 +792,9 @@ const PLATFORM_CONTRACTS = {
           /^# harness-debug-codex$/m,
           /Codex CLI/i,
           /run \/debug/,
-          /debug-codex/,
+          /debug/,
           /install-platform\.sh --platform=codex --target=\/path\/to\/project --theme=debug/,
-          /\.codex\/skills\/debug-codex/,
+          /\.codex\/skills\/debug/,
           /Release surface/,
           /structured error parsing/i,
           /\.debug-state\.json/,
@@ -899,7 +899,7 @@ const PLATFORM_CONTRACTS = {
         file: "scripts/install-platform.sh",
         patterns: [
           /codex[\s\S]{0,140}OpenAI Codex CLI/,
-          /codex-init so it writes AGENTS\.md \+ base skills only/,
+          /agent-init so it writes AGENTS\.md \+ base skills only/,
           /run_init "harness-builder-\$EMIT_PLATFORM" "init\.mjs" --lite/,
           /run_init "harness-thrift-\$EMIT_PLATFORM" "install\.mjs" --no-instrument/,
           /run_init "harness-debug-\$EMIT_PLATFORM" "install\.mjs"/,

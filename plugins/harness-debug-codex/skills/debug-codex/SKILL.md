@@ -1,19 +1,16 @@
 ---
-name: debug-codex
+name: debug
 description: >
-  Codex CLI port of /debug — six-phase debugging workflow with
-  hypothesis state persistence, structured error parsing, and git/input
-  bisection. Use run /debug to start an investigation from a failing
-  command; run /debug --resume to continue across sessions. Writes a
-  durable log to .agent-skill/reports/debug/<date>-<slug>.md at end. Wraps (does not
-  replace) superpowers:systematic-debugging when that skill is installed.
+  Use when investigating a failing Codex CLI command, flaky behavior,
+  regression, or unclear runtime error that needs reproducible debugging
+  evidence and durable hypothesis state.
 ---
 
-# /debug-codex
+# /debug
 
 Drives a disciplined six-phase investigation for the current Codex project.
-Reads `.debug-state.json`, runs the failing command, parses the
-error into structured form, enumerates hypotheses (delegating to
+Reads `.debug-state.json`, runs the failing command, performs structured error parsing,
+enumerates hypotheses (delegating to
 `superpowers:systematic-debugging` when available), runs minimal
 experiments per hypothesis, restores working-tree state between
 experiments, and writes a durable debug-log artifact at end.
@@ -30,15 +27,15 @@ run /debug --skip-isolate "<command>"
 run /debug --yes "<command>"
 ```
 
-This routes to the local `debug-codex` workflow contract below. The
-Codex-specific skill name remains visible so installed files, release audits,
-and phase paths can stay platform-explicit.
+The installed project-local skill is named `debug`. The source directory
+remains `debug-codex` only to identify the Codex implementation inside this
+repository.
 
 ```
-/debug-codex "<failing command>"          # start a fresh investigation
-/debug-codex --resume                     # continue from existing state
-/debug-codex --skip-isolate "<command>"   # skip Phase 2 input/git bisection
-/debug-codex --yes "<command>"            # don't prompt; pick first candidate
+/debug "<failing command>"          # start a fresh investigation
+/debug --resume                     # continue from existing state
+/debug --skip-isolate "<command>"   # skip Phase 2 input/git bisection
+/debug --yes "<command>"            # don't prompt; pick first candidate
 ```
 
 ## Flags
@@ -89,7 +86,7 @@ under `phases/`; Read it on demand.
    output to `.debug-artifacts/`.
 7. **Shared interaction model for user decisions.** Any choice, resume,
    or confirmation uses `agent-interaction/v1` from
-   `../agent-all-codex/lib/interactions/*.mjs`, renders through
+   `../agent-all/lib/interactions/*.mjs`, renders through
    `renderer-codex.mjs`, and appends the result to
    `.agent-skill/runs/debug/interactions.jsonl` with
    `appendInteractionLog({ source: "debug" })`. Non-TTY may choose a

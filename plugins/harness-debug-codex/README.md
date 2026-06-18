@@ -53,10 +53,9 @@ run /debug --resume
 run /debug --skip-isolate "<command>"
 ```
 
-These public prompt-level entrypoints route to the installed
-`debug-codex` skill contract under `.codex/skills/`. The Codex-specific
-skill name stays visible so installed files, release audits, and phase
-paths can remain platform-explicit.
+These public prompt-level entrypoints use the installed `.codex/skills/debug/`
+skill. The source directory in this repository remains `skills/debug-codex/` to
+identify the Codex implementation.
 
 ## Configuration
 
@@ -79,7 +78,7 @@ user-edited config file is required for v0.1; defaults are inlined.
 
 v0.1 — phase docs, state checkpointing, structured error parsing,
 hypothesis tracking, bisection helpers, Codex prompt-level entrypoint
-contract, and project-local installation into `.codex/skills/debug-codex/`.
+contract, and project-local installation into `.codex/skills/debug/`.
 Runtime execution is intentionally conservative: large shell output should go
 through context-mode when available, and Codex mutating experiments use
 `apply_patch` plus explicit tree restoration checks.
@@ -93,6 +92,6 @@ through context-mode when available, and Codex mutating experiments use
 
 ## References
 
-- `skills/debug-codex/SKILL.md` — entry point
-- `skills/debug-codex/references/integration-with-superpowers.md` — Codex-safe superpowers fallback
+- `skills/debug/SKILL.md` — entry point
+- `skills/debug/references/integration-with-superpowers.md` — Codex-safe superpowers fallback
 - `docs/superpowers/specs/2026-05-18-harness-debug-design.md` — source design

@@ -1,13 +1,12 @@
 ---
-name: agent-all-codex
+name: agent-all
 description: >
-  Codex CLI port of /agent-all (intent → plan → wave-dispatch → gate → PR).
-  Current Codex hooks do not expose the older agent-dispatch surface, so
-  Phase 3 uses sequential `.codex/skills/<role>` invocations. The local
-  phase files in this skill are the runnable Codex workflow contract.
+  Use when a Codex CLI project needs a full feature, bugfix, or task run from
+  intent through planning, sequential role execution, review, verification, and
+  optional PR creation.
 ---
 
-# /agent-all-codex
+# /agent-all
 
 Runs the cost-unrestricted multi-agent pipeline using Codex CLI
 primitives. Current Codex hooks do not expose a command surface for the
@@ -23,15 +22,15 @@ harness entrypoint:
 run /agent-all for "add user signup form"
 ```
 
-This routes to the local `agent-all-codex` workflow contract below. The
-Codex-specific skill name remains visible so installed files, release audits,
-and phase paths can stay platform-explicit.
+The installed project-local skill is named `agent-all`. The source directory
+remains `agent-all-codex` only to identify the Codex implementation inside this
+repository.
 
 ```
-/agent-all-codex "add user signup form"
-/agent-all-codex .agent-skill/tasks/12-fix-login.md
-/agent-all-codex "fix flaky test" --loop --max-iter=5
-/agent-all-codex .agent-skill/tasks/x.md --no-pr --wave-size=large
+/agent-all "add user signup form"
+/agent-all .agent-skill/tasks/12-fix-login.md
+/agent-all "fix flaky test" --loop --max-iter=5
+/agent-all .agent-skill/tasks/x.md --no-pr --wave-size=large
 /agent-handoff .agent-skill/tasks/x.md --strict
 ```
 
@@ -102,7 +101,7 @@ Additional Codex-specific:
    `.agent-skill/runs/<run-id>/interactions.jsonl`. Non-TTY may auto-select
    recommended low/medium-risk options only; high-risk options pause or block.
 8. **No nested Workflow.** Codex sequential skill invocation is the local
-   `/agent-all-codex` executor. Do not wrap it in an ultracode/built-in
+   `/agent-all` executor. Do not wrap it in an ultracode/built-in
    `Workflow`; that tool remains a sibling route for evidence-producing work.
 
 ## Codex primitive map
@@ -130,9 +129,9 @@ Same as Claude port. Additional Codex-specific notes:
 - If `--dispatch=agent-hook` was forced: abort because current Codex hooks
   do not expose that dispatch surface.
 - If `.codex/skills/<role>/SKILL.md` missing for any wave's task role:
-  abort with `Run /codex-init first to seed the skill roster.` (matches the
-  Phase-0 preflight recovery; `codex-init` has no `--theme` flag — that is an
-  `install-platform.sh` option, not a `codex-init` argument).
+  abort with `Run /agent-init first to seed the skill roster.` (matches the
+  Phase-0 preflight recovery; `/agent-init` has no `--theme` flag — that is an
+  `install-platform.sh` option, not an `/agent-init` argument).
 - `shell_command` timeout (default 30s) extended to 300s for `git push`.
 
 ## When done

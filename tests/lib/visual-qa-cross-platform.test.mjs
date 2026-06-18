@@ -18,7 +18,7 @@ for (const platform of PLATFORMS) {
 
   test(`visual-qa-${platform}: SKILL.md graduates to full pipeline`, () => {
     const md = readFileSync(resolve(ROOT, "SKILL.md"), "utf-8");
-    assert.match(md, new RegExp(`^---\\nname: visual-qa-${platform}`));
+    assert.match(md, /^---\nname: visual-qa/);
     assert.match(md, /^## Pipeline$/m);
     assert.ok(md.includes("0-preflight"), "should reference 0-preflight phase file");
     assert.ok(md.includes("3-capture"), "should reference 3-capture phase file");

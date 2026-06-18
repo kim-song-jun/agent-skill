@@ -31,14 +31,14 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
      when the evidence status is `passed`.
 
    - **`visual-qa`**: treat as `verify:web-ui` evidence, then invoke the
-     sequential `.codex/skills/visual-qa-codex/SKILL.md` helper with a fresh
+     sequential `.codex/skills/visual-qa/SKILL.md` helper with a fresh
      per-iter slug. Current Codex CLI hooks do not expose a supported
      Task-style agent dispatch surface, so this path intentionally uses
      prompt-level sequential execution:
 
      ```
      # sequential path
-     invokeSkill(".codex/skills/visual-qa-codex/SKILL.md",
+     invokeSkill(".codex/skills/visual-qa/SKILL.md",
        ["--slug=loop-iter-${state.iter}", "--force", "--yes"])
      ```
 

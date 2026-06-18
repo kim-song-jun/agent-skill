@@ -74,7 +74,7 @@ Subprocess machinery implementation deferred.
 
 ## Differences from Claude Code orchestrator
 
-| Aspect | Claude Code (`/agent-all`) | Gemini (`agent-all-gemini`) |
+| Aspect | Claude Code (`/agent-all`) | Gemini (`/agent-all` port) |
 |---|---|---|
 | Dispatch | `Task` tool (subagent-driven-development) | `run_shell_command("gemini chat ... &")` |
 | Awaiter | Skill awaits per-task | `wait <pid>` OR polling tmp dir |

@@ -1,12 +1,12 @@
 ---
-name: copilot-init
+name: agent-init
 description: >
-  Scaffold .github/copilot-instructions.md, AGENTS.md, and .github/instructions/
-  for a new or existing project. Use at the start of a Copilot CLI engagement
-  to give the agent durable project memory.
+  Use when starting a GitHub Copilot CLI project or adopting Copilot in an
+  existing repository that needs project memory, role instructions, or harness
+  scaffolding.
 ---
 
-# Copilot Init
+# /agent-init
 
 You are scaffolding agent infrastructure for a GitHub Copilot CLI project.
 

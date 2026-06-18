@@ -1,6 +1,6 @@
 ---
 name: agent-init
-description: Bootstrap a Claude Code agent harness in the current project — CLAUDE.md, AGENTS.md, .claude/agents/, hooks, plugin wiring, all in one invocation. Use when starting a new project or adopting Claude Code on an existing one without an existing CLAUDE.md. (Renamed from /harness-init in v0.2.0)
+description: Use when starting a new project or adopting Claude Code on an existing repository that needs project memory, role agents, hooks, or harness scaffolding.
 ---
 
 # /agent-init

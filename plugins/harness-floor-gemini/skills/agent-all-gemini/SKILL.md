@@ -1,10 +1,9 @@
 ---
-name: agent-all-gemini
+name: agent-all
 description: >
-  Gemini CLI port of /agent-all (intent → plan → wave-dispatch → gate → PR).
-  Subprocess-based dispatch — Gemini has no native subagent primitive, so
-  Phase 3 forks N parallel `gemini chat` subprocesses per wave task.
-  See plugins/harness-floor/skills/agent-all/SKILL.md for the source-of-truth pipeline.
+  Use when a Gemini CLI project needs a full feature, bugfix, or task run from
+  intent through planning, subprocess role execution, review, verification, and
+  optional PR creation.
 ---
 
 # /agent-all (Gemini port)
@@ -18,10 +17,10 @@ parsing.
 ## Usage
 
 ```
-/agent-all-gemini "add user signup form"
-/agent-all-gemini .agent-skill/tasks/12-fix-login.md
-/agent-all-gemini "fix flaky test" --loop --max-iter=5
-/agent-all-gemini .agent-skill/tasks/x.md --no-pr --wave-size=large
+/agent-all "add user signup form"
+/agent-all .agent-skill/tasks/12-fix-login.md
+/agent-all "fix flaky test" --loop --max-iter=5
+/agent-all .agent-skill/tasks/x.md --no-pr --wave-size=large
 /agent-handoff .agent-skill/tasks/x.md --strict
 ```
 

@@ -1,11 +1,8 @@
 ---
-name: thrift-cursor
+name: thrift
 description: >
-  Cursor port of /thrift (Theme B — cost-conscious long-session optimisation).
-  Advisory-only rule + config. Cursor has no programmatic hooks and no exposed
-  prompt cache, so this port collapses to a `.cursor/rules/thrift.mdc` directive
-  the planner reads on every turn. See plugins/harness-thrift/skills/thrift/SKILL.md
-  for the source-of-truth pipeline.
+  Use when a long Cursor session needs cost control, context growth management,
+  summarisation guidance, prompt-cache guidance, or an end-of-session cost audit.
 ---
 
 # /thrift (Cursor port)

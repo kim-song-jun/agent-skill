@@ -25,8 +25,8 @@
 #   debug           — just /debug (Codex only today)
 #
 # --lite:
-#   builder-only lightweight scaffold. For Codex, passes --lite through to
-#   codex-init so it writes AGENTS.md + base skills only.
+#   builder-only lightweight scaffold. For Codex, passes --lite to
+#   agent-init so it writes AGENTS.md + base skills only.
 #
 # --lang:
 #   persist the interaction language into generated root guidance and
@@ -94,8 +94,8 @@ Usage:
   debug           — just /debug (Codex only today)
 
 --lite:
-  builder-only lightweight scaffold. For Codex, passes --lite through to
-  codex-init so it writes AGENTS.md + base skills only.
+  builder-only lightweight scaffold. For Codex, passes --lite to agent-init so
+  it writes AGENTS.md + base skills only.
 
 --lang:
   persist the interaction language into generated root guidance and
@@ -635,15 +635,15 @@ print_install_summary() {
       echo "  - Note: codex-config.toml policy-hook snippet was printed to stdout; merge into ~/.codex/config.toml"
       ;;
     codex:floor)
-      echo "  - .visual-qa.json, .agent-all.json, .codex/skills/{agent-all-codex,visual-qa-codex,visual-qa-page}/"
+      echo "  - .visual-qa.json, .agent-all.json, .codex/skills/{agent-all,visual-qa,visual-qa-page}/"
       echo "  - Note: Playwright MCP snippet and Codex floor guidance were printed to stdout for manual merge"
       ;;
     codex:thrift)
-      echo "  - .thrift.json, .codex/hooks/thrift-*.toml"
+      echo "  - .thrift.json, .codex/skills/thrift/, .codex/hooks/thrift-*.toml"
       echo "  - Note: install-platform uses --no-instrument for Codex thrift; merge hook snippets manually after approval"
       ;;
     codex:debug)
-      echo "  - .codex/skills/debug-codex/, .debug-artifacts/, .agent-skill/reports/debug/"
+      echo "  - .codex/skills/debug/, .debug-artifacts/, .agent-skill/reports/debug/"
       echo "  - Note: type run /debug \"<failing command>\" in Codex to start an investigation"
       ;;
     gemini:all)

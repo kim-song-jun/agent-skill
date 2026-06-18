@@ -16,7 +16,7 @@ const ROOT_GUIDANCE = {
   codex: [
     {
       rel: "AGENTS.md",
-      managedPattern: /Project memory for Codex CLI\. Scaffolded by `\/codex-init`/i,
+      managedPattern: /Project memory for Codex CLI\. Scaffolded by `\/agent-init`/i,
     },
   ],
 };
@@ -66,10 +66,11 @@ const CODEX_SKILL_DIRS = [
   ".codex/skills/design-reviewer",
   ".codex/skills/security-reviewer",
   ".codex/skills/data-reviewer",
-  ".codex/skills/agent-all-codex",
-  ".codex/skills/visual-qa-codex",
+  ".codex/skills/agent-all",
+  ".codex/skills/visual-qa",
   ".codex/skills/visual-qa-page",
-  ".codex/skills/debug-codex",
+  ".codex/skills/thrift",
+  ".codex/skills/debug",
 ];
 
 const SHARED_GENERATED_FILES = [

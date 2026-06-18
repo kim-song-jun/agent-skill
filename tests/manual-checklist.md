@@ -73,8 +73,8 @@ The gate covers:
   `.github/workflows/*.yml` changes.
 - Claude native release manifests, hook syntax, `/agent-init` release docs, Phase 3 parallel fan-out contract, final summary contract, and visual-qa seed config.
 - Claude slash-command metadata, headings, flags, and summary contracts for `/agent-init`, `/agent-all`, `/visual-qa`, and `/thrift`.
-- Codex slash-command metadata, headings, flags, and summary contracts for `/codex-init`, `/agent-all-codex`, `/visual-qa-codex`, `/thrift-codex`, and `/debug-codex`.
-- Codex install renderers for operational, lite, builder, floor, thrift, and debug profiles, including `/codex-init --lite` via `install-platform.sh --platform=codex --lite`, single-theme installs via `--theme=builder|floor|thrift`, and debug-only installs via `--theme=debug`.
+- Codex slash-command metadata, headings, flags, and summary contracts for `/agent-init`, `/agent-all`, `/visual-qa`, `/thrift`, and `/debug`.
+- Codex install renderers for operational, lite, builder, floor, thrift, and debug profiles, including `/agent-init --lite` via `install-platform.sh --platform=codex --lite`, single-theme installs via `--theme=builder|floor|thrift`, and debug-only installs via `--theme=debug`.
 - Codex floor and visual-qa dispatch contracts, including the verified `codex exec` positional `[PROMPT]` interface.
 - Sentinel merge, dry-run, force, policy-hook, folder-guide, task-ledger, foundation-status, and lite-profile contracts.
 - Release readiness audit coverage for Claude/Codex manifests, required files, hook schema, role routing, and audit tokens.
@@ -100,7 +100,7 @@ is covered by the automated gate above and the short live host probes below.
 | Requirement | Authoritative evidence |
 | --- | --- |
 | Claude + Codex ship together | `node scripts/release-audit.mjs` must pass independent Claude and Codex readiness checks; `scripts/release-fixture-smoke.mjs` must prove both marketplace/render paths and install→uninstall roundtrips. |
-| Heavy operational default, lite opt-out | `agent-init-dry-run-contract.test.mjs`, `release-install-scripts.test.mjs`, and release fixtures must prove default operational/heavy installs plus `/agent-init --lite`, `/codex-init --lite`, and `install-platform.sh --platform=codex --lite`. |
+| Heavy operational default, lite opt-out | `agent-init-dry-run-contract.test.mjs`, `release-install-scripts.test.mjs`, and release fixtures must prove default operational/heavy installs plus `/agent-init --lite`, `/agent-init --lite`, and `install-platform.sh --platform=codex --lite`. |
 | Approved foundation auto-update | Release fixtures and docs contracts must prove default operational installs auto-update only approved `superpowers`/`context-mode` foundations, while lite installs require explicit `--update-foundations`; `scripts/update.sh --foundations-only` remains the manual recovery path. |
 | Superpowers/context-mode activation | `release-audit.mjs` must prove root Claude/Codex guidance names the required `superpowers:*` workflows and context-mode/file-backed handling for broad searches, large logs, and bulk context. |
 | Persona segmentation | Release fixtures and release-audit contracts must prove operational and builder-heavy Claude agents and Codex skills include orchestrator, frontend-dev, backend-dev, integration-dev, design-reviewer, security-reviewer, data-reviewer, QA, and verification personas with required audit tokens. |
@@ -189,7 +189,7 @@ Use a fresh git fixture and run the generated Codex workflow from the Codex CLI:
 mkdir /tmp/harness-fixture-codex && cd /tmp/harness-fixture-codex && git init
 ```
 
-Inside Codex CLI, run `/codex-init`, then `/codex-init --lite` in a second
+Inside Codex CLI, run `/agent-init`, then `/agent-init --lite` in a second
 fresh fixture. The automated gate already checks the command metadata; here,
 confirm Codex accepts both slash-command invocations, accepts the interactive
 prompts, and reaches the summary screen without host-runtime errors.

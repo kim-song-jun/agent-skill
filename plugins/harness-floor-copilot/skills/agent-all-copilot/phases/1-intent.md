@@ -34,11 +34,11 @@ Write the prompt verbatim to a new file via `apply_patch`:
 against `references/orchestrator-routing.md`. If the intent is
 *evidence-producing* — research, an audit across many units, a
 design/findings report, with no durable code change yet — the `task` tool
-fan-out is the correct orchestrator, **not** `/agent-all-copilot`. In that
+fan-out is the correct orchestrator, **not** `/agent-all`. In that
 case: recommend it to the user; if they agree, STOP this pipeline and
 instruct them to run a `task`-dispatched sweep that writes a
 `validateTaskDoc`-compliant task doc under `.agent-skill/tasks/`, then
-re-enter with `/agent-all-copilot <taskdoc> --no-brainstorm` (resumes at
+re-enter with `/agent-all <taskdoc> --no-brainstorm` (resumes at
 Branch A — no double-planning). Only continue to step 1 below when the
 deliverable is a durable, gated code change that ships as a PR.
 

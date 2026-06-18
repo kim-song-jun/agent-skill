@@ -37,8 +37,9 @@ run /thrift summarise         # manual summariser trigger
 run /thrift audit             # ad-hoc audit report (otherwise auto on Codex Stop)
 ```
 
-These public prompt-level entrypoints route to the installed
-`thrift-codex` skill contract under `.codex/skills/`.
+These public prompt-level entrypoints use the installed
+`.codex/skills/thrift/` skill. The source directory in this repository remains
+`skills/thrift-codex/` to identify the Codex implementation.
 
 For non-interactive release installs, `scripts/install-platform.sh --platform=codex --theme=all`
 runs thrift with `--no-instrument`: it writes `.thrift.json` and `.codex/hooks/*.toml`

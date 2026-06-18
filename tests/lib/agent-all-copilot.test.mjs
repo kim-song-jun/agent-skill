@@ -7,8 +7,8 @@ const SKILL_ROOT = "plugins/harness-floor-copilot/skills/agent-all-copilot";
 
 test("agent-all-copilot: SKILL.md exists with name frontmatter", () => {
   const md = readFileSync(resolve(SKILL_ROOT, "SKILL.md"), "utf-8");
-  assert.match(md, /^---\nname: agent-all-copilot/);
-  assert.ok(md.includes("Copilot CLI port"));
+  assert.match(md, /^---\nname: agent-all/);
+  assert.ok(md.includes("Copilot port"));
   assert.ok(md.includes("`task` tool"));
   assert.ok(md.includes("`store_memory`"));
 });

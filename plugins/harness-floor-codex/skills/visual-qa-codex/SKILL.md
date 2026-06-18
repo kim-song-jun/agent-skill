@@ -1,19 +1,20 @@
 ---
-name: visual-qa-codex
+name: visual-qa
 description: >
-  Codex CLI port of /visual-qa — Playwright MCP capture matrix + per-image LLM
-  analysis + diff vs prior run. Supports `declared` and `comprehensive` modes
-  (crawl + DOM walk auto-discovery, shallow click, baseline-relative verdict).
-  Phase 3 uses sequential `.codex/skills/visual-qa-page` dispatch because
-  current Codex hooks do not expose the older agent-dispatch surface. The
-  local phase files in this skill are the runnable Codex workflow contract.
+  Use when a Codex CLI project needs browser screenshot capture, visual
+  regression review, UI state coverage, or Playwright-backed visual QA evidence.
 ---
 
-# /visual-qa-codex
+# /visual-qa
 
 Runs the cost-unrestricted visual-QA pipeline on Codex CLI. Reads
 `.visual-qa.json`, captures via Playwright MCP, analyses each image
-with the configured LLM, produces `.agent-skill/reports/visual-qa/<slug>/report.md`.
+with the configured LLM, and produces
+`.agent-skill/reports/visual-qa/<slug>/report.md`. The packaged release
+supports `declared` and `comprehensive` modes, including the same comprehensive
+mode used by `/agent-all --qa`. Comprehensive mode adds crawl auto-discovery,
+DOM walk coverage, shallow click expansion, DOM-hash caching, and a
+baseline-relative verdict.
 
 ## Usage
 
@@ -24,15 +25,15 @@ harness entrypoint:
 run /visual-qa for the configured project
 ```
 
-This routes to the local `visual-qa-codex` workflow contract below. The
-Codex-specific skill name remains visible so installed files, release audits,
-and phase paths can stay platform-explicit.
+The installed project-local skill is named `visual-qa`. The source directory
+remains `visual-qa-codex` only to identify the Codex implementation inside this
+repository.
 
 ```
-/visual-qa-codex
-/visual-qa-codex --resume
-/visual-qa-codex --force --slug=my-run
-/visual-qa-codex --dispatch=sequential
+/visual-qa
+/visual-qa --resume
+/visual-qa --force --slug=my-run
+/visual-qa --dispatch=sequential
 ```
 
 ## Flags

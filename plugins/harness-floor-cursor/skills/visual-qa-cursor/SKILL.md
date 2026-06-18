@@ -1,12 +1,8 @@
 ---
-name: visual-qa-cursor
+name: visual-qa
 description: >
-  Cursor port of /visual-qa — Playwright MCP capture matrix + per-image LLM
-  analysis + diff vs prior run. Supports `declared` and `comprehensive`
-  modes (crawl + DOM walk auto-discovery, shallow click, baseline-relative
-  verdict). Phase 3 uses Cursor's `is_background: true` subagents for
-  parallel per-page capture+analyze. See
-  plugins/harness-floor/skills/visual-qa/SKILL.md for the source-of-truth pipeline.
+  Use when a Cursor project needs browser screenshot capture, visual regression
+  review, UI state coverage, or Playwright-backed visual QA evidence.
 ---
 
 # /visual-qa (Cursor port)
@@ -14,6 +10,9 @@ description: >
 Runs the cost-unrestricted visual-QA pipeline on Cursor. Reads
 `.visual-qa.json`, captures via Playwright MCP, analyses each image with
 the configured LLM, produces `.agent-skill/reports/visual-qa/<slug>/report.md`.
+Supports `declared` and `comprehensive` modes. Comprehensive mode adds crawl
+auto-discovery, DOM walk coverage, shallow click expansion, DOM-hash caching,
+and a baseline-relative verdict.
 
 ## Usage (from Cursor chat)
 

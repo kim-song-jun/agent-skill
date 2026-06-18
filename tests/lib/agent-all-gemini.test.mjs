@@ -7,9 +7,9 @@ const SKILL_ROOT = "plugins/harness-floor-gemini/skills/agent-all-gemini";
 
 test("agent-all-gemini: SKILL.md exists with name frontmatter", () => {
   const md = readFileSync(resolve(SKILL_ROOT, "SKILL.md"), "utf-8");
-  assert.match(md, /^---\nname: agent-all-gemini/);
-  assert.ok(md.includes("Gemini CLI port"));
-  assert.ok(md.includes("Subprocess-based dispatch"));
+  assert.match(md, /^---\nname: agent-all/);
+  assert.ok(md.includes("Gemini port"));
+  assert.match(md, /subprocess-based/i);
   assert.ok(md.includes("run_shell_command"));
 });
 

@@ -28,7 +28,7 @@ today"). The user must supply the last known-good commit or tag.
 1. Prompt user for `knownGood` ref using `agent-interaction/v1`
    (`kind: "decision"`, `id: "debug:known-good-ref"`,
    `nonTtyPolicy: "pause"`). Render through
-   `../agent-all-codex/lib/interactions/renderer-codex.mjs` and append
+   `../agent-all/lib/interactions/renderer-codex.mjs` and append
    the result to `.agent-skill/runs/debug/interactions.jsonl` with
    `appendInteractionLog({ source: "debug" })`. Non-TTY must pause
    rather than inventing a ref. `knownBad` is `HEAD`.

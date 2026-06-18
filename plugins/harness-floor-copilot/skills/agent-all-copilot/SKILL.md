@@ -1,10 +1,9 @@
 ---
-name: agent-all-copilot
+name: agent-all
 description: >
-  GitHub Copilot CLI port of /agent-all (intent → plan → wave-dispatch → gate → PR).
-  Uses Copilot's `task` tool for parallel wave dispatch and `store_memory`
-  (scope=repository) for plan persistence. See plugins/harness-floor/skills/agent-all/SKILL.md
-  for the source-of-truth pipeline.
+  Use when a GitHub Copilot CLI project needs a full feature, bugfix, or task
+  run from intent through planning, implementation, review, verification, and
+  optional PR creation.
 ---
 
 # /agent-all (Copilot port)
@@ -16,10 +15,10 @@ awaits via Copilot's `subagentStop` hook (or polls `list_agents`).
 ## Usage
 
 ```
-/agent-all-copilot "add user signup form"
-/agent-all-copilot .agent-skill/tasks/12-fix-login.md
-/agent-all-copilot "fix flaky test" --loop --max-iter=5
-/agent-all-copilot .agent-skill/tasks/x.md --no-pr --wave-size=large
+/agent-all "add user signup form"
+/agent-all .agent-skill/tasks/12-fix-login.md
+/agent-all "fix flaky test" --loop --max-iter=5
+/agent-all .agent-skill/tasks/x.md --no-pr --wave-size=large
 /agent-handoff .agent-skill/tasks/x.md --strict
 ```
 

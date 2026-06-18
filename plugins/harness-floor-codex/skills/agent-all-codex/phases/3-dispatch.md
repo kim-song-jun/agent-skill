@@ -44,7 +44,7 @@
       when the local policy writer is available. Include wave spawn count and
       same-role spawn count so policy can enforce per-wave caps and repeated
       role limits.
-      Do not invoke the built-in `Workflow` tool inside `/agent-all-codex`;
+      Do not invoke the built-in `Workflow` tool inside `/agent-all`;
       Workflow remains a sibling route that hands off through a task doc.
    b. Print: `Wave <i+1>/<N> — <waves[i].length> tasks (sequential dispatch)`.
    c. For each task in the wave (one at a time):

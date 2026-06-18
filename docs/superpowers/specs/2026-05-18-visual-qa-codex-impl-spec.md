@@ -59,9 +59,9 @@ installs:
 
 - `.visual-qa.json`
 - `.agent-all.json`
-- `.codex/skills/visual-qa-codex/SKILL.md`
-- `.codex/skills/visual-qa-codex/phases/*`
-- `.codex/skills/visual-qa-codex/lib/*`
+- `.codex/skills/visual-qa/SKILL.md`
+- `.codex/skills/visual-qa/phases/*`
+- `.codex/skills/visual-qa/lib/*`
 - `.codex/skills/visual-qa-page/SKILL.md`
 
 `scripts/install-platform.sh --platform=codex --target=<repo> --theme=all`
@@ -72,7 +72,7 @@ files only and prints global config snippets for manual merge.
 
 Current automated coverage lives in:
 
-- `tests/lib/visual-qa-codex-dispatch.test.mjs`
+- `tests/lib/visual-qa-dispatch.test.mjs`
 - `tests/lib/visual-qa-cross-platform.test.mjs`
 - `tests/lib/visual-qa-vendored-libs.test.mjs`
 - `tests/lib/release-install-scripts.test.mjs`
@@ -87,7 +87,7 @@ Key assertions:
 - The unsupported legacy hook strategy fails early.
 - Installed Codex floor artifacts include runnable visual-QA skill directories.
 - The generated visual-QA seed config matches the comprehensive-mode contract.
-- Release fixture smoke imports the installed fixture's sequential visual-qa-codex page helper and validates page prompt contracts, positional argv, captures parsing, and analyses parsing.
+- Release fixture smoke imports the installed fixture's sequential /visual-qa page helper and validates page prompt contracts, positional argv, captures parsing, and analyses parsing.
 - Live release smoke probes `codex exec [OPTIONS] [PROMPT]`.
 
 ## Automated Runtime Evidence
@@ -96,7 +96,7 @@ Automated contracts cover the source sequential dispatcher, generated Codex
 visual-QA artifacts, release install renderers, and the live `codex exec
 [OPTIONS] [PROMPT]` surface. The release fixture smoke gate also installs into
 a fresh Codex operational fixture, imports the installed fixture's sequential
-visual-qa-codex page helper, and validates page prompt contracts, positional
+/visual-qa page helper, and validates page prompt contracts, positional
 argv, captures parsing, and analyses parsing.
 
 ## Manual Host UX Observation

@@ -1,6 +1,6 @@
 {
   "name": "harness-debug",
-  "version": "0.6.7",
+  "version": "0.6.8",
   "description": "Theme D — debugging-focused disciplined investigation: reproduce → isolate → hypothesize → verify with structured error parsing, hypothesis state persistence, git/input bisection, and durable debug-log artifacts. Wraps superpowers:systematic-debugging when available.",
   "keywords": [
     "harness",

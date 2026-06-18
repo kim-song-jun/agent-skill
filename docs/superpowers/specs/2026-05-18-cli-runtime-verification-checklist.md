@@ -25,8 +25,8 @@ The fast smoke gate verifies:
 - Claude native release contracts.
 - Codex install renderers for operational, lite, builder, floor, thrift, and debug profiles.
 - Codex floor and visual-qa sequential dispatch contracts.
-- Release fixture smoke imports the installed fixture's sequential agent-all-codex prompt helper and validates implementer/reviewer prompt contracts, installed frontend-dev/backend-dev role-skill inlining, plus changedFiles/verification parsing.
-- Release fixture smoke imports the installed fixture's sequential visual-qa-codex page helper and validates page prompt contracts, positional argv, captures parsing, and analyses parsing.
+- Release fixture smoke imports the installed fixture's sequential /agent-all prompt helper and validates implementer/reviewer prompt contracts, installed frontend-dev/backend-dev role-skill inlining, plus changedFiles/verification parsing.
+- Release fixture smoke imports the installed fixture's sequential /visual-qa page helper and validates page prompt contracts, positional argv, captures parsing, and analyses parsing.
 - Claude CLI live probe for plugin marketplace/install command surfaces used by `install-all.sh`.
 - Codex CLI live probe for the positional prompt interface: `codex exec [OPTIONS] [PROMPT]`.
 - Vendored lib sync.

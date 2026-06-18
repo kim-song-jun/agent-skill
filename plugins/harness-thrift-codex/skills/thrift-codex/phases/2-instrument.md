@@ -49,7 +49,7 @@
 
 6. Push `{phase: 2, completedAt, applied, skipped}` to `.thrift-state.json`.
 
-## Revert (called by `/thrift-codex uninstall` or manual cleanup)
+## Revert (called by `/thrift uninstall` or manual cleanup)
 
 `unpatchCodexConfig({configPath, sentinelPrefix: "thrift:"})` removes
 any block bracketed by `# thrift: <name>` ... `# end thrift: <name>`

@@ -35,10 +35,10 @@ against `references/orchestrator-routing.md`. If the intent is
 *evidence-producing* — research, an audit across many units, a
 design/findings report, with no durable code change yet — a parallel
 `gemini chat` fan-out sweep is the correct orchestrator, **not**
-`/agent-all-gemini`. In that case: recommend it to the user; if they agree,
+`/agent-all`. In that case: recommend it to the user; if they agree,
 STOP this pipeline and instruct them to run a fan-out sweep that writes a
 `validateTaskDoc`-compliant task doc under `.agent-skill/tasks/`, then
-re-enter with `/agent-all-gemini <taskdoc> --no-brainstorm` (resumes at
+re-enter with `/agent-all <taskdoc> --no-brainstorm` (resumes at
 Branch A — no double-planning). Decide at this brainstorming-scale gauge;
 only continue to step 1 below when the deliverable is a durable, gated code
 change that ships as a PR.
