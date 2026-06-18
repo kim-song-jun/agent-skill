@@ -8,28 +8,37 @@ Codex의 skill 및 prompt-level surface를 따릅니다.
 
 ## 설치
 
-marketplace가 아직 등록되지 않았다면 Claude Code 안에서 한 번 등록합니다.
-
-```text
-/plugin marketplace add https://github.com/kim-song-jun/agent-skill
-```
-
-그 다음 터미널에서 Codex plugin set을 설치합니다.
+Codex CLI 0.140.0 이상은 native plugin manager를 포함합니다. marketplace를 한
+번 등록합니다.
 
 ```bash
-git clone https://github.com/kim-song-jun/agent-skill /tmp/agent-skill
-bash /tmp/agent-skill/scripts/install-all.sh --cli=codex
+codex plugin marketplace add https://github.com/kim-song-jun/agent-skill
+```
+
+이미 등록되어 있다면 snapshot을 갱신합니다.
+
+```bash
+codex plugin marketplace upgrade agent-skill
+```
+
+그 다음 Codex plugin set을 설치합니다.
+
+```bash
+codex plugin add harness-builder-codex@agent-skill
+codex plugin add harness-floor-codex@agent-skill
+codex plugin add harness-thrift-codex@agent-skill
+codex plugin add harness-debug-codex@agent-skill
 ```
 
 ## 확인
 
 ```bash
-find ~/.codex/plugins/cache/agent-skill -maxdepth 7 -name SKILL.md | sort | grep -E '/(codex-init|agent-all-codex|visual-qa-codex|thrift-codex|debug-codex)/SKILL.md'
+codex plugin list | grep -E 'harness-(builder|floor|thrift|debug)-codex@agent-skill[[:space:]]+installed, enabled'
 ```
 
 ## 설치 완료의 의미
 
-Codex가 local plugin cache에서 설치된 `agent-skill` bundle을 로드할 수 있습니다.
+Codex가 native plugin manager에서 설치된 `agent-skill` bundle을 로드할 수 있습니다.
 project 안에서 `/agent-init`을 실행하기 전까지 target repository 파일은 생성되지
 않습니다.
 

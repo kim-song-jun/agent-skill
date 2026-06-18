@@ -8,29 +8,38 @@ uses Codex's current skill and prompt-level surfaces.
 
 ## Install
 
-Register the marketplace once in Claude Code if it is not already added:
-
-```text
-/plugin marketplace add https://github.com/kim-song-jun/agent-skill
-```
-
-Then install the Codex plugin set from a terminal:
+Codex CLI 0.140.0 and newer include a native plugin manager. Register the
+marketplace once:
 
 ```bash
-git clone https://github.com/kim-song-jun/agent-skill /tmp/agent-skill
-bash /tmp/agent-skill/scripts/install-all.sh --cli=codex
+codex plugin marketplace add https://github.com/kim-song-jun/agent-skill
+```
+
+If the marketplace is already configured, refresh its snapshot instead:
+
+```bash
+codex plugin marketplace upgrade agent-skill
+```
+
+Then install the Codex plugin set:
+
+```bash
+codex plugin add harness-builder-codex@agent-skill
+codex plugin add harness-floor-codex@agent-skill
+codex plugin add harness-thrift-codex@agent-skill
+codex plugin add harness-debug-codex@agent-skill
 ```
 
 ## Verify
 
 ```bash
-find ~/.codex/plugins/cache/agent-skill -maxdepth 7 -name SKILL.md | sort | grep -E '/(codex-init|agent-all-codex|visual-qa-codex|thrift-codex|debug-codex)/SKILL.md'
+codex plugin list | grep -E 'harness-(builder|floor|thrift|debug)-codex@agent-skill[[:space:]]+installed, enabled'
 ```
 
 ## Installed Means
 
-Codex can load the installed `agent-skill` plugin bundle from its local plugin
-cache. Target repository files are not created until `/agent-init` runs in a
+Codex can load the installed `agent-skill` plugin bundle from its native plugin
+manager. Target repository files are not created until `/agent-init` runs in a
 project.
 
 ## Next Step

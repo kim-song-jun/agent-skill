@@ -585,7 +585,7 @@ cargo new mycli && cd mycli && git init && git add -A && git commit -m "init"
 
 ## Use it from Claude Code or other AI tools
 
-Claude Code has a native marketplace (`/plugin install`), and `/agent-init` remains the primary in-Claude setup path. For terminal-driven project bootstrap, `install-platform.sh --platform=claude` runs the same project-local renderer outside Claude Code. The other AI tools — Cursor, GitHub Copilot, Codex CLI, Gemini CLI, VS Code — **don't have a comparable plugin marketplace for AI workflows**, so the same wrapper writes the right files into your project. CLI platforms receive their config, hook, and skill files in that tool's expected layout; VS Code Copilot receives editor instructions only.
+Claude Code has a native marketplace (`/plugin install`), and `/agent-init` remains the primary in-Claude setup path. Codex CLI 0.140.0+ also has a native plugin manager (`codex plugin marketplace` + `codex plugin add`) for the Codex plugin bundle. For terminal-driven project bootstrap, `install-platform.sh --platform=claude|codex` runs the same project-local renderers outside the chat surface. Cursor, GitHub Copilot, Gemini CLI, and VS Code Copilot still don't have a comparable plugin marketplace for this workflow, so the wrapper writes the right files into your project. CLI platforms receive their config, hook, and skill files in that tool's expected layout; VS Code Copilot receives editor instructions only.
 
 ### One-command install per platform
 
@@ -607,7 +607,14 @@ cd /tmp/agent-skill
 # VS Code with Copilot extension (instructions-only)
 ./scripts/install-platform.sh --platform=vscode-copilot --target=/path/to/my-project  # instructions-only
 
-# OpenAI Codex CLI
+# OpenAI Codex CLI plugin install, user scope
+codex plugin marketplace add https://github.com/kim-song-jun/agent-skill
+codex plugin add harness-builder-codex@agent-skill
+codex plugin add harness-floor-codex@agent-skill
+codex plugin add harness-thrift-codex@agent-skill
+codex plugin add harness-debug-codex@agent-skill
+
+# OpenAI Codex CLI project bootstrap
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --lang=ko
 ./scripts/install-platform.sh --platform=codex --target=/path/to/my-project --no-update-foundations
@@ -665,17 +672,29 @@ git pull                                                          # get latest v
 ./scripts/install-platform.sh --platform=cursor --target=/path/to/my-project --force
 ```
 
+For the Codex user-scope plugin bundle, refresh the marketplace snapshot and
+re-add the installed Codex plugins:
+
+```bash
+codex plugin marketplace upgrade agent-skill
+codex plugin remove harness-builder-codex@agent-skill && codex plugin add harness-builder-codex@agent-skill
+codex plugin remove harness-floor-codex@agent-skill && codex plugin add harness-floor-codex@agent-skill
+codex plugin remove harness-thrift-codex@agent-skill && codex plugin add harness-thrift-codex@agent-skill
+codex plugin remove harness-debug-codex@agent-skill && codex plugin add harness-debug-codex@agent-skill
+```
+
 ### What's NOT real (don't run these)
 
 The following commands look natural but **don't exist** in those CLIs' plugin systems today:
 
 ```
 ❌ gh copilot plugins install harness-floor-copilot
-❌ codex plugins install harness-floor-codex
+❌ codex plugins install harness-floor-codex   # plural `plugins` + `install` is not the Codex CLI surface
 ❌ gemini extensions install harness-floor-gemini
 ```
 
-These platforms don't have plugin marketplaces for AI workflows yet. Use `./scripts/install-platform.sh` instead.
+For Codex, use `codex plugin add ...` as shown above. For Copilot and Gemini,
+use `./scripts/install-platform.sh` instead.
 
 ### Uninstall per platform
 
@@ -864,7 +883,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 | `/thrift` compact delivery | ⚠️ API-gated advisory path | Claude/Codex both write durable summary files and prompt `/compact`; programmatic compact injection connects when host CLIs expose a stable API |
 | Provider-backed thrift summarizers | ✅ release-scoped | Claude's optional `@anthropic-ai/sdk` summarizer path is implemented and tested; Codex ships a dependency-free heuristic summarizer with configurable `gpt-5-nano` model metadata and OpenAI-rate audit heuristics |
 
-Versioning: `harness-builder` at `v0.6.9`, `harness-floor` at `v0.6.9`, and the other 17 installable `agent-skill` plugins at `v0.6.9` on the same release train. Internal artifact/config schema versions remain separate compatibility contracts.
+Versioning: `harness-builder` at `v0.6.10`, `harness-floor` at `v0.6.10`, and the other 17 installable `agent-skill` plugins at `v0.6.10` on the same release train. Internal artifact/config schema versions remain separate compatibility contracts.
 
 ### Release Candidate Lifecycle
 

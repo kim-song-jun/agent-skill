@@ -6,6 +6,13 @@
 
 ## 미출시
 
+## Agent-skill v0.6.10 — 2026-06-18
+
+- Codex CLI 0.140.0의 native `codex plugin marketplace` /
+  `codex plugin add` 표면에 맞게 Codex Quickstart와 README 플랫폼 안내를
+  정정했습니다.
+- Suite: 2003/2003 통과; fast release smoke 475/475 통과.
+
 ## Agent-skill v0.6.9 — 2026-06-18
 
 - `agent-skill`을 Gajae-Code, OMO와 비교하고 재사용 가능한 general harness

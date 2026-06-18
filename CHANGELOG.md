@@ -6,6 +6,12 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.10 — 2026-06-18
+
+- Corrected the Codex Quickstart and README platform guidance for Codex CLI
+  0.140.0's native `codex plugin marketplace` / `codex plugin add` surface.
+- Suite: 2003/2003 passing; fast release smoke 475/475 passing.
+
 ## Agent-skill v0.6.9 — 2026-06-18
 
 - Added harness positioning documentation comparing `agent-skill` with
