@@ -6,9 +6,13 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.9 — 2026-06-18
+
 - Added harness positioning documentation comparing `agent-skill` with
   Gajae-Code and OMO, and documenting the reusable general harness blueprint.
-- Suite: 2002/2002 passing; fast release smoke 474/474 passing.
+- Added platform Quickstart docs for Claude, Codex, Copilot, Cursor, Gemini,
+  and VS Code Copilot with install and verification paths in English and Korean.
+- Suite: 2003/2003 passing; fast release smoke 475/475 passing.
 
 ## Agent-skill v0.6.8 — 2026-06-18
 

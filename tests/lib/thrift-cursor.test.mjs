@@ -45,7 +45,7 @@ function makeTmp() {
 test("plugin.json: name + version match the spec", () => {
   const p = JSON.parse(readFileSync(resolve(PLUGIN_ROOT, ".claude-plugin/plugin.json"), "utf-8"));
   assert.equal(p.name, "harness-thrift-cursor");
-  assert.equal(p.version, "0.6.8");
+  assert.equal(p.version, "0.6.9");
   assert.match(p.description, /Cursor/);
   assert.match(p.description, /advisory/i);
   assert.ok(Array.isArray(p.keywords) && p.keywords.includes("cursor"));

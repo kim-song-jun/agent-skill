@@ -21,6 +21,23 @@ const REQUIRED_DOCS = [
   "tests/manual-checklist.md",
 ];
 
+const QUICKSTART_DOCS = [
+  "docs/quickstart/README.md",
+  "docs/quickstart/README.ko.md",
+  "docs/quickstart/claude.md",
+  "docs/quickstart/claude.ko.md",
+  "docs/quickstart/codex.md",
+  "docs/quickstart/codex.ko.md",
+  "docs/quickstart/copilot.md",
+  "docs/quickstart/copilot.ko.md",
+  "docs/quickstart/cursor.md",
+  "docs/quickstart/cursor.ko.md",
+  "docs/quickstart/gemini.md",
+  "docs/quickstart/gemini.ko.md",
+  "docs/quickstart/vscode-copilot.md",
+  "docs/quickstart/vscode-copilot.ko.md",
+];
+
 const REQUIRED_SECTIONS = [
   {
     file: "docs/github-governance.md",
@@ -55,6 +72,7 @@ const LINK_SOURCE_FILES = [
   "docs/architecture/README.md",
   "docs/github-governance.md",
   "tests/manual-checklist.md",
+  ...QUICKSTART_DOCS,
 ];
 
 export function buildDocsStructureReport(options = {}) {

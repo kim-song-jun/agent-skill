@@ -6,9 +6,13 @@
 
 ## 미출시
 
+## Agent-skill v0.6.9 — 2026-06-18
+
 - `agent-skill`을 Gajae-Code, OMO와 비교하고 재사용 가능한 general harness
   blueprint를 설명하는 하네스 포지셔닝 문서를 추가했습니다.
-- Suite: 2002/2002 통과; fast release smoke 474/474 통과.
+- Claude, Codex, Copilot, Cursor, Gemini, VS Code Copilot용 플랫폼 Quickstart
+  문서를 영문/한국어로 추가하고 설치/확인 경로를 정리했습니다.
+- Suite: 2003/2003 통과; fast release smoke 475/475 통과.
 
 ## Agent-skill v0.6.8 — 2026-06-18
 
