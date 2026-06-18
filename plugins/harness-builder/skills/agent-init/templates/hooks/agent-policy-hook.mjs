@@ -61,6 +61,19 @@ const COORDINATOR_DIRECTIVE = `\n\n---\nYou are the orchestration gate. Inspect 
 const POLICY_EVENT_SCHEMA_VERSION = "agent-policy-event/v1";
 const POLICY_RESULT_SCHEMA_VERSION = "agent-policy-result/v1";
 
+function hookErrorDetail(error) {
+  return error instanceof Error && error.message ? `: ${error.message}` : "";
+}
+
+function warnPolicyHook(message, error) {
+  console.error(`agent-policy-hook warning: ${message}${hookErrorDetail(error)}`);
+}
+
+function failPolicyHook(message, error) {
+  console.error(`agent-policy-hook error: ${message}${hookErrorDetail(error)}`);
+  process.exit(2);
+}
+
 function shellTokens(command) {
   const tokens = [];
   let token = "";
@@ -747,7 +760,9 @@ function taskDocTextForPayload(payload = {}) {
         const text = readProjectText(root, stateTaskPath);
         if (text) return text;
       }
-    } catch {}
+    } catch (error) {
+      warnPolicyHook("ignoring invalid .agent-all-state.json", error);
+    }
   }
 
   const indexText = readProjectText(root, ".agent-skill/tasks/index.md")
@@ -1268,12 +1283,16 @@ function handleTaskHook(event, payload) {
 let input = "";
 try {
   input = readFileSync(0, "utf-8");
-} catch {}
+} catch (error) {
+  failPolicyHook("failed to read hook payload from stdin", error);
+}
 
 let payload = {};
 try {
   payload = input.trim() ? JSON.parse(input) : {};
-} catch {}
+} catch (error) {
+  failPolicyHook("malformed hook JSON payload", error);
+}
 
 const event = process.argv[2] || payload?.hook_event_name || payload?.hookEventName || "";
 if (isTaskPayload(payload) && handleTaskHook(event, payload)) {

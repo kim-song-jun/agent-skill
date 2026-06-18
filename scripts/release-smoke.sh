@@ -151,6 +151,7 @@ run_step "focused release contracts" \
     tests/agent-all/interactions/non-tty-log.test.mjs \
     tests/agent-all/policy/coordinator-audit-validator.test.mjs \
     tests/agent-all/policy/audit-token-ssot.test.mjs \
+    tests/agent-all/policy/policy-hook-error-handling.test.mjs \
     tests/agent-all/policy/shell-tokenizer-continuation.test.mjs \
     tests/agent-all/policy/hook-router-coordinator.test.mjs \
     tests/agent-all/policy/install.test.mjs \

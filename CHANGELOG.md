@@ -6,6 +6,13 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.13 — 2026-06-18
+
+- Hardened generated Claude/Codex policy hooks so malformed hook JSON payloads
+  fail closed instead of silently allowing the event, and added a release-gated
+  no-silent-catch contract for those policy hook templates.
+- Suite: 2011/2011 passing; fast release smoke 483/483 passing.
+
 ## Agent-skill v0.6.12 — 2026-06-18
 
 - Removed unresolved TODO debt from the shipped Copilot floor agent-all runtime

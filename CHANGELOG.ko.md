@@ -6,6 +6,13 @@
 
 ## 미출시
 
+## Agent-skill v0.6.13 — 2026-06-18
+
+- 생성되는 Claude/Codex policy hook을 강화해 잘못된 hook JSON payload가
+  조용히 허용되지 않고 fail-closed 되도록 했으며, 해당 policy hook template에
+  silent catch가 남지 않도록 release-gated 계약을 추가했습니다.
+- Suite: 2011/2011 통과; fast release smoke 483/483 통과.
+
 ## Agent-skill v0.6.12 — 2026-06-18
 
 - 배포되는 Copilot floor agent-all runtime adapter의 미해결 TODO 부채를

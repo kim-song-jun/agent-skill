@@ -56,8 +56,8 @@ test("release-smoke --fast runs Claude and Codex release gates without live CLIs
   assert.match(output, /DRY-RUN: codex plugin marketplace upgrade agent-skill/);
   assert.match(output, /DRY-RUN: codex plugin add harness-debug-codex@agent-skill/);
   assert.match(output, /release smoke: focused release contracts/);
-  assert.match(output, /ℹ tests 479\b/);
-  assert.match(output, /ℹ pass 479\b/);
+  assert.match(output, /ℹ tests 483\b/);
+  assert.match(output, /ℹ pass 483\b/);
   assert.doesNotMatch(output, /ℹ tests (424|425|427|428|429|430|431|432|433|435|450|452|461|470|480|492|495|498|500|501|504|505)\b/);
   assert.match(output, /Claude native plugin manifests expose all release skills/);
   assert.match(output, /agent-init Codex CLI help documents canonical release flags/);
