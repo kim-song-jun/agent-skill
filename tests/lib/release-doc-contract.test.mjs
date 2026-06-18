@@ -38,6 +38,29 @@ test("usage docs present --lite as canonical and document uninstall cleanup symm
   assert.doesNotMatch(usageKo, /\| Copilot CLI \|[^|]*\| 🟢 Hard \|/);
 });
 
+test("positioning docs explain adjacent harnesses and general harness blueprint", () => {
+  const english = read("docs/HARNESS_POSITIONING.md");
+  assert.match(english, /Gajae-Code/);
+  assert.match(english, /Oh My OpenAgent|OMO/);
+  assert.match(english, /project-local harness generator/i);
+  assert.match(english, /Command contract[\s\S]{0,260}Project scaffold[\s\S]{0,260}Host adapters/i);
+  assert.match(english, /Verification layer[\s\S]{0,260}State layer[\s\S]{0,260}Release layer/i);
+  assert.match(english, /https:\/\/github\.com\/Yeachan-Heo\/gajae-code/);
+  assert.match(english, /https:\/\/github\.com\/code-yeongyu\/oh-my-openagent/);
+
+  const korean = read("docs/HARNESS_POSITIONING.ko.md");
+  assert.match(korean, /Gajae-Code/);
+  assert.match(korean, /Oh My OpenAgent|OMO/);
+  assert.match(korean, /project-local harness generator/i);
+  assert.match(korean, /Command contract[\s\S]{0,260}Project scaffold[\s\S]{0,260}Host adapters/i);
+  assert.match(korean, /Verification layer[\s\S]{0,260}State layer[\s\S]{0,260}Release layer/i);
+
+  for (const path of ["README.md", "README.ko.md", "docs/USAGE.md", "docs/USAGE.ko.md", "docs/USER_MANUAL.md", "docs/USER_MANUAL.ko.md"]) {
+    const body = read(path);
+    assert.match(body, /HARNESS_POSITIONING/);
+  }
+});
+
 test("usage docs describe Codex lite setup paths", () => {
   for (const path of ["docs/USAGE.md", "docs/USAGE.ko.md"]) {
     const body = read(path);
@@ -111,7 +134,7 @@ test("user manuals are image-backed and explain install versus init", () => {
 test("readme files describe the current Codex config surface and current test count", () => {
   for (const path of ["README.md", "README.ko.md"]) {
     const body = read(path);
-    assert.match(body, /2001\/2001/);
+    assert.match(body, /2002\/2002/);
     assert.doesNotMatch(body, /1991\/1991|1991%20passing|1991 tests/);
     assert.doesNotMatch(body, /1871\/1871|1871%20passing|1871 tests|1872\/1872|1872%20passing|1872 tests|1927\/1927|1927%20passing|1927 tests|1932\/1932|1932%20passing|1932 tests|1962\/1962|1962%20passing|1962 tests|1972\/1972|1972%20passing|1972 tests|1974\/1974|1974%20passing|1974 tests|1977\/1977|1977%20passing|1977 tests/);
     assert.doesNotMatch(body, /1721\/1721|1721%20passing|1721 tests|1726\/1726|1726%20passing|1726 tests|1729\/1729|1729%20passing|1729 tests|1741\/1741|1741%20passing|1741 tests|1742\/1742|1742%20passing|1742 tests|1746\/1746|1746%20passing|1746 tests|1749\/1749|1749%20passing|1749 tests|1752\/1752|1752%20passing|1752 tests|1755\/1755|1755%20passing|1755 tests|1756\/1756|1756%20passing|1756 tests|1758\/1758|1758%20passing|1758 tests|1759\/1759|1759%20passing|1759 tests|1760\/1760|1760%20passing|1760 tests|1761\/1761|1761%20passing|1761 tests|1762\/1762|1762%20passing|1762 tests|1763\/1763|1763%20passing|1763 tests|1764\/1764|1764%20passing|1764 tests|1766\/1766|1766%20passing|1766 tests|1769\/1769|1769%20passing|1769 tests|1772\/1772|1772%20passing|1772 tests|1775\/1775|1775%20passing|1775 tests|1788\/1788|1788%20passing|1788 tests|1797\/1797|1797%20passing|1797 tests/);
@@ -482,8 +505,8 @@ test("operational hardening docs record implemented release-audited status", () 
   assert.match(plan, /release-fixture evidence[\s\S]{0,160}auto-update only approved `superpowers`\/`context-mode` foundations/i);
   assert.match(plan, /Claude\/Codex approved foundation auto-update fixtures/i);
   assert.match(plan, /release candidate lifecycle/i);
-  assert.match(plan, /node --test[\s\S]{0,120}2001\/2001/);
-  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}473\/473/);
+  assert.match(plan, /node --test[\s\S]{0,120}2002\/2002/);
+  assert.match(plan, /release-smoke\.sh --fast --with-live-cli[\s\S]{0,120}474\/474/);
   assert.doesNotMatch(plan, /1746\/1746|1749\/1749|1752\/1752|1755\/1755|1756\/1756|1758\/1758|1759\/1759|1760\/1760|1761\/1761|1762\/1762|1763\/1763|1764\/1764|1766\/1766|1972\/1972|1974\/1974|1977\/1977|412\/412|418\/418|421\/421|424\/424|425\/425|427\/427|428\/428|429\/429|430\/430|431\/431|432\/432|433\/433|435\/435|468\/468|480\/480|498\/498|500\/500/);
   assert.match(plan, /foundation auto-update/i);
   assert.match(plan, /install-platform\.sh --platform=codex --theme=all\|debug/);
@@ -504,6 +527,8 @@ test("operational hardening docs record implemented release-audited status", () 
   const changelog = read("CHANGELOG.md");
   assert.equal((changelog.match(/^## Unreleased$/gm) || []).length, 1);
   assert.doesNotMatch(changelog, /^## \[Unreleased\]$/m);
+  assert.match(changelog, /## Unreleased[\s\S]{0,500}2002\/2002 passing/);
+  assert.match(changelog, /## Unreleased[\s\S]{0,500}474\/474 passing/);
   assert.match(changelog, /User Objective Release Matrix/);
   assert.match(changelog, /Release Candidate Lifecycle/);
   assert.match(changelog, /Agent-skill v0\.6\.8[\s\S]{0,900}2001\/2001 passing/);
@@ -513,6 +538,8 @@ test("operational hardening docs record implemented release-audited status", () 
   const changelogKo = read("CHANGELOG.ko.md");
   assert.equal((changelogKo.match(/^## 미출시$/gm) || []).length, 1);
   assert.doesNotMatch(changelogKo, /^## \[미출시\]$/m);
+  assert.match(changelogKo, /## 미출시[\s\S]{0,500}2002\/2002 통과/);
+  assert.match(changelogKo, /## 미출시[\s\S]{0,500}474\/474 통과/);
   assert.match(changelogKo, /User Objective Release Matrix/);
   assert.match(changelogKo, /Release Candidate Lifecycle/);
   assert.match(changelogKo, /Agent-skill v0\.6\.8[\s\S]{0,900}2001\/2001 통과/);

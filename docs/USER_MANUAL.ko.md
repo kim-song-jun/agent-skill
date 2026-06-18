@@ -27,6 +27,21 @@
 
 ![init 판단 카드](assets/user-manual/cards/03-init-decision.png)
 
+## 다른 하네스와의 관계
+
+agent harness를 고르는 중이라면 [하네스 포지셔닝](HARNESS_POSITIONING.ko.md)을
+먼저 보세요. 실무 기준으로는 이렇게 나눌 수 있습니다.
+
+- Claude, Codex, Copilot, Cursor, Gemini, VS Code Copilot에 같은
+  project-local scaffold를 깔고 싶으면 `agent-skill`
+- tmux/worktree 실행 모델을 중심에 둔 external runner가 필요하면 Gajae-Code
+- OpenCode-native orchestration, model routing, Team Mode, LSP/AST tooling,
+  embedded MCP 안에서 살고 싶으면 OMO
+
+`agent-skill`은 general harness blueprint로도 유용합니다. public command
+contract, project scaffold, host adapter, policy layer, verification layer,
+state layer, release layer를 분리해서 보여주기 때문입니다.
+
 ## 지금 바로 써도 되는지 판단하기
 
 | 현재 상태 | 바로 `/agent-all` 사용? | 해야 할 일 |

@@ -6,6 +6,11 @@
 
 처음 설치하거나 init이 필요한지 헷갈리면 먼저 [그림 포함 사용설명서](USER_MANUAL.ko.md)를 보세요. 전역 플러그인 설치와 프로젝트별 `/agent-init` 차이, 바로 사용할 수 있는 상태인지 판단하는 표, `/agent-all` 요청 예시가 들어 있습니다.
 
+하네스를 비교하거나 조직용 general harness를 설계하려면
+[하네스 포지셔닝](HARNESS_POSITIONING.ko.md)을 먼저 보세요. `agent-skill`이
+standalone runtime이 아니라 cross-host project scaffold인 이유와,
+Gajae-Code나 OMO가 더 맞는 경우를 정리해 둔 문서입니다.
+
 ## 부트스트래핑
 
 ### 새로운 프로젝트 (기본값 — 전체 Floor 하네스)

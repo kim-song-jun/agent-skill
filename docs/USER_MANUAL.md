@@ -27,6 +27,22 @@ If the plugins are installed globally but the project is new, you still need `/a
 
 ![Init decision card](assets/user-manual/cards/03-init-decision.png)
 
+## How It Fits Among Other Harnesses
+
+If you are choosing between agent harnesses, start with
+[Harness Positioning](HARNESS_POSITIONING.md). In practical terms:
+
+- choose `agent-skill` when you want a reusable project-local scaffold across
+  Claude, Codex, Copilot, Cursor, Gemini, and VS Code Copilot
+- choose an external runner such as Gajae-Code when that runner's tmux/worktree
+  execution model is the center of your workflow
+- choose OMO when OpenCode-native orchestration, model routing, Team Mode,
+  LSP/AST tooling, and embedded MCPs are the system you want to live in
+
+`agent-skill` is useful as a general harness blueprint because it separates the
+public command contract, project scaffold, host adapters, policy layer,
+verification layer, state layer, and release layer.
+
 ## Can I Use It Right Now?
 
 | Current state | Use `/agent-all` now? | What to do |

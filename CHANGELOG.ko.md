@@ -6,6 +6,10 @@
 
 ## 미출시
 
+- `agent-skill`을 Gajae-Code, OMO와 비교하고 재사용 가능한 general harness
+  blueprint를 설명하는 하네스 포지셔닝 문서를 추가했습니다.
+- Suite: 2002/2002 통과; fast release smoke 474/474 통과.
+
 ## Agent-skill v0.6.8 — 2026-06-18
 
 - 플랫폼 포트의 공개 명령어 표면을 canonical 형태로 통일했습니다. Codex,

@@ -6,6 +6,10 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+- Added harness positioning documentation comparing `agent-skill` with
+  Gajae-Code and OMO, and documenting the reusable general harness blueprint.
+- Suite: 2002/2002 passing; fast release smoke 474/474 passing.
+
 ## Agent-skill v0.6.8 — 2026-06-18
 
 - Canonicalized the public command surface across platform ports: Codex,

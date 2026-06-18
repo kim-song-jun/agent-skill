@@ -6,6 +6,11 @@ Common command recipes for the `agent-skill` plugins.
 
 If you are installing for the first time or deciding whether `/agent-init` is needed again, start with the [image-backed user manual](USER_MANUAL.md). It explains global plugin install versus per-project init, how to tell whether a project is ready, and good `/agent-all` request examples.
 
+If you are comparing harnesses or building a general harness for your own
+organization, read [Harness Positioning](HARNESS_POSITIONING.md). It explains
+why `agent-skill` is a cross-host project scaffold rather than a standalone
+runtime, and when Gajae-Code or OMO may be the better fit.
+
 ## Bootstrapping
 
 ### Fresh project (default — full Floor harness)
