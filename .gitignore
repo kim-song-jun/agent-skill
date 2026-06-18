@@ -13,6 +13,7 @@ Thumbs.db
 # Per-project agent-init state (only relevant when this repo is itself harnessed)
 .claude/.harness-state.json
 .claude/.agent-init-state.json
+.agent-skill/decisions/
 .agent-skill/evals/
 .agent-skill/recommendations/
 .agent-skill/releases/
