@@ -3,10 +3,34 @@
 // is likely to produce >20 lines. Pure stdout — does not block the tool call.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+
+const HOOK_NAME = "context-mode-router";
+
+function formatHookError(error) {
+  const raw = error && typeof error === "object" && "message" in error
+    ? String(error.message)
+    : String(error || "unknown error");
+  const firstLine = raw.split(/\r?\n/, 1)[0].trim();
+  return (firstLine || "unknown error").slice(0, 200);
+}
+
+function warnHook(action, error) {
+  console.error(`agent-skill hook warning: ${HOOK_NAME}: ${action}: ${formatHookError(error)}`);
+}
+
 let input = "";
-try { input = readFileSync(0, "utf-8"); } catch {}
+try {
+  input = readFileSync(0, "utf-8");
+} catch (error) {
+  warnHook("read stdin", error);
+}
 let payload = {};
-try { payload = JSON.parse(input || "{}"); } catch {}
+try {
+  payload = JSON.parse(input || "{}");
+} catch (error) {
+  if (input.trim()) warnHook("parse hook payload", error);
+  payload = {};
+}
 const cmd = (payload?.tool_input?.command ?? "").toString();
 const LIKELY_LARGE = [
   /\bgit\s+(log|diff|status|show|grep|ls-files)\b/, /\bnpm\s+(test|run|install)\b/,
@@ -35,7 +59,8 @@ function recordLargeCommandAndMaybeRecommendThrift() {
   let state = {};
   try {
     if (existsSync(statePath)) state = JSON.parse(readFileSync(statePath, "utf-8"));
-  } catch {
+  } catch (error) {
+    warnHook("read routing state", error);
     state = {};
   }
 
@@ -70,7 +95,8 @@ function recordLargeCommandAndMaybeRecommendThrift() {
         ].join("\n"),
       );
     }
-  } catch {
+  } catch (error) {
+    warnHook("write routing state", error);
     // Advisory only. Never block the user's tool call.
   }
 

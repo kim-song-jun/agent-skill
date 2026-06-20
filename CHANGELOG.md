@@ -6,6 +6,12 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+- Added fail-open diagnostics for shipped Claude advisory hooks so malformed
+  hook JSON and unexpected cache/summary filesystem errors emit bounded
+  `stderr` warnings instead of disappearing behind silent `catch {}` blocks.
+- Added release-smoke coverage for the advisory hook diagnostics guard.
+- Current suite: 2021/2021 passing; fast release smoke 493/493 passing.
+
 ## Agent-skill v0.6.13 — 2026-06-18
 
 - Hardened generated Claude/Codex policy hooks so malformed hook JSON payloads

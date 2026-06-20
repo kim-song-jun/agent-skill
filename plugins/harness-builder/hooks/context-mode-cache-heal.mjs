@@ -5,6 +5,26 @@
 import { existsSync, readdirSync, statSync, symlinkSync, lstatSync, unlinkSync, readFileSync } from "node:fs";
 import { dirname, join, resolve, sep } from "node:path";
 import { homedir } from "node:os";
+
+const HOOK_NAME = "context-mode-cache-heal";
+
+function formatHookError(error) {
+  const raw = error && typeof error === "object" && "message" in error
+    ? String(error.message)
+    : String(error || "unknown error");
+  const firstLine = raw.split(/\r?\n/, 1)[0].trim();
+  return (firstLine || "unknown error").slice(0, 200);
+}
+
+function warnHook(action, error) {
+  console.error(`agent-skill hook warning: ${HOOK_NAME}: ${action}: ${formatHookError(error)}`);
+}
+
+function warnUnlessMissing(action, error) {
+  if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") return;
+  warnHook(action, error);
+}
+
 try {
   const f = resolve(homedir(), ".claude", "plugins", "installed_plugins.json");
   if (!existsSync(f)) process.exit(0);
@@ -18,7 +38,11 @@ try {
       if (!resolve(p).startsWith(cacheRoot + sep)) continue;
       const parent = dirname(p);
       if (!existsSync(parent)) continue;
-      try { if (lstatSync(p).isSymbolicLink()) unlinkSync(p); } catch {}
+      try {
+        if (lstatSync(p).isSymbolicLink()) unlinkSync(p);
+      } catch (error) {
+        warnUnlessMissing("remove stale cache link", error);
+      }
       const dirs = readdirSync(parent).filter(d => /^\d+\.\d+/.test(d) && statSync(join(parent, d)).isDirectory());
       if (!dirs.length) continue;
       dirs.sort((a, b) => {
@@ -28,7 +52,13 @@ try {
         }
         return 0;
       });
-      try { symlinkSync(join(parent, dirs[dirs.length - 1]), p, process.platform === "win32" ? "junction" : undefined); } catch {}
+      try {
+        symlinkSync(join(parent, dirs[dirs.length - 1]), p, process.platform === "win32" ? "junction" : undefined);
+      } catch (error) {
+        warnHook("repair context-mode cache link", error);
+      }
     }
   }
-} catch {}
+} catch (error) {
+  warnHook("heal context-mode cache", error);
+}

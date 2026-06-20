@@ -6,6 +6,12 @@
 
 ## 미출시
 
+- 배포되는 Claude advisory hook에 fail-open 진단을 추가했습니다. 잘못된 hook
+  JSON과 예상치 못한 cache/summary 파일시스템 오류가 silent `catch {}` 뒤에
+  사라지지 않고 제한된 `stderr` warning으로 남습니다.
+- advisory hook diagnostics guard를 release-smoke에 추가했습니다.
+- 현재 Suite: 2021/2021 통과; fast release smoke 493/493 통과.
+
 ## Agent-skill v0.6.13 — 2026-06-18
 
 - 생성되는 Claude/Codex policy hook을 강화해 잘못된 hook JSON payload가
