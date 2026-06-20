@@ -3,12 +3,14 @@ import { classifyChangedFiles } from "./changed-file-classifier.mjs";
 const DEFAULT_GATES = {
   specReview: true,
   qualityReview: true,
+  adversarialVerify: false,
 };
 
 const REVIEWER_ORDER = [
   "reviewer",
   "quality-debt-reviewer",
   "verification-reviewer",
+  "verification-reviewer-adversarial",
   "qa-reviewer",
   "design-reviewer",
   "security-reviewer",
@@ -22,6 +24,7 @@ const DESCRIPTION_PREFIXES = {
   "spec-reviewer": "Spec Review Task",
   "quality-debt-reviewer": "Quality Debt Review Task",
   "verification-reviewer": "Verification Review Task",
+  "verification-reviewer-adversarial": "Adversarial Verification Task",
   "qa-reviewer": "QA Review Task",
   "design-reviewer": "Design Review Task",
   "security-reviewer": "Security Review Task",
@@ -35,6 +38,7 @@ const GATE_REASONS = {
   "reviewer:quality": "Base quality review is enabled; inspect the wave diff for code quality, maintainability, and regressions.",
   "quality-debt-reviewer": "Quality debt review is enabled; inspect the wave diff for unrequested fallback, meaningless tests, suppressions, TODO/dead code, debug/test-only production paths, and unjustified debt.",
   "verification-reviewer": "Feature or bug-fix work requires verification evidence: tests, typecheck, lint, diff scope, and reruns after fixes.",
+  "verification-reviewer-adversarial": "Independent adversarial re-verification: re-derive verdict from diff+tip commit without implementer self-report.",
   "qa-reviewer": "User-visible work requires user-side QA: scenarios, persona confusion, accessibility-visible behavior, loading, empty, and error states.",
   "design-reviewer": "Frontend or UI files changed; review visual hierarchy, responsive fit, component conventions, and state styling.",
   "security-reviewer": "Auth, API, permissions, secrets, or destructive-action surfaces changed; review authorization and blast radius.",
@@ -86,6 +90,12 @@ function passCriteriaForDispatch({ role, kind, auditToken }) {
     return [
       `${auditToken}: passed or skipped.`,
       "No unrequested fallback, silent error handling, TODO/FIXME debt, lint/type suppression, skipped or meaningless tests, or production test/debug path remains without a Quality Debt Exceptions row.",
+    ];
+  }
+  if (role === "verification-reviewer-adversarial") {
+    return [
+      `${auditToken}: passed or skipped.`,
+      "Verifier re-derived the verdict independently from diff and wave tip commit, without implementer self-report.",
     ];
   }
   return [
@@ -170,6 +180,11 @@ export function buildGatePlan({
     for (const role of reviewers) {
       dispatches.push(makeDispatch({ role, kind: "reviewer", mode: "quality", taskId, title }));
     }
+  }
+  if (resolvedGates.adversarialVerify) {
+    dispatches.push(
+      makeDispatch({ role: "verification-reviewer-adversarial", kind: "reviewer", mode: "adversarial", taskId, title }),
+    );
   }
 
   return {

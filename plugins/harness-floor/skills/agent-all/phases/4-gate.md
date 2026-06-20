@@ -128,11 +128,22 @@ Do not self-commit from a reviewer subagent. Report findings and verification ev
 
 Every reviewer subagent's prompt MUST include the following directive:
 
-> When evaluating the wave's diff, explicitly verify that each implementer ran `superpowers:verification-before-completion` and the verification passed. Look for the verification command output in commit messages, the implementer's reported output, or run the verification command yourself against the wave's tip commit.
+> When evaluating the wave's diff, explicitly verify that each implementer ran `superpowers:verification-before-completion` and the verification passed. Look for the verification command output in commit messages, or run the verification command yourself against the wave's tip commit.
 >
 > If verification was skipped OR failed, escalate as a `critical` issue regardless of code quality verdict — this blocks the wave at Phase 4 even if everything else looks fine.
 
 This complements the Phase 3 verification directive. Phase 3 instructs implementers to verify before claiming done; Phase 4 instructs reviewers to confirm that verification actually happened. Two-layer safety net.
+
+## Step 3-adversarial — Independent adversarial re-verification (mandatory when `gates.adversarialVerify === true`)
+
+After dispatching all `gatePlan.dispatches[]` entries in step 3, the orchestrator MUST dispatch one additional subagent with dispatch kind `verification-reviewer-adversarial` (role `"verification-reviewer-adversarial"`, mode `"adversarial"`):
+
+- **Model tier:** this subagent MUST run as **opus** (judge node, spec §3.1 / rule 11). Never sonnet or haiku.
+- **Independence is structural:** the adversarial verifier MUST NOT read the implementer's self-report, commit messages, or any implementer-produced output. It MUST re-derive the verdict from the wave diff and the wave tip commit only — `git diff <wave.baseCommit>..<wave.endCommit>` plus running `breakCondition` against the wave tip commit via `runVerificationAdapterSpec()` (`lib/verification-adapters/registry.mjs:822`).
+- **Prompt contract:** the verifier's prompt MUST NOT include the implementer's implementation notes, self-assessments, or reported verification output. Structural independence — not a promise.
+- **Required output:** exactly one of `VERIFICATION_AUDIT: passed`, `VERIFICATION_AUDIT: failed`, or `VERIFICATION_AUDIT: skipped`, plus a `verification-evidence/v1` evidence object (reuse `lib/verification-adapters/schema.mjs`).
+- **Failure is critical:** a `VERIFICATION_AUDIT: failed` from `verification-reviewer-adversarial` is a `critical` issue that BLOCKS the wave; the orchestrator MUST enter the block-on-critical retry loop (step 5). A passing self-reviewer verdict does NOT override a failing adversarial verdict.
+- **Nesting constraint:** the adversarial verifier lives at the orchestrator level; a reviewer or implementer subagent MUST NOT spawn it (spec §3.1 / `references/orchestrator-routing.md:28-37,63`).
 
 ## Output to user
 

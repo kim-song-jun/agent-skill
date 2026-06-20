@@ -115,3 +115,44 @@ test("gate-plan can be augmented by dynamic orchestration roles", () => {
   assert.ok(plan.reviewers.includes("qa-reviewer"));
   assert.ok(plan.requiredAudits.QA_AUDIT.includes("qa-reviewer"));
 });
+
+test("gate-plan includes verification-reviewer-adversarial dispatch with exact shape when adversarialVerify gate enabled", () => {
+  const plan = buildGatePlan({
+    files: ["src/feature.ts"],
+    gates: { specReview: false, qualityReview: true, adversarialVerify: true },
+    taskId: "42",
+    title: "Add adversarial gate",
+  });
+  const adv = plan.dispatches.find((d) => d.role === "verification-reviewer-adversarial");
+  assert.ok(adv, "dispatches must include verification-reviewer-adversarial");
+  assert.equal(adv.kind, "reviewer");
+  assert.equal(adv.mode, "adversarial");
+  assert.equal(adv.auditToken, "VERIFICATION_AUDIT");
+  assert.equal(adv.requiredAudit, "VERIFICATION_AUDIT: passed|failed|skipped");
+  assert.equal(adv.descriptionPrefix, "Adversarial Verification Task");
+  assert.equal(adv.description, "Adversarial Verification Task 42: Add adversarial gate");
+  assert.ok(adv.passCriteria.some((c) => c === "VERIFICATION_AUDIT: passed or skipped."),
+    "passCriteria must contain exact 'VERIFICATION_AUDIT: passed or skipped.'");
+  assert.ok(adv.passCriteria.some((c) => /without implementer self-report/.test(c)),
+    "passCriteria must prohibit reliance on implementer self-report");
+});
+
+test("gate-plan verification-reviewer-adversarial appears after quality reviewers", () => {
+  const plan = buildGatePlan({
+    files: ["src/auth.ts"],
+    gates: { specReview: false, qualityReview: true, adversarialVerify: true },
+  });
+  const roles = plan.dispatches.map((d) => d.role);
+  const advIdx = roles.indexOf("verification-reviewer-adversarial");
+  const qdrIdx = roles.indexOf("quality-debt-reviewer");
+  assert.ok(advIdx !== -1 && qdrIdx !== -1);
+  assert.ok(advIdx > qdrIdx, "adversarial dispatch must appear after quality reviewers");
+});
+
+test("gate-plan omits verification-reviewer-adversarial when gate absent or false", () => {
+  const plan = buildGatePlan({
+    files: ["src/feature.ts"],
+    gates: { specReview: false, qualityReview: true },
+  });
+  assert.equal(plan.dispatches.find((d) => d.role === "verification-reviewer-adversarial"), undefined);
+});

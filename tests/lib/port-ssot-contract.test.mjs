@@ -67,3 +67,34 @@ for (const p of PORTS) {
     );
   });
 }
+
+// E5: adversarial verification dispatch — blocking-language guard.
+// Scoped to [codex, copilot] per spec §4 and decision #4 (smartness = CC+Codex+Copilot).
+// gemini = prose-only (#7); cursor excluded from smartness (#4, §8).
+const ADVERSARIAL_PORTS = ["codex", "copilot"];
+
+for (const p of ADVERSARIAL_PORTS) {
+  test(
+    `port ssot contract [${p}]: E5 adversarial dispatch uses BLOCKING (not advisory) language`,
+    {
+      skip:
+        "Authored in G6/G7 — un-skip requires (1) adding the verification-reviewer-adversarial " +
+        "section to this port's 4-gate.md AND (2) removing the stale 'implementer\\'s reported output' " +
+        "advisory phrase from its per-reviewer block " +
+        `(${p === "codex" ? "codex 4-gate.md:~133" : "copilot ~161"}), ` +
+        "or E5's doesNotMatch assertion stays red.",
+    },
+    () => {
+      const gate = read(p, "phases/4-gate.md");
+      assert.ok(gate, `${p} phases/4-gate.md must exist`);
+      assert.match(gate, /verification-reviewer-adversarial/,
+        `${p} 4-gate must dispatch verification-reviewer-adversarial`);
+      assert.match(gate, /MUST NOT read|MUST re-derive|BLOCKS the wave/i,
+        `${p} 4-gate adversarial step must use BLOCKING language`);
+      assert.match(gate, /implementer.{0,40}self.report|self.report.{0,40}implementer/i,
+        `${p} 4-gate must name and forbid implementer self-report`);
+      assert.doesNotMatch(gate, /implementer's reported output/,
+        `${p} 4-gate must NOT trust the implementer's reported output`);
+    },
+  );
+}
