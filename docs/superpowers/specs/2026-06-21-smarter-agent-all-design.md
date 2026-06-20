@@ -59,12 +59,23 @@ An opus synthesis over four sonnet audits of the live tree established that **mo
 ### 3.2 Memory / context agent (no-git)
 - **Module:** `plugins/harness-floor/skills/agent-all/lib/memory-agent.mjs`
 - **Layer 1 — structured file mirror:** reuse `makeFileMirror({rootDir})` verbatim from `harness-floor-copilot/.../memory-bridge.mjs:33` pointed at `.agent-skill/memory/`. Stores task state, iter, open decisions, **and a free-form scratchpad field** (closes the "no model-reasoning capture" gap).
-- **Layer 2 — append-only JSONL:** new `.agent-skill/runs/<runId>/memory-log.jsonl`, written with the `appendCostTelemetry` pattern (`cost-telemetry.mjs:341`). **At most ONE new schema:** `memory-log/v1`.
+- **Layer 2 — append-only JSONL:** new `.agent-skill/runs/<runId>/memory-log.jsonl`, written with the `appendCostTelemetry` pattern (`cost-telemetry.mjs:341`). **At most ONE new schema:** `memory-log/v1`. **(audit trail; not a recovery source — recall reads Layer-1 only)**
 - **Single source of truth:** this becomes the *single* main-loop memory wiring across CC/Codex/Copilot; the Copilot-only memory-bridge is absorbed, not duplicated.
 - **Git safety:** the agent performs **zero git operations** — no push, stash, branch, `add -A`. Durability is filesystem-only.
 
 ### 3.3 Auto-flush checkpoint trigger
-- The orchestrator flushes in-flight Phase-3a scoping payloads + current `iter` into the memory agent at **wave/phase boundaries** (documented context-pressure trigger). A mid-wave context death then replays from the memory agent via `discoverResumeArtifacts` + memory mirror.
+
+**Trigger point (corrected):** the orchestrator flushes the **in-flight Phase-3a scoping intent** at the **TOP of sub-phase 3a (`3a.0`), BEFORE any scoping subagent is dispatched** — not at the wave-4→5 boundary. The prior boundary flush only ran *after* `waveResult` was captured, so it stored completed tasks and a death *during* 3a was never checkpointed. The 3a.0 flush captures `{inFlight:true, phase:"3a", wave, iter, runId, planPath, taskIds, miniPlans:[{taskId,title,files,role}], requiredAgents, decisionsSoFar}` — derived from the wave plan, so it exists before any subagent returns. A completion flush (`inFlight:false, phase:"3-complete"`) runs after `state.waves` is appended and supersedes the in-flight pointer.
+
+**Durability layers:**
+- **Layer 1 (recovery SSOT):** `makeFileMirror({rootDir:".agent-skill/memory"})`, reused verbatim from `harness-floor-copilot/.../memory-bridge.mjs:33`. flushCheckpoint writes TWO keys: the history key `checkpoint/wave-<wave>-iter-<iter>` (append-style audit) and a **fixed pointer key `checkpoint/LATEST`** that the file mirror overwrites each flush. `checkpoint/LATEST` carries `pointerTo` + the full in-flight payload.
+- **Layer 2 (audit only):** `.agent-skill/runs/<runId>/memory-log.jsonl` (`memory-log/v1`). **Never read back** — recall reads Layer-1 only. Best-effort forensic trail.
+
+**Mandatory-mirror contract:** `flushCheckpoint` returns `{ok:false, recoverable:false}` when no `fileMirror` is supplied. Layer-2 alone is unrecoverable, so ok:true is gated on Layer-1 success.
+
+**Recovery path (the real resume path):** Phase 0 (`0-preflight.md` step 5b), on `--resume`, calls `recallLatestCheckpoint({fileMirror, toolCaller:null})` — a new fixed-key helper in `memory-agent.mjs` that reads `checkpoint/LATEST`. A **fresh post-death session needs no lost coordinate** (no `wave-i-iter-n` key required). If the recalled checkpoint is `inFlight`, Phase 0 reconstructs `state.resumeCheckpoint` (miniPlans, iter, decisionsSoFar) FROM DISK; Phase 3 step 3 re-enters the dead wave at 3a using `miniPlans` instead of re-parsing. `discoverResumeArtifacts` (the handoff md) remains a *separate, complementary* signal — it is NOT the checkpoint and never carried recovery state.
+
+**Single source of truth:** one main-loop memory wiring across CC/Codex/Copilot; reuses G3 exports (`memoryLogPath`, `sanitizeRunId`, `MEMORY_LOG_SCHEMA_VERSION`, `recallRepoMemory`). **Zero new schema** beyond `memory-log/v1`. **Zero git.**
 
 ### 3.4 llm-wiki port (fidelity-tiered)
 `llm-wiki` is a Karpathy "LLM Wiki" pattern template (MIT): Index-as-Router, 2-Phase A/B routing, provenance grading, contradiction preservation, BLUF + fixed sections, SessionStart status digest, compile self-audit `diff=0` gate.

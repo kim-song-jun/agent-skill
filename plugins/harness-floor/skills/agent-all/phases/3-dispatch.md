@@ -36,6 +36,10 @@
    planner, capture `baseCommit` before implementation with `git rev-parse HEAD`,
    then run sub-phases **3a → 3b → 3c**. Persist this pre-wave commit on the
    wave record so Phase 4 can include the first wave commit in gate diffs.
+   If `state.resumeCheckpoint` is set and `state.resumeCheckpoint.wave === i`,
+   re-enter at sub-phase 3a using `state.resumeCheckpoint.miniPlans` instead
+   of re-parsing the plan; this covers the mid-3a death scenario where scoping
+   subagents never returned.
    ```javascript
    import { planDynamicWave } from "./lib/orchestration/wave-planner.mjs";
 
@@ -84,6 +88,37 @@
 
 ### 3a — Scoping (parallel)
 
+**3a.0 (pre-dispatch checkpoint).** BEFORE dispatching any scoping subagent,
+flush the in-flight scoping intent derived from the wave plan. A mid-3a context
+death is now covered because the checkpoint exists before any subagent is even
+dispatched. Do NOT include subagent outputs or transcript bodies in
+`miniPlans` — only mini-plan metadata derived from the wave plan:
+```javascript
+import { makeFileMirror } from "../../../harness-floor-copilot/skills/agent-all-copilot/lib/memory-bridge.mjs";
+import { flushCheckpoint } from "./lib/memory-agent.mjs";
+const fileMirror = makeFileMirror({ rootDir: join(cwd, ".agent-skill/memory") });
+const tasksInWave = wave.tasks;
+await flushCheckpoint({
+  cwd,
+  runId,
+  wave: i,
+  iter: state.iter ?? 0,
+  phase: "3a",
+  inFlight: true,
+  taskIds: tasksInWave.map((t) => t.id),
+  miniPlans: tasksInWave.map((t) => ({
+    taskId: t.id,
+    title: t.title,
+    files: t.files,
+    role: t.role,
+  })),
+  requiredAgents: planned.orchestration?.requiredAgents ?? [],
+  decisionsSoFar: state.decisions ?? {},
+  fileMirror,
+  config,
+});
+```
+
 a. Dispatch one Task subagent per task in the wave with description `Implement Task N: <title>` and a prompt containing the mini-plan plus the mandatory Dispatch Prompt Contract below. Use `planned.orchestration.requiredAgents` to select or validate task roles (`frontend-dev`, `backend-dev`, `integration-dev`, or `dev`) when the plan left `role: dev` ambiguous. Do not duplicate the scoping addendum or verification directive; the `agent-policy-hook` PreToolUse hook (installed by `/agent-init`, Task matcher) injects those automatically.
 b. Collect each return as a JSON payload between ` ```decision-payload ` fences. Parse with `lib/decisions/schema.mjs` `validateDecisionPayload`. If `result.ok === false`, treat as `NO_DECISIONS` and log a warning.
 
@@ -107,7 +142,25 @@ d. Phase 4 (Gate) reviewer subagents likewise get the `Review Task N: <title>` d
 
 4. Capture wave result: `{index: i, baseCommit, startCommit, endCommit, orchestration: planned.orchestration, costTelemetry: state.costTelemetry?.summary, tasks: [{id, status, changedFiles, commits, decisions: state.decisions[id]}], status: "completed"|"incomplete"}`. `commits` are orchestrator-created pathspec commits, not subagent self-commits. Derive `startCommit` and `endCommit` from the first and last entries in `wave.tasks[].commits`.
 
-5. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
+5. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`. Then
+   flush a completion marker checkpoint to supersede the in-flight 3a.0 pointer:
+   ```javascript
+   await flushCheckpoint({
+     cwd,
+     runId,
+     wave: i,
+     iter: state.iter ?? 0,
+     phase: "3-complete",
+     inFlight: false,
+     miniPlans: [],
+     taskIds: [],
+     requiredAgents: [],
+     fileMirror,
+     config,
+   });
+   ```
+   This overwrites `checkpoint/LATEST` with `inFlight:false`, so a `--resume`
+   after this point does NOT re-enter 3a (the wave is complete).
 
 ## On error
 

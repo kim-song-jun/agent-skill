@@ -39,7 +39,32 @@
      selected action id, and reason. Also append the shared interaction audit
      to `.agent-skill/runs/handoff/interactions.jsonl`.
    - If no sibling files exist, continue normal `.agent-all-state.json` resume.
-   If `--resume` and `max(state.phases[*].phase) >= 0`, skip rest of Phase 0.
+
+   **5b. (resume checkpoint recall — on `--resume` only).**
+   The handoff md is a complementary signal but is NOT the checkpoint and never
+   carried in-flight scoping state. On `--resume`, also recall the latest
+   checkpoint from disk (the Layer-1 file mirror) via the fixed `checkpoint/LATEST`
+   pointer. A fresh post-death session needs zero lost coordinates:
+   ```javascript
+   import { makeFileMirror } from "../../../harness-floor-copilot/skills/agent-all-copilot/lib/memory-bridge.mjs";
+   import { recallLatestCheckpoint } from "./lib/memory-agent.mjs";
+   if (flags.resume) {
+     const fileMirror = makeFileMirror({ rootDir: join(cwd, ".agent-skill/memory") });
+     const latest = await recallLatestCheckpoint({ fileMirror, toolCaller: null });
+     if (latest.found && latest.checkpoint?.inFlight) {
+       // A death occurred mid-3a: reconstruct in-flight scoping state FROM DISK.
+       state.resumeCheckpoint = latest.checkpoint;  // {phase,wave,iter,miniPlans,taskIds,requiredAgents,decisionsSoFar,...}
+       state.iter = latest.checkpoint.iter ?? state.iter;
+       state.decisions = { ...(state.decisions ?? {}), ...(latest.checkpoint.decisionsSoFar ?? {}) };
+       // Phase 3 MUST re-enter at wave=latest.checkpoint.wave, sub-phase 3a, using miniPlans
+       // instead of re-parsing — the scoping subagents that died are re-dispatched from this.
+     }
+   }
+   ```
+
+   If `--resume` and `max(state.phases[*].phase) >= 0`, skip rest of Phase 0
+   **EXCEPT** keep `state.resumeCheckpoint` set above; Phase 3 step 3 reads it
+   to re-enter the dead wave at 3a.
 
 6. Validate positional argument:
    - If ends with `.md`: must exist as a file. If not: abort `task file not found: <path>`. Stash as `taskPath`.
