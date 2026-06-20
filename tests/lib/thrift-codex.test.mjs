@@ -22,10 +22,10 @@ function tmp() {
 
 // ---------- plugin scaffold layout ----------
 
-test("plugin.json exists with correct name and v0.6.13", () => {
+test("plugin.json exists with correct name and v0.6.14", () => {
   const p = JSON.parse(readFileSync(resolve(PLUGIN_ROOT, ".claude-plugin/plugin.json"), "utf-8"));
   assert.equal(p.name, "harness-thrift-codex");
-  assert.equal(p.version, "0.6.13");
+  assert.equal(p.version, "0.6.14");
   assert.match(p.description, /Codex/);
   assert.ok(p.keywords.includes("codex"));
 });
