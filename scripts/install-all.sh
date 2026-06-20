@@ -139,6 +139,31 @@ run_foundation_installs() {
   fi
 }
 
+print_agent_skill_install_dry_run() {
+  local p
+  echo "DRY-RUN: claude plugin marketplace update ${MARKETPLACE}"
+  print_plugin_install_dry_run "${PLUGINS[@]}"
+  for p in "${PLUGINS[@]}"; do
+    echo "DRY-RUN: claude plugin update ${p}@${MARKETPLACE}"
+  done
+}
+
+refresh_agent_skill_marketplace() {
+  local output status
+  echo "Refreshing ${MARKETPLACE} marketplace:"
+  set +e
+  output=$(claude plugin marketplace update "$MARKETPLACE" 2>&1)
+  status=$?
+  set -e
+  if [ $status -ne 0 ]; then
+    echo "  ✖ marketplace update failed"
+    echo "$output" | sed 's/^/    /'
+    return 1
+  fi
+  echo "$output" | tail -1 | sed 's/^/  /'
+  echo
+}
+
 for arg in "$@"; do
   case "$arg" in
     --all)         MODE="all" ;;
@@ -200,7 +225,7 @@ if [ "$DRY_RUN" = "1" ]; then
     echo
   fi
   if [ "$FOUNDATIONS_ONLY" = "0" ]; then
-    print_plugin_install_dry_run "${PLUGINS[@]}"
+    print_agent_skill_install_dry_run
     echo
   fi
   echo
@@ -242,8 +267,12 @@ fi
 failed=()
 installed=()
 skipped=()
+updated=()
+
+refresh_agent_skill_marketplace
 
 for p in "${PLUGINS[@]}"; do
+  install_ok=0
   set +e
   output=$(claude plugin install "${p}@${MARKETPLACE}" 2>&1)
   status=$?
@@ -252,6 +281,7 @@ for p in "${PLUGINS[@]}"; do
     if echo "$output" | grep -qi "already installed"; then
       echo "  ⊙ ${p} (already installed)"
       skipped+=("$p")
+      install_ok=1
     else
       echo "  ✖ ${p} — FAILED"
       echo "$output" | sed 's/^/    /'
@@ -260,6 +290,22 @@ for p in "${PLUGINS[@]}"; do
   else
     echo "  ✓ ${p}"
     installed+=("$p")
+    install_ok=1
+  fi
+
+  if [ "$install_ok" = "1" ]; then
+    set +e
+    output=$(claude plugin update "${p}@${MARKETPLACE}" 2>&1)
+    status=$?
+    set -e
+    if [ $status -ne 0 ]; then
+      echo "  ✖ ${p} update — FAILED"
+      echo "$output" | sed 's/^/    /'
+      failed+=("${p} update")
+    else
+      echo "  ↻ ${p} (latest active)"
+      updated+=("$p")
+    fi
   fi
 done
 
@@ -267,6 +313,7 @@ echo
 echo "Summary:"
 echo "  Installed: ${#installed[@]}"
 echo "  Already installed: ${#skipped[@]}"
+echo "  Updated active: ${#updated[@]}"
 echo "  Failed: ${#failed[@]}"
 
 if [ ${#failed[@]} -gt 0 ]; then

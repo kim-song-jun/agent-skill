@@ -152,6 +152,49 @@ exit 0
   }
 });
 
+test("install-all refreshes agent-skill marketplace and updates selected plugins after install", () => {
+  const home = tmp("agent-skill-release-install-all-update-home-");
+  const binDir = resolve(home, "bin");
+  const claudeLog = resolve(home, "claude.log");
+  try {
+    mkdirSync(binDir, { recursive: true });
+    writeFileSync(
+      resolve(binDir, "claude"),
+      `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${claudeLog}"
+exit 0
+`,
+      { mode: 0o755 },
+    );
+
+    const res = spawnSync("/bin/bash", [INSTALL_ALL, "--cli=codex"], {
+      encoding: "utf-8",
+      env: { ...process.env, HOME: home, PATH: `${binDir}:${process.env.PATH}` },
+    });
+
+    assert.equal(res.status, 0, `stdout:\n${res.stdout}\nstderr:\n${res.stderr}`);
+    assert.match(res.stdout, /Refreshing agent-skill marketplace/);
+
+    const calls = readFileSync(claudeLog, "utf-8").trim().split("\n");
+    assert.equal(calls[0], "plugin marketplace update agent-skill");
+    for (const plugin of [
+      "harness-builder-codex",
+      "harness-floor-codex",
+      "harness-thrift-codex",
+      "harness-debug-codex",
+    ]) {
+      const installIndex = calls.indexOf(`plugin install ${plugin}@agent-skill`);
+      const updateIndex = calls.indexOf(`plugin update ${plugin}@agent-skill`);
+      assert.ok(installIndex > 0, `missing install call for ${plugin}`);
+      assert.ok(updateIndex > installIndex, `update must follow install for ${plugin}`);
+    }
+    assert.doesNotMatch(calls.join("\n"), /plugin install harness-builder@agent-skill/);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test("install-all --dry-run labels Codex plugin bundles without presenting them as Claude-native installs", () => {
   const res = spawnSync("/bin/bash", [INSTALL_ALL, "--dry-run", "--cli=codex"], {
     encoding: "utf-8",

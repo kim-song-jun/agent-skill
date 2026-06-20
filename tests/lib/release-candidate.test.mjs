@@ -71,8 +71,8 @@ test("release-candidate report validates current checkout evidence", () => {
   assert.match(report.git.head, /^[0-9a-f]{40}$/);
   assert.match(report.recommendedTag, /^rc-2026-06-02-[0-9a-f]{7}$/);
   assert.equal(report.plugins.count, 19);
-  assert.equal(report.plugins.manifests.find((plugin) => plugin.name === "harness-builder").version, "0.6.15");
-  assert.equal(report.plugins.manifests.find((plugin) => plugin.name === "harness-floor").version, "0.6.15");
+  assert.equal(report.plugins.manifests.find((plugin) => plugin.name === "harness-builder").version, "0.6.16");
+  assert.equal(report.plugins.manifests.find((plugin) => plugin.name === "harness-floor").version, "0.6.16");
   assert.ok(report.gateCommands.includes("./scripts/release-smoke.sh --fast --with-live-cli"));
   assert.ok(report.gateCommands.includes("node scripts/github-governance-check.mjs"));
   assert.ok(report.gateCommands.includes("node scripts/docs-structure-check.mjs"));

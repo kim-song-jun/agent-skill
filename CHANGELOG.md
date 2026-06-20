@@ -6,6 +6,15 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.16 — 2026-06-20
+
+- Hardened `scripts/install-all.sh` so local Claude plugin-manager installs
+  refresh the `agent-skill` marketplace and run `claude plugin update` after
+  install, ensuring already-installed plugins move to the latest active version.
+- Added a regression test for the install/update call sequence discovered while
+  verifying local Claude/Codex/Copilot installs.
+- Suite: 2026/2026 passing; fast release smoke 498/498 passing.
+
 ## Agent-skill v0.6.15 — 2026-06-20
 
 - Corrected hidden Codex native `.codex-plugin` manifests so Codex CLI native

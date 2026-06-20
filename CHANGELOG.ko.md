@@ -6,6 +6,15 @@
 
 ## 미출시
 
+## Agent-skill v0.6.16 — 2026-06-20
+
+- `scripts/install-all.sh`를 강화해 로컬 Claude plugin-manager 설치 시
+  `agent-skill` marketplace를 갱신하고 install 뒤 `claude plugin update`를
+  실행하도록 했습니다. 이미 설치된 플러그인도 최신 active version으로 전환됩니다.
+- 로컬 Claude/Codex/Copilot 설치 검증 중 발견한 install/update 호출 순서 문제에
+  대한 회귀 테스트를 추가했습니다.
+- Suite: 2026/2026 통과; fast release smoke 498/498 통과.
+
 ## Agent-skill v0.6.15 — 2026-06-20
 
 - 숨김 Codex native `.codex-plugin` manifest를 정정해 Codex CLI native 설치가
