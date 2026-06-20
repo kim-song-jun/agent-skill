@@ -34,7 +34,7 @@ and a baseline-relative verdict.
 | 0 | `phases/0-preflight.md` | config + MCP + subprocess sanity + health |
 | 1 | `phases/1-config.md` | load config, build matrix, estimate cost, confirm |
 | 2 | `phases/2-discover.md` | find prior run, create slug dir |
-| 3 | `phases/3-capture.md` | fork N parallel `gemini chat` subprocesses per page |
+| 3 | `phases/3-capture.md` | fork N parallel headless `gemini -p` subprocesses per page |
 | 4 | `phases/4-aggregate.md` | diff vs prior, write report.json + report.md |
 | 5 | `phases/5-summary.md` | summary + tmp GC + exit code |
 
@@ -53,7 +53,7 @@ and a baseline-relative verdict.
 | Read file | `read_file` |
 | Write file | `write_file` |
 | Shell | `run_shell_command` |
-| Dispatch page subagent | spawn `gemini chat -p ... --output-file ... &` subprocess |
+| Dispatch page subagent | spawn `gemini -p ... --output-format json` through the wrapper |
 | Await | `wait <pid>` OR poll tmp dir |
 | Prompt user | `agent-interaction/v1` via `renderer-gemini.mjs`, logged to `interactions.jsonl` |
 | Playwright | `mcp__playwright__browser_*` (via `~/.gemini/settings.json` mcpServers) |

@@ -18,4 +18,6 @@
    only when `matrix.length <= 5000`; over 5000 captures must use
    `nonTtyPolicy: "pause"` so non-TTY cannot auto-approve the run.
 5. Push `{phase: 1, completedAt, matrixSize, estCostUSD}` to state.
-6. Persist matrix summary to `store_memory(key="visual-qa/matrix", scope="repository")`.
+6. Persist the matrix summary to file-backed run state. Optional lifecycle
+   hooks may add capture events, but this harness does not depend on a public
+   Copilot memory primitive.

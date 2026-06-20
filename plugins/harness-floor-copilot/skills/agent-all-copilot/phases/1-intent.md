@@ -11,7 +11,7 @@ remains readable during migration.
 
 ### Branch B — `prompt` with `--no-brainstorm` OR `config.defaults.brainstormFirst === false`
 
-Write the prompt verbatim to a new file via `apply_patch`:
+Write the prompt verbatim to a new file via `create` / `edit`:
 1. Read `.agent-skill/tasks/index.md`, filenames under `.agent-skill/tasks/`,
    and `.agent-skill/registry/tasks.json` when present.
 2. Slug from prompt: lowercase, non-alphanum → `-`, max 40 chars.
@@ -49,19 +49,19 @@ structured Q&A in chat with the user:
 2. Prompt: "Constraints?" — capture.
 3. Prompt: "Options + tradeoffs?" — coordinator drafts 2-3 options.
 4. Prompt: "Chosen direction?" — capture.
-5. Synthesize via `apply_patch` into `.agent-skill/specs/<date>-<slug>.md`.
+5. Synthesize via `create` / `edit` into `.agent-skill/specs/<date>-<slug>.md`.
 6. Allocate canonical/display ids, reserve the registry entry with `recordTask()`,
    then copy the spec into the reserved `.agent-skill/tasks/<display-id>-<slug>.md`
    with identity frontmatter. Write the task doc and updated task index through
    `writeTaskDocArtifact()`.
-7. Persist a summary to `store_memory(key="agent-all/spec", scope="repository", value=<spec summary JSON>)`.
+7. Persist a summary into `.agent-all-state.json` and the generated task doc.
 
 If the user prefers a non-interactive brainstorm, pass `--no-brainstorm` to
 skip this branch.
 
 ## All branches
 
-Push `{phase: 1, completedAt}` to `phases` via `apply_patch`.
+Push `{phase: 1, completedAt}` to `phases` via `edit`.
 
 ## Output
 

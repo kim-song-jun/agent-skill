@@ -10,7 +10,10 @@ description: >
 
 Runs the cost-unrestricted multi-agent pipeline using Copilot CLI
 primitives. Phase 3 fan-out dispatches one `task` per wave task and
-awaits via Copilot's `subagentStop` hook (or polls `list_agents`).
+records lifecycle events via Copilot's `subagentStop` hook when the optional
+reviewed hook helper is installed. Copilot CLI does not expose
+`read_agent`, `list_agents`, or `store_memory` as public harness primitives,
+so durable coordination state lives in repository files.
 
 ## Usage
 
@@ -53,26 +56,25 @@ value already lives in config.
 
 | Phase | File | Purpose |
 |-------|------|---------|
-| 0 | `phases/0-preflight.md` | git + .copilot/agents + config + input checks |
-| 1 | `phases/1-intent.md` | brainstorm (chat) OR load task file; persist via store_memory |
-| 2 | `phases/2-plan.md` | draft plan into store_memory (key=`agent-all/plan`) + file |
+| 0 | `phases/0-preflight.md` | git + Copilot CLI config + input checks |
+| 1 | `phases/1-intent.md` | brainstorm (chat) OR load task file; persist to files |
+| 2 | `phases/2-plan.md` | draft plan into `.agent-skill/plans/` + state |
 | 3 | `phases/3-dispatch.md` | fan out parallel `task` invocations per wave |
 | 4 | `phases/4-gate.md` | dispatch reviewer `task`s for spec + quality |
-| 5 | `phases/5-pr.md` | `read_bash`: git branch push + `gh pr create` |
+| 5 | `phases/5-pr.md` | `bash` / `powershell`: git push + `gh pr create` |
 | 6 | `phases/6-loop.md` | breakCondition shell + state.iter re-entry |
 
 ## Rules
 
 1. **You orchestrate; phases are source of truth.** Read each phase file before running it.
-2. **State lives in two places.** `.agent-all-state.json` for cross-session resume; `store_memory` scope=repository for in-session dispatch coordination. Mirror the latest `agent-cost-telemetry/v1` summary to `state.costTelemetry.summary` and keep `state.costUSD` as the backward-compatible total.
-3. **Delegate, don't reimplement.** Phase 3 uses `task`; Phase 4 uses `task`; Phase 5 uses `read_bash`.
+2. **State lives in files.** `.agent-all-state.json` is the resume source of truth. Mirror the latest `agent-cost-telemetry/v1` summary to `state.costTelemetry.summary` and keep `state.costUSD` as the backward-compatible total.
+3. **Delegate, don't reimplement.** Phase 3 uses `task`; Phase 4 uses `task`; Phase 5 uses `bash` / `powershell`.
 4. **Loop is opt-in.** Without `--loop`, Phase 6 is a no-op.
 5. **Loop stops:** completion is break-condition driven. `--max-iter=0` or
    `loop.maxIter: null` enables unlimited iterations, while cost/runtime
    budgets, hard policy hooks, user interruption, and repeated failure signatures can still
-   stop the loop. Cost enforcement reads Copilot's per-session cost field if
-   exposed via `list_agents`, else best-effort estimates through
-   `agent-cost-telemetry/v1`.
+   stop the loop. Cost enforcement uses reported evidence when available,
+   else best-effort estimates through `agent-cost-telemetry/v1`.
 6. **Policy events use the shared schema.** Copilot surfaces
    `agent-policy-event/v1` results as soft warnings/logs unless an optional
    reviewed hook helper is installed; append
@@ -89,21 +91,19 @@ value already lives in config.
 
 | Action | Copilot primitive |
 |---|---|
-| Read file | `read_file` |
-| Write file | `apply_patch` |
-| Shell | `read_bash` |
+| Read file | `view` |
+| Write file | `create`, `edit` |
+| Shell | `bash`, `powershell` |
 | Dispatch subagent | `task` |
-| Inspect dispatched agent | `read_agent`, `list_agents` |
-| Wait for completion | `subagentStop` hook OR poll `list_agents` |
-| Persist plan/state | `store_memory` (scope=`repository`) |
+| Wait for lifecycle event | `subagentStop` hook (`agentName`, `sessionId`, `transcriptPath`, `stopReason`) |
+| Persist plan/state | repository files such as `.agent-all-state.json` and `.agent-skill/plans/` |
 | Prompt user | `ask_user` (where available) |
 
 ## On error
 
 Same as Claude port. Additional Copilot-specific notes:
-- If `task` tool unavailable (Copilot CLI < v0.0.380): abort with upgrade hint.
-- If `subagentStop` hook not registered: fall back to `list_agents` polling every 2s.
-- If `store_memory` quota exceeded: warn and continue using only file-based state.
+- If `task` is unavailable in the current Copilot CLI surface: abort with an upgrade hint.
+- If `subagentStop` hook is not registered: continue with prompt-level task results and file state; do not invent a polling API.
 
 ## When done
 

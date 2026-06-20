@@ -34,7 +34,7 @@ Write the prompt verbatim via `write_file`:
 against `references/orchestrator-routing.md`. If the intent is
 *evidence-producing* — research, an audit across many units, a
 design/findings report, with no durable code change yet — a parallel
-`gemini chat` fan-out sweep is the correct orchestrator, **not**
+Gemini headless fan-out sweep is the correct orchestrator, **not**
 `/agent-all`. In that case: recommend it to the user; if they agree,
 STOP this pipeline and instruct them to run a fan-out sweep that writes a
 `validateTaskDoc`-compliant task doc under `.agent-skill/tasks/`, then

@@ -9,9 +9,10 @@
 ## Operating Principles
 
 1. **Plan first.** Sketch a brief plan before editing.
-2. **Edits via `apply_patch`.** All file modifications go through it.
-3. **Shell via `read_bash`.** Use it for builds, tests, lint.
-4. **Memory via `store_memory`.** Capture durable decisions there with scope=`repository`.
+2. **Read with `view`.** Inspect relevant files before editing.
+3. **Edit with `create` / `edit`.** Keep changes scoped to the requested files.
+4. **Shell via `bash` / `powershell`.** Use the native shell tool for builds, tests, and lint.
+5. **Persist decisions in files.** Use task docs or project notes for durable state.
 
 ## Roles
 

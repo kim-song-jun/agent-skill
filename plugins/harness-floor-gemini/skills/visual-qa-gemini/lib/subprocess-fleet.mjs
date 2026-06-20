@@ -1,4 +1,4 @@
-// subprocess-fleet.mjs — manages a pool of `gemini chat` subprocesses
+// subprocess-fleet.mjs — manages a pool of headless `gemini -p` subprocesses
 // for agent-all-gemini's Phase 3 wave dispatch.
 //
 // Responsibilities:
@@ -15,28 +15,26 @@
 // Returned per task (FleetResult):
 //   { task, pid, exitCode, signal, stdout, stderr, timedOut, errorCode, durationMs, command }
 //
-// TODO: requires `gemini chat --output-json` flag verification against a
-// live Gemini CLI build. Spec open-question #1 + #2 still pending.
-// TODO: requires `--skill-roster <dir>` flag syntax verification.
-
 import { spawn } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 
 const DEFAULTS = {
   maxSubprocesses: 8,
   timeoutMs: 1800 * 1000,
   graceMs: 5000,
   geminiBin: "gemini",
+  outputFormat: "json",
+  skipTrust: true,
   ratePerMinute: null, // null = no throttle
 };
 
 function buildArgs(task, opts) {
-  // TODO: confirm flag names against live Gemini CLI.
-  const args = ["chat", "-p", task.body, "--output-json", "--output-file", task.outputFile];
-  if (opts.skillRosterDir) {
-    args.push("--skill-roster", opts.skillRosterDir);
-  }
-  if (Number.isFinite(opts.timeoutMs)) {
-    args.push("--timeout", String(Math.floor(opts.timeoutMs / 1000)));
+  const args = ["-p", task.body, "--output-format", opts.outputFormat ?? "json"];
+  if (opts.skipTrust !== false) args.push("--skip-trust");
+  if (opts.model) args.push("--model", opts.model);
+  if (Array.isArray(opts.extensions) && opts.extensions.length) {
+    args.push("--extensions", opts.extensions.join(","));
   }
   return args;
 }
@@ -49,6 +47,12 @@ function commandPreview(geminiBin, args) {
 // Sleep helper used by the rate-limit throttle.
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function writeOutputFile(outputFile, text) {
+  if (!outputFile) return;
+  mkdirSync(dirname(outputFile), { recursive: true });
+  writeFileSync(outputFile, text ?? "", "utf-8");
 }
 
 // Run a single task. Resolves with FleetResult; never rejects.
@@ -110,6 +114,9 @@ async function runOne(task, opts) {
       settled = true;
       if (killTimer) clearTimeout(killTimer);
       if (killForceTimer) clearTimeout(killForceTimer);
+      if (opts.writeOutputFiles !== false && task.outputFile && (stdoutBuf.length > 0 || !errorCode)) {
+        writeOutputFile(task.outputFile, stdoutBuf);
+      }
       resolve({
         task,
         pid: child.pid ?? null,

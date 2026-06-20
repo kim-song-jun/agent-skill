@@ -1,13 +1,12 @@
 #!/usr/bin/env node
-// thrift-pretool-bash-telemetry (Copilot) — observes read_bash tool calls
+// thrift-pretool-bash-telemetry (Copilot) — observes bash/powershell tool calls
 // and records telemetry for the audit report. Does NOT coerce (that's
 // context-mode-copilot-router's job, if installed).
 //
 // Input: preToolUse hook payload from Copilot via stdin (JSON):
 //   { tool_input: { command: "..." }, ... }   // assumed shape
 //
-// > TODO: verify Copilot ask_user / store_memory schemas against live CLI.
-//   The hook stdin payload shape is assumed per
+// The hook stdin payload shape is assumed per
 //   plugins/harness-builder-copilot/skills/copilot-init/templates/hooks/.
 
 import { readFileSync } from "node:fs";
@@ -36,7 +35,7 @@ async function main() {
     );
     const state = readState(STATE_PATH);
     recordCoercion(state, {
-      tool: "read_bash",
+      tool: payload?.tool_name || payload?.toolName || "bash",
       suggestion: `ctx_execute(language: "shell", code: ${JSON.stringify(cmd)})`,
       accepted: false,
     });

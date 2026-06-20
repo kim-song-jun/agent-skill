@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // thrift-posttool-summariser-trigger (Copilot) — after each tool call,
 // accumulate output size and fire the summariser (advisory) when thresholds
-// hit. Mirrors a "pending summariser" marker into store_memory.
+// hit. Optionally mirrors a "pending summariser" marker through a host memory
+// adapter when enabled.
 //
 // Input: postToolUse hook payload (JSON via stdin) with tool_output /
 // tool_response.
@@ -60,17 +61,17 @@ async function main() {
     mkdirSync(dirname(notify), { recursive: true });
     writeFileSync(notify, `Summariser threshold hit (reason: ${verdict.reason}, turns=${m.turnsSinceLastSummary}, tokens≈${m.tokensSinceLastSummary}).\n\nRun \`/thrift-copilot summarise\` then consider starting a fresh Copilot session referencing the produced summary path.\n`);
 
-    // Best-effort store_memory marker. Invoker is null at hook scope
-    // (no host context); bridge transparently falls back to file mode.
-    try {
-      await storeMemoryWrite({
-        key: `${config?.storeMemory?.keyPrefix || "thrift/"}pending-summary`,
-        value: { reason: verdict.reason, turns: m.turnsSinceLastSummary, tokens: m.tokensSinceLastSummary, at: new Date().toISOString() },
-        scope: config?.storeMemory?.scope || "repository",
-        invoker: null,
-        fallbackRoot: ROOT,
-      });
-    } catch { /* non-fatal */ }
+    if (config?.storeMemory?.enabled) {
+      try {
+        await storeMemoryWrite({
+          key: `${config.storeMemory.keyPrefix || "thrift/"}pending-summary`,
+          value: { reason: verdict.reason, turns: m.turnsSinceLastSummary, tokens: m.tokensSinceLastSummary, at: new Date().toISOString() },
+          scope: config.storeMemory.scope || "repository",
+          invoker: null,
+          fallbackRoot: ROOT,
+        });
+      } catch { /* non-fatal */ }
+    }
 
     console.error(`<system-reminder>thrift-copilot summariser ready: run /thrift-copilot summarise (reason=${verdict.reason})</system-reminder>`);
   }

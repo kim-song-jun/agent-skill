@@ -49,8 +49,11 @@ test("agent-all-gemini: phase headings match contract", () => {
 test("agent-all-gemini: phase 3 uses subprocess dispatch pattern", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "phases/3-dispatch.md"), "utf-8");
   assert.ok(body.includes("run_shell_command"), "uses run_shell_command");
-  assert.ok(body.includes("gemini chat"), "spawns gemini chat subprocesses");
-  assert.ok(body.includes("--output-json"), "captures JSON output");
+  assert.ok(body.includes("gemini -p"), "spawns Gemini headless subprocesses");
+  assert.ok(body.includes("--output-format json"), "captures JSON output");
+  assert.ok(!body.includes("gemini chat"), "Gemini CLI has no chat subcommand");
+  assert.ok(!body.includes("--output-json"), "Gemini CLI uses --output-format json");
+  assert.ok(!body.includes("--skill-roster"), "Gemini CLI has no --skill-roster flag");
   assert.ok(body.includes("background: true"), "background flag for parallelism");
   assert.ok(body.includes("/tmp/agent-all"), "tmp dir for IPC");
 });

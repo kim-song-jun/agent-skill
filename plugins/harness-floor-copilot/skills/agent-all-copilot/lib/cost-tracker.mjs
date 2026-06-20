@@ -1,9 +1,9 @@
 // cost-tracker — aggregate per-agent USD cost across waves + iters.
 //
-// Reads `costUSD` from each `read_agent` payload when present; otherwise
+// Reads `costUSD` from each task payload when present; otherwise
 // estimates from `output.length * MODEL_RATE_PER_KCHAR`. The estimate is
 // crude — real per-token counting requires the agent's transcript, which
-// `read_agent` may or may not surface. See open question (4) in the spec.
+// the host may or may not surface real usage. See the Copilot port notes.
 //
 // Public API:
 //   const tracker = createCostTracker({modelRates?})

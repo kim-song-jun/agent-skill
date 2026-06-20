@@ -1,5 +1,5 @@
 // result-collector.mjs — parses per-subprocess JSON output files written by
-// `gemini chat --output-file <path> --output-json` calls.
+// the wrapper after capturing `gemini -p --output-format json` stdout.
 //
 // Partial-failure semantics (per spec line ~100, open question #5):
 //   - Missing file              → status: "failed", errors: ["no result file"]
@@ -22,9 +22,9 @@
 //     raw?: string,             // present only on parse failure
 //   }
 //
-// TODO: requires `gemini chat --output-json` flag verification — the
-// expected schema below is what the spec assumes (status/agentId/commits/
-// costUSD/exitCode/errors); confirm against live Gemini CLI build.
+// Authenticated Gemini CLI output may use host-specific fields. The collector
+// accepts the harness result schema plus Gemini CLI error envelopes observed
+// from `--output-format json`.
 
 import { readFileSync, existsSync, statSync } from "node:fs";
 
@@ -37,6 +37,20 @@ function asArray(v) {
 }
 
 function normalize(payload, taskId) {
+  if (payload.error && typeof payload.error === "object") {
+    const err = payload.error;
+    return {
+      ok: false,
+      status: "failed",
+      taskId,
+      agentId: payload.agentId ?? payload.agent_id ?? payload.session_id ?? payload.sessionId ?? null,
+      commits: [],
+      costUSD: 0,
+      exitCode: Number.isFinite(err.code) ? err.code : 1,
+      errors: asArray(err.message ?? err.type ?? "Gemini CLI error"),
+      tokens: payload.tokens || payload.usage || null,
+    };
+  }
   const status = VALID_STATUS.has(payload.status) ? payload.status : "completed";
   return {
     ok: true,

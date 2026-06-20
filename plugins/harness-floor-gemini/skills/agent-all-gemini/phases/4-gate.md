@@ -49,7 +49,8 @@ For each wave with `status === "completed"`:
    reason, wave, and cost estimate; emit a compatible `BeforeAgentSpawn`
    policy entry if the dispatch was not already policy-evaluated in Phase 3.
 
-3. Spawn every `gatePlan.dispatches[]` entry as a `gemini chat` subprocess:
+3. Spawn every `gatePlan.dispatches[]` entry as a headless Gemini subprocess
+   through the same wrapper/output-file pattern used in Phase 3:
 
    - `kind=coordinator`, `role=orchestrator`: spawn with description prefix
      `Orchestration Gate Task <N>: <title>`. Prompt it to identify HOT files,
@@ -57,17 +58,15 @@ For each wave with `status === "completed"`:
      before reviewer subprocesses are spawned. It **must** emit
      `ORCHESTRATION_AUDIT: passed|failed|skipped` in its output.
      ```
-     run_shell_command("gemini chat -p 'Orchestration Gate Task <N>: <title>\n<prompt>...' \
-       --skill-roster .gemini/skills/orchestrator/ \
-       --output-file /tmp/agent-all/wave-<i>/orchestration-review.json &")
+     run_shell_command("gemini -p 'Orchestration Gate Task <N>: <title>\n<prompt>...' \
+       --output-format json --skip-trust > /tmp/agent-all/wave-<i>/orchestration-review.json &")
      ```
    - `mode=spec`: spawn a reviewer subprocess with the plan section, diff, and
      a request to flag spec deviations. Technical reviewer — must emit
      `VERIFICATION_AUDIT: passed|failed|skipped`.
      ```
-     run_shell_command("gemini chat -p 'MODE=spec; <prompt>...' \
-       --skill-roster .gemini/skills/reviewer/ \
-       --output-file /tmp/agent-all/wave-<i>/spec-review.json &")
+     run_shell_command("gemini -p 'MODE=spec; <prompt>...' \
+       --output-format json --skip-trust > /tmp/agent-all/wave-<i>/spec-review.json &")
      ```
    - `mode=quality`: spawn one reviewer subprocess per returned reviewer
      persona. Include the wave plan section, diff, changed-file list, and
@@ -128,9 +127,9 @@ For each wave with `status === "completed"`:
 
 ## Gemini-specific
 
-Reviewer subprocesses use the same `--skill-roster .gemini/skills/<persona>/`
-flag as Phase 3 implementers. Each reviewer skill must accept its gate mode
-(`MODE=spec|quality|orchestration`) in its prompt body and must emit its
+Reviewer subprocesses use the same `gemini -p --output-format json` headless
+pattern as Phase 3 implementers. Each reviewer skill/persona must be selected
+by the prompt body (`MODE=spec|quality|orchestration`) and must emit its
 required audit token (`ORCHESTRATION_AUDIT`, `VERIFICATION_AUDIT`, or
 `QA_AUDIT`) in the output. The `/gemini-init` default roster ships
 `orchestrator`, `reviewer`, `qa-reviewer`, `design-reviewer`,
@@ -144,7 +143,7 @@ Print one line per wave: `Wave <i> gate: <issuesCount> issues (<critical>c <majo
 
 ## Dispatch Prompt Contract (mandatory)
 
-Every reviewer `gemini chat` subprocess's prompt MUST include:
+Every reviewer `gemini -p` subprocess's prompt MUST include:
 
 - Working directory: the repository root where review commands must run.
 - Owned files or line ranges: the changed-file list and the diff range under
@@ -172,7 +171,7 @@ evidence back to the coordinator for retry or pathspec commit review.
 
 ## Per-reviewer verification check (mandatory)
 
-Every reviewer `gemini chat` subprocess's prompt MUST include the following
+Every reviewer `gemini -p` subprocess's prompt MUST include the following
 directive:
 
 > When evaluating the wave's diff, explicitly verify that each implementer ran `superpowers:verification-before-completion` and the verification passed. Look for the verification command output in commit messages, the implementer's reported output, or run the verification command yourself against the wave's tip commit.

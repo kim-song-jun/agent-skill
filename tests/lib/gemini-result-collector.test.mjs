@@ -151,3 +151,27 @@ test("parseResultFile: accepts snake_case alternates (agent_id, cost_usd)", asyn
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("parseResultFile: Gemini CLI error envelope becomes failed result", async () => {
+  const { parseResultFile } = await import(`../../${AGENT_ALL_COLLECTOR}`);
+  const dir = makeTmp("rc-gemini-error-");
+  try {
+    const p = join(dir, "error.json");
+    writeFileSync(p, JSON.stringify({
+      session_id: "s1",
+      error: {
+        type: "Error",
+        message: "Please set an Auth method",
+        code: 41,
+      },
+    }));
+    const r = parseResultFile(p, "auth");
+    assert.equal(r.ok, false);
+    assert.equal(r.status, "failed");
+    assert.equal(r.exitCode, 41);
+    assert.equal(r.agentId, "s1");
+    assert.ok(r.errors.some((e) => /Auth method/.test(e)));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

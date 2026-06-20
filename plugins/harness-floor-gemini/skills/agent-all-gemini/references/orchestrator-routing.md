@@ -5,7 +5,7 @@ them should be deliberate, not by feel. This is the routing contract.
 
 > **Note on "fan-out sweep".** In the Gemini port, the evidence-producing
 > alternative to `/agent-all` is a coordinator-driven fan-out that
-> spawns multiple parallel `gemini chat` subprocesses to gather research,
+> spawns multiple parallel headless Gemini subprocesses to gather research,
 > audit many units, or produce findings/specs. It does **not** mean CI
 > workflows (`.github/workflows`), the agent-all gate-sequence spec filed as
 > `workflow.md`, or any product "workflow" feature.
@@ -15,7 +15,7 @@ them should be deliberate, not by feel. This is the routing contract.
 | The deliverable is… | Use |
 |---|---|
 | A durable code change shipped as a PR, gated by model-judged reviewers (verification/QA/orchestration audit tokens) | **`/agent-all`** |
-| Breadth-first evidence: audit N dirs, fact-check M claims, review K diffs, map-reduce over many units, loop-until-dry, a research/design report | **fan-out sweep** (parallel `gemini chat` subprocesses for evidence gathering) |
+| Breadth-first evidence: audit N dirs, fact-check M claims, review K diffs, map-reduce over many units, loop-until-dry, a research/design report | **fan-out sweep** (parallel `gemini -p --output-format json` subprocesses for evidence gathering) |
 | Mixed (research **then** ship) | **fan-out sweep first** -> writes a `validateTaskDoc`-compliant task doc -> then **`/agent-all <taskdoc> --no-brainstorm`** consumes it |
 
 Rule of thumb: if the output is **files committed behind gates**, that is
@@ -26,7 +26,7 @@ posture must not override this — a gated, PR-shipping change is
 
 ## They are siblings — never nest them
 
-Fan-out subprocess leaves are individual `gemini chat` processes. Each leaf:
+Fan-out subprocess leaves are individual headless Gemini processes. Each leaf:
 
 - Has no sub-subprocess dispatch capability (nesting would degrade to a
   single sequential subprocess — waves, gates, and pathspec commit review

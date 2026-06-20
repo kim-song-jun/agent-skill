@@ -43,7 +43,10 @@ test("spawn-wave: --dry-run with 3-task wave returns completed aggregate", () =>
     assert.equal(out.tasks[0].status, "completed");
     assert.equal(out.tasks[0].agentId, "dry-1");
     assert.equal(out.spawned.length, 3);
-    assert.match(out.spawned[0], /gemini.*chat/);
+    assert.match(out.spawned[0], /gemini.*"-p"/);
+    assert.match(out.spawned[0], /"--output-format" "json"/);
+    assert.doesNotMatch(out.spawned[0], /\bchat\b/);
+    assert.doesNotMatch(out.spawned[0], /--output-json/);
     // Tmp files should exist
     for (const id of [1, 2, 3]) {
       assert.ok(existsSync(join(tmpDir, `task-${id}.json`)));

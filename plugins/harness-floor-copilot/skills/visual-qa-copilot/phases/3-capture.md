@@ -17,21 +17,20 @@ For each page-group, call:
 ```
 task({
   prompt: <rendered page-prompt with PAGE/BASE_URL/OUTPUT_DIR/BREAKPOINTS/COMPONENTS/ANALYSIS_PROMPT_TEMPLATE/AUTH_FLOW>,
-  context: { visualQaPage: pageName, slugDir, matrixKey: "visual-qa/matrix" },
+  context: { visualQaPage: pageName, slugDir, matrixPath: state.matrixPath },
 })
 ```
 
-Capture each returned `agentId`. Tag with `context.visualQaPage` so the
-awaiter can filter via `list_agents()`.
+Use a stable agent name such as `visual-qa-page-<sanitized-page-name>` so
+optional `subagentStop` lifecycle logs can be correlated by `agentName`.
 
 ## Awaiter
 
-Two strategies (same as agent-all-copilot):
-
-- **Hook strategy** (preferred): `subagentStop` writes per-agent result
-  to `store_memory(key="visual-qa/page/<agentId>")`. Coordinator polls.
-- **Polling strategy** (fallback): `list_agents()` every 2s; filter by
-  `context.visualQaPage`; wait until all in status `completed | failed`.
+Wait for each `task` invocation's final response. If the optional
+`subagentStop` helper is installed, also tail `.copilot/visual-qa/inbox.jsonl`
+for lifecycle records with `{agentName, sessionId, transcriptPath,
+stopReason}`. Hook records are evidence only; page status comes from the
+task's returned JSON contract.
 
 ## Per-subagent steps (in the page-prompt template)
 
@@ -47,8 +46,8 @@ The dispatched `task` follows `templates/page-prompt.md.hbs`:
 
 ## Orchestrator after fan-out
 
-1. `read_agent(agentId)` for each finished agent.
-2. Aggregate per-page status → `state.perPageStatus`.
+1. Parse each finished page task's returned JSON.
+2. Aggregate per-page status -> `state.perPageStatus`.
 3. Accumulate `state.costUSD`.
 4. Push `{phase: 3, completedAt}` to state.
 

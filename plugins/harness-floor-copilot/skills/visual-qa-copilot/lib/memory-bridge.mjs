@@ -1,10 +1,8 @@
-// memory-bridge — visual-qa-copilot's wrapper around Copilot's
-// store_memory / recall_memory tools. Mirrors writes to disk and falls
-// back to file on memory miss/eviction.
+// memory-bridge — visual-qa-copilot's optional host-memory adapter. Mirrors
+// writes to disk and falls back to file on adapter miss/eviction.
 //
-// Used primarily by Phase 1 → Phase 3 to share the matrix across parallel
-// page tasks (each task can `recall_memory("visual-qa/matrix")` instead
-// of re-parsing the config).
+// Used by hosts that provide private shared memory. The public Copilot
+// harness path shares matrix state through files.
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";

@@ -87,7 +87,7 @@ function loadCtx(ctxPath) {
     everyMTokensOutput: 30000,
     summariserModel: "gpt-5-nano",
     cachePrimingStrategy: "intermediated",
-    storeMemoryEnabled: true,
+    storeMemoryEnabled: false,
     storeMemoryScope: "repository",
     date: todayISO(),
   };

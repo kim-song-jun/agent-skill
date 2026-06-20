@@ -4,7 +4,7 @@
 // plugins/harness-builder-copilot/skills/copilot-init/templates/hooks/)
 // uses ONE JSON file per event under .github/hooks/, with shape:
 //
-//   { "hooks": [{ "matcher": "...", "command": "..." }, ...] }
+//   { "version": 1, "hooks": { "preToolUse": [{ "type": "command", ... }] } }
 //
 // Contract:
 //   patchHooks({hooksDir, hooksToAdd, dryRun}) → {applied, skipped, files}
@@ -23,10 +23,8 @@
 //   - Default sentinel: /thrift-.*\.m?js/
 //   - Safe to run multiple times.
 //
-// > TODO: verify Copilot ask_user / store_memory schemas against live
-//   CLI — and verify the exact event-name casing (camelCase assumed:
-//   preToolUse, postToolUse, sessionStart, agentStop). If a future
-//   Copilot release uses snake_case, swap the filename convention.
+// Event names are Copilot's camelCase hook names. PascalCase files are not
+// used because that switches payloads to VS Code-compatible field names.
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, renameSync, unlinkSync } from "node:fs";
 import { dirname, resolve as resolvePath } from "node:path";
@@ -39,8 +37,8 @@ function hookFilePath(hooksDir, eventName) {
   return resolvePath(hooksDir, `${FILE_PREFIX}${eventName}${FILE_SUFFIX}`);
 }
 
-function readHookFile(path) {
-  if (!existsSync(path)) return { hooks: [] };
+function readHookFile(path, eventName) {
+  if (!existsSync(path)) return { version: 1, hooks: { [eventName]: [] } };
   let raw;
   try {
     raw = readFileSync(path, "utf-8");
@@ -56,7 +54,19 @@ function readHookFile(path) {
   if (!parsed || typeof parsed !== "object") {
     throw new Error(`cannot parse ${path} — refusing to patch (not an object)`);
   }
-  if (!Array.isArray(parsed.hooks)) parsed.hooks = [];
+  if (Array.isArray(parsed.hooks)) {
+    parsed = { ...parsed, version: parsed.version ?? 1, hooks: { [eventName]: parsed.hooks } };
+  } else if (!parsed.hooks || typeof parsed.hooks !== "object") {
+    parsed.hooks = { [eventName]: [] };
+  } else if (Array.isArray(parsed.hooks[eventName])) {
+    parsed.version = parsed.version ?? 1;
+  } else if (parsed.hooks[eventName] && typeof parsed.hooks[eventName] === "object") {
+    parsed.hooks[eventName] = [parsed.hooks[eventName]];
+    parsed.version = parsed.version ?? 1;
+  } else {
+    parsed.hooks[eventName] = [];
+    parsed.version = parsed.version ?? 1;
+  }
   return parsed;
 }
 
@@ -68,7 +78,7 @@ function atomicWrite(path, body) {
 }
 
 function entryCommand(entry) {
-  return entry?.command ?? null;
+  return entry?.command ?? entry?.bash ?? entry?.powershell ?? null;
 }
 
 function alreadyRegistered(existingHooks, newEntry) {
@@ -84,15 +94,16 @@ export function patchHooks({ hooksDir, hooksToAdd, dryRun = false }) {
 
   for (const [eventName, entries] of Object.entries(hooksToAdd)) {
     const fp = hookFilePath(hooksDir, eventName);
-    const file = readHookFile(fp);
+    const file = readHookFile(fp, eventName);
+    const eventHooks = file.hooks[eventName];
     let touched = false;
 
     for (const entry of entries) {
-      if (alreadyRegistered(file.hooks, entry)) {
+      if (alreadyRegistered(eventHooks, entry)) {
         skipped++;
         continue;
       }
-      file.hooks.push(entry);
+      eventHooks.push(entry);
       applied++;
       touched = true;
     }
@@ -100,7 +111,7 @@ export function patchHooks({ hooksDir, hooksToAdd, dryRun = false }) {
     if (touched && !dryRun) {
       atomicWrite(fp, JSON.stringify(file, null, 2) + "\n");
     }
-    files.push({ event: eventName, path: fp, hookCount: file.hooks.length, touched });
+    files.push({ event: eventName, path: fp, hookCount: eventHooks.length, touched });
   }
 
   return { applied, skipped, files };
@@ -121,30 +132,32 @@ export function unpatchHooks({ hooksDir, sentinel = DEFAULT_SENTINEL, dryRun = f
   for (const fp of candidates) {
     let file;
     try {
-      file = readHookFile(fp);
+      const eventName = fp.slice(fp.lastIndexOf(FILE_PREFIX) + FILE_PREFIX.length, -FILE_SUFFIX.length);
+      file = readHookFile(fp, eventName);
+      const eventHooks = file.hooks[eventName];
+      const before = eventHooks.length;
+      file.hooks[eventName] = eventHooks.filter((h) => {
+        const cmd = entryCommand(h);
+        const matched = cmd && sentinel.test(cmd);
+        if (matched) removed++;
+        return !matched;
+      });
+      const changed = file.hooks[eventName].length !== before;
+      if (!dryRun && changed) {
+        if (file.hooks[eventName].length === 0) {
+          try { unlinkSync(fp); } catch { /* non-fatal */ }
+          files.push({ path: fp, deleted: true });
+        } else {
+          atomicWrite(fp, JSON.stringify(file, null, 2) + "\n");
+          files.push({ path: fp, deleted: false, hookCount: file.hooks[eventName].length });
+        }
+      } else if (changed) {
+        files.push({ path: fp, deleted: file.hooks[eventName].length === 0, hookCount: file.hooks[eventName].length, dryRun: true });
+      }
+      continue;
     } catch {
       // Unparseable — leave alone, don't double-fault on unpatch.
       continue;
-    }
-    const before = file.hooks.length;
-    file.hooks = file.hooks.filter((h) => {
-      const cmd = entryCommand(h);
-      const matched = cmd && sentinel.test(cmd);
-      if (matched) removed++;
-      return !matched;
-    });
-    const changed = file.hooks.length !== before;
-
-    if (!dryRun && changed) {
-      if (file.hooks.length === 0) {
-        try { unlinkSync(fp); } catch { /* non-fatal */ }
-        files.push({ path: fp, deleted: true });
-      } else {
-        atomicWrite(fp, JSON.stringify(file, null, 2) + "\n");
-        files.push({ path: fp, deleted: false, hookCount: file.hooks.length });
-      }
-    } else if (changed) {
-      files.push({ path: fp, deleted: file.hooks.length === 0, hookCount: file.hooks.length, dryRun: true });
     }
   }
 
@@ -156,19 +169,26 @@ export function unpatchHooks({ hooksDir, sentinel = DEFAULT_SENTINEL, dryRun = f
 // object maps Copilot event names (camelCase) to entry arrays.
 export function buildStandardThriftHooks({ hooksScriptsDir }) {
   const cmd = (name) => `node "${hooksScriptsDir}/${name}.mjs"`;
+  const entry = (name, extra = {}) => ({
+    type: "command",
+    bash: cmd(name),
+    powershell: cmd(name),
+    timeoutSec: 10,
+    ...extra,
+  });
   return {
     preToolUse: [
-      { matcher: "read_bash", command: cmd("thrift-pretool-bash-telemetry") },
-      { matcher: "read_file", command: cmd("thrift-pretool-read-coerce") },
+      entry("thrift-pretool-bash-telemetry", { matcher: "bash|powershell" }),
+      entry("thrift-pretool-read-coerce", { matcher: "view" }),
     ],
     postToolUse: [
-      { command: cmd("thrift-posttool-summariser-trigger") },
+      entry("thrift-posttool-summariser-trigger"),
     ],
     sessionStart: [
-      { command: cmd("thrift-sessionstart-cache-prime") },
+      entry("thrift-sessionstart-cache-prime"),
     ],
     agentStop: [
-      { command: cmd("thrift-agentstop-audit") },
+      entry("thrift-agentstop-audit"),
     ],
   };
 }

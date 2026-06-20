@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // thrift-agentstop-audit (Copilot) — fires Phase 5 on Copilot's agentStop
 // hook (equivalent to CC's SessionEnd). Writes the audit report and
-// mirrors to store_memory when possible.
+// optionally mirrors through a host memory adapter.
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -52,8 +52,8 @@ async function main() {
   writeFileSync(outputPath, out);
   writeState(STATE_PATH, state);
 
-  // Best-effort store_memory mirror.
-  if (config.audit?.mirrorToStoreMemory) {
+  // Best-effort optional memory-adapter mirror.
+  if (config.storeMemory?.enabled && config.audit?.mirrorToStoreMemory) {
     try {
       await storeMemoryWrite({
         key: `${config.storeMemory?.keyPrefix || "thrift/"}audit/${dateStr}`,

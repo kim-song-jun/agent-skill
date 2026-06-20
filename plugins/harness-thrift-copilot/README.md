@@ -13,10 +13,10 @@ Theme C (`harness-floor-copilot`, cost-unrestricted runtime).
 - **Coerces raw tool output** away from the conversation surface using
   context-mode-copilot (when available; degrades to telemetry-only).
 - **Auto-summarises long sessions** at configurable thresholds
-  (`every N turns` OR `every M output tokens`). Summary is mirrored into
-  Copilot's native `store_memory` so it survives across sessions.
-- **Audits each session** at end, comparing actual cost to a naive
-  baseline. Audit state is mirrored into `store_memory` as well.
+  (`every N turns` OR `every M output tokens`). Summary is written to a local
+  file and surfaced through a Copilot stderr reminder.
+- **Audits each session** at end, comparing actual cost to a naive baseline.
+  Audit state is file-backed by default; private memory adapters are opt-in.
 - **Phase 4 cache prime is disabled by default** — Copilot intermediates
   the underlying OpenAI/GitHub-Models layer, so direct prime calls are
   not observably effective.
@@ -44,10 +44,10 @@ node plugins/harness-thrift-copilot/bin/install.mjs /path/to/project [--force]
 
 ## Hook format (Copilot vs Claude Code)
 
-Copilot CLI's hook system uses `.github/hooks/*.json` — one JSON file per
-event, each containing a `hooks: [{matcher?, command}]` array. This
-differs from Claude Code's single `.claude/settings.local.json` JSON
-arrays.
+Copilot CLI's hook system uses versioned `.github/hooks/*.json` files. Each
+file contains `{ "version": 1, "hooks": { "<event>": [...] } }`, and each entry
+uses Copilot's official command-hook shape. This differs from Claude Code's
+single `.claude/settings.local.json` JSON arrays.
 
 ```
 .github/hooks/
@@ -85,7 +85,7 @@ a Copilot-flavoured `cache` section (warns about intermediation):
     "intermediationWarning": true
   },
   "storeMemory": {
-    "enabled": true,
+    "enabled": false,
     "scope": "repository",
     "keyPrefix": "thrift/"
   },
@@ -95,7 +95,7 @@ a Copilot-flavoured `cache` section (warns about intermediation):
   },
   "audit": {
     "outputPath": ".agent-skill/reports/thrift/audit-<date>.md",
-    "mirrorToStoreMemory": true
+    "mirrorToStoreMemory": false
   }
 }
 ```
@@ -106,10 +106,10 @@ a Copilot-flavoured `cache` section (warns about intermediation):
   table used by GitHub Copilot CLI accounting.
 - thrift-copilot-instrument: `.github/hooks/*.json` patcher with
   append-only sentinel revert)
-- thrift-copilot-store-memory-bridge: file fallback when `store_memory` MCP
-  tooling is unavailable.
+- thrift-copilot-store-memory-bridge: opt-in private memory adapter with file
+  fallback.
 - Six thrift phases: preflight, telemetry/coercion, summary pressure,
-  memory mirror, disabled-by-default cache prime, and audit.
+  file-backed state, disabled-by-default cache prime, and audit.
 
 ## Status
 
@@ -127,7 +127,7 @@ for the rationale.
 
 ## Known limits
 
-- Spike `store_memory` payload-size limits + GC behaviour.
+- Spike optional memory adapter payload-size limits + GC behaviour.
 - Confirm `.github/hooks/*.json` event names against the installed Copilot CLI
   version used by the target project.
 - If Copilot exposes per-call token counts, swap the heuristic byte→token

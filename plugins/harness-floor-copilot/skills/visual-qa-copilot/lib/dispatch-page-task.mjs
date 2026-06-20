@@ -3,7 +3,8 @@
 //
 // Same contract shape as agent-all-copilot's dispatch-task.mjs but the
 // prompt is rendered from `page-prompt.md.hbs` and the context carries
-// `visualQaPage` so the awaiter can filter via `list_agents()`.
+// `visualQaPage` so optional host adapters or hook lifecycle logs can
+// correlate page tasks.
 
 import { readFileSync, existsSync } from "node:fs";
 

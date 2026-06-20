@@ -39,11 +39,11 @@ If `--no-pr` OR `config.defaults.createPR === false`: skip. Push
 
 2. Compute slug: `slug = basename(task.path).replace(/^(?:\d+|T-\d{8}-\d{3}(?:-\d+)?)-/, "").replace(/\.md$/, "")`.
 3. Branch: `branch = config.pr.branchPrefix + slug`.
-4. Create or switch via `read_bash`:
+4. Create or switch via `bash`:
    ```bash
    git rev-parse --verify "$branch" 2>/dev/null && git checkout "$branch" || git checkout -b "$branch"
    ```
-5. Push: `read_bash("git push -u origin '$branch'")`. If push fails: warn,
+5. Push: `bash("git push -u origin '$branch'")`. If push fails: warn,
    push `{phase: 5, status: "pushed-locally"}`, continue.
 6. Render `templates/pr-body.md.hbs` with PR context (waves, plan, task,
    loop, verifications, iter, cost). Use the harness-builder render lib. Then
@@ -51,7 +51,7 @@ If `--no-pr` OR `config.defaults.createPR === false`: skip. Push
    append a redaction audit summary when findings exist, and abort before
    `gh pr create` if `assertRedactionAllowed` blocks. Use the redacted body for
    every shell command; never pass the raw body to GitHub.
-7. Create PR via `read_bash`:
+7. Create PR via `bash`:
    ```bash
    gh pr create --base <baseBranch> --title "<task.title>" --body "$(prBody)"
    ```

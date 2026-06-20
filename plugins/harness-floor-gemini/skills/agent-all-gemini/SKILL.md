@@ -10,9 +10,9 @@ description: >
 
 Runs the cost-unrestricted multi-agent pipeline using Gemini CLI
 primitives. Phase 3 dispatch is **subprocess-based**: each wave task
-spawns its own `gemini chat` subprocess via `run_shell_command`, all
-in parallel. The coordinator awaits via process exit + output file
-parsing.
+spawns through `bin/spawn-wave.mjs`, which invokes Gemini CLI as
+`gemini -p "<prompt>" --output-format json --skip-trust`. The coordinator
+awaits via process exit + wrapper-written output files.
 
 ## Usage
 
@@ -62,7 +62,7 @@ Additional Gemini-specific:
 | 0 | `phases/0-preflight.md` | git + .gemini/settings.json + subprocess sanity + config |
 | 1 | `phases/1-intent.md` | brainstorm (chat) OR load task file |
 | 2 | `phases/2-plan.md` | draft plan via `write_file` |
-| 3 | `phases/3-dispatch.md` | fork N parallel `gemini chat` subprocesses per wave |
+| 3 | `phases/3-dispatch.md` | fork N parallel headless `gemini -p` subprocesses per wave |
 | 4 | `phases/4-gate.md` | spawn reviewer subprocesses (same pattern) |
 | 5 | `phases/5-pr.md` | `run_shell_command`: git branch push + `gh pr create` |
 | 6 | `phases/6-loop.md` | breakCondition shell + state.iter re-entry |
@@ -96,7 +96,7 @@ Additional Gemini-specific:
 | Read file | `read_file` |
 | Write file | `write_file` |
 | Shell | `run_shell_command` |
-| Dispatch subagent | spawn `gemini chat -p "<prompt>" --output-json` subprocess |
+| Dispatch subagent | spawn `gemini -p "<prompt>" --output-format json` subprocess through the wrapper |
 | Await dispatched agent | subprocess `exit` + read its stdout JSON |
 | Persist plan/state | `write_file` + atomic rename via `run_shell_command` |
 | Prompt user | `ask_user` |

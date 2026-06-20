@@ -3,17 +3,16 @@
 ## Inputs (from state + config)
 
 - `.thrift-state.json` — accumulated metrics this session
-- `store_memory(key: "thrift/state")` — durable mirror (read as
-  fallback if the file is missing)
+- optional memory-adapter mirror — read as fallback only when explicitly
+  enabled
 - `.thrift.json` — config; especially `audit.outputPath` and
   `audit.mirrorToStoreMemory`
 
 ## Steps
 
-1. Read state via `readState({statePath, invoker})` from
-   `lib/metrics-collector.mjs` (file first, memory fallback). If both
-   sources are missing, write a minimal "no-data" report (still useful
-   as a signal that thrift ran).
+1. Read state via `readState({statePath})` from
+   `lib/metrics-collector.mjs`. If state is missing, write a minimal
+   "no-data" report (still useful as a signal that thrift ran).
 
 2. Load config via `loadConfig()` from `lib/config-loader.mjs`.
 
@@ -32,9 +31,9 @@
 
 6. Write report to disk.
 
-7. If `audit.mirrorToStoreMemory` is true: mirror the rendered report
-   AND the state JSON into `store_memory(key:
-   "thrift/audit/<date>")`. Best-effort — failure does not abort.
+7. If `storeMemory.enabled` and `audit.mirrorToStoreMemory` are both true:
+   mirror the rendered report and state JSON through the configured memory
+   adapter. Best-effort — failure does not abort.
 
 8. Push `{phase: 5, completedAt}` to state.
 
@@ -44,7 +43,7 @@
 Thrift audit: <duration> min session, <turns> turns,
   $<actual> actual vs $<baseline> baseline (saved <%>).
   Report: <output-path>
-  Memory mirror: <ok|degraded|disabled>
+  Memory adapter: <ok|degraded|disabled>
   Intermediation note: <emitted|none>
 ```
 
@@ -52,7 +51,7 @@ Thrift audit: <duration> min session, <turns> turns,
 
 Because Copilot proxies the underlying model, the audit's `actualUSD`
 column is a **best-effort estimate** based on the configured
-`summariser.model` (and `read_agent` cost fields if available).
+`summariser.model`.
 Whenever Copilot's billing surface differs from the rate-table
 estimate, the audit emits an `intermediationNote` block listing the
 known caveats:
@@ -65,17 +64,16 @@ known caveats:
   was actually used; if Copilot picks a different model, real cost
   may differ.
 
-> **TODO: verify whether Copilot's `read_agent` (or equivalent)
-> exposes a `costUSD` or `tokensIn/tokensOut` field.** If yes,
+> **TODO: verify whether Copilot exposes an official billing or usage
+> field with `costUSD` or `tokensIn/tokensOut`.** If yes,
 > substitute measured values for the rate-table estimates.
 
 ## On error
 
-- State file AND memory mirror both missing → minimal "no-data"
-  report.
+- State file missing → minimal "no-data" report.
 - Output path not writable → fall back to `.thrift/audit-<date>.md`
   and warn.
 - Render failure → log the partial state; user can re-run
   `/thrift-copilot audit`.
-- `store_memory` mirror failure → log degradation; report still
+- Memory adapter mirror failure → log degradation; report still
   written to disk.

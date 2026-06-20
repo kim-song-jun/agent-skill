@@ -7,7 +7,7 @@ considered:
 
 | Option | Verdict | Reason |
 |---|---|---|
-| Spawn N parallel `gemini chat` subprocesses | **CHOSEN** | Works today; portable; clean isolation |
+| Spawn N parallel headless `gemini -p` subprocesses | **CHOSEN** | Works today; portable; clean isolation |
 | `activate_skill` chained sequentially | Rejected | Loses parallelism |
 | Custom MCP server emulating dispatch | Rejected | Heavy implementation; brittle |
 | Wait for Gemini to add native subagents | Rejected | Indefinite timeline |
@@ -15,15 +15,15 @@ considered:
 Subprocess approach pros:
 - Each subprocess gets its own conversation context (isolation).
 - Native parallelism via OS process scheduler.
-- Cost-tracking via `--output-json` per subprocess.
+- JSON capture via `--output-format json` per subprocess.
 - Easy to kill on timeout.
 
 Subprocess approach cons:
 - Higher overhead per task (process startup, JIT, etc.) — ~500ms-2s per spawn.
 - Output marshaling via tmp files (fragile; cleanup needed).
 - No streaming progress back to coordinator until subprocess exits.
-- `--output-json` flag is assumed; if not supported by current Gemini
-  CLI, requires stdout parsing fallback.
+- Gemini CLI does not write result files itself; the wrapper captures stdout
+  and writes the per-task JSON file.
 
 ## Effort estimate vs other ports
 
@@ -39,27 +39,29 @@ Spec estimate: **1.5 weeks** (largest of the four).
 Gemini port's 1.5-week estimate covers:
 - 3 days: subprocess dispatch + awaiter implementation (`run_shell_command`,
   tmp file IPC, kill-on-timeout).
-- 2 days: cost-tracking via `--output-json` parsing.
+- 2 days: JSON stdout capture and cost extraction when usage is present.
 - 2 days: subprocess-safe state-file writes (race-free atomic rename).
 - 2 days: tests (mock subprocesses, race conditions).
 - 1 day: tmp-dir GC hook (between iterations and after final exit).
 - 1 day: manual checklist + buffer.
 
-This iteration ships **scaffold-only** — phases, templates, porting notes.
-Subprocess machinery implementation deferred.
+This iteration uses Gemini CLI 0.47's live command surface:
+`gemini -p "<prompt>" --output-format json --skip-trust`. The older
+chat-subcommand, JSON-output, output-file, timeout, and skill-roster flags are
+not used.
 
 ## Open research questions
 
-1. **`gemini chat --output-json` flag.** Does it exist in the current
-   Gemini CLI build? If not, fall back to parsing stdout with a sentinel
-   marker (`---JSON-RESULT---\n{...}\n---END---`).
+1. **Headless output contract.** `--output-format json` returns a JSON
+   envelope on stdout. The wrapper writes stdout to the task output file and
+   normalizes Gemini CLI error envelopes as failed results.
 
-2. **`gemini chat -p '<prompt>' --skill-roster <dir>` syntax.** The phase
-   docs assume this flag. May need to be `--skills-dir` or `--rule-dir`
-   in current builds.
+2. **Persona selection.** Gemini CLI 0.47 exposes `skills` and `extensions`,
+   but not a per-process `--skill-roster` flag. Persona selection must be in
+   the prompt or extension configuration.
 
 3. **Per-subprocess cost reporting.** Whether Gemini surfaces token counts
-   in `--output-json` payload. Falls back to estimation from transcript
+   in the JSON payload. Falls back to estimation from transcript
    length × model's published per-token rate.
 
 4. **Concurrent subprocess limits.** Some Gemini API plans rate-limit
@@ -76,7 +78,7 @@ Subprocess machinery implementation deferred.
 
 | Aspect | Claude Code (`/agent-all`) | Gemini (`/agent-all` port) |
 |---|---|---|
-| Dispatch | `Task` tool (subagent-driven-development) | `run_shell_command("gemini chat ... &")` |
+| Dispatch | `Task` tool (subagent-driven-development) | `run_shell_command("gemini -p ... --output-format json &")` |
 | Awaiter | Skill awaits per-task | `wait <pid>` OR polling tmp dir |
 | Plan persistence | File via Write tool | File via `write_file` |
 | State | `.agent-all-state.json` (atomic) | Same; atomic via `mv` after `write_file` |
@@ -105,11 +107,11 @@ Three reasons:
 
 ## Future work
 
-- Subprocess dispatch lib (`bin/spawn-wave.mjs`) once `--output-json` /
-  `--skill-roster` flags confirmed.
+- More schema fixtures from authenticated Gemini CLI runs.
 - Tmp-dir GC hook registered in `~/.gemini/settings.json` (`Stop` hook
   cleans up after pipeline exits).
-- Cost-tracking integration once `--output-json` payload schema confirmed.
+- Cost-tracking integration once usage fields are observed in authenticated
+  JSON payloads.
 - Streaming progress: dispatch via FIFOs instead of one-shot tmp files
   so coordinator can report per-task progress mid-wave.
 - `--dispatch=mcp-server` alternative strategy if Google ships a

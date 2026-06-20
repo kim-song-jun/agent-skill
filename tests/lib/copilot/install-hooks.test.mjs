@@ -28,28 +28,34 @@ test("buildHookEntry: requires label, dispatcher, inbox", () => {
   assert.throws(() => buildHookEntry({ label: "x" }), /dispatcher/);
   assert.throws(() => buildHookEntry({ label: "x", dispatcher: "d" }), /inbox/);
   const e = buildHookEntry({ label: "agent-all", dispatcher: "/d.mjs", inbox: "/i.jsonl" });
-  assert.equal(e.label, "harness-floor-copilot:agent-all");
-  assert.equal(e.command, "node");
-  assert.deepEqual(e.args, ["/d.mjs", "--inbox", "/i.jsonl"]);
+  assert.equal(e.type, "command");
+  assert.equal(e.env.AGENT_SKILL_HOOK_LABEL, "harness-floor-copilot:agent-all");
+  assert.match(e.bash, /node '\/d\.mjs' --inbox '\/i\.jsonl'/);
+  assert.match(e.powershell, /node '\/d\.mjs' --inbox '\/i\.jsonl'/);
+  assert.ok(!("args" in e));
 });
 
 test("mergeHook: adds entry to empty hooks object", () => {
   const merged = mergeHook({}, buildHookEntry({ label: "agent-all", dispatcher: "/d", inbox: "/i" }));
-  assert.equal(merged.subagentStop.length, 1);
-  assert.equal(merged.subagentStop[0].label, "harness-floor-copilot:agent-all");
+  assert.equal(merged.version, 1);
+  assert.equal(merged.hooks.subagentStop.length, 1);
+  assert.equal(merged.hooks.subagentStop[0].env.AGENT_SKILL_HOOK_LABEL, "harness-floor-copilot:agent-all");
 });
 
 test("mergeHook: preserves existing unrelated hooks", () => {
   const existing = {
-    subagentStop: [{ label: "user-custom", command: "echo", args: ["hi"] }],
-    otherHook: [{ command: "stuff" }],
+    version: 1,
+    hooks: {
+      subagentStop: [{ type: "command", bash: "echo hi", env: { AGENT_SKILL_HOOK_LABEL: "user-custom" } }],
+      notification: [{ type: "command", matcher: "agent_completed", bash: "echo note" }],
+    },
   };
   const entry = buildHookEntry({ label: "agent-all", dispatcher: "/d", inbox: "/i" });
   const merged = mergeHook(existing, entry);
-  assert.equal(merged.subagentStop.length, 2);
-  assert.ok(merged.subagentStop.find((h) => h.label === "user-custom"));
-  assert.ok(merged.subagentStop.find((h) => h.label === "harness-floor-copilot:agent-all"));
-  assert.deepEqual(merged.otherHook, existing.otherHook);
+  assert.equal(merged.hooks.subagentStop.length, 2);
+  assert.ok(merged.hooks.subagentStop.find((h) => h.env?.AGENT_SKILL_HOOK_LABEL === "user-custom"));
+  assert.ok(merged.hooks.subagentStop.find((h) => h.env?.AGENT_SKILL_HOOK_LABEL === "harness-floor-copilot:agent-all"));
+  assert.deepEqual(merged.hooks.notification, existing.hooks.notification);
 });
 
 test("mergeHook: replaces entry with same label (idempotent)", () => {
@@ -57,15 +63,23 @@ test("mergeHook: replaces entry with same label (idempotent)", () => {
   const e2 = buildHookEntry({ label: "agent-all", dispatcher: "/new", inbox: "/new-inbox" });
   let merged = mergeHook({}, e1);
   merged = mergeHook(merged, e2);
-  assert.equal(merged.subagentStop.length, 1);
-  assert.deepEqual(merged.subagentStop[0].args, ["/new", "--inbox", "/new-inbox"]);
+  assert.equal(merged.hooks.subagentStop.length, 1);
+  assert.match(merged.hooks.subagentStop[0].bash, /'\/new' --inbox '\/new-inbox'/);
 });
 
 test("mergeHook: normalizes single-object existing entry to array", () => {
-  const existing = { subagentStop: { label: "old", command: "x", args: [] } };
+  const existing = { version: 1, hooks: { subagentStop: { type: "command", bash: "x" } } };
   const merged = mergeHook(existing, buildHookEntry({ label: "agent-all", dispatcher: "/d", inbox: "/i" }));
-  assert.ok(Array.isArray(merged.subagentStop));
-  assert.equal(merged.subagentStop.length, 2);
+  assert.ok(Array.isArray(merged.hooks.subagentStop));
+  assert.equal(merged.hooks.subagentStop.length, 2);
+});
+
+test("mergeHook: migrates legacy top-level subagentStop into official hooks object", () => {
+  const existing = { subagentStop: [{ type: "command", bash: "echo legacy" }] };
+  const merged = mergeHook(existing, buildHookEntry({ label: "agent-all", dispatcher: "/d", inbox: "/i" }));
+  assert.equal(merged.version, 1);
+  assert.ok(!("subagentStop" in merged));
+  assert.equal(merged.hooks.subagentStop.length, 2);
 });
 
 test("loadHooksFile: returns {} for missing or empty file", () => {
@@ -89,8 +103,10 @@ test("installHooks: creates a new hooks file when missing", () => {
   assert.equal(r.changed, true);
   assert.ok(existsSync(hooksFile));
   const parsed = JSON.parse(readFileSync(hooksFile, "utf-8"));
-  assert.equal(parsed.subagentStop[0].label, "harness-floor-copilot:agent-all");
-  assert.deepEqual(parsed.subagentStop[0].args, [DISPATCHER, "--inbox", inbox]);
+  assert.equal(parsed.version, 1);
+  assert.equal(parsed.hooks.subagentStop[0].env.AGENT_SKILL_HOOK_LABEL, "harness-floor-copilot:agent-all");
+  assert.match(parsed.hooks.subagentStop[0].bash, new RegExp(`${DISPATCHER.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}.*--inbox`));
+  assert.match(parsed.hooks.subagentStop[0].bash, new RegExp(inbox.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 });
 
 test("installHooks: idempotent re-run returns noop without writing", () => {
@@ -112,8 +128,8 @@ test("installHooks: merges agent-all + visual-qa side-by-side", () => {
   installHooks({ hooksFile, inbox: inbox1, label: "agent-all" });
   installHooks({ hooksFile, inbox: inbox2, label: "visual-qa" });
   const parsed = JSON.parse(readFileSync(hooksFile, "utf-8"));
-  assert.equal(parsed.subagentStop.length, 2);
-  const labels = parsed.subagentStop.map((h) => h.label).sort();
+  assert.equal(parsed.hooks.subagentStop.length, 2);
+  const labels = parsed.hooks.subagentStop.map((h) => h.env.AGENT_SKILL_HOOK_LABEL).sort();
   assert.deepEqual(labels, [
     "harness-floor-copilot:agent-all",
     "harness-floor-copilot:visual-qa",
@@ -123,11 +139,12 @@ test("installHooks: merges agent-all + visual-qa side-by-side", () => {
 test("installHooks: preserves an unrelated user hook", () => {
   const { hooksFile, inbox } = fresh();
   writeFileSync(hooksFile, JSON.stringify({
-    subagentStop: [{ label: "user-custom", command: "echo", args: ["hi"] }],
+    version: 1,
+    hooks: { subagentStop: [{ type: "command", bash: "echo hi", env: { AGENT_SKILL_HOOK_LABEL: "user-custom" } }] },
   }));
   installHooks({ hooksFile, inbox, label: "agent-all" });
   const parsed = JSON.parse(readFileSync(hooksFile, "utf-8"));
-  const labels = parsed.subagentStop.map((h) => h.label).sort();
+  const labels = parsed.hooks.subagentStop.map((h) => h.env.AGENT_SKILL_HOOK_LABEL).sort();
   assert.deepEqual(labels, [
     "harness-floor-copilot:agent-all",
     "user-custom",

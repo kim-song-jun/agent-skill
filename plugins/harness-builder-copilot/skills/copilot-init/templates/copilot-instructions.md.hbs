@@ -9,9 +9,10 @@
 ## Operating Principles
 
 1. **Plan first.** Sketch a brief plan before editing.
-2. **Edits via `apply_patch`.** All file modifications go through it.
-3. **Shell via `read_bash`.** Use it for builds, tests, lint.
-4. **Memory via `store_memory`.** Capture durable decisions there with scope=`repository`.
+2. **Read with `view`.** Inspect the relevant files before changing them.
+3. **Edit with `create` / `edit`.** Keep changes scoped to the files named in the task.
+4. **Shell via `bash` / `powershell`.** Use the native shell tool for builds, tests, and lint.
+5. **Persist decisions in repository files.** Use task docs or project notes for durable state; do not assume a Copilot memory tool exists.
 
 ## Roles
 

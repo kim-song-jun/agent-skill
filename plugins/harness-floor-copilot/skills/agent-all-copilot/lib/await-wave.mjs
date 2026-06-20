@@ -9,9 +9,9 @@
 //     The dispatcher normalizes supported payload aliases into:
 //       {agentId, status, output, costUSD, finishedAt, raw}
 //
-//   - Poll mode: every `intervalMs` we call `listAgentsFn()` (the host's
-//     `list_agents` tool) and filter for our ids; resolve when all have
-//     `status` ∈ TERMINAL.
+//   - Adapter poll mode: tests or host integrations may supply a
+//     `listAgentsFn()` adapter. Copilot CLI does not currently expose a public
+//     `list_agents` primitive for users to call directly.
 //
 // Public API:
 //   awaitWaveHook({agentIds, inboxPath, timeoutMs, fsReader?, sleeper?})
@@ -81,7 +81,7 @@ export async function awaitWaveHook({
     const raw = fsReader(inboxPath);
     const records = parseInboxLines(raw);
     for (const rec of records) {
-      const id = rec.agentId ?? rec.agent_id ?? rec.id;
+      const id = rec.agentId ?? rec.agent_id ?? rec.id ?? rec.agentName ?? rec.agent_name ?? rec.sessionId ?? rec.session_id ?? rec.transcriptPath ?? rec.transcript_path;
       if (id && want.has(id) && !results.has(id)) {
         // Map all non-terminal-looking statuses to a documented default.
         const status = rec.status && TERMINAL_STATUSES.has(rec.status)
@@ -133,11 +133,11 @@ export async function awaitWavePoll({
         error: `list_agents failed: ${e?.message ?? e}`,
       };
     }
-    // Supported list_agents adapters return either an array of agent records
-    // or {agents: [...]}; ids may be agentId, agent_id, or id.
+    // Supported adapters return either an array of agent records or
+    // {agents: [...]}; ids may be normalized or official Copilot hook fields.
     const list = Array.isArray(agents) ? agents : (agents?.agents ?? []);
     for (const a of list) {
-      const id = a.agentId ?? a.agent_id ?? a.id;
+      const id = a.agentId ?? a.agent_id ?? a.id ?? a.agentName ?? a.agent_name ?? a.sessionId ?? a.session_id ?? a.transcriptPath ?? a.transcript_path;
       if (id && want.has(id) && TERMINAL_STATUSES.has(a.status) && !results.has(id)) {
         results.set(id, { ...a, agentId: id });
       }

@@ -51,8 +51,9 @@ For each wave with `status === "completed"`:
    reviewer.
 
 3. Dispatch every `gatePlan.dispatches[]` entry in order as a Copilot `task`
-   invocation. Tag each with `context.agentAllGate = "<wave>:<mode>"` so
-   `list_agents()` filtering can disambiguate:
+   invocation. Tag each with `context.agentAllGate = "<wave>:<mode>"` and a
+   stable agent name such as `agent-all-gate-<wave>-<mode>-<role>` so optional
+   `subagentStop` lifecycle logs can be correlated:
    - `kind=coordinator`, `role=orchestrator`: description prefix
      `Orchestration Gate Task <N>: <title>`. Prompt it to identify HOT files,
      unsafe ownership overlap, retry sequencing, and pathspec commit risk
@@ -81,8 +82,9 @@ For each wave with `status === "completed"`:
      Phase 3, emit a compatible `BeforeAgentSpawn` policy entry before
      invoking it.
 
-4. Collect verdicts via `read_agent`. Bucket issues by severity
-   (`critical | major | minor`).
+4. Collect verdicts from each reviewer task's final response contract. Bucket
+   issues by severity (`critical | major | minor`). Optional hook records add
+   lifecycle evidence only; they are not a substitute for the reviewer verdict.
 
 4b. **Classifier-based gate.** Wave passes Phase 4 iff:
    - `ORCHESTRATION_AUDIT ∈ {passed, skipped}` for every coordinator

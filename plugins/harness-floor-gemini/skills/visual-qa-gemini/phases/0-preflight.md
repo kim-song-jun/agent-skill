@@ -8,7 +8,7 @@
 3. Confirm `gemini` binary in PATH:
    `run_shell_command("command -v gemini")` exit 0.
 4. Probe subprocess sanity:
-   `run_shell_command("gemini chat -p 'reply OK' --output-json --timeout 30")`.
+   `run_shell_command("gemini -p 'reply OK' --output-format json --skip-trust")`.
    Parse JSON, verify response. If fail: abort.
 5. Unless `--skip-health`:
    `run_shell_command("curl --max-time 5 -s -o /dev/null -w '%{http_code}' <baseUrl>")`.

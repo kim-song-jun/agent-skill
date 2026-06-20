@@ -2,7 +2,7 @@
 
 ## Gemini dispatch strategy
 
-Phase 3 forks N parallel `gemini chat` subprocesses — one per page-group.
+Phase 3 forks N parallel headless `gemini -p` subprocesses — one per page-group.
 Each subprocess gets its own Playwright MCP session.
 
 ## Group matrix by page
@@ -15,16 +15,21 @@ For each page-group, spawn a background subprocess:
 
 ```
 run_shell_command(
-  "gemini chat -p '<rendered page-prompt body>' \
-    --output-json \
-    --output-file '/tmp/visual-qa/page-<sanitized-name>.json' \
-    --skill-roster .gemini/skills/visual-qa-page/ \
+  "node plugins/harness-floor-gemini/bin/spawn-page-subagent.mjs \
+    --pages '/tmp/visual-qa/pages.json' \
+    --tmp '/tmp/visual-qa' \
     --timeout 1800 &",
   { background: true }
 )
 ```
 
-Capture each subprocess `pid`. Tag output filename by page name.
+The wrapper invokes Gemini CLI as `gemini -p '<rendered page-prompt body>'
+--output-format json --skip-trust`, captures stdout, and writes
+`/tmp/visual-qa/page-<sanitized-name>.json`. Gemini CLI 0.47 uses the
+default command with `-p` and `--output-format json`; do not use old
+chat-subcommand or output-file style flags.
+
+Capture each wrapper subprocess `pid`. Tag output filename by page name.
 
 ## Awaiter
 
@@ -54,8 +59,8 @@ run_shell_command(
 2. AUTH_FLOW if needed.
 3. For each breakpoint × component × state: screenshot to OUTPUT_DIR.
 4. For each PNG: LLM analysis → `.analysis.{json,md}`.
-5. Write per-page JSON status to `/tmp/visual-qa/page-<name>.json` (the
-   `--output-file`).
+5. Return per-page JSON status; the wrapper writes it to
+   `/tmp/visual-qa/page-<name>.json`.
 
 ## Orchestrator after fan-out
 

@@ -37,9 +37,8 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
 
      ```
      run_shell_command(
-       `gemini chat --skill visual-qa-gemini \
-         -p 'run with --slug=loop-iter-${state.iter} --force --yes${spec.spec ? " --spec=" + spec.spec : ""}; report STATUS: passed|failed' \
-         --output-json`,
+      `gemini -p 'Invoke visual-qa-gemini with --slug=loop-iter-${state.iter} --force --yes${spec.spec ? " --spec=" + spec.spec : ""}; report STATUS: passed|failed' \
+        --output-format json --skip-trust`,
        { background: false }
      )
      ```
@@ -86,12 +85,12 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
 
 ## Gemini-specific
 
-Gemini's chat surface re-reads `phases/1-intent.md` for in-session loop
+Gemini's headless CLI surface re-reads `phases/1-intent.md` for in-session loop
 continuation. For non-interactive long loops, spawn the entire pipeline
 itself as a subprocess and let it self-re-enter via state file:
 ```
 run_shell_command(
-  "gemini chat --skill agent-all-gemini -p 'continue from .agent-all-state.json' &",
+  "gemini -p 'Invoke agent-all-gemini and continue from .agent-all-state.json' --output-format json --skip-trust &",
   { background: true }
 )
 ```

@@ -1,9 +1,9 @@
-// memory-bridge — wraps Copilot's `store_memory` / `recall_memory` tools
-// (scope=repository) with a deterministic file fallback so the coordinator
-// can survive memory eviction, quota errors, or cross-session restarts.
+// memory-bridge — optional host-memory adapter with a deterministic file
+// fallback so the coordinator can survive adapter absence, quota errors, or
+// cross-session restarts.
 //
-// Always mirror writes to disk; on read, prefer memory and fall back to
-// file. Optional `validateAgainstFile=true` cross-checks the two to detect
+// Always mirror writes to disk; on read, prefer adapter memory and fall back
+// to file. Optional `validateAgainstFile=true` cross-checks the two to detect
 // silent eviction.
 //
 // Public API:
@@ -19,9 +19,9 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
-// Host adapter contract: expose `store_memory` and `recall_memory` with
-// `{key, value?, scope}` args. Writes are always mirrored to disk so the
-// workflow still survives memory quota, eviction, or host-tool absence.
+// Host adapter contract: expose store/recall operations with `{key, value?,
+// scope}` args. The default public Copilot harness path is file-backed; these
+// names are only for private adapters used by tests or embedding hosts.
 const STORE_TOOL = "store_memory";
 const RECALL_TOOL = "recall_memory";
 const SCOPE = "repository";

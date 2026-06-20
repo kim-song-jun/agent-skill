@@ -1,5 +1,14 @@
 {
-  "hooks": [
-    { "matcher": "read_bash", "command": "echo 'pre read_bash'" }
-  ]
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "matcher": "bash|powershell",
+        "bash": "printf '{}'",
+        "powershell": "Write-Output '{}'",
+        "timeoutSec": 5
+      }
+    ]
+  }
 }

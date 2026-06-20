@@ -11,8 +11,13 @@
 // doesn't exist. The init script creates the directory; deleting it
 // effectively unsubscribes a repo.
 //
-// Supported payload aliases are normalized before append:
-//   {agentId|agent_id|id, status?, output|outputText?, costUSD|cost_usd?, finishedAt?, ...}
+// Supported payloads are normalized before append. Current Copilot CLI emits
+// official subagentStop fields such as:
+//   {sessionId, transcriptPath, agentName, agentDisplayName?, stopReason}
+// or VS Code compatible snake_case:
+//   {session_id, transcript_path, agent_name, agent_display_name?, stop_reason}
+// Legacy harness tests and old adapters may still provide:
+//   {agentId|agent_id|id, status?, output|outputText?, costUSD|cost_usd?, ...}
 //
 // Usage (invoked by Copilot, not directly):
 //   node subagent-stop-dispatcher.mjs --inbox <abs-path>
@@ -35,6 +40,37 @@ async function readStdin() {
   return Buffer.concat(chunks).toString("utf-8");
 }
 
+function normalizeStatus(payload) {
+  const explicit = payload.status;
+  if (explicit) return explicit;
+  const reason = String(payload.stopReason ?? payload.stop_reason ?? "").toLowerCase();
+  if (reason.includes("cancel")) return "cancelled";
+  if (reason.includes("block")) return "blocked";
+  if (reason.includes("fail") || reason.includes("error")) return "failed";
+  return "completed";
+}
+
+function normalizePayload(payload) {
+  const agentName = payload.agentName ?? payload.agent_name ?? null;
+  const sessionId = payload.sessionId ?? payload.session_id ?? null;
+  const transcriptPath = payload.transcriptPath ?? payload.transcript_path ?? null;
+  const stopReason = payload.stopReason ?? payload.stop_reason ?? null;
+  const agentId = payload.agentId ?? payload.agent_id ?? payload.id ?? agentName ?? sessionId ?? transcriptPath ?? null;
+  return {
+    agentId,
+    agentName,
+    agentDisplayName: payload.agentDisplayName ?? payload.agent_display_name ?? null,
+    sessionId,
+    transcriptPath,
+    stopReason,
+    status: normalizeStatus(payload),
+    output: payload.output ?? payload.outputText ?? null,
+    costUSD: payload.costUSD ?? payload.cost_usd ?? null,
+    finishedAt: payload.finishedAt ?? new Date().toISOString(),
+    raw: payload,
+  };
+}
+
 export async function dispatch({ inbox, payloadRaw }) {
   if (!inbox) {
     // No-op when no inbox configured (other Copilot sessions).
@@ -51,17 +87,9 @@ export async function dispatch({ inbox, payloadRaw }) {
   } catch (e) {
     return { ok: false, reason: "invalid-json", error: e.message };
   }
-  // Normalize agentId — the hook may emit different keys.
-  const normalized = {
-    agentId: payload.agentId ?? payload.agent_id ?? payload.id ?? null,
-    status: payload.status ?? "completed",
-    output: payload.output ?? payload.outputText ?? null,
-    costUSD: payload.costUSD ?? payload.cost_usd ?? null,
-    finishedAt: payload.finishedAt ?? new Date().toISOString(),
-    raw: payload,
-  };
+  const normalized = normalizePayload(payload);
   if (!normalized.agentId) {
-    return { ok: false, reason: "missing-agentId", payload };
+    return { ok: false, reason: "missing-agent-identity", payload };
   }
   // Atomic append — fs.appendFileSync uses O_APPEND on POSIX, no need for locking
   // unless we expect concurrent hooks. Keep small payloads under one line.
@@ -90,3 +118,5 @@ if (isDirectInvocation) {
     process.exit(0);
   });
 }
+
+export const __internal = { normalizePayload, normalizeStatus };

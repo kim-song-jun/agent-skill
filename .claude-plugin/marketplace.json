@@ -69,7 +69,7 @@
     {
       "name": "harness-thrift-copilot",
       "source": "./plugins/harness-thrift-copilot",
-      "description": "Theme B port for GitHub Copilot CLI — store_memory bridge + .github/hooks/ patches"
+      "description": "Theme B port for GitHub Copilot CLI — file-backed thrift state + official .github/hooks/ patches"
     },
     {
       "name": "harness-thrift-codex",

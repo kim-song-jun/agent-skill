@@ -68,24 +68,37 @@ export function loadHooksFile(path, fsRead = readFileSync) {
   }
 }
 
+function shellQuote(value) {
+  return `'${String(value).replace(/'/g, "'\\''")}'`;
+}
+
 export function buildHookEntry({ label, dispatcher, inbox }) {
   if (!label) throw new Error("buildHookEntry: label required");
   if (!dispatcher) throw new Error("buildHookEntry: dispatcher required");
   if (!inbox) throw new Error("buildHookEntry: inbox required");
+  const command = `node ${shellQuote(dispatcher)} --inbox ${shellQuote(inbox)}`;
   return {
-    label: `harness-floor-copilot:${label}`,
-    command: "node",
-    args: [dispatcher, "--inbox", inbox],
+    type: "command",
+    bash: command,
+    powershell: command,
+    timeoutSec: 10,
+    env: {
+      AGENT_SKILL_HOOK_LABEL: `harness-floor-copilot:${label}`,
+    },
   };
 }
 
 export function mergeHook(existing, entry) {
   // Supported persisted shapes:
-  //   { "<hookName>": [ { label, command, args } | { command, args } ] }
-  //   { "<hookName>": { label, command, args } }
-  // Normalize both to an append-only array so user hooks survive.
-  const out = { ...existing };
-  const current = out[HOOK_NAME];
+  //   { version: 1, hooks: { "<hookName>": [ { type, bash } ] } }
+  //   { "<hookName>": [ ... ] } legacy pre-v0.6.17 shape.
+  // Normalize both to the official Copilot hook object so user hooks survive.
+  const out = { ...existing, version: existing.version ?? 1 };
+  const existingHooks = existing.hooks && typeof existing.hooks === "object" ? existing.hooks : {};
+  const outHooks = { ...existingHooks };
+  const current = outHooks[HOOK_NAME];
+  const legacy = existing[HOOK_NAME];
+  delete out[HOOK_NAME];
   let arr;
   if (Array.isArray(current)) {
     arr = [...current];
@@ -94,14 +107,21 @@ export function mergeHook(existing, entry) {
   } else {
     arr = [];
   }
+  if (Array.isArray(legacy)) {
+    arr.unshift(...legacy);
+  } else if (legacy && typeof legacy === "object") {
+    arr.unshift(legacy);
+  }
   // Idempotency check: replace entry with same label.
-  const idx = arr.findIndex((h) => h?.label === entry.label);
+  const entryLabel = entry.env?.AGENT_SKILL_HOOK_LABEL;
+  const idx = arr.findIndex((h) => h?.env?.AGENT_SKILL_HOOK_LABEL === entryLabel);
   if (idx >= 0) {
     arr[idx] = entry;
   } else {
     arr.push(entry);
   }
-  out[HOOK_NAME] = arr;
+  outHooks[HOOK_NAME] = arr;
+  out.hooks = outHooks;
   return out;
 }
 
@@ -131,9 +151,9 @@ export function installHooks({
   const entry = buildHookEntry({ label, dispatcher: resolvedDispatcher, inbox });
 
   // Detect idempotent re-run.
-  const before = JSON.stringify(existing[HOOK_NAME] ?? null);
+  const before = JSON.stringify(existing.hooks?.[HOOK_NAME] ?? existing[HOOK_NAME] ?? null);
   const merged = mergeHook(existing, entry);
-  const after = JSON.stringify(merged[HOOK_NAME]);
+  const after = JSON.stringify(merged.hooks?.[HOOK_NAME] ?? null);
   const changed = before !== after;
   if (!changed && !force) {
     return { ok: true, changed: false, action: "noop", path: hooksFile };

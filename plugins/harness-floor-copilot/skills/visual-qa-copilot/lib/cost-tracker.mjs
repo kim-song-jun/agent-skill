@@ -1,7 +1,7 @@
 // cost-tracker — aggregate per-page USD cost for visual-qa Copilot runs.
 //
 // Same logic as agent-all-copilot's cost-tracker but indexed by `pageName`
-// instead of `waveIndex`. Reads `costUSD` from each `read_agent` payload
+// instead of `waveIndex`. Reads `costUSD` from each task payload
 // when present; estimates from output length otherwise.
 
 const DEFAULT_RATE_PER_KCHAR = {

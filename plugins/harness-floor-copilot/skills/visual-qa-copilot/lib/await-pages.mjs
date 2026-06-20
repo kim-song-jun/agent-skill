@@ -53,7 +53,7 @@ export async function awaitPagesHook({
   while (now() < deadline) {
     const raw = fsReader(inboxPath);
     for (const rec of parseInboxLines(raw)) {
-      const id = rec.agentId ?? rec.agent_id ?? rec.id;
+      const id = rec.agentId ?? rec.agent_id ?? rec.id ?? rec.agentName ?? rec.agent_name ?? rec.sessionId ?? rec.session_id ?? rec.transcriptPath ?? rec.transcript_path;
       if (id && want.has(id) && !results.has(id)) {
         const status = rec.status && TERMINAL_STATUSES.has(rec.status)
           ? rec.status
@@ -95,7 +95,7 @@ export async function awaitPagesPoll({
     }
     const list = Array.isArray(agents) ? agents : (agents?.agents ?? []);
     for (const a of list) {
-      const id = a.agentId ?? a.agent_id ?? a.id;
+      const id = a.agentId ?? a.agent_id ?? a.id ?? a.agentName ?? a.agent_name ?? a.sessionId ?? a.session_id ?? a.transcriptPath ?? a.transcript_path;
       if (id && want.has(id) && TERMINAL_STATUSES.has(a.status) && !results.has(id)) {
         results.set(id, { ...a, agentId: id });
       }

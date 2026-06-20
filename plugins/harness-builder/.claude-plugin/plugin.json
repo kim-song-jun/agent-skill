@@ -1,6 +1,6 @@
 {
   "name": "harness-builder",
-  "version": "0.6.16",
+  "version": "0.6.17",
   "description": "Single-command project harness bootstrapper (/agent-init)",
   "hooks": {
     "SessionStart": [

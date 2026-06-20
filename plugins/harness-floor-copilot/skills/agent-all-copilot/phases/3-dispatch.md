@@ -8,7 +8,7 @@
 
 ## Steps
 
-1. Parse the plan file (via `read_file`). Extract tasks matching
+1. Parse the plan file (via `view`). Extract tasks matching
    `^### Task (\d+):\s*(.+)$`. For each task, collect file paths from
    `^- (?:Create|Modify):\s*\`([^\`]+)\`` bullets and `role:` if present.
 
@@ -48,20 +48,22 @@
       ```
       task({
         prompt: "<task body: title, files, role, plan section + Dispatch Prompt Contract>",
-        context: { agentAllWave: i, agentAllTask: t.id, planKey: "agent-all/plan" },
+        context: { agentAllWave: i, agentAllTask: t.id, planPath: state.plan.path },
       })
       ```
       If the plan left `role: dev`, use `state.orchestration.requiredAgents`
       to choose or validate the implementer role for that task.
-      Capture each returned `agentId`.
-   d. Wait for all `agentId`s in the wave to settle. Two strategies:
-      - **Hook strategy** (preferred if `subagentStop` is registered): the
-        hook writes per-agent completion to `store_memory` with key
-        `agent-all/wave/<i>/agent/<agentId>`. Coordinator polls memory
-        every 1s until all agents in the wave are present.
-      - **Polling strategy** (fallback): call `list_agents()` every 2s and
-        filter for agents whose `parentTask = "agent-all/wave/<i>/<t.id>"`.
-        Wave done when all show `status: "completed" | "blocked" | "failed"`.
+      Capture the returned task handle if the host provides one; otherwise
+      rely on the task's final response text. Prompts must include a stable
+      agent name such as `agent-all-wave-<i>-task-<id>` so optional
+      `subagentStop` hooks can correlate lifecycle events by `agentName`.
+   d. Wait for every task invocation to finish through the host's `task`
+      result. If the optional `subagentStop` helper is installed, also tail
+      `.copilot/agent-all/inbox.jsonl` for records with
+      `{agentName, sessionId, transcriptPath, stopReason}` and attach the
+      lifecycle evidence to the wave record. The hook does not provide
+      implementation output, so do not invent `read_agent` or `list_agents`
+      polling.
    e. **Orchestrator-owned commit (mandatory).** After each implementation
       `task` returns, the orchestrator (not the subagent) MUST:
       1. Inspect the reported changed files and run `git diff` to see all
@@ -79,14 +81,15 @@
       directive in the Dispatch Prompt Contract below enforces this.
       `commits` on the wave record are orchestrator-created pathspec commits,
       not subagent self-commits.
-   f. For each finished agent, call `read_agent(agentId)` to extract
-      `status`, `cost`. Record reported or estimated usage as
+   f. For each finished task, parse the final response contract
+      (`STATUS`, changed files, verification evidence, blockers) and attach
+      any matching hook lifecycle record. Record reported or estimated usage as
       `agent-cost-telemetry/v1`, append
       `.agent-skill/runs/<run-id>/cost-telemetry.jsonl`, mirror the latest
       summary to `state.costTelemetry.summary`, and accumulate `state.costUSD`
       for backward compatibility.
    g. Capture wave result:
-      `{index: i, baseCommit, startCommit, endCommit, orchestration: state.orchestration, tasks: [{id, agentId, status, changedFiles, commits, costUSD}], status: "completed" | "incomplete"}`.
+      `{index: i, baseCommit, startCommit, endCommit, orchestration: state.orchestration, tasks: [{id, agentName, status, changedFiles, commits, costUSD}], status: "completed" | "incomplete"}`.
       Derive `startCommit` and `endCommit` from the first and last
       orchestrator-created commit SHAs recorded in `tasks[].commits`.
 
@@ -99,8 +102,8 @@
 
 - If `task` invocation errors immediately (rate-limit, etc.): retry once
   with exponential backoff, then mark the wave's task as `failed`.
-- If `read_agent` returns `status: "blocked"` for >1 task in a wave: mark
-  wave `incomplete`. Phase 4 decides.
+- If >1 task reports `STATUS: blocked` in a wave: mark wave `incomplete`.
+  Phase 4 decides.
 - If `tasks.length === 0`: abort with `plan has no '### Task N' headings`.
 
 ## Output

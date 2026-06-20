@@ -1,4 +1,4 @@
-// cost-accumulator.mjs — parses `--output-json` token counts and
+// cost-accumulator.mjs — parses `--output-format json` token counts and
 // accumulates per-wave / per-run cost. Falls back to a transcript-length
 // heuristic when the JSON payload doesn't include cost data.
 //
@@ -11,10 +11,8 @@
 // Rates are conservative; users should override via opts.modelRates if
 // they have plan-specific pricing.
 //
-// TODO: requires `gemini chat --output-json` flag verification — the
-// payload field names below (`usage`, `tokens`, `costUSD`) are inferred
-// from the spec; the live CLI may emit different keys (per spec
-// open-question #3, payload schema may omit `costUSD` entirely).
+// Authenticated Gemini CLI payloads may omit `costUSD`; usage fields are
+// accepted when present and otherwise the caller falls back to estimates.
 
 // Default USD/token rates. Conservative estimates; override as needed.
 export const DEFAULT_RATES = {

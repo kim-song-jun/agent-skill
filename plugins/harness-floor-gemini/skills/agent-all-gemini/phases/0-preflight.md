@@ -12,7 +12,7 @@
 4. Confirm `.gemini/settings.json` exists. If not: abort `Run /gemini-init first.`
 5. Probe subprocess sanity: spawn a tiny test invocation:
    ```
-   run_shell_command("gemini chat -p 'reply with exactly: OK' --output-json --timeout 30")
+   run_shell_command("gemini -p 'reply with exactly: OK' --output-format json --skip-trust")
    ```
    Parse stdout JSON, verify `response == "OK"`. If fail: abort
    `gemini subprocess sanity check failed`.
@@ -69,8 +69,8 @@ Decision tree:
 3. **Non-interactive paths** — skip the prompt and reuse
    `config.loop.breakCondition`:
    - `--yes` passed
-   - `ask_user` not exposed (e.g., background `gemini chat` subprocess,
-     `--output-json` runs, non-TTY)
+   - `ask_user` not exposed (e.g., background `gemini -p` subprocess,
+     `--output-format json` runs, non-TTY)
    - `--reconfigure` is NOT set AND `!isDefaultOrMissing(config.loop.breakCondition)`
 
 4. **Interactive prompt** — use the `ask_user` Gemini primitive:

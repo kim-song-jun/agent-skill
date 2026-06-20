@@ -4,13 +4,13 @@
 
 Initial scaffold shipped config + MCP snippet only. This iteration ports
 the **full 6-phase orchestrator** using Gemini's subprocess primitive
-(`run_shell_command("gemini chat ...")` background spawn).
+(`run_shell_command("gemini -p ... --output-format json")` via the wrapper).
 
 ## Phase contract preserved
 
 | Aspect | Claude Code | Gemini |
 |---|---|---|
-| Page dispatch | `Skill: dispatching-parallel-agents` + `Task` per page | `run_shell_command("gemini chat ... &")` per page |
+| Page dispatch | `Skill: dispatching-parallel-agents` + `Task` per page | `run_shell_command("gemini -p ... --output-format json")` per page |
 | Awaiter | `await` per Task | `wait <pid>` OR poll tmp dir |
 | Plan persistence | in-process | `write_file` + atomic rename |
 | LLM call | claude-sonnet-4-6 via Task | Gemini's configured model |
@@ -20,19 +20,19 @@ the **full 6-phase orchestrator** using Gemini's subprocess primitive
 
 Same reasoning as `agent-all-gemini`: Gemini has no native subagent
 dispatch primitive. Subprocesses provide isolation + parallelism + cost
-tracking via `--output-json`.
+tracking via JSON stdout when usage fields are present.
 
 ## Open questions
 
 Same as `agent-all-gemini`:
-1. `gemini chat --output-json` flag — confirmed?
-2. `--skill-roster` flag syntax verification.
+1. Authenticated JSON envelope examples beyond the unauthenticated error shape.
+2. Persona selection through Gemini skills/extensions, not per-process roster flags.
 3. Per-subprocess token-cost reporting.
 4. Concurrent subprocess rate limits per Gemini API plan.
 
 ## Subprocess-specific risks for visual-qa
 
-- **MCP session contention.** Each `gemini chat` subprocess opens its own
+- **MCP session contention.** Each headless Gemini subprocess opens its own
   Playwright MCP server (or shares one if MCP server supports
   multiplexing). If shared, browser context collisions are possible. The
   phase doc assumes one-MCP-per-subprocess.
@@ -44,7 +44,6 @@ Same as `agent-all-gemini`:
 
 ## Future work
 
-- Subprocess dispatcher lib (`bin/spawn-page-subagent.mjs`) once flags
-  confirmed.
+- Additional authenticated output fixtures for `bin/spawn-page-subagent.mjs`.
 - MCP session pool to avoid spawning N Playwright servers.
 - Streaming progress via FIFOs instead of one-shot tmp files.

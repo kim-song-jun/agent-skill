@@ -13,9 +13,9 @@ require Copilot-specific primitives:
 - **Hooks** live in `.github/hooks/*.json` (one file per event),
   *not* in a single `settings.local.json`. This needs a different
   patcher (multi-file, append-only, sentinel-revert).
-- **State persistence** has a second tier — Copilot's `store_memory`
-  MCP tool offers durable per-repo key-value storage. We mirror state
-  there so audit reconstruction survives `.thrift-state.json` deletion.
+- **State persistence** is file-backed by default. A host-provided private
+  memory adapter can mirror state, but current public Copilot CLI docs do not
+  expose a memory primitive for this harness.
 - **Cache prime (Phase 4)** is *disabled by default* because Copilot
   intermediates the model layer and priming effectiveness is unmeasurable.
 - **Cost estimation** uses an OpenAI rate table (`gpt-5`, `gpt-5-nano`,
@@ -33,10 +33,10 @@ require Copilot-specific primitives:
 | PostToolUse event | `PostToolUse` | `postToolUse` |
 | SessionStart event | `SessionStart` | `sessionStart` |
 | SessionEnd event | `SessionEnd` | `agentStop` (Copilot's closest equivalent) |
-| Bash matcher | `Bash` | `read_bash` |
-| Read matcher | `Read` | `read_file` |
-| Summariser delivery | file + `Notification` hook | file + `store_memory` mirror + stderr `<system-reminder>` (no `/compact` equivalent) |
-| State persistence | file only | file + `store_memory(scope: repository)` mirror |
+| Bash matcher | `Bash` | `bash` / `powershell` |
+| Read matcher | `Read` | `view` |
+| Summariser delivery | file + `Notification` hook | file + stderr `<system-reminder>` (no `/compact` equivalent); optional memory adapter |
+| State persistence | file only | file only by default; optional host memory adapter mirror |
 | Cost estimator | Anthropic rates (`claude-opus-4-7`, …) | OpenAI rates (`gpt-5`, `gpt-5-nano`, …); marked `assumed` |
 | Cache prime | enabled-by-default (≥30min sessions) | **disabled-by-default**; opt-in requires `cache.intermediationWarning = false` |
 | Summariser model | `claude-haiku-4-5-20251001` | `gpt-5-nano` (hint only — Copilot picks the actual model) |
@@ -55,26 +55,20 @@ conflicts isolated per event. Con: 4 files to manage instead of 1.
 > `pre_tool_use` vs `PreToolUse`) against live CLI.** We follow
 > camelCase per `harness-builder-copilot`'s existing JSON templates.
 
-### 2. `store_memory` as durable scratch
+### 2. File-backed state with optional memory adapter
 
-Per the decomposition spec, `store_memory(scope: repository)` is used
-for two purposes:
-- **Summariser output mirror.** The summary text + path lives in
-  Copilot's memory so it survives `gh copilot reset` or accidental
-  file deletion.
-- **State mirror.** `.thrift-state.json` is reflected into
-  `store_memory(key: "thrift/state")` after each significant update,
-  so the audit hook can reconstruct state even if the file is wiped.
+The shipping Copilot port uses `.thrift-state.json`,
+`.thrift/summaries/*.md`, and `.agent-skill/reports/thrift/*.md` as the public
+contract. This matches the documented Copilot CLI surface and avoids depending
+on private tools.
 
-The bridge in `lib/store-memory-bridge.mjs` always tries the MCP
-invoker first; on any error it transparently falls back to
-`.thrift/store-memory-fallback/<scope>/<key>.json`. The fallback path
-keeps the bridge usable in sandbox/offline runs and in tests.
+The bridge in `lib/store-memory-bridge.mjs` remains available for hosts that
+provide a private memory adapter. On any error it transparently falls back to
+`.thrift/store-memory-fallback/<scope>/<key>.json`. The fallback path keeps the
+bridge usable in sandbox/offline runs and in tests.
 
-> **TODO: verify Copilot ask_user / store_memory schemas against live
-> CLI.** The invoker contract
-> `({action: "set"|"get"|"list"|"delete", scope, key, value?}) → {ok,
-> value?}` is the working assumption per Copilot v0.0.380+ changelog.
+The invoker contract is intentionally harness-local:
+`({action: "set"|"get"|"list"|"delete", scope, key, value?}) → {ok, value?}`.
 
 ### 3. Phase 4 disabled by default + force-opt-in flag
 
@@ -106,13 +100,12 @@ verify the filename + matcher mapping.
 
 ## Known unknowns
 
-1. **`store_memory` payload-size limits.** Spec says scope=repository
-   persists per-repo but doesn't document size caps or eviction policy.
-   If the state mirror grows beyond a per-key limit, the bridge will
-   error and fall back to file. The state schema is intentionally
-   small (sums + arrays, no full transcripts) to mitigate.
+1. **Memory adapter payload-size limits.** Private adapters may enforce size
+   caps or eviction policy. If the state mirror grows beyond a per-key limit,
+   the bridge will error and fall back to file. The state schema is
+   intentionally small (sums + arrays, no full transcripts) to mitigate.
 
-2. **`store_memory` GC.** If Copilot evicts a key mid-run, the bridge
+2. **Memory adapter GC.** If an adapter evicts a key mid-run, the bridge
    re-reads from file fallback transparently. No mid-run synchronisation
    protocol — last write wins.
 
@@ -123,10 +116,10 @@ verify the filename + matcher mapping.
    back gracefully (`process.exit(0)` on any parse error).
 
 4. **Per-call token counts.** Copilot doesn't surface per-call
-   `inputTokens` / `outputTokens` in tool responses (as of v0.0.380).
+   `inputTokens` / `outputTokens` in public tool responses.
    Cost estimation falls back to byte→token heuristic
    (`estimateTokensFromBytes`). If a future Copilot release exposes
-   real counts (e.g. via `read_agent`'s output envelope), swap the
+   real counts, swap the
    heuristic for the real values in `metrics-collector.recordTurn`.
 
 5. **`agentStop` exit-fire reliability.** Whether `agentStop` reliably
@@ -143,7 +136,7 @@ verify the filename + matcher mapping.
 
 ## Future work
 
-- Spike `store_memory` payload size limits + GC policy.
+- Spike optional memory adapter payload size limits + GC policy.
 - Spike `agentStop` event semantics on signal-kill.
 - Wire to `context-mode-copilot` once that port exists — the coercion
   suggestions in pretool hooks are no-ops until `ctx_execute_file`

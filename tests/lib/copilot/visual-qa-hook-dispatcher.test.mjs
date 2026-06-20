@@ -12,20 +12,28 @@ function freshInbox() {
   return inbox;
 }
 
-test("vq dispatch: appends normalized payload", async () => {
+test("vq dispatch: appends official Copilot subagentStop payload", async () => {
   const inbox = freshInbox();
   const r = await dispatch({
     inbox,
-    payloadRaw: JSON.stringify({ agentId: "p1", status: "completed", costUSD: 1 }),
+    payloadRaw: JSON.stringify({
+      sessionId: "s1",
+      transcriptPath: "/tmp/vq.jsonl",
+      agentName: "visual-qa-page-home",
+      stopReason: "end_turn",
+    }),
   });
   assert.equal(r.ok, true);
-  assert.equal(r.agentId, "p1");
+  assert.equal(r.agentId, "visual-qa-page-home");
   const lines = readFileSync(inbox, "utf-8").split("\n").filter(Boolean);
   assert.equal(lines.length, 1);
   const parsed = JSON.parse(lines[0]);
-  assert.equal(parsed.agentId, "p1");
+  assert.equal(parsed.agentId, "visual-qa-page-home");
+  assert.equal(parsed.agentName, "visual-qa-page-home");
+  assert.equal(parsed.sessionId, "s1");
+  assert.equal(parsed.transcriptPath, "/tmp/vq.jsonl");
   assert.equal(parsed.status, "completed");
-  assert.equal(parsed.costUSD, 1);
+  assert.equal(parsed.costUSD, null);
   assert.ok(parsed.finishedAt);
   assert.ok(parsed.raw);
 });

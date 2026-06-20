@@ -1,5 +1,13 @@
 {
-  "hooks": [
-    { "command": "echo 'agent stopped'" }
-  ]
+  "version": 1,
+  "hooks": {
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "printf '{}'",
+        "powershell": "Write-Output '{}'",
+        "timeoutSec": 5
+      }
+    ]
+  }
 }

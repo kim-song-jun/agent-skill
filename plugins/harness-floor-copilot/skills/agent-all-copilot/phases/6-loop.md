@@ -17,7 +17,7 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
    - **`shell` / `test-auto` / pure `composite`** (no visual-qa or
      verification-adapter anywhere):
      resolve to a single shell line via `buildShellCommand(spec)` then
-     run via `read_bash`:
+     run via `bash`:
      ```bash
      sh -c "$(buildShellCommand)"
      ```
@@ -43,12 +43,12 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
      ```
 
      Treat its reported exit code (or `STATUS: passed`) as runner
-     exit 0; anything else as 1. Never run via `read_bash`. The
+     exit 0; anything else as 1. Never run via `bash`. The
      `--force + fresh slug` combo keeps prior iters' reports intact
      so Phase 2's `priorRunPath` finds the previous iter as baseline.
 
    - **composite containing visual-qa or verification-adapter**: run each step in declared order
-     and **short-circuit on the first non-zero exit**. Use `read_bash`
+     and **short-circuit on the first non-zero exit**. Use `bash`
      for shell/test-auto/inner-composite steps; use the adapter runner or
      `task` dispatcher for verification steps.
 
@@ -85,10 +85,8 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}`, exit normally
 
 Copilot's chat session is single-turn for the coordinator — re-entry
 happens in the same chat by re-reading `phases/1-intent.md` and walking
-through the pipeline again. `store_memory` retains state across iterations
-within the same session. Cross-session resume relies on
-`.agent-all-state.json` because `store_memory` may be GC'd between
-Copilot sessions (scope=repository persists per repo but TTL varies).
+through the pipeline again. Cross-session resume relies on
+`.agent-all-state.json`; do not depend on a Copilot memory primitive.
 
 ## Output
 

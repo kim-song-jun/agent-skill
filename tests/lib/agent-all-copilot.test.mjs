@@ -9,8 +9,12 @@ test("agent-all-copilot: SKILL.md exists with name frontmatter", () => {
   const md = readFileSync(resolve(SKILL_ROOT, "SKILL.md"), "utf-8");
   assert.match(md, /^---\nname: agent-all/);
   assert.ok(md.includes("Copilot port"));
-  assert.ok(md.includes("`task` tool"));
-  assert.ok(md.includes("`store_memory`"));
+  assert.ok(md.includes("`task`"));
+  assert.ok(md.includes("file-backed") || md.includes("State lives in files"));
+  assert.ok(md.includes("does not expose"));
+  assert.ok(!md.includes("store_memory("));
+  assert.ok(!md.includes("read_agent("));
+  assert.ok(!md.includes("list_agents("));
 });
 
 test("agent-all-copilot: all 7 phase files exist", () => {
@@ -49,14 +53,19 @@ test("agent-all-copilot: phase headings match contract", () => {
 test("agent-all-copilot: phase 3 references Copilot task primitive", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "phases/3-dispatch.md"), "utf-8");
   assert.ok(body.includes("task("), "must call task(...)");
-  assert.ok(body.includes("subagentStop") || body.includes("list_agents"), "awaiter strategy");
-  assert.ok(body.includes("read_agent"), "must use read_agent for status");
+  assert.ok(body.includes("subagentStop"), "optional lifecycle hook strategy");
+  assert.ok(body.includes("agentName"), "must correlate lifecycle records by official hook identity");
+  assert.ok(!body.includes("store_memory("), "must not call nonexistent Copilot memory tool");
+  assert.ok(!body.includes("list_agents()"), "must not call nonexistent Copilot polling tool");
+  assert.ok(!body.includes("read_agent("), "must not call nonexistent Copilot agent-read tool");
 });
 
-test("agent-all-copilot: phase 0 preflight checks Copilot version", () => {
+test("agent-all-copilot: phase 0 preflight checks Copilot task surface", () => {
   const body = readFileSync(resolve(SKILL_ROOT, "phases/0-preflight.md"), "utf-8");
-  assert.ok(body.includes("v0.0.380"), "version requirement documented");
-  assert.ok(body.includes("store_memory"), "memory probe present");
+  assert.ok(body.includes("Copilot CLI"), "Copilot CLI check documented");
+  assert.ok(body.includes("task"), "task support check documented");
+  assert.ok(body.includes("file-backed"), "file-backed state is documented");
+  assert.ok(!body.includes("store_memory"), "no memory probe should remain");
 });
 
 test("agent-all-copilot: all template files exist", () => {
@@ -73,4 +82,9 @@ test("agent-all-copilot: porting-notes references source-of-truth", () => {
   assert.ok(body.includes("Claude Code"));
   assert.match(body, /`task` tool/);
   assert.ok(body.includes("1 week"));
+  assert.ok(body.includes("agentName"));
+  assert.ok(body.includes("does not assume public"));
+  assert.ok(!body.includes("read_agent("));
+  assert.ok(!body.includes("list_agents("));
+  assert.ok(!body.includes("store_memory("));
 });

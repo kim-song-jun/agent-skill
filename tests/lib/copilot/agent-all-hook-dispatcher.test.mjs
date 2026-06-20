@@ -34,29 +34,60 @@ test("dispatch: malformed JSON → invalid-json", async () => {
   assert.equal(r.reason, "invalid-json");
 });
 
-test("dispatch: missing agentId → returns missing-agentId", async () => {
+test("dispatch: missing Copilot agent identity → returns missing-agent-identity", async () => {
   const inbox = freshInbox();
   const r = await dispatch({ inbox, payloadRaw: JSON.stringify({ status: "completed" }) });
   assert.equal(r.ok, false);
-  assert.equal(r.reason, "missing-agentId");
+  assert.equal(r.reason, "missing-agent-identity");
 });
 
-test("dispatch: appends normalized JSON line to inbox", async () => {
+test("dispatch: appends official Copilot subagentStop payload shape", async () => {
   const inbox = freshInbox();
   const r = await dispatch({
     inbox,
-    payloadRaw: JSON.stringify({ agentId: "a1", status: "completed", output: "ok", costUSD: 0.5 }),
+    payloadRaw: JSON.stringify({
+      sessionId: "s1",
+      transcriptPath: "/tmp/transcript.jsonl",
+      agentName: "dev-agent",
+      agentDisplayName: "Dev Agent",
+      stopReason: "end_turn",
+    }),
   });
   assert.equal(r.ok, true);
-  assert.equal(r.agentId, "a1");
+  assert.equal(r.agentId, "dev-agent");
   const lines = readFileSync(inbox, "utf-8").split("\n").filter(Boolean);
   assert.equal(lines.length, 1);
   const parsed = JSON.parse(lines[0]);
-  assert.equal(parsed.agentId, "a1");
+  assert.equal(parsed.agentId, "dev-agent");
+  assert.equal(parsed.agentName, "dev-agent");
+  assert.equal(parsed.sessionId, "s1");
+  assert.equal(parsed.transcriptPath, "/tmp/transcript.jsonl");
+  assert.equal(parsed.stopReason, "end_turn");
   assert.equal(parsed.status, "completed");
-  assert.equal(parsed.costUSD, 0.5);
+  assert.equal(parsed.costUSD, null);
   assert.ok(parsed.finishedAt);
   assert.ok(parsed.raw);
+});
+
+test("dispatch: accepts VS Code compatible snake_case subagentStop payload", async () => {
+  const inbox = freshInbox();
+  const r = await dispatch({
+    inbox,
+    payloadRaw: JSON.stringify({
+      hook_event_name: "SubagentStop",
+      session_id: "s2",
+      transcript_path: "/tmp/snake.jsonl",
+      agent_name: "qa-agent",
+      agent_display_name: "QA Agent",
+      stop_reason: "end_turn",
+    }),
+  });
+  assert.equal(r.ok, true);
+  assert.equal(r.agentId, "qa-agent");
+  const parsed = JSON.parse(readFileSync(inbox, "utf-8").split("\n").filter(Boolean)[0]);
+  assert.equal(parsed.agentName, "qa-agent");
+  assert.equal(parsed.sessionId, "s2");
+  assert.equal(parsed.transcriptPath, "/tmp/snake.jsonl");
 });
 
 test("dispatch: normalizes agent_id / id keys", async () => {

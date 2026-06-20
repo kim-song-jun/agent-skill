@@ -2,16 +2,17 @@
 name: thrift
 description: >
   Use when a long GitHub Copilot CLI session needs cost control, context growth
-  management, summarisation, memory mirroring, or an end-of-session cost audit.
+  management, summarisation, file-backed state, or an end-of-session cost audit.
 ---
 
 # /thrift (Copilot port)
 
 Bootstraps cost-conscious patterns in a Copilot-CLI project. Reads
 `.thrift.json` (or seeds it), patches `.github/hooks/thrift-*.json` with
-hook registrations, mirrors summariser + audit state into Copilot's
-`store_memory` (file-fallback if MCP unreachable), and surfaces
-end-of-session audit via Copilot's `agentStop` hook.
+official Copilot hook registrations, writes summariser + audit state to local
+files, and surfaces end-of-session audit via Copilot's `agentStop` hook. A
+host-provided private memory adapter can be enabled explicitly, but the public
+Copilot CLI contract is file-backed by default.
 
 ## Usage
 
@@ -29,19 +30,20 @@ end-of-session audit via Copilot's `agentStop` hook.
 - `--force` — overwrite existing `.thrift.json`.
 - `--no-instrument` — skip the `.github/hooks/*.json` patch (just seed config).
 - `--dry-run` — print what would be patched; don't write.
-- `--no-store-memory` — disable Copilot `store_memory` mirroring; use
-  file-only state. Useful for sandbox/offline runs.
+- `--store-memory` — enable a host-provided private memory adapter. Defaults to
+  file-only state because current public Copilot CLI docs do not expose
+  a memory primitive for this harness.
 
 ## Pipeline
 
 | Phase | File | Purpose |
 |-------|------|---------|
-| 0 | `phases/0-preflight.md` | detect context-mode-copilot + Copilot version + `store_memory` availability |
+| 0 | `phases/0-preflight.md` | detect context-mode-copilot + Copilot version + optional memory adapter |
 | 1 | `phases/1-config.md` | seed/load .thrift.json + compute thresholds |
 | 2 | `phases/2-instrument.md` | patch `.github/hooks/thrift-*.json` (append-only) |
-| 3 | `phases/3-summariser.md` | summarise current window; mirror to `store_memory` |
+| 3 | `phases/3-summariser.md` | summarise current window; write file-backed state |
 | 4 | `phases/4-cache-prime.md` | **disabled by default** — Copilot intermediates the model layer; document opt-in |
-| 5 | `phases/5-audit.md` | write audit report + mirror to `store_memory` |
+| 5 | `phases/5-audit.md` | write audit report + optional memory adapter mirror |
 
 ## Rules
 
@@ -52,16 +54,15 @@ end-of-session audit via Copilot's `agentStop` hook.
    sits between the user and the underlying model, so direct prime calls
    are not observably effective. Enable only if a future Copilot release
    exposes cache-hit telemetry.
-3. **Summariser is advisory.** Writes summary to file + mirrors to
-   `store_memory(scope: "repository", key: "thrift/summary/<ts>")` +
-   notifies via stderr (Copilot surfaces stderr in the TUI). No
-   `/compact` equivalent exists in Copilot — advisory is "consider
-   starting a fresh session or running `gh copilot reset`".
+3. **Summariser is advisory.** Writes summary to file and notifies via stderr
+   (Copilot surfaces stderr in the TUI). No `/compact` equivalent exists in
+   Copilot — advisory is "consider starting a fresh session or running
+   `gh copilot reset`".
 4. **Audit always runs** on `agentStop`. Phase 5 reads from
-   `.thrift-state.json` (and from `store_memory` if file is wiped).
-5. **`store_memory` is best-effort.** If the MCP tool is unreachable or
-   the request fails, the bridge falls back to file-only mode silently
-   and records a `storeMemoryDegraded: true` flag in state.
+   `.thrift-state.json`.
+5. **Memory adapter is opt-in.** If `storeMemory.enabled` is true and the
+   supplied invoker is unavailable, the bridge falls back to file-only mode and
+   records a `storeMemoryDegraded: true` flag in state.
 
 ## Lib modules
 
@@ -78,8 +79,7 @@ end-of-session audit via Copilot's `agentStop` hook.
 - `lib/store-memory-bridge.mjs` — `storeMemoryWrite({key, value,
   scope, invoker})` and `storeMemoryRead({key, scope, invoker})` with a
   file fallback at `.thrift/store-memory-fallback/<key>.json`. Invoker
-  is the host-supplied wrapper around Copilot's `store_memory` MCP tool;
-  pass a mock in tests.
+  is a host-supplied private memory adapter; pass a mock in tests.
 
 ## On error
 
@@ -90,7 +90,7 @@ end-of-session audit via Copilot's `agentStop` hook.
   `cache.intermediationWarning = false` (force opt-in).
 - Summariser model call fails → log to `.thrift-state.json`; user can
   retry via `/thrift-copilot summarise`.
-- `store_memory` invoker throws → fall back to file at
+- Memory adapter invoker throws → fall back to file at
   `.thrift/store-memory-fallback/<key>.json`; record degradation.
 
 ## When done (Phase 5)
@@ -100,7 +100,7 @@ Print:
 Thrift audit: <duration> min session, <turns> turns,
   $<actual> actual vs $<baseline> baseline (saved <%>).
   Report: <output-path>
-  Memory mirror: <ok|degraded>
+  Memory adapter: <ok|degraded|disabled>
 ```
 
 ## References

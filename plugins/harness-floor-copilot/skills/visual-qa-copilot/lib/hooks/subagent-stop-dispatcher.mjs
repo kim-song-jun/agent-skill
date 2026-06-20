@@ -25,21 +25,45 @@ async function readStdin() {
   return Buffer.concat(chunks).toString("utf-8");
 }
 
+function normalizeStatus(payload) {
+  const explicit = payload.status;
+  if (explicit) return explicit;
+  const reason = String(payload.stopReason ?? payload.stop_reason ?? "").toLowerCase();
+  if (reason.includes("cancel")) return "cancelled";
+  if (reason.includes("block")) return "blocked";
+  if (reason.includes("fail") || reason.includes("error")) return "failed";
+  return "completed";
+}
+
+function normalizePayload(payload) {
+  const agentName = payload.agentName ?? payload.agent_name ?? null;
+  const sessionId = payload.sessionId ?? payload.session_id ?? null;
+  const transcriptPath = payload.transcriptPath ?? payload.transcript_path ?? null;
+  const stopReason = payload.stopReason ?? payload.stop_reason ?? null;
+  const agentId = payload.agentId ?? payload.agent_id ?? payload.id ?? agentName ?? sessionId ?? transcriptPath ?? null;
+  return {
+    agentId,
+    agentName,
+    agentDisplayName: payload.agentDisplayName ?? payload.agent_display_name ?? null,
+    sessionId,
+    transcriptPath,
+    stopReason,
+    status: normalizeStatus(payload),
+    output: payload.output ?? payload.outputText ?? null,
+    costUSD: payload.costUSD ?? payload.cost_usd ?? null,
+    finishedAt: payload.finishedAt ?? new Date().toISOString(),
+    raw: payload,
+  };
+}
+
 export async function dispatch({ inbox, payloadRaw }) {
   if (!inbox) return { ok: false, reason: "no-inbox" };
   if (!existsSync(dirname(inbox))) return { ok: false, reason: "no-inbox-dir" };
   let payload;
   try { payload = JSON.parse(payloadRaw); }
   catch (e) { return { ok: false, reason: "invalid-json", error: e.message }; }
-  const normalized = {
-    agentId: payload.agentId ?? payload.agent_id ?? payload.id ?? null,
-    status: payload.status ?? "completed",
-    output: payload.output ?? payload.outputText ?? null,
-    costUSD: payload.costUSD ?? payload.cost_usd ?? null,
-    finishedAt: payload.finishedAt ?? new Date().toISOString(),
-    raw: payload,
-  };
-  if (!normalized.agentId) return { ok: false, reason: "missing-agentId", payload };
+  const normalized = normalizePayload(payload);
+  if (!normalized.agentId) return { ok: false, reason: "missing-agent-identity", payload };
   appendFileSync(inbox, JSON.stringify(normalized) + "\n", "utf-8");
   return { ok: true, agentId: normalized.agentId };
 }
@@ -62,3 +86,5 @@ if (isDirectInvocation) {
     process.exit(0);
   });
 }
+
+export const __internal = { normalizePayload, normalizeStatus };

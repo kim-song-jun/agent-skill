@@ -1,5 +1,14 @@
 {
-  "hooks": [
-    { "matcher": "apply_patch", "command": "echo 'post apply_patch'" }
-  ]
+  "version": 1,
+  "hooks": {
+    "postToolUse": [
+      {
+        "type": "command",
+        "matcher": "create|edit",
+        "bash": "printf '{}'",
+        "powershell": "Write-Output '{}'",
+        "timeoutSec": 5
+      }
+    ]
+  }
 }

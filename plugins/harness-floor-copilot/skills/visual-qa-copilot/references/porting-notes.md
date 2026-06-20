@@ -16,9 +16,9 @@ This iteration ports the **full 6-phase orchestrator** using Copilot's
 | Aspect | Claude Code | Copilot |
 |---|---|---|
 | Page dispatch | `Skill: dispatching-parallel-agents` + `Task` per page | `task` tool per page |
-| Awaiter | `await` per Task | `subagentStop` hook OR `list_agents` polling |
+| Awaiter | `await` per Task | `task` result plus optional `subagentStop` lifecycle log |
 | LLM call | claude-sonnet-4-6 via Task | Copilot's configured model |
-| Matrix persistence | in-process | `store_memory(key="visual-qa/matrix")` |
+| Matrix persistence | in-process | file path passed in task context |
 | Output dir | `.agent-skill/reports/visual-qa/<slug>/` | Same |
 
 ## Known unknowns
@@ -26,15 +26,15 @@ This iteration ports the **full 6-phase orchestrator** using Copilot's
 1. **`task` tool concurrency cap.** Whether Copilot rate-limits parallel
    task invocations per session. If so, the per-page fan-out should chunk.
 
-2. **`subagentStop` hook payload.** Phase 3 doc assumes
-   `{agentId, status, output, costUSD}`. Live confirmation needed.
+2. **`subagentStop` hook payload.** Current Copilot CLI emits lifecycle
+   metadata such as `agentName`, `sessionId`, `transcriptPath`, and
+   `stopReason`; it does not replace the page task result.
 
-3. **Per-task cost reporting.** `read_agent` response shape for `costUSD`
-   not yet verified — fallback: token-count estimation from transcript.
+3. **Per-task cost reporting.** If the task result lacks cost, fallback to
+   token-count estimation from transcript evidence.
 
 ## Future work
 
 - Spawn-tracker `.mjs` lib once `task` tool concurrency is verified.
-- `store_memory` GC handler — fall back to file if memory keys evict mid-run.
 - `--dispatch=sequential` flag for slow networks where parallel task
   invocations are flaky.

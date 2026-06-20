@@ -34,30 +34,29 @@ and a baseline-relative verdict.
 | 0 | `phases/0-preflight.md` | config + Playwright MCP + task tool + health checks |
 | 1 | `phases/1-config.md` | load config, build matrix, estimate cost, confirm |
 | 2 | `phases/2-discover.md` | find prior run, create slug dir |
-| 3 | `phases/3-capture.md` | `task` per page (parallel); subagentStop OR list_agents awaiter |
+| 3 | `phases/3-capture.md` | `task` per page (parallel); optional subagentStop lifecycle log |
 | 4 | `phases/4-aggregate.md` | diff vs prior, write report.json + report.md |
 | 5 | `phases/5-summary.md` | summary + exit code |
 
 ## Rules
 
 1. **Phases sequential.** Phases run in order. Phase 3 is the only parallel one.
-2. **State lives in `.visual-qa-state.json` + `store_memory("visual-qa/...").`**
-3. **Matrix persisted to store_memory** for fast subagent reads in Phase 3.
+2. **State lives in `.visual-qa-state.json` plus report files.**
+3. **Matrix path is passed in task context** so page agents read the file with `view`.
 4. **Diff vs prior run** always computed in Phase 4 if prior exists.
 5. **Hard cap on cost via `--budget`** enforced in Phase 1 (pre-run) and
-   Phase 3 (per-wave accumulator from `read_agent` cost field).
+   Phase 3 (reported usage when available, otherwise estimates).
 
 ## Copilot primitive map
 
 | Action | Copilot primitive |
 |---|---|
-| Read file | `read_file` |
-| Write file | `apply_patch` |
-| Shell | `read_bash` |
+| Read file | `view` |
+| Write file | `create`, `edit` |
+| Shell | `bash`, `powershell` |
 | Dispatch page subagent | `task` |
-| Await dispatched agent | `subagentStop` hook OR `list_agents` poll |
-| Inspect dispatched agent | `read_agent` |
-| Persist matrix/state | `apply_patch` + `store_memory(scope="repository")` |
+| Lifecycle evidence | optional `subagentStop` hook (`agentName`, `sessionId`, `transcriptPath`, `stopReason`) |
+| Persist matrix/state | repository files |
 | Prompt user | `agent-interaction/v1` via `renderer-copilot.mjs`, logged to `interactions.jsonl` |
 | Playwright | `mcp__playwright__browser_*` (via `~/.copilot/mcp-config.json`) |
 
@@ -65,7 +64,7 @@ and a baseline-relative verdict.
 
 - `.visual-qa.json` missing → abort.
 - Playwright MCP not registered → abort with mcp-config.json snippet.
-- `task` tool unavailable (Copilot < v0.0.380) → abort with upgrade hint.
+- `task` unavailable in the current Copilot CLI surface → abort with upgrade hint.
 - baseUrl unreachable → `agent-interaction/v1` confirmation, abort if
   `--yes` or non-TTY resolves the default abort option.
 - Per-page `task` fails → mark page incomplete, continue others.

@@ -10,7 +10,7 @@
        everyMTokensOutput: 30000,
        summariserModel: "gpt-5-nano",
        cachePrimingStrategy: "intermediated",
-       storeMemoryEnabled: true,
+       storeMemoryEnabled: false,
        storeMemoryScope: "repository",
        date: "<YYYY-MM-DD>"
      }
@@ -40,7 +40,7 @@ Thrift config:
   turns=<N>, tokens=<M>,
   summariser=<model>,
   cache=<enabled|disabled (intermediated; see notes)>,
-  store_memory=<enabled|disabled>
+  memory_adapter=<enabled|disabled>
 ```
 
 ## Notes

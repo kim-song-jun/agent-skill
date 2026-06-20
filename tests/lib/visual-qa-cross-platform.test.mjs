@@ -71,9 +71,9 @@ for (const platform of PLATFORMS) {
     const body = readFileSync(resolve(ROOT, "phases/3-capture.md"), "utf-8");
     const expectations = {
       cursor: ["is_background", "visual-qa-page", "@visual-qa-page"],
-      copilot: ["task(", "list_agents", "subagentStop"],
+      copilot: ["task(", "final response", "subagentStop"],
       codex: ["sequential", ".codex/skills/visual-qa-page/SKILL.md"],
-      gemini: ["run_shell_command", "gemini chat", "background: true"],
+      gemini: ["run_shell_command", "gemini -p", "--output-format json"],
     }[platform];
     for (const needle of expectations) {
       assert.ok(

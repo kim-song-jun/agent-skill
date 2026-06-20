@@ -1,6 +1,6 @@
-// store-memory-bridge — wraps Copilot CLI's `store_memory` MCP tool for
-// thrift-copilot's state and summariser mirroring. Falls back to a local
-// JSON file when the MCP tool is unreachable.
+// store-memory-bridge — optional host-memory adapter for thrift-copilot's
+// state and summariser mirroring. Falls back to a local JSON file when the
+// adapter is absent or unreachable.
 //
 // Contract:
 //   await storeMemoryWrite({ key, value, scope, invoker, fallbackRoot, dryRun })
@@ -8,23 +8,14 @@
 //   await storeMemoryRead({ key, scope, invoker, fallbackRoot })
 //     → { ok: true, value, mode: "memory" | "file" | "missing" }
 //
-// `invoker` is the host-supplied async function that wraps Copilot's
-// store_memory MCP tool. Tests pass a mock; production passes a wrapper
-// that calls something like:
+// `invoker` is a host-supplied async function. Tests pass a mock; public
+// Copilot installs leave it null and use the file fallback.
 //
-//   await mcp.callTool("store_memory", { action, scope, key, value })
-//
-// Assumed invoker contract (per Copilot CLI v0.0.380+ tools list):
+// Invoker contract:
 //
 //   invoker({ action: "set" | "get" | "list" | "delete", scope, key, value? })
 //     → { ok: true, value? } | { ok: false, error: string }
 //
-// > TODO: verify Copilot ask_user / store_memory schemas against live
-//   CLI. The action/scope/key/value envelope is the working assumption
-//   per
-//   docs/superpowers/specs/2026-05-18-harness-thrift-per-platform-decomposition.md
-//   and the Copilot v0.0.380+ changelog reference therein.
-
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 
@@ -59,7 +50,7 @@ function readFallback(path) {
 export async function storeMemoryWrite({ key, value, scope = "repository", invoker = null, fallbackRoot = ".", dryRun = false }) {
   if (!key) throw new Error("storeMemoryWrite: key required");
 
-  // Try the MCP invoker first.
+  // Try the optional invoker first.
   if (typeof invoker === "function") {
     try {
       const r = await invoker({ action: "set", scope, key, value });
@@ -84,7 +75,7 @@ export async function storeMemoryWrite({ key, value, scope = "repository", invok
 export async function storeMemoryRead({ key, scope = "repository", invoker = null, fallbackRoot = "." }) {
   if (!key) throw new Error("storeMemoryRead: key required");
 
-  // Try MCP first.
+  // Try the optional invoker first.
   if (typeof invoker === "function") {
     try {
       const r = await invoker({ action: "get", scope, key });
@@ -108,8 +99,8 @@ export async function storeMemoryRead({ key, scope = "repository", invoker = nul
   return { ok: true, mode: "file", value: data.value };
 }
 
-// Round-trip self-test — useful for Phase 0 preflight to detect whether
-// the MCP invoker is responsive.
+// Round-trip self-test — useful for Phase 0 preflight to detect whether the
+// optional invoker is responsive.
 export async function storeMemoryProbe({ invoker, scope = "repository", fallbackRoot = "." }) {
   const probeKey = `thrift/_probe-${process.pid}-${Date.now()}`;
   const probeValue = { probe: true, at: new Date().toISOString() };

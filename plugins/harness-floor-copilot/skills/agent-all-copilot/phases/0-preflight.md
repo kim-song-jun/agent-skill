@@ -2,31 +2,29 @@
 
 ## Steps
 
-1. Confirm `pwd` is a git repo: `read_bash("git rev-parse --git-dir")` exit 0.
+1. Confirm `pwd` is a git repo: `bash("git rev-parse --git-dir")` exit 0.
    If not: abort `Not in a git repo. Run git init first.`
-2. Confirm working tree clean: `read_bash("git status --porcelain")` empty.
-   If not: abort `Stash or commit local changes first.`
-3. Confirm `task` tool is available: call `list_agents()` (returns []). If the
-   call errors with `unknown tool`: abort `Copilot CLI must be v0.0.380+ for
-   the task tool. Run \`copilot upgrade\`.`
-4. Load `.agent-all.json` via `read_file`. If missing: warn + use built-ins
+2. Confirm working tree clean: `bash("git status --porcelain")` empty.
+   If not: abort `Commit or explicitly set aside local changes first.`
+3. Confirm Copilot CLI is reachable and has the current command surface:
+   run `copilot --version` (or `gh copilot -- --version` when installed via
+   GitHub CLI) and verify hooks/task support from the host's available tools.
+   If `task` is unavailable, abort with an upgrade/install hint.
+4. Load `.agent-all.json` via `view`. If missing: warn + use built-ins
    from `templates/agent-all.config.json.hbs`.
-5. Check `store_memory` availability — write a probe key `agent-all/probe`
-   then `read_memory` it back. If the round-trip fails: warn `store_memory
-   unavailable; using file-only state`.
-6. Read `.agent-all-state.json` via `read_file` if present. If `--resume` and
+5. Read `.agent-all-state.json` via `view` if present. If `--resume` and
    `max(state.phases[*].phase) >= 0`, skip rest of Phase 0.
-7. Validate positional argument (same as Claude port):
+6. Validate positional argument (same as Claude port):
    - Ends with `.md`: must exist as file. Stash `taskPath`.
    - Otherwise: non-empty string. Stash `prompt`.
-8. **Resolve loop break-condition (only when `--loop` is set).** See
+7. **Resolve loop break-condition (only when `--loop` is set).** See
    `### Break-condition resolution` below.
-9. Push `{phase: 0, completedAt: "<iso>"}` to state via `apply_patch`. Create
+8. Push `{phase: 0, completedAt: "<iso>"}` to state via `create` / `edit`. Create
    `.agent-all-state.json` if missing.
 
 ## Output to user
 
-Print: `Preflight OK. <input mode: prompt|task>. store_memory: <available|file-only>.`
+Print: `Preflight OK. <input mode: prompt|task>. state: file-backed.`
 Plus, when `--loop` set, `Break-condition: <serialized>.`
 
 ## Break-condition resolution
@@ -45,14 +43,14 @@ Decision tree:
    persist. ADDITIONALLY:
 
    a. **Dev-server reachability check.** Probe the autoscaffold's
-      `baseUrl` (default `http://localhost:3000`) via `read_bash`:
+      `baseUrl` (default `http://localhost:3000`) via `bash`:
       `curl --max-time 3 -s -o /dev/null -w '%{http_code}' <baseUrl>`.
       Non-2xx/3xx response → `ask_user` to confirm before continuing
       (in `--yes` mode, abort). Catches silent failures where
       visual-qa can't reach the dev server.
 
    b. **Autoscaffold.** If `.visual-qa.json` is missing, write
-      `QA_AUTOSCAFFOLD_CONFIG` via `apply_patch` before continuing.
+      `QA_AUTOSCAFFOLD_CONFIG` via `create` / `edit` before continuing.
 
    c. Echo `Break-condition: composite [test-auto → visual-qa
       comprehensive] (--qa shortcut).`
@@ -86,7 +84,7 @@ Decision tree:
    f. Echo the resolved spec via `serializeBreakCondition(resolved)`.
    g. Save-confirmation: `ask_user` "Save this as the default in
       `.agent-all.json`?". On yes: deep-merge into config and atomically
-      `apply_patch` `.agent-all.json`. On no: keep in memory only.
+      `edit` `.agent-all.json`. On no: keep in memory only.
 
 5. **Assignment:** `config.loop.breakCondition = resolved` for the rest
    of the run.

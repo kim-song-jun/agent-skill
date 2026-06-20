@@ -6,6 +6,28 @@
 
 ## 미출시
 
+## Agent-skill v0.6.17 — 2026-06-20
+
+- Copilot 포트를 문서화된 hook 계약으로 정정했습니다:
+  versioned `{version: 1, hooks: {...}}` JSON, command entry, 실제 Copilot
+  tool matcher(`bash`/`powershell`, `view`, `create`/`edit`), 현재
+  `subagentStop` identity field(`agentName`, `sessionId`, `transcriptPath`,
+  `stopReason`)를 사용합니다.
+- 공개 Copilot CLI에 문서화되지 않은 `read_agent` / `list_agents` / memory
+  primitive에 의존하던 active Copilot floor 지시를 제거했습니다.
+  `/agent-all`, `/visual-qa`, `/thrift`는 file-backed state, prompt-level task
+  result, optional lifecycle hook을 정직하게 문서화합니다.
+- Gemini CLI 0.47에 맞게 Gemini floor subprocess orchestration을 정정했습니다.
+  wrapper는 `gemini -p ... --output-format json --skip-trust`를 호출하고,
+  stdout을 task별 result file로 캡처하며, Gemini auth/error JSON envelope를
+  실패 task result로 정규화합니다.
+- `harness-thrift-copilot`은 기본 file-backed 동작으로 바꾸고, memory mirror는
+  공개 Copilot CLI primitive가 아니라 명시적 private host adapter로만 다룹니다.
+- Copilot hook schema, Copilot lifecycle payload 정규화, Gemini subprocess
+  flag/output capture, Gemini error envelope, cross-platform visual-qa dispatch
+  문서에 대한 회귀 테스트를 추가했습니다.
+- Suite: 2037/2037 통과; fast release smoke 498/498 통과.
+
 ## Agent-skill v0.6.16 — 2026-06-20
 
 - `scripts/install-all.sh`를 강화해 로컬 Claude plugin-manager 설치 시

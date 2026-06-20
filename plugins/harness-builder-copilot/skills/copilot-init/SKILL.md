@@ -53,7 +53,7 @@ const ctx = {
 };
 ```
 
-Render and write via `apply_patch`:
+Render and write via Copilot file edits (`create` / `edit`):
 
 - `templates/copilot-instructions.md.hbs` → `.github/copilot-instructions.md`
 - `templates/AGENTS.md.hbs` → `AGENTS.md` (project root)

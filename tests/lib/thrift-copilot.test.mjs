@@ -58,8 +58,9 @@ test("[copilot] config-loader: DEFAULTS includes storeMemory + cache.intermediat
   assert.equal(r.config.summariser.model, "gpt-5-nano");
   assert.equal(r.config.cache.enabled, false, "Phase 4 should default to disabled on Copilot");
   assert.equal(r.config.cache.intermediationWarning, true, "intermediation warning should default to true");
-  assert.equal(r.config.storeMemory.enabled, true);
+  assert.equal(r.config.storeMemory.enabled, false);
   assert.equal(r.config.storeMemory.scope, "repository");
+  assert.equal(r.config.audit.mirrorToStoreMemory, false);
   assert.equal(r.config.platform, "copilot");
   assert.equal(r.config.audit.outputPath, ".agent-skill/reports/thrift/audit-<date>.md");
 });
@@ -133,18 +134,20 @@ test("[copilot] settings-patcher: patches into empty .github/hooks/", () => {
     assert.equal(res.skipped, 0);
 
     const preFile = JSON.parse(readFileSync(resolve(dir, "thrift-preToolUse.json"), "utf-8"));
-    assert.equal(preFile.hooks.length, 2);
-    assert.match(preFile.hooks[0].command, /thrift-pretool-bash-telemetry/);
-    assert.equal(preFile.hooks[0].matcher, "read_bash");
+    assert.equal(preFile.version, 1);
+    assert.equal(preFile.hooks.preToolUse.length, 2);
+    assert.match(preFile.hooks.preToolUse[0].bash, /thrift-pretool-bash-telemetry/);
+    assert.equal(preFile.hooks.preToolUse[0].matcher, "bash|powershell");
+    assert.equal(preFile.hooks.preToolUse[1].matcher, "view");
 
     const postFile = JSON.parse(readFileSync(resolve(dir, "thrift-postToolUse.json"), "utf-8"));
-    assert.equal(postFile.hooks.length, 1);
+    assert.equal(postFile.hooks.postToolUse.length, 1);
 
     const sessFile = JSON.parse(readFileSync(resolve(dir, "thrift-sessionStart.json"), "utf-8"));
-    assert.equal(sessFile.hooks.length, 1);
+    assert.equal(sessFile.hooks.sessionStart.length, 1);
 
     const stopFile = JSON.parse(readFileSync(resolve(dir, "thrift-agentStop.json"), "utf-8"));
-    assert.equal(stopFile.hooks.length, 1);
+    assert.equal(stopFile.hooks.agentStop.length, 1);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -155,15 +158,15 @@ test("[copilot] settings-patcher: append-only — preserves existing user hooks 
   try {
     const userFile = resolve(dir, "thrift-preToolUse.json");
     writeFileSync(userFile, JSON.stringify({
-      hooks: [{ matcher: "read_bash", command: "node existing-user-hook.mjs" }],
+      hooks: [{ matcher: "bash", bash: "node existing-user-hook.mjs" }],
     }));
     const hooks = buildStandardThriftHooks({ hooksScriptsDir: "/abs/scripts" });
     patchHooks({ hooksDir: dir, hooksToAdd: hooks });
     const after = JSON.parse(readFileSync(userFile, "utf-8"));
     // User entry preserved at head; thrift appended after.
-    assert.equal(after.hooks[0].command, "node existing-user-hook.mjs");
-    assert.equal(after.hooks.length, 3);
-    assert.match(after.hooks[1].command, /thrift-pretool-bash-telemetry/);
+    assert.equal(after.hooks.preToolUse[0].bash, "node existing-user-hook.mjs");
+    assert.equal(after.hooks.preToolUse.length, 3);
+    assert.match(after.hooks.preToolUse[1].bash, /thrift-pretool-bash-telemetry/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -215,22 +218,22 @@ test("[copilot] settings-patcher: unpatch removes only thrift entries; deletes e
     // Seed user hook + thrift hooks together in preToolUse file.
     const userFile = resolve(dir, "thrift-preToolUse.json");
     writeFileSync(userFile, JSON.stringify({
-      hooks: [{ matcher: "read_bash", command: "node user-hook.mjs" }],
+      hooks: [{ matcher: "bash", bash: "node user-hook.mjs" }],
     }));
     const hooks = buildStandardThriftHooks({ hooksScriptsDir: "/abs/scripts" });
     patchHooks({ hooksDir: dir, hooksToAdd: hooks });
 
     // Before unpatch: preToolUse file has 3 hooks (1 user + 2 thrift).
     const before = JSON.parse(readFileSync(userFile, "utf-8"));
-    assert.equal(before.hooks.length, 3);
+    assert.equal(before.hooks.preToolUse.length, 3);
 
     const res = unpatchHooks({ hooksDir: dir });
     assert.equal(res.removed, 5);
 
     // User hook preserved.
     const after = JSON.parse(readFileSync(userFile, "utf-8"));
-    assert.equal(after.hooks.length, 1);
-    assert.match(after.hooks[0].command, /user-hook/);
+    assert.equal(after.hooks.preToolUse.length, 1);
+    assert.match(after.hooks.preToolUse[0].bash, /user-hook/);
 
     // Other event files (which contained ONLY thrift entries) deleted entirely.
     assert.ok(!existsSync(resolve(dir, "thrift-postToolUse.json")),
@@ -256,12 +259,13 @@ test("[copilot] buildStandardThriftHooks: encodes hooksScriptsDir into commands;
   // Every command embeds the scripts dir.
   for (const event of Object.values(h)) {
     for (const entry of event) {
-      assert.match(entry.command, /\/abs\/path\/to\/scripts\/thrift-/);
+      assert.equal(entry.type, "command");
+      assert.match(entry.bash, /\/abs\/path\/to\/scripts\/thrift-/);
+      assert.match(entry.powershell, /\/abs\/path\/to\/scripts\/thrift-/);
     }
   }
-  // preToolUse matchers are Copilot tool names.
-  assert.equal(h.preToolUse[0].matcher, "read_bash");
-  assert.equal(h.preToolUse[1].matcher, "read_file");
+  assert.equal(h.preToolUse[0].matcher, "bash|powershell");
+  assert.equal(h.preToolUse[1].matcher, "view");
 });
 
 // ---------- cost-estimator (OpenAI rate table; assumed) ----------
@@ -447,7 +451,8 @@ test("[copilot] install: fresh dir creates .thrift.json + .github/hooks tree", (
     assert.equal(cfg.platform, "copilot");
     assert.equal(cfg.summariser.model, "gpt-5-nano");
     assert.equal(cfg.cache.enabled, false);
-    assert.equal(cfg.storeMemory.enabled, true);
+    assert.equal(cfg.storeMemory.enabled, false);
+    assert.equal(cfg.audit.mirrorToStoreMemory, false);
 
     // Hook scripts
     const scriptsDir = resolve(target, ".github/hooks/scripts");

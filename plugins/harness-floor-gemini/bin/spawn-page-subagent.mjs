@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // harness-floor-gemini — Phase 3 page-subagent dispatcher for /visual-qa.
 //
-// Spawns one `gemini chat` subprocess per page-group with rendered
+// Spawns one headless `gemini -p` subprocess per page-group with rendered
 // page-prompt. Same await + collect pattern as spawn-wave.mjs but
 // per-page instead of per-task.
 //
@@ -34,7 +34,7 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
-import { spawn } from "node:child_process";
+import { runFleet } from "../skills/visual-qa-gemini/lib/subprocess-fleet.mjs";
 
 function parseArgs(argv) {
   const args = {
@@ -65,19 +65,6 @@ function sanitize(name) {
   return name.replace(/[^a-zA-Z0-9._-]+/g, "_");
 }
 
-function spawnPage(geminiBin, page, outputFile, timeout, dryRun) {
-  const args = ["chat", "-p", page.prompt, "--output-json", "--output-file", outputFile, "--timeout", String(timeout)];
-  if (dryRun) {
-    return { pid: -1, command: `${geminiBin} ${args.map(a => JSON.stringify(a)).join(" ")}`, dryRun: true };
-  }
-  const child = spawn(geminiBin, args, { detached: true, stdio: "ignore" });
-  // Swallow spawn-time errors (e.g., ENOENT for missing binary) so the
-  // awaiter can mark the page as failed via missing output file instead.
-  child.on("error", () => {});
-  child.unref();
-  return { pid: child.pid ?? -1, command: null, dryRun: false };
-}
-
 async function chunkAndSpawn(geminiBin, pages, outputFiles, maxParallel, timeout, dryRun) {
   const spawned = [];
   let used = 0;
@@ -85,23 +72,13 @@ async function chunkAndSpawn(geminiBin, pages, outputFiles, maxParallel, timeout
     const chunk = pages.slice(i, i + maxParallel);
     const chunkFiles = outputFiles.slice(i, i + maxParallel);
     used = Math.max(used, chunk.length);
-    const chunkSpawns = chunk.map((p, idx) => spawnPage(geminiBin, p, chunkFiles[idx], timeout, dryRun));
+    const chunkSpawns = await runFleet(
+      chunk.map((p, idx) => ({ id: p.name, body: p.prompt, outputFile: chunkFiles[idx] })),
+      { geminiBin, timeoutMs: timeout * 1000, maxSubprocesses: maxParallel, dryRun },
+    );
     spawned.push(...chunkSpawns);
-    if (!dryRun) {
-      await waitForOutputs(chunkFiles, timeout * 1000 + 60000);
-    }
   }
   return { spawned, maxParallelUsed: used };
-}
-
-async function waitForOutputs(outputFiles, timeoutMs) {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const present = outputFiles.filter(existsSync).length;
-    if (present === outputFiles.length) return true;
-    await new Promise((r) => setTimeout(r, 2000));
-  }
-  return false;
 }
 
 function collectResults(pages, outputFiles) {
@@ -115,6 +92,15 @@ function collectResults(pages, outputFiles) {
     }
     try {
       const payload = JSON.parse(readFileSync(file, "utf-8"));
+      if (payload.error && typeof payload.error === "object") {
+        out.push({
+          page: page.name,
+          status: "failed",
+          errors: [payload.error.message ?? payload.error.type ?? "Gemini CLI error"],
+          costUSD: 0,
+        });
+        continue;
+      }
       out.push({
         page: page.name,
         captures: payload.captures ?? 0,

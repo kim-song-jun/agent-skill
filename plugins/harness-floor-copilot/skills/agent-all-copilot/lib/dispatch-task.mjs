@@ -1,14 +1,14 @@
 // dispatch-task — wraps a single Copilot `task({prompt, context})` invocation.
 //
-// Copilot's `task` tool returns immediately with an `agentId`; the coordinator
-// later polls via `read_agent` / `list_agents` or awaits via `subagentStop`.
+// Copilot's `task` tool may return a handle or a final response depending on
+// host mode. Optional `subagentStop` hooks provide lifecycle metadata.
 //
 // Difference from Claude Code's `Task` (which takes
 // `{description, prompt, subagent_type}` and runs synchronously):
 //   - Copilot infers the subagent from the prompt; no `subagent_type` field.
-//   - Copilot returns immediately — async by default.
+//   - Copilot host behavior may be async or final-response based.
 //   - Context is a free-form JSON object the dispatched agent reads via
-//     `read_context()` (or similar). The coordinator stuffs routing keys
+//     host-specific context access. The coordinator stuffs routing keys
 //     in here (`agentAllWave`, `agentAllTask`, `planKey`).
 //
 // Contract:

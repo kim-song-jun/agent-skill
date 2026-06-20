@@ -2,18 +2,18 @@
 
 Copilot has no documented `/compact` equivalent. The summariser v1 ships
 in **advisory mode** with a Copilot-specific delivery channel: the
-summary is written to a file AND mirrored into `store_memory` so it
-survives across sessions, and a stderr `<system-reminder>` advises the
-user to start a fresh session (`gh copilot reset` or equivalent) with
-the summary path attached.
+summary is written to a file, and a stderr `<system-reminder>` advises the
+user to start a fresh session (`gh copilot reset` or equivalent) with the
+summary path attached. Optional private memory adapters are disabled by
+default.
 
 ## Triggers
 
 1. **Auto-trigger**: `postToolUse` hook
    (`thrift-posttool-summariser-trigger.mjs`) fires
    `shouldFireSummariser` after each tool call. When threshold hit,
-   the hook writes a notification stub, mirrors a "pending summary"
-   marker into `store_memory`, and emits a stderr `<system-reminder>`.
+   the hook writes a notification stub and emits a stderr
+   `<system-reminder>`.
    The user (or the next coordinator turn) invokes
    `/thrift-copilot summarise` to actually generate the summary.
 
@@ -22,9 +22,8 @@ the summary path attached.
 ## Steps (when actually generating)
 
 1. Load `.thrift.json` config.
-2. Read `.thrift-state.json` (file) AND/OR `store_memory(key:
-   "thrift/state")` (memory mirror). If file is missing but memory
-   exists: reconstruct state from memory.
+2. Read `.thrift-state.json` (file). If an optional memory adapter is enabled,
+   it may be used as a best-effort recovery source.
 3. Read conversation history. **Sandbox limitation:** Copilot has no
    documented programmatic transcript API. v1 reads from a
    user-supplied `--history <path>` flag (markdown or JSON dump from
@@ -43,7 +42,8 @@ the summary path attached.
 
 5. Write the summary to `.thrift/summaries/<YYYY-MM-DD>-turn<N>.md`.
 
-6. Mirror to `store_memory`:
+6. If `config.storeMemory.enabled` is true, mirror through the configured
+   host memory adapter:
    ```javascript
    await storeMemoryWrite({
      key: `${config.storeMemory.keyPrefix}summary/${ts}`,
@@ -56,13 +56,12 @@ the summary path attached.
    written to disk).
 
 7. `recordSummariser(state, {reason, tokensBefore, tokensAfter})` →
-   updates `.thrift-state.json` AND mirrors to
-   `store_memory(key: "thrift/state")`.
+   updates `.thrift-state.json`.
 
 8. Print to user:
    ```
    Summariser wrote: .thrift/summaries/<date>-turn<N>.md
-   Mirror: store_memory(<scope>, <key>) — <ok|degraded>
+   Memory adapter: <disabled|ok|degraded>
    Saved tokens: ~<N> (estimated <%> reduction).
    Suggested action: start a fresh Copilot session and reference the
      summary path above (Copilot has no /compact equivalent).
@@ -75,7 +74,7 @@ the summary path attached.
 - summariser produces empty body (turns ≤ preserveLastTurns):
   print "no summarisation needed at this size" and exit.
 - Model call fails: warn + fall back to heuristic.
-- `store_memory` invoker throws or returns an error envelope: log
+- Memory adapter invoker throws or returns an error envelope: log
   `storeMemoryDegraded: true` to state and continue file-only.
 
 ## Summariser model rationale
@@ -88,7 +87,7 @@ the audit's cost-estimator falls back to the heuristic "Copilot
 intermediated; cost is whatever Copilot's billing reports" mode.
 
 > **TODO: confirm whether Copilot exposes the actually-used model in
-> any tool response or `read_agent` field. If yes, audit can substitute
+> any official tool response field. If yes, audit can substitute
 > the real model into the rate-table lookup.**
 
 ## Future (v2)

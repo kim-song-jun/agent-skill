@@ -6,6 +6,29 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.17 — 2026-06-20
+
+- Corrected the Copilot port to use the documented hook contract:
+  versioned `{version: 1, hooks: {...}}` JSON, command entries, real Copilot
+  tool matchers (`bash`/`powershell`, `view`, `create`/`edit`), and current
+  `subagentStop` identity fields (`agentName`, `sessionId`, `transcriptPath`,
+  `stopReason`).
+- Removed active Copilot floor instructions that depended on undocumented
+  public `read_agent` / `list_agents` / memory primitives. `/agent-all`,
+  `/visual-qa`, and `/thrift` now document file-backed state, prompt-level task
+  results, and optional lifecycle hooks honestly.
+- Corrected Gemini floor subprocess orchestration for Gemini CLI 0.47:
+  wrappers invoke `gemini -p ... --output-format json --skip-trust`, capture
+  stdout into per-task result files, and normalize Gemini auth/error JSON
+  envelopes as failed task results.
+- Made `harness-thrift-copilot` file-backed by default, with any memory mirror
+  treated as an explicit private host adapter rather than a public Copilot CLI
+  primitive.
+- Added regression coverage for Copilot hook schemas, Copilot lifecycle
+  payload normalization, Gemini subprocess flags/output capture, Gemini error
+  envelopes, and cross-platform visual-qa dispatch docs.
+- Suite: 2037/2037 passing; fast release smoke 498/498 passing.
+
 ## Agent-skill v0.6.16 — 2026-06-20
 
 - Hardened `scripts/install-all.sh` so local Claude plugin-manager installs

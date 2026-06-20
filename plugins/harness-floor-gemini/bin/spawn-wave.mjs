@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // harness-floor-gemini — Phase 3 wave dispatcher for /agent-all.
 //
-// Spawns N parallel `gemini chat` subprocesses (one per wave task),
+// Spawns N parallel headless `gemini -p` subprocesses (one per wave task),
 // awaits them via PID wait OR tmp-file polling, then aggregates results.
 //
 // Usage:
@@ -31,9 +31,9 @@
 //     "status": "completed" | "incomplete"
 //   }
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { spawn } from "node:child_process";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { resolve } from "node:path";
+import { runFleet } from "../skills/agent-all-gemini/lib/subprocess-fleet.mjs";
 
 function parseArgs(argv) {
   const args = {
@@ -66,28 +66,6 @@ function loadWave(path) {
   return wave;
 }
 
-function spawnTask(geminiBin, task, outputFile, timeout, dryRun) {
-  const args = ["chat", "-p", task.body, "--output-json", "--output-file", outputFile, "--timeout", String(timeout)];
-  if (dryRun) {
-    return { pid: -task.id, command: `${geminiBin} ${args.map(a => JSON.stringify(a)).join(" ")}`, dryRun: true };
-  }
-  const child = spawn(geminiBin, args, { detached: true, stdio: "ignore" });
-  // Swallow spawn-time errors (e.g., ENOENT) so the awaiter handles it.
-  child.on("error", () => {});
-  child.unref();
-  return { pid: child.pid ?? -1, command: null, dryRun: false };
-}
-
-async function waitForOutputs(outputFiles, timeoutMs) {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const present = outputFiles.filter(existsSync).length;
-    if (present === outputFiles.length) return true;
-    await new Promise((r) => setTimeout(r, 2000));
-  }
-  return false;
-}
-
 function collectResults(wave, outputFiles) {
   const results = [];
   for (let i = 0; i < wave.tasks.length; i++) {
@@ -99,6 +77,18 @@ function collectResults(wave, outputFiles) {
     }
     try {
       const payload = JSON.parse(readFileSync(file, "utf-8"));
+      if (payload.error && typeof payload.error === "object") {
+        results.push({
+          id: task.id,
+          agentId: payload.session_id ?? payload.sessionId ?? null,
+          status: "failed",
+          commits: [],
+          costUSD: 0,
+          exitCode: Number.isFinite(payload.error.code) ? payload.error.code : 1,
+          errors: [payload.error.message ?? payload.error.type ?? "Gemini CLI error"],
+        });
+        continue;
+      }
       results.push({
         id: task.id,
         agentId: payload.agentId ?? `synthetic-${task.id}`,
@@ -121,7 +111,17 @@ async function main() {
   mkdirSync(args.tmpDir, { recursive: true });
 
   const outputFiles = wave.tasks.map((t) => resolve(args.tmpDir, `task-${t.id}.json`));
-  const spawned = wave.tasks.map((t, i) => spawnTask(args.geminiBin, t, outputFiles[i], args.timeout, args.dryRun));
+  const fleetTasks = wave.tasks.map((t, i) => ({
+    id: t.id,
+    body: t.body,
+    outputFile: outputFiles[i],
+    meta: { title: t.title, role: t.role },
+  }));
+  const spawned = await runFleet(fleetTasks, {
+    geminiBin: args.geminiBin,
+    timeoutMs: args.timeout * 1000,
+    dryRun: args.dryRun,
+  });
 
   if (args.dryRun) {
     // Simulate completion by writing stub output files so collectResults works.
@@ -133,11 +133,6 @@ async function main() {
         costUSD: 0,
         exitCode: 0,
       }));
-    }
-  } else {
-    const ok = await waitForOutputs(outputFiles, args.timeout * 1000 + 60000);
-    if (!ok) {
-      console.error(`timeout: ${args.timeout + 60}s exceeded; some subprocesses still running`);
     }
   }
 

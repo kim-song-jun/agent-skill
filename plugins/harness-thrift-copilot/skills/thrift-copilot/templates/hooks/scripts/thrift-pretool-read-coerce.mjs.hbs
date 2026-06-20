@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 // thrift-pretool-read-coerce (Copilot) — suggests ctx_execute_file for
-// large read_file calls. Copilot's primitive is `read_file`; the matcher
+// large file-view calls. Copilot's primitive is `view`; the matcher
 // in the registering hook JSON points here.
 //
 // Input: preToolUse hook payload from Copilot via stdin (JSON):
 //   { tool_input: { file_path: "..." }, ... }
 //
-// > TODO: verify Copilot tool-name and payload field names against live
-//   CLI (read_file? read? open_file?).
+// The script tolerates common file path field names from hook payloads.
 
 import { readFileSync, statSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -40,7 +39,7 @@ async function main() {
     );
     const state = readState(STATE_PATH);
     recordCoercion(state, {
-      tool: "read_file",
+      tool: payload?.tool_name || payload?.toolName || "view",
       suggestion: `ctx_execute_file(path: ${JSON.stringify(filePath)})`,
       accepted: false,
     });

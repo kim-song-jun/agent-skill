@@ -45,20 +45,25 @@
 
    a. Print: `Wave <i+1>/<N> — <waves[i].length> tasks in parallel (subprocesses)`.
 
-   b. For each task in the wave, spawn a subprocess via `run_shell_command`:
+   b. For each task in the wave, write `/tmp/agent-all/wave-<i>/wave.json`
+      and spawn the wrapper via `run_shell_command`:
       ```
       run_shell_command(
-        "gemini chat -p '<task body prompt>' \
-          --output-json \
-          --output-file '/tmp/agent-all/wave-<i>/task-<task.id>.json' \
-          --skill-roster .gemini/skills/<role>/ \
-	          --timeout <subprocessTimeout> &",
-	        { background: true }
-	      )
-	      ```
+        "node plugins/harness-floor-gemini/bin/spawn-wave.mjs \
+          --wave '/tmp/agent-all/wave-<i>/wave.json' \
+          --tmp '/tmp/agent-all/wave-<i>' \
+          --timeout <subprocessTimeout> &",
+        { background: true }
+      )
+      ```
+      The wrapper invokes Gemini CLI as `gemini -p '<task body prompt>'
+      --output-format json --skip-trust`, captures stdout, and writes
+      `/tmp/agent-all/wave-<i>/task-<task.id>.json`. Gemini CLI 0.47 uses
+      the default command with `-p` and `--output-format json`; do not use
+      old chat-subcommand or output-file style flags.
       If the plan left `role: dev`, use `state.orchestration.requiredAgents`
-      to choose or validate the skill roster role for that task.
-      Each subprocess writes its result JSON to the output file when done.
+      to choose or validate the prompt role for that task.
+      The wrapper writes each subprocess result JSON to the output file when done.
       Capture each subprocess `pid`.
 
    c. Await all subprocesses in the wave:
@@ -124,7 +129,7 @@ Print one line per wave: `Wave <i>: <completed>/<total> succeeded (parallel=<act
 
 ## Dispatch Prompt Contract (mandatory)
 
-Every `gemini chat` subprocess's prompt MUST include:
+Every `gemini -p` subprocess's prompt MUST include:
 
 - Working directory: the repository root where commands must run.
 - Owned files or line ranges: the task's declared files, or an explicit note
@@ -148,7 +153,7 @@ evidence (step 4e above).
 
 ## Per-subagent verification (safety net for unattended runs)
 
-Every `gemini chat` subprocess's prompt MUST include the following directive:
+Every `gemini -p` subprocess's prompt MUST include the following directive:
 
 > Before reporting `STATUS: completed`, invoke `superpowers:verification-before-completion` to run the project's test command (from `.agent-all.json` `breakCondition`, falling back to the stack-detected default). Do not mark a task complete if verification fails — report `STATUS: blocked, REASON: verification failed` instead, with the failing output captured.
 >

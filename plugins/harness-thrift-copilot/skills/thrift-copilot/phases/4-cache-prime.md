@@ -33,10 +33,9 @@ must be set in `.thrift.json`. Then:
 2. Compute cohort key. Cohort honours `cache.shareCohortAcross`
    (`session`, `branch`, or both). Same algorithm as the CC port.
 
-3. Schedule a `warmInterval`-cadence prime via the
-   `sessionStart` hook. Each "prime" is a heuristic minimal Copilot
-   tool call (e.g. an empty `read_bash` or `echo .` invocation) carrying
-   the cohort key in a comment.
+3. Schedule a `warmInterval`-cadence prime via the `sessionStart` hook. Each
+   "prime" is a heuristic minimal Copilot shell tool call (for example
+   `echo .`) carrying the cohort key in a comment.
 
 4. Each successful prime increments `state.cachePrimes[]` via
    `recordCachePrime(state, {cohort, costUSD: estimatedPrimeCost})`.
@@ -62,9 +61,8 @@ Three reasons:
    biases the user toward not losing money.
 
    > **TODO: spike Copilot's cache surface.** If a future Copilot
-   > release exposes cache-hit metadata in tool responses or
-   > `list_agents` output, revisit this phase's default to `enabled =
-   > true` for sessions ≥30 minutes.
+   > release exposes cache-hit metadata in official tool responses, revisit
+   > this phase's default to `enabled = true` for sessions ≥30 minutes.
 
 ## On error
 

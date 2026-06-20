@@ -43,9 +43,12 @@ test("runFleet --dry-run returns synthesised commands for each task", async () =
   for (const r of results) {
     assert.equal(r.dryRun, true);
     assert.equal(r.exitCode, 0);
-    assert.match(r.command, /gemini.*chat/);
-    assert.match(r.command, /--output-json/);
-    assert.match(r.command, /--output-file/);
+    assert.match(r.command, /gemini.*"-p"/);
+    assert.match(r.command, /"--output-format" "json"/);
+    assert.doesNotMatch(r.command, /\bchat\b/);
+    assert.doesNotMatch(r.command, /--output-json/);
+    assert.doesNotMatch(r.command, /--output-file/);
+    assert.doesNotMatch(r.command, /--skill-roster/);
   }
   // Per-task body wired through into command.
   assert.ok(results[0].command.includes("implement A"));
@@ -117,16 +120,40 @@ test("runFleet onTaskComplete callback fires per task", async () => {
   assert.deepEqual(seen.sort(), ["a", "b"]);
 });
 
-test("__internal.buildArgs includes --skill-roster when provided", async () => {
+test("runFleet writes Gemini stdout to each task outputFile", async (t) => {
+  if (platform() === "win32") return t.skip("posix mock binary");
+  const dir = makeTmp("subprocess-fleet-output-");
+  try {
+    const mock = writeMockBin(dir, "gemini-json", "#!/bin/sh\nprintf '{\"status\":\"completed\",\"agentId\":\"mock-1\"}'\n");
+    const { runFleet } = await import(`../../${AGENT_ALL_FLEET}`);
+    const outputFile = join(dir, "out.json");
+    const [result] = await runFleet(
+      [{ id: 1, body: "x", outputFile }],
+      { geminiBin: mock, timeoutMs: 1000 },
+    );
+    assert.equal(result.exitCode, 0);
+    assert.ok(existsSync(outputFile));
+    assert.deepEqual(JSON.parse(readFileSync(outputFile, "utf-8")), {
+      status: "completed",
+      agentId: "mock-1",
+    });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("__internal.buildArgs uses Gemini CLI 0.47 headless JSON flags", async () => {
   const { __internal } = await import(`../../${AGENT_ALL_FLEET}`);
   const args = __internal.buildArgs(
     { id: 1, body: "do it", outputFile: "/tmp/o.json" },
     { skillRosterDir: "/path/to/roster", timeoutMs: 60_000 },
   );
-  assert.ok(args.includes("--skill-roster"));
-  assert.equal(args[args.indexOf("--skill-roster") + 1], "/path/to/roster");
-  assert.ok(args.includes("--output-json"));
-  assert.ok(args.includes("--timeout"));
-  // 60_000 ms → "60" seconds passed to the CLI
-  assert.equal(args[args.indexOf("--timeout") + 1], "60");
+  assert.deepEqual(args.slice(0, 2), ["-p", "do it"]);
+  assert.equal(args[args.indexOf("--output-format") + 1], "json");
+  assert.ok(args.includes("--skip-trust"));
+  assert.ok(!args.includes("chat"));
+  assert.ok(!args.includes("--skill-roster"));
+  assert.ok(!args.includes("--output-json"));
+  assert.ok(!args.includes("--output-file"));
+  assert.ok(!args.includes("--timeout"));
 });

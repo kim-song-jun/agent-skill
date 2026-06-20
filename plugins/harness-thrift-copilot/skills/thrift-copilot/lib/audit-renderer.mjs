@@ -1,6 +1,6 @@
 // Builds the audit-report.md.hbs render context from state + config.
 // Copilot variant: uses OpenAI-rate cost-estimator, surfaces the
-// intermediation note flag, and reports store_memory mirror status.
+// intermediation note flag, and reports optional memory-adapter status.
 
 import { estimateSession, RATE_TABLE_PROVENANCE } from "./cost-estimator.mjs";
 

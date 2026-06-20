@@ -80,10 +80,10 @@ if [ "$*" = "plugin marketplace upgrade agent-skill" ] && [ ! -f "${upgradeSeen}
 fi
 if [ "$*" = "plugin list" ]; then
   cat <<'EOF'
-harness-builder-codex@agent-skill installed, enabled 0.6.16
-harness-floor-codex@agent-skill installed, enabled 0.6.16
-harness-thrift-codex@agent-skill installed, enabled 0.6.16
-harness-debug-codex@agent-skill installed, enabled 0.6.16
+harness-builder-codex@agent-skill installed, enabled 0.6.17
+harness-floor-codex@agent-skill installed, enabled 0.6.17
+harness-thrift-codex@agent-skill installed, enabled 0.6.17
+harness-debug-codex@agent-skill installed, enabled 0.6.17
 EOF
   exit 0
 fi
@@ -130,9 +130,9 @@ test("Codex native updater fails verification when a refreshed plugin is not ena
 set -euo pipefail
 if [ "$*" = "plugin list" ]; then
   cat <<'EOF'
-harness-builder-codex@agent-skill installed, enabled 0.6.16
-harness-floor-codex@agent-skill installed, enabled 0.6.16
-harness-thrift-codex@agent-skill installed, enabled 0.6.16
+harness-builder-codex@agent-skill installed, enabled 0.6.17
+harness-floor-codex@agent-skill installed, enabled 0.6.17
+harness-thrift-codex@agent-skill installed, enabled 0.6.17
 EOF
   exit 0
 fi

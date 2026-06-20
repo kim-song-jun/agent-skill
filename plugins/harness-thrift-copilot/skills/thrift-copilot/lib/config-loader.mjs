@@ -6,9 +6,9 @@
 //
 // When path missing: returns { ok: true, config: DEFAULTS, warning: "..." }.
 //
-// > TODO: verify Copilot ask_user / store_memory schemas against live CLI.
-//   Default storeMemory.scope = "repository" matches the assumption in
-//   docs/superpowers/specs/2026-05-18-harness-thrift-per-platform-decomposition.md.
+// Copilot CLI does not expose a public memory primitive in the current
+// hook/tool surface. Keep this section as an optional adapter for private host
+// integrations, but default to file-only mode.
 
 import { readFileSync, existsSync } from "node:fs";
 
@@ -30,7 +30,7 @@ export const DEFAULTS = {
     intermediationWarning: true,
   },
   storeMemory: {
-    enabled: true,
+    enabled: false,
     scope: "repository",
     keyPrefix: "thrift/",
   },
@@ -42,7 +42,7 @@ export const DEFAULTS = {
   audit: {
     estimateBaseline: "naive-copilot",
     outputPath: ".agent-skill/reports/thrift/audit-<date>.md",
-    mirrorToStoreMemory: true,
+    mirrorToStoreMemory: false,
   },
 };
 

@@ -99,6 +99,25 @@ test("awaitWaveHook: supports alternate agent_id/id keys", async () => {
   assert.equal(r.ok, true);
 });
 
+test("awaitWaveHook: supports official Copilot subagentStop identity fields", async () => {
+  const tmp = mkdtempSync(join(tmpdir(), "await-wave-"));
+  const inbox = join(tmp, "inbox.jsonl");
+  appendFileSync(inbox, JSON.stringify({ agentName: "dev-agent", stopReason: "end_turn" }) + "\n");
+  appendFileSync(inbox, JSON.stringify({ sessionId: "session-2", stopReason: "end_turn" }) + "\n");
+  const clock = fakeClock();
+  const r = await awaitWaveHook({
+    agentIds: ["dev-agent", "session-2"],
+    inboxPath: inbox,
+    timeoutMs: 500,
+    intervalMs: 25,
+    sleeper: clock.sleeper,
+    now: clock.now,
+  });
+  assert.equal(r.ok, true);
+  assert.equal(r.results.get("dev-agent").status, "completed");
+  assert.equal(r.results.get("session-2").status, "completed");
+});
+
 test("awaitWavePoll: resolves when list_agents shows all terminal", async () => {
   let calls = 0;
   const listAgentsFn = async () => {

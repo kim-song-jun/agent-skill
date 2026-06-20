@@ -1,6 +1,21 @@
 {
-  "hooks": [
-    { "matcher": "read_bash",  "command": "node \"{{hooksScriptsDir}}/thrift-pretool-bash-telemetry.mjs\"" },
-    { "matcher": "read_file",  "command": "node \"{{hooksScriptsDir}}/thrift-pretool-read-coerce.mjs\"" }
-  ]
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "matcher": "bash|powershell",
+        "bash": "node \"{{hooksScriptsDir}}/thrift-pretool-bash-telemetry.mjs\"",
+        "powershell": "node \"{{hooksScriptsDir}}/thrift-pretool-bash-telemetry.mjs\"",
+        "timeoutSec": 10
+      },
+      {
+        "type": "command",
+        "matcher": "view",
+        "bash": "node \"{{hooksScriptsDir}}/thrift-pretool-read-coerce.mjs\"",
+        "powershell": "node \"{{hooksScriptsDir}}/thrift-pretool-read-coerce.mjs\"",
+        "timeoutSec": 10
+      }
+    ]
+  }
 }

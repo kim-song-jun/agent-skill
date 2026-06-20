@@ -34,6 +34,20 @@ test("awaitPagesHook: resolves on inbox completion", async () => {
   assert.equal(r.results.size, 2);
 });
 
+test("awaitPagesHook: resolves official Copilot subagentStop identity fields", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "await-pages-"));
+  const inbox = join(dir, "inbox.jsonl");
+  appendFileSync(inbox, JSON.stringify({ agentName: "visual-qa-page-home", stopReason: "end_turn" }) + "\n");
+  const c = clock();
+  const r = await awaitPagesHook({
+    agentIds: ["visual-qa-page-home"], inboxPath: inbox,
+    timeoutMs: 500, intervalMs: 25,
+    sleeper: c.sleeper, now: c.now,
+  });
+  assert.equal(r.ok, true);
+  assert.equal(r.results.get("visual-qa-page-home").status, "completed");
+});
+
 test("awaitPagesHook: times out", async () => {
   const dir = mkdtempSync(join(tmpdir(), "await-pages-"));
   const inbox = join(dir, "inbox.jsonl");
