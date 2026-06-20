@@ -31,6 +31,13 @@ const PLUGINS = [
   "harness-data",
 ];
 
+const CODEX_NATIVE_PLUGINS = [
+  "harness-builder-codex",
+  "harness-floor-codex",
+  "harness-thrift-codex",
+  "harness-debug-codex",
+];
+
 for (const p of PLUGINS) {
   test(`${p}: plugin.json is valid and has required fields`, () => {
     const path = resolve("plugins", p, ".claude-plugin", "plugin.json");
@@ -39,6 +46,20 @@ for (const p of PLUGINS) {
     assert.equal(data.name, p);
     assert.ok(data.version, "version present");
     assert.ok(data.description, "description present");
+  });
+}
+
+for (const p of CODEX_NATIVE_PLUGINS) {
+  test(`${p}: Codex native manifest version matches Claude marketplace manifest`, () => {
+    const claudeManifest = JSON.parse(
+      readFileSync(resolve("plugins", p, ".claude-plugin", "plugin.json"), "utf-8"),
+    );
+    const codexManifest = JSON.parse(
+      readFileSync(resolve("plugins", p, ".codex-plugin", "plugin.json"), "utf-8"),
+    );
+    assert.equal(codexManifest.name, p);
+    assert.equal(codexManifest.version, claudeManifest.version);
+    assert.ok(codexManifest.skills, "Codex native manifest must expose skills path");
   });
 }
 

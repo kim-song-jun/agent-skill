@@ -6,6 +6,15 @@
 
 ## 미출시
 
+## Agent-skill v0.6.15 — 2026-06-20
+
+- 숨김 Codex native `.codex-plugin` manifest를 정정해 Codex CLI native 설치가
+  오래된 `0.6.13` 대신 현재 릴리스 버전을 표시하도록 했습니다.
+- Codex native manifest 버전이 Claude marketplace manifest와 계속 일치하도록
+  cross-platform manifest 계약을 추가했습니다.
+- Codex native 설치 기준으로 `v0.6.14`를 대체합니다. `v0.6.14` 태그는 advisory
+  diagnostics 릴리스로 그대로 유지됩니다.
+
 ## Agent-skill v0.6.14 — 2026-06-20
 
 - 배포되는 Claude advisory hook에 fail-open 진단을 추가했습니다. 잘못된 hook

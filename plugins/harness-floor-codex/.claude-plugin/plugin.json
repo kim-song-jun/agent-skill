@@ -1,6 +1,6 @@
 {
   "name": "harness-floor-codex",
-  "version": "0.6.14",
+  "version": "0.6.15",
   "description": "visual-qa scaffold for Codex CLI — emits .visual-qa.json + Playwright MCP entry for config.toml",
   "keywords": [
     "visual-qa",

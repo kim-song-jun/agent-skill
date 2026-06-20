@@ -6,6 +6,15 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.6.15 — 2026-06-20
+
+- Corrected hidden Codex native `.codex-plugin` manifests so Codex CLI native
+  installs report the current release version instead of stale `0.6.13`.
+- Added a cross-platform manifest contract that keeps Codex native manifest
+  versions aligned with the Claude marketplace manifests.
+- Supersedes `v0.6.14` for Codex native installs; the `v0.6.14` tag remains the
+  advisory diagnostics release.
+
 ## Agent-skill v0.6.14 — 2026-06-20
 
 - Added fail-open diagnostics for shipped Claude advisory hooks so malformed

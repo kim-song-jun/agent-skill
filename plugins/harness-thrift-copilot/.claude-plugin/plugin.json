@@ -1,6 +1,6 @@
 {
   "name": "harness-thrift-copilot",
-  "version": "0.6.14",
+  "version": "0.6.15",
   "description": "Theme B for Copilot CLI — YAML/JSON hooks under .github/hooks/, store_memory summariser scratch, OpenAI-flavoured cost estimator, Phase 4 cache prime disabled by default (Copilot intermediates the model layer)",
   "keywords": [
     "harness",
