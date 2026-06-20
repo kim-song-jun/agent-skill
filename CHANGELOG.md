@@ -14,6 +14,7 @@ All notable changes to this project. Date-stamped tags exist for each release ca
   versions aligned with the Claude marketplace manifests.
 - Supersedes `v0.6.14` for Codex native installs; the `v0.6.14` tag remains the
   advisory diagnostics release.
+- Suite: 2025/2025 passing; fast release smoke 497/497 passing.
 
 ## Agent-skill v0.6.14 — 2026-06-20
 

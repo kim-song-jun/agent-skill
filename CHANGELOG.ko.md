@@ -14,6 +14,7 @@
   cross-platform manifest 계약을 추가했습니다.
 - Codex native 설치 기준으로 `v0.6.14`를 대체합니다. `v0.6.14` 태그는 advisory
   diagnostics 릴리스로 그대로 유지됩니다.
+- Suite: 2025/2025 통과; fast release smoke 497/497 통과.
 
 ## Agent-skill v0.6.14 — 2026-06-20
 
