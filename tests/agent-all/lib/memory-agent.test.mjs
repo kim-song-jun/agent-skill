@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import {
   makeMemoryAgent,
   MEMORY_LOG_SCHEMA_VERSION,
@@ -89,4 +89,23 @@ test("JSONL entry round-trips the scratchpad field", async () => {
   await agent.store("scratch-key", { scratchpad: "model reasoning captured", iter: 7 }, null);
   const entry = JSON.parse(readFileSync(agent.logPath(), "utf-8").trim());
   assert.equal(entry.value.scratchpad, "model reasoning captured");
+});
+
+test("CC memory-agent.mjs has no cross-plugin import and uses local ./memory-bridge.mjs", () => {
+  // Guard: a regression back to the cross-plugin path breaks CC-only installs
+  // (ERR_MODULE_NOT_FOUND when harness-floor-copilot is absent).
+  const src = readFileSync(
+    resolve("plugins/harness-floor/skills/agent-all/lib/memory-agent.mjs"),
+    "utf-8",
+  );
+  assert.doesNotMatch(
+    src,
+    /harness-floor-copilot/,
+    "CC memory-agent.mjs must not import from harness-floor-copilot (cross-plugin dependency breaks CC-only installs)",
+  );
+  assert.match(
+    src,
+    /from\s+"\.\/memory-bridge\.mjs"/,
+    "CC memory-agent.mjs must import from local ./memory-bridge.mjs",
+  );
 });

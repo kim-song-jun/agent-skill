@@ -46,7 +46,7 @@
    checkpoint from disk (the Layer-1 file mirror) via the fixed `checkpoint/LATEST`
    pointer. A fresh post-death session needs zero lost coordinates:
    ```javascript
-   import { makeFileMirror } from "../../../harness-floor-copilot/skills/agent-all-copilot/lib/memory-bridge.mjs";
+   import { makeFileMirror } from "./lib/memory-bridge.mjs";
    import { recallLatestCheckpoint } from "./lib/memory-agent.mjs";
    if (flags.resume) {
      const fileMirror = makeFileMirror({ rootDir: join(cwd, ".agent-skill/memory") });

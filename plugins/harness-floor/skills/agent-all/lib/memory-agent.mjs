@@ -9,7 +9,7 @@ import {
   makeFileMirror,
   storeRepoMemory,
   recallRepoMemory,
-} from "../../../../harness-floor-copilot/skills/agent-all-copilot/lib/memory-bridge.mjs";
+} from "./memory-bridge.mjs";
 import { artifactPaths } from "./artifact-paths.mjs";
 
 export const MEMORY_LOG_SCHEMA_VERSION = "memory-log/v1";
