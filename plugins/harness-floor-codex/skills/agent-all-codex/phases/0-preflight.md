@@ -18,8 +18,29 @@
    - If `--dispatch=sequential` was passed, accept the override.
 5. Load `.agent-all.json` via implicit file read. If missing: warn + use
    built-ins from `templates/agent-all.config.json.hbs`.
-6. Read `.agent-all-state.json` if present. If `--resume` and
-   `max(state.phases[*].phase) >= 0`, skip rest of Phase 0.
+6. Read `.agent-all-state.json` if present.
+
+   **6b. (resume checkpoint recall — on `--resume` only).** Recall the latest checkpoint
+   from disk via the fixed `checkpoint/LATEST` pointer so a fresh post-death session
+   needs zero lost coordinates:
+   ```javascript
+   import { makeFileMirror } from "./lib/memory-bridge.mjs";
+   import { recallLatestCheckpoint } from "./lib/memory-agent.mjs";
+   if (flags.resume) {
+     const fileMirror = makeFileMirror({ rootDir: join(cwd, ".agent-skill/memory") });
+     const latest = await recallLatestCheckpoint({ fileMirror, toolCaller: null });
+     if (latest.found && latest.checkpoint?.inFlight) {
+       state.resumeCheckpoint = latest.checkpoint;
+       state.iter = latest.checkpoint.iter ?? state.iter;
+       state.decisions = { ...(state.decisions ?? {}), ...(latest.checkpoint.decisionsSoFar ?? {}) };
+       // Phase 3 re-enters wave=latest.checkpoint.wave at 3.0 using miniPlans, not a re-parse.
+     }
+   }
+   ```
+
+   If `--resume` and `max(state.phases[*].phase) >= 0`, skip rest of Phase 0
+   EXCEPT keep `state.resumeCheckpoint` set above; Phase 3 step 3 reads it
+   to re-enter the dead wave at 3.0.
 7. Validate positional argument:
    - Ends with `.md`: must exist. Stash `taskPath`.
    - Otherwise: non-empty string. Stash `prompt`.

@@ -130,8 +130,49 @@ Do not self-commit from a reviewer invocation. Report findings and verification 
 
 Every dispatched reviewer subagent (via sequential `.codex/skills/<persona>/SKILL.md` invocation) MUST receive the following directive in its prompt body:
 
-> When evaluating the wave's diff, explicitly verify that each implementer ran `superpowers:verification-before-completion` and the verification passed. Look for the verification command output in commit messages, the implementer's reported output, or run the verification command yourself against the wave's tip commit.
+> When evaluating the wave's diff, explicitly verify that each implementer ran `superpowers:verification-before-completion` and the verification passed. Look for the verification command output in commit messages, or run the verification command yourself against the wave's tip commit.
 >
 > If verification was skipped OR failed, escalate as a `critical` issue regardless of code quality verdict — this blocks the wave at Phase 4 even if everything else looks fine.
 
 This complements the Phase 3 verification directive. Two-layer safety net.
+
+## Step 3-adversarial — Independent adversarial re-verification (mandatory when `gates.adversarialVerify === true`)
+
+When `config.gates.adversarialVerify === true`, `buildGatePlan()` appends one
+dispatch with `role: "verification-reviewer-adversarial"`, `kind: "reviewer"`,
+`mode: "adversarial"` (see `lib/gate-plan.mjs`). The coordinator runs it LAST,
+after every other `gatePlan.dispatches[]` entry, as a sequential step — Codex has
+no parallel `Task` surface, so this is a coordinator-level `shell_command`, never
+a spawned subagent.
+
+- **Independence is structural, not promised.** The adversarial step MUST NOT read
+  the implementer's self-report, commit messages, or any role-skill-produced
+  output. It re-derives the verdict from the wave diff and the wave tip commit
+  only — `git diff <wave.baseCommit>..<wave.endCommit>` plus the canonical wrapper
+  `adversarialVerify({diff, acceptanceCriteria, breakCondition, cwd})` from
+  `lib/verification-adapters/adversarial-verifier.mjs`. Invoke it via:
+  ```bash
+  WAVE_DIFF="$(git diff <wave.baseCommit>..<wave.endCommit>)" \
+  REPO_ROOT="$(pwd)" \
+  node --input-type=module -e "
+    import { adversarialVerify } from './lib/verification-adapters/adversarial-verifier.mjs';
+    const result = await adversarialVerify({ diff: process.env.WAVE_DIFF, acceptanceCriteria: [], breakCondition: <breakCondition>, cwd: process.env.REPO_ROOT });
+    console.log(JSON.stringify(result));
+  "
+  ```
+  and read the returned `{ audit, evidence, exitCode }` literal. Do NOT call
+  `runVerificationAdapterSpec()` directly — the production path MUST go through
+  `adversarialVerify` so its structural-independence guard (the signature excludes
+  any self-report) is enforced on every live invocation.
+- **Prompt contract:** if the coordinator delegates the diff summary to a sequential
+  reviewer skill, that prompt MUST NOT include implementation notes, self-assessments,
+  or reported verification output. Structural independence — not a promise.
+- **Required output:** exactly one of `VERIFICATION_AUDIT: passed`,
+  `VERIFICATION_AUDIT: failed`, or `VERIFICATION_AUDIT: skipped`, plus a
+  `verification-evidence/v1` evidence object (reuse `lib/verification-adapters/schema.mjs`).
+- **Failure is critical:** a `VERIFICATION_AUDIT: failed` from
+  `verification-reviewer-adversarial` is a `critical` issue that BLOCKS the wave; the
+  coordinator MUST enter the block-on-critical retry loop (step 5). A passing
+  self-reviewer verdict does NOT override a failing adversarial verdict.
+- **Nesting constraint:** the adversarial step lives at the coordinator level; a
+  sequential role-skill MUST NOT invoke it (`references/orchestrator-routing.md`).

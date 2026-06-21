@@ -26,6 +26,30 @@
    Capture `baseCommit` before implementation with `git rev-parse HEAD` so
    Phase 4 can include the first coordinator-created task commit in gate diffs.
 
+   If `state.resumeCheckpoint` is set and `state.resumeCheckpoint.wave === i`,
+   re-enter at step 3.0 using `state.resumeCheckpoint.miniPlans` instead of
+   re-parsing the plan; this covers the mid-wave death scenario where role-skills
+   never returned.
+
+   **3.0 (pre-dispatch checkpoint).** BEFORE invoking any sequential role-skill for
+   this wave, flush the in-flight scoping intent derived from the wave plan, so a
+   mid-wave context death is recoverable. Do NOT include role-skill outputs or
+   transcript bodies — only mini-plan metadata from the wave plan:
+   ```javascript
+   import { makeFileMirror } from "./lib/memory-bridge.mjs";
+   import { flushCheckpoint } from "./lib/memory-agent.mjs";
+   const fileMirror = makeFileMirror({ rootDir: join(cwd, ".agent-skill/memory") });
+   const tasksInWave = waves[i];
+   await flushCheckpoint({
+     cwd, runId, wave: i, iter: state.iter ?? 0, phase: "3a", inFlight: true,
+     taskIds: tasksInWave.map((t) => t.id),
+     miniPlans: tasksInWave.map((t) => ({ taskId: t.id, title: t.title, files: t.files, role: t.role })),
+     requiredAgents: state.orchestration?.requiredAgents ?? [],
+     decisionsSoFar: state.decisions ?? {},
+     fileMirror, config,
+   });
+   ```
+
    a. Build/update `state.orchestration` before dispatch. Use the same state
       shape as the Claude planner:
       `{runId,wave,changedFiles,changedDomains,requiredAgents,spawnedAgents,
@@ -82,7 +106,18 @@
    Derive `startCommit` and `endCommit` from the first and last
    coordinator-created task commit SHAs recorded in `tasks[].commits`.
 
-6. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
+6. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`. Then
+   flush a completion marker checkpoint to supersede the in-flight 3.0 pointer:
+   ```javascript
+   await flushCheckpoint({
+     cwd, runId, wave: i, iter: state.iter ?? 0,
+     phase: "3-complete", inFlight: false,
+     miniPlans: [], taskIds: [], requiredAgents: [],
+     fileMirror, config,
+   });
+   ```
+   This overwrites `checkpoint/LATEST` with `inFlight:false`, so a `--resume`
+   after this point does NOT re-enter the wave.
 
 ## On error
 

@@ -162,7 +162,9 @@ run_step "focused release contracts" \
     tests/lib/harness-builder-cli-init.test.mjs \
     tests/lib/harness-floor-init.test.mjs \
     tests/lib/thrift-codex.test.mjs \
-    tests/lib/thrift-codex-hooks.test.mjs
+    tests/lib/thrift-codex-hooks.test.mjs \
+    tests/lib/agent-all-codex-adversarial.test.mjs \
+    tests/lib/agent-all-codex-checkpoint.test.mjs
 
 run_step "vendored libs" node scripts/sync-lib.mjs --check
 run_step "support matrix" node scripts/generate-support-matrix.mjs --check

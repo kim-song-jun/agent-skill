@@ -140,7 +140,7 @@ const VERIFICATION_ADAPTER_TARGETS = [
   "plugins/harness-floor-codex/skills/agent-all-codex/lib/verification-adapters",
   "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/verification-adapters",
 ].map((p) => resolve(repoRoot, p));
-const VERIFICATION_ADAPTER_FILES = ["schema.mjs", "evidence-writer.mjs", "registry.mjs"];
+const VERIFICATION_ADAPTER_FILES = ["schema.mjs", "evidence-writer.mjs", "registry.mjs", "adversarial-verifier.mjs"];
 
 // Leaf visual-qa libs each port's shallow-clicker imports (computeElementIdentity,
 // resolveTarget/parseAction) but that were never vendored — a dangling
@@ -221,6 +221,36 @@ const LOOP_EVALUATOR_SOURCE = resolve(
 const LOOP_EVALUATOR_TARGETS = [
   "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/loop-evaluator.mjs",
 ].map((p) => resolve(repoRoot, p));
+
+// memory-bridge.mjs — verbatim copy from the canonical copilot source.
+// Self-contained (node:fs + node:path only); codex vendors it locally so
+// memory-agent can import ./memory-bridge.mjs instead of the cross-plugin path.
+const MEMORY_BRIDGE_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/memory-bridge.mjs",
+);
+const MEMORY_BRIDGE_TARGETS = [
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/memory-bridge.mjs",
+].map((p) => resolve(repoRoot, p));
+
+// memory-agent.mjs — IMPORT-REWRITE: CC source imports the copilot bridge via
+// a cross-plugin relative path; codex copy MUST import the LOCAL ./memory-bridge.mjs
+// instead (codex vendors it above). The transform is applied identically for
+// both --check (compare) and --sync (write) to stay symmetric.
+const MEMORY_AGENT_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/memory-agent.mjs",
+);
+const MEMORY_AGENT_TARGETS = [
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/memory-agent.mjs",
+].map((p) => resolve(repoRoot, p));
+// The CC import anchor string that must be replaced.
+const MEMORY_AGENT_CC_IMPORT =
+  '"../../../../harness-floor-copilot/skills/agent-all-copilot/lib/memory-bridge.mjs"';
+const MEMORY_AGENT_CODEX_IMPORT = '"./memory-bridge.mjs"';
+function codexMemoryAgentTransform(src) {
+  return src.replace(MEMORY_AGENT_CC_IMPORT, MEMORY_AGENT_CODEX_IMPORT);
+}
 
 const COST_TELEMETRY_SOURCE = resolve(
   repoRoot,
@@ -578,6 +608,46 @@ function collectDrift() {
       drift.push({ file: "loop-evaluator.mjs", dest: destPath, reason: "diverged", sourceContent: loopEvaluatorSrc });
     }
   }
+  // memory-bridge.mjs — verbatim copy from copilot canonical to codex.
+  const memoryBridgeSrc = readOrNull(MEMORY_BRIDGE_SOURCE);
+  if (memoryBridgeSrc == null) {
+    console.error(`Source missing: ${MEMORY_BRIDGE_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of MEMORY_BRIDGE_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "memory-bridge.mjs", dest: destPath, reason: "missing", sourceContent: memoryBridgeSrc });
+    } else if (destContent !== memoryBridgeSrc) {
+      drift.push({ file: "memory-bridge.mjs", dest: destPath, reason: "diverged", sourceContent: memoryBridgeSrc });
+    }
+  }
+  // memory-agent.mjs — import-rewrite: CC cross-plugin import → codex-local ./memory-bridge.mjs.
+  // The transform must be applied to BOTH compare and write; never compare raw src.
+  const memoryAgentSrcRaw = readOrNull(MEMORY_AGENT_SOURCE);
+  if (memoryAgentSrcRaw == null) {
+    console.error(`Source missing: ${MEMORY_AGENT_SOURCE}`);
+    process.exit(2);
+  }
+  // Anchor assertion: fail loudly if the CC import string we rewrite has changed.
+  if (!memoryAgentSrcRaw.includes(MEMORY_AGENT_CC_IMPORT)) {
+    console.error(
+      `sync-lib: MEMORY_AGENT_SOURCE no longer contains the expected CC import anchor:\n` +
+      `  expected: ${MEMORY_AGENT_CC_IMPORT}\n` +
+      `  in: ${MEMORY_AGENT_SOURCE}\n` +
+      `Update MEMORY_AGENT_CC_IMPORT in sync-lib.mjs to match the current CC import path.`,
+    );
+    process.exit(2);
+  }
+  const memoryAgentWant = codexMemoryAgentTransform(memoryAgentSrcRaw);
+  for (const destPath of MEMORY_AGENT_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "memory-agent.mjs", dest: destPath, reason: "missing", sourceContent: memoryAgentWant });
+    } else if (destContent !== memoryAgentWant) {
+      drift.push({ file: "memory-agent.mjs", dest: destPath, reason: "diverged", sourceContent: memoryAgentWant });
+    }
+  }
   // agent-all cost-telemetry.mjs (Claude source → all platform agent-all copies).
   const costTelemetrySrc = readOrNull(COST_TELEMETRY_SOURCE);
   if (costTelemetrySrc == null) {
@@ -772,6 +842,9 @@ function totalChecked() {
     + DATA_HELPER_FILES.length * DATA_HELPER_TARGETS.length
     + SECURITY_HELPER_FILES.length * SECURITY_HELPER_TARGETS.length
     + INTERACTION_HELPER_FILES.length * INTERACTION_HELPER_TARGETS.length
+    + LOOP_EVALUATOR_TARGETS.length
+    + MEMORY_BRIDGE_TARGETS.length
+    + MEMORY_AGENT_TARGETS.length
     + COST_TELEMETRY_TARGETS.length
     + CHANGED_FILE_CLASSIFIER_TARGETS.length
     + GATE_PLAN_TARGETS.length

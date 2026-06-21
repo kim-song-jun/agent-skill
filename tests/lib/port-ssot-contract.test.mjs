@@ -77,12 +77,15 @@ for (const p of ADVERSARIAL_PORTS) {
   test(
     `port ssot contract [${p}]: E5 adversarial dispatch uses BLOCKING (not advisory) language`,
     {
+      // codex un-skipped in G6 (4-gate.md adversarial section authored + stale
+      // advisory phrase deleted). copilot stays skipped until G7.
       skip:
-        "Authored in G6/G7 — un-skip requires (1) adding the verification-reviewer-adversarial " +
-        "section to this port's 4-gate.md AND (2) removing the stale 'implementer\\'s reported output' " +
-        "advisory phrase from its per-reviewer block " +
-        `(${p === "codex" ? "codex 4-gate.md:~133" : "copilot ~161"}), ` +
-        "or E5's doesNotMatch assertion stays red.",
+        p === "codex"
+          ? false
+          : "Authored in G7 — un-skip requires (1) adding the verification-reviewer-adversarial " +
+            "section to copilot's 4-gate.md AND (2) removing the stale 'implementer\\'s reported output' " +
+            "advisory phrase from its per-reviewer block (copilot 4-gate.md:~161), " +
+            "or E5's doesNotMatch assertion stays red.",
     },
     () => {
       const gate = read(p, "phases/4-gate.md");
