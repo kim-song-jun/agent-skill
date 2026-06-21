@@ -867,7 +867,7 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 | `/thrift` compact 전달 | ⚠️ API-gated advisory path | Claude/Codex 모두 durable summary 파일을 쓰고 `/compact` 사용을 안내; programmatic compact injection은 host CLI가 안정 API를 노출하면 연결 |
 | Provider-backed thrift summarizer | ✅ release-scoped | Claude의 선택적 `@anthropic-ai/sdk` summarizer 경로는 구현/테스트 완료; Codex는 dependency-free heuristic summarizer, configurable `gpt-5-nano` model metadata, OpenAI-rate audit heuristic을 제공 |
 
-버전: `harness-builder` `v0.7.0`, `harness-floor` `v0.7.0`, 나머지 설치 가능한 `agent-skill` 플러그인 17개도 같은 release train의 `v0.7.0`로 배포합니다. 내부 artifact/config schema version은 별도의 호환성 계약으로 유지됩니다.
+버전: `harness-builder` `v0.7.1`, `harness-floor` `v0.7.1`, 나머지 설치 가능한 `agent-skill` 플러그인 17개도 같은 release train의 `v0.7.1`로 배포합니다. 내부 artifact/config schema version은 별도의 호환성 계약으로 유지됩니다.
 
 ### 릴리즈 후보 라이프사이클
 

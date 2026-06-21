@@ -1,6 +1,6 @@
 {
   "name": "harness-thrift-codex",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Theme B for Codex CLI — TOML-hook-based thrift patterns (~/.codex/config.toml [hooks] block), OpenAI rate table, session-priming variant of Phase 4. Port of harness-thrift.",
   "keywords": [
     "harness",

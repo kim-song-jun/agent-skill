@@ -6,6 +6,25 @@
 
 ## 미출시
 
+## Agent-skill v0.7.1 — 2026-06-22
+
+### v0.7.0 실제로 동작하게 만들기 (기능 수정)
+
+강력한 기능 adversarial 검토 결과, v0.7.0은 단위 테스트 기준으로는 green이었지만 실제 설치 시 사실상 동작하지 않았습니다. 모든 포트(Claude Code, Codex, Copilot, Cursor, Gemini)에서 수정 완료:
+
+- **Adversarial 검증기 DEFAULT-ON:** `adversarialVerify`가 기본값 `false`이고 발견 불가능한 상태였습니다 — 실제 에이전트가 한 번도 호출하지 않았습니다. 기본값을 `true`로 전환, config 템플릿·config-loader·SKILL 엔트리포인트에 노출하여 모든 agent-all 실행 시 기본으로 트리거됩니다.
+- **실제 블록 강제 적용 (Phase-4 4b 머신 게이트):** wave-block이 강제력 없는 산문(prose)이었습니다. `adversarialAuditBlocks()`가 이제 Phase-4 step 4b의 필수 머신 게이트로 배선된 실제 실행 가능한 함수로, 블록을 조용히 우회할 수 없습니다.
+- **실행 가능한 메모리 스니펫:** `storeRepoMemory` / `recallRepoMemory`가 실제 실행 시 `node:path`의 `join` import 누락과 오래된 크로스 플러그인 브릿지 import로 인해 크래시했습니다. 두 import 모두 수정; 메모리 flush/recall이 이제 end-to-end로 동작합니다.
+- **인스톨러 lib 복사 (ERR_MODULE_NOT_FOUND 수정):** Codex, Copilot, Cursor 인스톨러가 phase docs가 런타임에 import하는 `lib/` 트리를 재귀적으로 복사하지 않았습니다. 세 인스톨러 모두 전체 lib 서브트리를 복사하여 실제 설치 시 `ERR_MODULE_NOT_FOUND`가 해결되었습니다.
+- **실제 /wiki CLI 엔트리포인트:** `/wiki`에 실행 가능한 CLI 엔트리가 없었습니다. 실제 엔트리포인트가 이제 배선되었습니다.
+- **기능 테스트 커버리지:** install-coverage, default-adversarial, block-enforcement 기능 테스트 추가. 포트별 실제 install-and-run 프로브로 독립 재검증 완료.
+
+### Cursor 지원 (G13)
+
+- **Cursor 포트 smartness:** adversarial 검증기(DEFAULT-ON), 메모리/체크포인트 통합, prose wiki를 Cursor agent-all 포트로 이식했습니다. 이제 Cursor는 Claude Code, Codex, Copilot, Gemini 포트와 이 기능들에서 완전한 동등성을 갖습니다.
+
+Suite: 2205/2205 통과.
+
 ## Agent-skill v0.7.0 — 2026-06-21
 
 ### 더 스마트해진 agent-all

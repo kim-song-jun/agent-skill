@@ -6,6 +6,25 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.1 — 2026-06-22
+
+### Made v0.7.0 actually work (functional fixes)
+
+A hard functional adversarial review found v0.7.0 was unit-test-green but effectively inert in real installs. Fixed across all ports (Claude Code, Codex, Copilot, Cursor, Gemini):
+
+- **Adversarial verifier DEFAULT-ON:** `adversarialVerify` was `false` by default and undiscoverable — real agents never invoked it. Default flipped to `true`, surfaced in the config template, config-loader, and SKILL entrypoint so every agent-all run triggers it out of the box.
+- **Real block enforcement (Phase-4 4b machine gate):** The wave-block was unenforced prose. `adversarialAuditBlocks()` is now a real executable function wired as a mandatory machine gate in Phase-4 step 4b — blocks cannot be silently bypassed.
+- **Runnable memory snippets:** `storeRepoMemory` / `recallRepoMemory` crashed on real runs due to a missing `join` import from `node:path` and a stale cross-plugin bridge import. Both imports corrected; memory flush/recall now runs end-to-end.
+- **Installer lib copying (ERR_MODULE_NOT_FOUND fix):** Codex, Copilot, and Cursor installers did not recursively copy the `lib/` tree that phase docs import at runtime. All three installers now copy the full lib subtree, resolving `ERR_MODULE_NOT_FOUND` on real installs.
+- **Real /wiki CLI entrypoint:** `/wiki` had no executable CLI entry. A real entrypoint is now wired.
+- **Functional test coverage:** install-coverage, default-adversarial, and block-enforcement functional tests added. Independently re-verified by real install-and-run probes per port.
+
+### Cursor support (G13)
+
+- **Cursor port of smartness:** Ported the adversarial verifier (DEFAULT-ON), memory/checkpoint integration, and the prose wiki to the Cursor agent-all port. Cursor now has full parity with the Claude Code, Codex, Copilot, and Gemini ports for these features.
+
+Suite: 2205/2205 passing.
+
 ## Agent-skill v0.7.0 — 2026-06-21
 
 ### Smarter agent-all
