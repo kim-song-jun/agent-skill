@@ -82,7 +82,7 @@ An opus synthesis over four sonnet audits of the live tree established that **mo
 
 | Host | Fidelity | Surface |
 |---|---|---|
-| Claude Code | native | 4 commands (`/ingest /compile /query /lint`) + SessionStart hook + CLAUDE.md/conventions + 3 templates |
+| Claude Code | native | commands `write/update/compile/status/list` (actual verbs; the `/ingest /compile /query /lint` names were the early llm-wiki approximation) + SessionStart digest hook + conventions + page/index templates |
 | Codex | near-native (live-CLI verified) | `.codex/skills/wiki-*` + PreToolUse first-call digest |
 | Copilot | prose-only (`#27` flag) | command specs inlined in instructions; digest = documented "first thing to do" |
 | Gemini | prose-only | command specs inlined in `GEMINI.md`; no real hook |

@@ -1,0 +1,10 @@
+# wiki: wiki-pretool-first-call-digest
+[[hooks.PreToolUse]]
+matcher = ".*"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "node \"{{hooksDir}}/wiki-pretool-first-call-digest.mjs\""
+timeout = 10
+statusMessage = "Wiki status digest"
+# end wiki: wiki-pretool-first-call-digest

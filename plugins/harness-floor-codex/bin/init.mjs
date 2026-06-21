@@ -1,16 +1,20 @@
 #!/usr/bin/env node
-// harness-floor-codex install — emits visual-qa + agent-all
+// harness-floor-codex install — emits visual-qa + agent-all + wiki
 // config seeds into the target project. Also prints the Playwright MCP
 // snippet (TOML) for the user to merge into ~/.codex/config.toml.
 // Codex agent-dispatch hooks are not emitted because current Codex hooks
 // do not expose that command surface; the Codex floor port uses
 // sequential dispatch.
 //
+// Wiki bucket: writes hook files into .codex/hooks/ and PRINTS a
+// sentinel-bracketed TOML snippet for the user to merge into config.toml
+// manually (no auto-patch). This matches all other floor-codex buckets.
+//
 // Usage:
-//   node plugins/harness-floor-codex/bin/init.mjs <target> [--ctx ctx.json] [--force] [--only=visual-qa|agent-all]
+//   node plugins/harness-floor-codex/bin/init.mjs <target> [--ctx ctx.json] [--force] [--only=visual-qa|agent-all|wiki]
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, rmSync } from "node:fs";
-import { resolve, dirname } from "node:path";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, cpSync, rmSync } from "node:fs";
+import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { render } from "./lib/render.mjs";
 
@@ -25,6 +29,7 @@ const INSTALL_MAP = {
   "agent-all": [
     { src: "skills/agent-all-codex/templates/agent-all.config.json.hbs", dst: ".agent-all.json" },
   ],
+  "wiki": [],
 };
 
 const SKILL_DIR_MAP = {
@@ -34,12 +39,16 @@ const SKILL_DIR_MAP = {
   "agent-all": [
     { srcDir: "skills/agent-all-codex", dstDir: ".codex/skills/agent-all" },
   ],
+  "wiki": [
+    { srcDir: "skills/wiki-codex", dstDir: ".codex/skills/wiki" },
+  ],
 };
 
 const MCP_SNIPPET = "skills/visual-qa-codex/templates/mcp-snippet.toml.hbs";
 const VQA_HOOK_SNIPPET = "skills/visual-qa-codex/templates/codex-hooks-snippet.toml.hbs";
 const AA_HOOK_SNIPPET = "skills/agent-all-codex/templates/codex-hooks-snippet.toml.hbs";
 const DP_HOOK_SNIPPET = "skills/agent-all-codex/templates/decision-protocol-hooks-snippet.toml.hbs";
+const WIKI_HOOK_TEMPLATES_DIR = resolve(pluginRoot, "skills/wiki-codex/templates/hooks");
 
 function parseArgs(argv) {
   const args = { target: null, ctxPath: null, force: false, only: null };
@@ -51,7 +60,7 @@ function parseArgs(argv) {
     else if (!args.target) args.target = a;
   }
   if (!args.target) {
-    console.error("Usage: init.mjs <target> [--ctx ctx.json] [--force] [--only=visual-qa|agent-all]");
+    console.error("Usage: init.mjs <target> [--ctx ctx.json] [--force] [--only=visual-qa|agent-all|wiki]");
     process.exit(1);
   }
   if (args.only && !INSTALL_MAP[args.only]) {
@@ -61,7 +70,7 @@ function parseArgs(argv) {
   return args;
 }
 
-function loadCtx(ctxPath) {
+function loadCtx(ctxPath, extra = {}) {
   const base = {
     baseUrl: "http://localhost:3000",
     model: "claude-sonnet-4-6",
@@ -70,6 +79,7 @@ function loadCtx(ctxPath) {
     waveSize: "medium",
     breakCondition: "npm test --silent",
     language: "auto",
+    ...extra,
   };
   if (ctxPath) {
     const file = JSON.parse(readFileSync(ctxPath, "utf-8"));
@@ -83,6 +93,42 @@ function loadCtx(ctxPath) {
   return base;
 }
 
+function renderWikiHooks(target, ctx, force) {
+  const hooksDir = resolve(target, ".codex/hooks");
+  const hookFiles = readdirSync(WIKI_HOOK_TEMPLATES_DIR);
+  const tomlFiles = hookFiles.filter((n) => n.endsWith(".toml.hbs"));
+  const mjsFiles = hookFiles.filter((n) => n.endsWith(".mjs.hbs"));
+  const snippets = {};
+
+  for (const f of tomlFiles) {
+    const dstName = f.replace(/\.hbs$/, "");
+    const dstPath = resolve(hooksDir, dstName);
+    if (existsSync(dstPath) && !force) {
+      console.error(`Refusing to overwrite ${dstPath} (use --force)`);
+      process.exit(2);
+    }
+    mkdirSync(hooksDir, { recursive: true });
+    const rendered = render(readFileSync(resolve(WIKI_HOOK_TEMPLATES_DIR, f), "utf-8"), ctx);
+    writeFileSync(dstPath, rendered);
+    console.log(`wrote ${dstPath}`);
+    snippets[dstName.replace(/\.toml$/, "")] = rendered;
+  }
+
+  for (const f of mjsFiles) {
+    const dstPath = resolve(hooksDir, f.replace(/\.hbs$/, ""));
+    if (existsSync(dstPath) && !force) {
+      console.error(`Refusing to overwrite ${dstPath} (use --force)`);
+      process.exit(2);
+    }
+    mkdirSync(hooksDir, { recursive: true });
+    const rendered = render(readFileSync(resolve(WIKI_HOOK_TEMPLATES_DIR, f), "utf-8"), ctx);
+    writeFileSync(dstPath, rendered);
+    console.log(`wrote ${dstPath}`);
+  }
+
+  return snippets;
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const target = resolve(args.target);
@@ -90,7 +136,8 @@ function main() {
     console.error(`Error: target directory does not exist: ${target}`);
     process.exit(1);
   }
-  const ctx = loadCtx(args.ctxPath);
+  const hooksDir = resolve(target, ".codex/hooks");
+  const ctx = loadCtx(args.ctxPath, { hooksDir });
 
   const buckets = args.only ? [args.only] : Object.keys(INSTALL_MAP);
   const installed = [];
@@ -123,6 +170,11 @@ function main() {
       installed.push(dstPath);
       console.log(`wrote ${dstPath}`);
     }
+
+    // Wiki bucket: render hook pair into .codex/hooks/.
+    if (bucket === "wiki") {
+      renderWikiHooks(target, ctx, args.force);
+    }
   }
 
   console.log("\n# Merge the following into ~/.codex/config.toml (or project .codex/config.toml):");
@@ -134,6 +186,11 @@ function main() {
   if (!args.only || args.only === "agent-all") {
     console.log(render(readFileSync(resolve(pluginRoot, AA_HOOK_SNIPPET), "utf-8"), ctx));
     console.log(render(readFileSync(resolve(pluginRoot, DP_HOOK_SNIPPET), "utf-8"), ctx));
+  }
+  if (!args.only || args.only === "wiki") {
+    console.log("\n# Wiki PreToolUse first-call digest hook (merge into ~/.codex/config.toml):");
+    const wikiTomlSrc = resolve(WIKI_HOOK_TEMPLATES_DIR, "wiki-pretool-first-call-digest.toml.hbs");
+    console.log(render(readFileSync(wikiTomlSrc, "utf-8"), ctx));
   }
 
   console.log(`\ndone — ${installed.length} file(s) installed`);

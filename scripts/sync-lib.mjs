@@ -267,6 +267,24 @@ const COST_TELEMETRY_TARGETS = [
   "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/cost-telemetry.mjs",
 ].map((p) => resolve(repoRoot, p));
 
+// wiki-index.mjs — Index-as-Router core. VERBATIM copy (zero cross-plugin
+// imports: node:fs + node:path only) from the CC wiki to the Codex wiki skill.
+// Codex near-native wiki (spec decision 7). No transform needed.
+const WIKI_INDEX_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/wiki/lib/wiki-index.mjs",
+);
+const WIKI_INDEX_TARGETS = [
+  "plugins/harness-floor-codex/skills/wiki-codex/lib/wiki-index.mjs",
+].map((p) => resolve(repoRoot, p));
+
+// wiki templates — index.md.tpl and page.md.tpl are verbatim copies of the CC
+// originals. They contain no CC-specific syntax, so no transform is needed.
+const WIKI_TEMPLATES = [
+  { file: "index.md.tpl", src: "plugins/harness-floor/skills/wiki/templates/index.md.tpl", dst: "plugins/harness-floor-codex/skills/wiki-codex/templates/index.md.tpl" },
+  { file: "page.md.tpl", src: "plugins/harness-floor/skills/wiki/templates/page.md.tpl", dst: "plugins/harness-floor-codex/skills/wiki-codex/templates/page.md.tpl" },
+].map((t) => ({ ...t, src: resolve(repoRoot, t.src), dst: resolve(repoRoot, t.dst) }));
+
 // Codex keeps its own agent-all-codex skill path, but the changed-file
 // classifier should remain line-for-line compatible with Claude agent-all.
 const CHANGED_FILE_CLASSIFIER_SOURCE = resolve(
@@ -652,6 +670,34 @@ function collectDrift() {
       drift.push({ file: "memory-agent.mjs", dest: destPath, reason: "diverged", sourceContent: memoryAgentWant });
     }
   }
+  // wiki-index.mjs (CC source → Codex wiki skill copy, verbatim).
+  const wikiIndexSrc = readOrNull(WIKI_INDEX_SOURCE);
+  if (wikiIndexSrc == null) {
+    console.error(`Source missing: ${WIKI_INDEX_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of WIKI_INDEX_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "wiki-index.mjs", dest: destPath, reason: "missing", sourceContent: wikiIndexSrc });
+    } else if (destContent !== wikiIndexSrc) {
+      drift.push({ file: "wiki-index.mjs", dest: destPath, reason: "diverged", sourceContent: wikiIndexSrc });
+    }
+  }
+  // wiki templates (CC source → Codex wiki skill copies, verbatim).
+  for (const { file, src, dst } of WIKI_TEMPLATES) {
+    const srcContent = readOrNull(src);
+    if (srcContent == null) {
+      console.error(`Source missing: ${src}`);
+      process.exit(2);
+    }
+    const destContent = readOrNull(dst);
+    if (destContent == null) {
+      drift.push({ file, dest: dst, reason: "missing", sourceContent: srcContent });
+    } else if (destContent !== srcContent) {
+      drift.push({ file, dest: dst, reason: "diverged", sourceContent: srcContent });
+    }
+  }
   // agent-all cost-telemetry.mjs (Claude source → all platform agent-all copies).
   const costTelemetrySrc = readOrNull(COST_TELEMETRY_SOURCE);
   if (costTelemetrySrc == null) {
@@ -860,7 +906,9 @@ function totalChecked() {
     + FOUNDATION_CHECK_TARGETS.length
     + DOCTOR_CORE_TARGETS.length
     + HARNESS_CLEANER_TARGETS.length
-    + DEBUG_SKILL_LIB_FILES.length * DEBUG_SKILL_LIB_TARGETS.length;
+    + DEBUG_SKILL_LIB_FILES.length * DEBUG_SKILL_LIB_TARGETS.length
+    + WIKI_INDEX_TARGETS.length
+    + WIKI_TEMPLATES.length;
 }
 
 function checkMode() {

@@ -1,0 +1,126 @@
+#!/usr/bin/env node
+// wiki-pretool-first-call-digest (Codex) — PreToolUse hook that fires the wiki
+// status digest only on the FIRST tool call of each Codex session.
+//
+// Self-contained (no lib imports): this hook lands in .codex/hooks/ in the
+// target project, separate from .codex/skills/wiki/lib/. A relative import to
+// ../lib/wiki-index.mjs would dangle at that path — exactly the failure thrift
+// hooks avoid by inlining their logic. The bin/wiki-session-digest.mjs inside
+// the skill dir DOES import the lib (it lives alongside it); this hook does not.
+//
+// Spec anchor: Codex near-native (live-CLI verified) — PreToolUse first-call
+// digest (spec decision 7). Codex has no clean once-per-session opener, so the
+// CC SessionStart digest becomes a PreToolUse hook gated by a per-session sentinel.
+//
+// Attribution: Karpathy LLM-Wiki pattern (MIT) — adapted for Codex near-native.
+
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+
+const ROOT = process.env.CODEX_PROJECT_DIR || process.env.PWD || process.cwd();
+const WIKI_DIR = resolve(ROOT, ".wiki");
+const INDEX_FILENAME = "INDEX.md";
+const INDEX_PATH = join(WIKI_DIR, INDEX_FILENAME);
+
+try {
+  // --- FIRST-CALL GUARD ---
+  // Read session id from the Codex PreToolUse hook payload (stdin JSON).
+  let payload = {};
+  try {
+    const stdin = readFileSync(0, "utf-8");
+    if (stdin.trim()) payload = JSON.parse(stdin);
+  } catch {
+    // Payload parse failure is non-fatal; proceed with fallback session id.
+  }
+  const sessionId = (
+    payload.session_id
+    ?? payload.sessionId
+    ?? process.env.CODEX_SESSION_ID
+    ?? "default"
+  );
+
+  const sentinelPath = resolve(WIKI_DIR, `.session-digest-${sessionId}`);
+
+  // If sentinel exists → already digested this session → silent no-op.
+  if (existsSync(sentinelPath)) {
+    process.exit(0);
+  }
+
+  // No wiki index → exit silently (non-fatal, rule 6 parity).
+  if (!existsSync(INDEX_PATH)) {
+    // Still create the sentinel so we don't re-check on every call.
+    // But only if .wiki/ itself exists (otherwise we'd create .wiki/ implicitly).
+    if (existsSync(WIKI_DIR)) {
+      writeFileSync(sentinelPath, "");
+    }
+    process.exit(0);
+  }
+
+  // Create sentinel before doing any work (idempotent guard).
+  mkdirSync(WIKI_DIR, { recursive: true });
+  writeFileSync(sentinelPath, "");
+
+  // --- INLINE compileSelfAudit equivalent ---
+  // We inline the minimal logic from wiki-index.mjs rather than importing it,
+  // because this hook lives in .codex/hooks/ (not alongside the lib).
+
+  const raw = readFileSync(INDEX_PATH, "utf-8");
+
+  // Parse index entries from the INDEX.md table.
+  const entries = [];
+  const lines = raw.split(/\r?\n/);
+  let tableStarted = false;
+  let separatorSeen = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("|")) {
+      if (tableStarted) { tableStarted = false; separatorSeen = false; }
+      continue;
+    }
+    if (!tableStarted) { tableStarted = true; continue; } // header row
+    if (!separatorSeen) {
+      if (/^\|[\s\-:|]+\|$/.test(trimmed)) { separatorSeen = true; continue; }
+      separatorSeen = true;
+    }
+    const cols = trimmed.split("|").slice(1, -1).map((c) => c.trim());
+    if (cols.length < 3) continue;
+    const linkMatch = cols[0].match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (!linkMatch) continue;
+    const file = linkMatch[2];
+    const slug = cols[1];
+    const grade = cols[2];
+    if (!slug || !["A", "B", "C"].includes(grade)) continue;
+    entries.push({ file });
+  }
+
+  // Actual .md files on disk (excluding INDEX.md).
+  const diskFiles = new Set(
+    readdirSync(WIKI_DIR)
+      .filter((f) => f.endsWith(".md") && f !== INDEX_FILENAME && !f.startsWith(".session-")),
+  );
+
+  const indexFiles = new Set(entries.map((e) => e.file));
+  const indexOnly = [...indexFiles].filter((f) => !diskFiles.has(f));
+  const pagesOnly = [...diskFiles].filter((f) => !indexFiles.has(f));
+  const ok = indexOnly.length === 0 && pagesOnly.length === 0;
+  const entryCount = entries.length;
+  const pageCount = diskFiles.size;
+
+  const statusIcon = ok ? "✔" : "⚠";
+  const driftNote = ok
+    ? ""
+    : ` [drift: ${indexOnly.length} missing page(s), ${pagesOnly.length} unindexed page(s)]`;
+
+  // Write to stderr — Codex surfaces hook stderr as system context; stdout from
+  // PreToolUse hooks can interfere with tool flow.
+  process.stderr.write(
+    `${statusIcon} wiki: ${entryCount} page(s) indexed, ${pageCount} on disk${driftNote}\n` +
+    `  Run /wiki status for details, /wiki compile to audit, /wiki <query> to read or write.\n`,
+  );
+
+  process.exit(0);
+} catch (err) {
+  // Non-fatal: always exit 0. Write a diagnostic to stderr (not a silent empty catch).
+  process.stderr.write(`wiki-digest: ${err.message}\n`);
+  process.exit(0);
+}
