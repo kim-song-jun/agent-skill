@@ -169,7 +169,10 @@ run_step "focused release contracts" \
     tests/lib/copilot/agent-all-checkpoint.test.mjs \
     tests/lib/wiki-compile-gate.test.mjs \
     tests/lib/copilot/wiki-prose-surface.test.mjs \
-    tests/lib/gemini/wiki-prose-surface.test.mjs
+    tests/lib/gemini/wiki-prose-surface.test.mjs \
+    tests/lib/cursor-wiki-prose-surface.test.mjs \
+    tests/lib/cursor-agent-all-adversarial.test.mjs \
+    tests/lib/cursor-agent-all-checkpoint.test.mjs
 
 run_step "vendored libs" node scripts/sync-lib.mjs --check
 run_step "support matrix" node scripts/generate-support-matrix.mjs --check

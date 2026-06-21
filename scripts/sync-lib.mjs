@@ -233,6 +233,8 @@ const MEMORY_BRIDGE_SOURCE = resolve(
 const MEMORY_BRIDGE_TARGETS = [
   "plugins/harness-floor/skills/agent-all/lib/memory-bridge.mjs",
   "plugins/harness-floor-codex/skills/agent-all-codex/lib/memory-bridge.mjs",
+  // cursor port's checkpoint/resume wiring imports ./memory-bridge.mjs locally.
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/memory-bridge.mjs",
 ].map((p) => resolve(repoRoot, p));
 
 // memory-agent.mjs — verbatim copy from CC source to codex and copilot.
@@ -245,6 +247,8 @@ const MEMORY_AGENT_SOURCE = resolve(
 const MEMORY_AGENT_TARGETS = [
   "plugins/harness-floor-codex/skills/agent-all-codex/lib/memory-agent.mjs",
   "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/memory-agent.mjs",
+  // cursor port's checkpoint/resume wiring (Phase 0 step 6b) imports memory-agent.mjs locally.
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/memory-agent.mjs",
 ].map((p) => resolve(repoRoot, p));
 
 const COST_TELEMETRY_SOURCE = resolve(
@@ -288,6 +292,8 @@ const CHANGED_FILE_CLASSIFIER_TARGETS = [
   // restored Phase 4 audit-token gate — vendor it so the import resolves.
   "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/changed-file-classifier.mjs",
   "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/changed-file-classifier.mjs",
+  // cursor port's restored Phase 4 gate-plan import also depends on this classifier.
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/changed-file-classifier.mjs",
 ].map((p) => resolve(repoRoot, p));
 
 const GATE_PLAN_SOURCE = resolve(
@@ -299,6 +305,8 @@ const GATE_PLAN_TARGETS = [
   // copilot + gemini restored Phase 4 imports buildGatePlan from ./lib/gate-plan.mjs.
   "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/gate-plan.mjs",
   "plugins/harness-floor-gemini/skills/agent-all-gemini/lib/gate-plan.mjs",
+  // cursor port's adversarial gate section also references buildGatePlan.
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/gate-plan.mjs",
 ].map((p) => resolve(repoRoot, p));
 
 const COORDINATOR_AUDIT_VALIDATOR_SOURCE = resolve(

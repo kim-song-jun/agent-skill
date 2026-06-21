@@ -94,7 +94,8 @@ death is now covered because the checkpoint exists before any subagent is even
 dispatched. Do NOT include subagent outputs or transcript bodies in
 `miniPlans` — only mini-plan metadata derived from the wave plan:
 ```javascript
-import { makeFileMirror } from "../../../harness-floor-copilot/skills/agent-all-copilot/lib/memory-bridge.mjs";
+import { join } from "node:path";
+import { makeFileMirror } from "./lib/memory-bridge.mjs";
 import { flushCheckpoint } from "./lib/memory-agent.mjs";
 const fileMirror = makeFileMirror({ rootDir: join(cwd, ".agent-skill/memory") });
 const tasksInWave = wave.tasks;

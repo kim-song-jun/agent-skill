@@ -90,8 +90,19 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
    - `quality-debt-reviewer` reports no unapproved quality debt; every accepted
      exception must be recorded in the task doc `Quality Debt Exceptions` table
      with reason, owner, follow-up issue, and expiry, AND
+   - `adversarialAuditBlocks(<adversarial dispatch's reported audit text>).blocked === false` for the `verification-reviewer-adversarial` dispatch when `gates.adversarialVerify !== false` (a `VERIFICATION_AUDIT: failed` from the adversarial verifier is a distinct critical block — it routes into step 5 block-on-critical even if the self-reviewer `VERIFICATION_AUDIT` passed), AND
    - no returned coordinator reports HOT-file ownership conflicts, unsafe retry sequencing, or pathspec commit risk, AND
    - no returned reviewer persona reports blocking issues.
+
+   Programmatic check for the adversarial gate condition (import from `lib/policy/audit-tokens.mjs`):
+   ```javascript
+   import { adversarialAuditBlocks } from "./lib/policy/audit-tokens.mjs";
+   const advDispatch = gatePlan.dispatches.find((d) => d.role === "verification-reviewer-adversarial");
+   if (advDispatch) {
+     const { blocked } = adversarialAuditBlocks(advReportedAuditText);
+     if (blocked) { /* enter step 5 block-on-critical retry loop; a passing self-reviewer does NOT override this */ }
+   }
+   ```
 
    Tech success ≠ user-flow success. A `passed` Verification audit alongside a `failed` QA audit fails the wave; the QA defect report becomes input to the next iteration's plan.
 
@@ -142,11 +153,12 @@ After dispatching all `gatePlan.dispatches[]` entries in step 3, the orchestrato
 - **Independence is structural:** the adversarial verifier MUST NOT read the implementer's self-report, commit messages, or any implementer-produced output. It MUST re-derive the verdict from the wave diff and the wave tip commit only — `git diff <wave.baseCommit>..<wave.endCommit>` plus invoking the canonical wrapper `adversarialVerify({diff, acceptanceCriteria, breakCondition, cwd})` from `lib/verification-adapters/adversarial-verifier.mjs`. The dispatched subagent runs it, e.g.:
   ```bash
   node --input-type=module -e "
-    import { adversarialVerify } from './plugins/harness-floor/skills/agent-all/lib/verification-adapters/adversarial-verifier.mjs';
+    import { adversarialVerify } from './lib/verification-adapters/adversarial-verifier.mjs';
     const result = await adversarialVerify({ diff: process.env.WAVE_DIFF, acceptanceCriteria: [], breakCondition: <breakCondition>, cwd: process.env.REPO_ROOT });
     console.log(JSON.stringify(result));
   "
   ```
+  (Run from the skill directory; `./lib/...` resolves relative to the floor plugin's `skills/agent-all/` dir where the full `lib/` tree ships.)
   and reports the returned `{ audit, evidence, exitCode }` literal. Do NOT call `runVerificationAdapterSpec()` directly — the production path MUST go through `adversarialVerify` so its structural-independence guard (signature excludes any self-report) is enforced on every live invocation.
 - **Prompt contract:** the verifier's prompt MUST NOT include the implementer's implementation notes, self-assessments, or reported verification output. Structural independence — not a promise.
 - **Required output:** exactly one of `VERIFICATION_AUDIT: passed`, `VERIFICATION_AUDIT: failed`, or `VERIFICATION_AUDIT: skipped`, plus a `verification-evidence/v1` evidence object (reuse `lib/verification-adapters/schema.mjs`).

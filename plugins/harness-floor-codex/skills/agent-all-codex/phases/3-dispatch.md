@@ -36,6 +36,7 @@
    mid-wave context death is recoverable. Do NOT include role-skill outputs or
    transcript bodies — only mini-plan metadata from the wave plan:
    ```javascript
+   import { join } from "node:path";
    import { makeFileMirror } from "./lib/memory-bridge.mjs";
    import { flushCheckpoint } from "./lib/memory-agent.mjs";
    const fileMirror = makeFileMirror({ rootDir: join(cwd, ".agent-skill/memory") });

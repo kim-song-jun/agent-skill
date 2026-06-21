@@ -213,3 +213,54 @@ export function appendIndexEntry(raw, entry) {
   lines.splice(lastTableLine + 1, 0, row);
   return lines.join("\n");
 }
+
+// ---------------------------------------------------------------------------
+// CLI entrypoint: node lib/wiki-index.mjs compile|status|list [dir] | route <query>
+// Exit codes: 0 = ok/match, 1 = drift/no-match, 2 = usage error
+// ---------------------------------------------------------------------------
+function cliMain(argv) {
+  const [cmd, dirArg] = argv;
+  const wikiDir = dirArg || WIKI_DIR_DEFAULT; // ".wiki" default
+  switch (cmd) {
+    case "compile": {
+      const r = compileSelfAudit(wikiDir);
+      if (r.ok) {
+        process.stdout.write(`wiki compile: ok (${r.entryCount} pages indexed, ${r.pageCount} on disk, diff=0)\n`);
+        return 0;
+      }
+      process.stderr.write("wiki compile: FAILED\n");
+      if (r.indexOnly.length) process.stderr.write(`  Index-only (not on disk):   ${r.indexOnly.join(", ")}\n`);
+      if (r.pagesOnly.length) process.stderr.write(`  Pages-only (not indexed):   ${r.pagesOnly.join(", ")}\n`);
+      return 1;
+    }
+    case "status": {
+      const r = compileSelfAudit(wikiDir);
+      const drift = r.indexOnly.length + r.pagesOnly.length;
+      process.stdout.write(`wiki status: ${r.entryCount} indexed, ${r.pageCount} on disk, drift=${drift}\n`);
+      return drift === 0 ? 0 : 1;
+    }
+    case "list": {
+      const { entries } = parseIndex(wikiDir);
+      for (const e of entries) process.stdout.write(`${e.slug}\t${e.grade}\t${e.title}\t(${e.file})\n`);
+      return 0;
+    }
+    case "route": {
+      const query = argv.slice(1).join(" ");
+      if (!query) {
+        process.stderr.write("usage: wiki-index.mjs route <query>\n");
+        return 2;
+      }
+      const { entries } = parseIndex(WIKI_DIR_DEFAULT);
+      const r = routePhaseA(query, entries);
+      process.stdout.write(JSON.stringify(r) + "\n");
+      return r.match ? 0 : 1;
+    }
+    default:
+      process.stderr.write("usage: wiki-index.mjs compile|status|route|list [dir]\n");
+      return 2;
+  }
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  process.exit(cliMain(process.argv.slice(2)));
+}

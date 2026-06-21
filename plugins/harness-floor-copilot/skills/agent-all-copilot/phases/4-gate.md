@@ -184,7 +184,7 @@ LAST, after every other `gatePlan.dispatches[]` entry, as a dedicated Copilot
   WAVE_DIFF="$(git diff <wave.baseCommit>..<wave.endCommit>)" \
   REPO_ROOT="$(pwd)" \
   node --input-type=module -e "
-    import { adversarialVerify } from './lib/verification-adapters/adversarial-verifier.mjs';
+    import { adversarialVerify } from './.copilot/agent-all/lib/verification-adapters/adversarial-verifier.mjs';
     const result = await adversarialVerify({ diff: process.env.WAVE_DIFF, acceptanceCriteria: [], breakCondition: <breakCondition>, cwd: process.env.REPO_ROOT });
     console.log(JSON.stringify(result));
   "

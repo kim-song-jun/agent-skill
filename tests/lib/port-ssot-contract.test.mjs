@@ -69,19 +69,20 @@ for (const p of PORTS) {
 }
 
 // E5: adversarial verification dispatch — blocking-language guard.
-// Scoped to [codex, copilot] per spec §4 and decision #4 (smartness = CC+Codex+Copilot).
-// gemini = prose-only (#7); cursor excluded from smartness (#4, §8).
-const ADVERSARIAL_PORTS = ["codex", "copilot"];
+// Extended to [codex, copilot, cursor] per task-13: cursor 4-gate.md now authors
+// the verification-reviewer-adversarial blocking section (user-requested slice;
+// constraints §5 says "extend to include cursor IF cursor agent-all has a gate
+// phase that authors it"). gemini = prose-only (#7) remains excluded.
+const ADVERSARIAL_PORTS = ["codex", "copilot", "cursor"];
 
 for (const p of ADVERSARIAL_PORTS) {
   test(
     `port ssot contract [${p}]: E5 adversarial dispatch uses BLOCKING (not advisory) language`,
     {
-      // codex un-skipped in G6, copilot un-skipped in G7 (both 4-gate.md files
-      // now author the verification-reviewer-adversarial blocking section and
-      // delete the stale 'implementer's reported output' advisory phrase).
-      // ADVERSARIAL_PORTS already scopes this to [codex, copilot] (#4/§4);
-      // gemini=prose-only (#7), cursor excluded (#4/§8). Suite reaches 0 skip.
+      // codex un-skipped in G6, copilot un-skipped in G7, cursor un-skipped in
+      // task-13 (all 3 now author the verification-reviewer-adversarial blocking
+      // section and the stale 'implementer's reported output' advisory phrase is
+      // removed). gemini=prose-only (#7) remains excluded. Suite reaches 0 skip.
     },
     () => {
       const gate = read(p, "phases/4-gate.md");

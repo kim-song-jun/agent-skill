@@ -53,6 +53,26 @@ Runs a complete multi-agent pipeline from a free-form prompt or an existing task
 - `--yes` — skip all interactive confirms (including the break-condition prompt;
   falls back to the config or built-in default).
 
+## Gates
+
+The Phase 4 gate plan is controlled by the `gates` block in `.agent-all.json` (or the built-in defaults when the file is absent). All gates default to `true`:
+
+| Gate key | Default | Effect |
+|----------|---------|--------|
+| `specReview` | `true` | Dispatches a spec-reviewer to compare the wave diff against the task goal. |
+| `qualityReview` | `true` | Dispatches domain reviewers (code quality, QA, design, security, data, integration). |
+| `adversarialVerify` | `true` | Dispatches an independent **opus** judge (`verification-reviewer-adversarial`) that re-derives the verdict from the diff alone, without reading the implementer's self-report. A `VERIFICATION_AUDIT: failed` from this node is a **critical block** that routes into the step-5 retry loop even if the self-reviewer passed. |
+| `blockOnCritical` | `true` | Enter the step-5 retry loop (up to 3 cycles) when any reviewer reports a critical issue. |
+
+To disable adversarial re-verification for cost-sensitive projects, add to `.agent-all.json`:
+```json
+{
+  "gates": { "adversarialVerify": false }
+}
+```
+
+The runtime behavior when `adversarialVerify === true` is documented in `phases/4-gate.md` (Step 3-adversarial). The programmatic block check is `adversarialAuditBlocks()` from `lib/policy/audit-tokens.mjs`.
+
 ## Pipeline
 
 | Phase | File | Purpose |
@@ -96,7 +116,7 @@ Runs a complete multi-agent pipeline from a free-form prompt or an existing task
 
 - `lib/config-loader.mjs` — `loadConfig(path)` → `{ok, config | errors, warning?}`. Returns built-in `DEFAULTS` when path missing.
 - `lib/wave-builder.mjs` — `buildWaves(tasks, waveConfig)` → array of waves.
-- `lib/gate-plan.mjs` — `buildGatePlan({files,gates,taskId,title})` → ordered coordinator/reviewer dispatches with audit-token, gate-reason, and pass-criteria contracts.
+- `lib/gate-plan.mjs` — `buildGatePlan({files,gates,taskId,title})` → ordered coordinator/reviewer dispatches with audit-token, gate-reason, and pass-criteria contracts. Default gate set includes `specReview`, `qualityReview`, and `adversarialVerify` (all `true`). When `adversarialVerify` is on (the default), the plan includes a `verification-reviewer-adversarial` dispatch (opus judge node); disable per-project via `"gates": { "adversarialVerify": false }` in `.agent-all.json`.
 - `lib/orchestration/state-classifier.mjs` — classifies changed files, domains, failed tests, visual QA verdicts, ambiguity, repeated failures, and budget state.
 - `lib/orchestration/agent-planner.mjs` — `planRequiredAgents(...)` → dynamic implementer/reviewer/coordinator/planner roles. Repeated failure signatures escalate to planner/user decision instead of adding more implementers.
 - `lib/orchestration/spawn-policy.mjs` — evaluates each dynamic spawn through the shared policy engine before dispatch, including wave-level spawn caps and same-role repeat limits.

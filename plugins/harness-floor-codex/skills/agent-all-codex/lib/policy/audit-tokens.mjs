@@ -45,3 +45,17 @@ export function claimsDone(text) {
 export function hasVerificationMarker(text) {
   return new RegExp(VERIFICATION_MARKER, "i").test(String(text ?? ""));
 }
+
+// Adversarial gate: a FAILED verification audit from the adversarial verifier
+// is a critical block (gate-plan.mjs role "verification-reviewer-adversarial",
+// phases/4-gate.md Step 3-adversarial). Pure: given the adversarial subagent's
+// reported audit text, return whether the wave must route into block-on-critical/abort.
+export const ADVERSARIAL_ROLE = "verification-reviewer-adversarial";
+
+export function adversarialAuditBlocks(adversarialAuditText) {
+  const text = String(adversarialAuditText ?? "");
+  const m = auditTokenPattern("VERIFICATION_AUDIT").exec(text);
+  const verdict = m?.[1] ?? null;        // "passed"|"failed"|"skipped"|null
+  const blocked = verdict === "failed";  // failed => block; passed/skipped/missing => no block
+  return { blocked, verdict, role: ADVERSARIAL_ROLE };
+}

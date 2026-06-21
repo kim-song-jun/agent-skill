@@ -8,7 +8,7 @@
 // Usage:
 //   node plugins/harness-floor-copilot/bin/init.mjs <target> [--ctx ctx.json] [--force] [--only=visual-qa|agent-all]
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, rmSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { render } from "./lib/render.mjs";
@@ -82,6 +82,14 @@ function main() {
   const buckets = args.only ? [args.only] : Object.keys(INSTALL_MAP);
   const installed = [];
 
+  // Maps bucket -> lib dir to recursively copy into target
+  const LIB_COPY_MAP = {
+    "agent-all": {
+      srcDir: "skills/agent-all-copilot/lib",
+      dstDir: ".copilot/agent-all/lib",
+    },
+  };
+
   for (const bucket of buckets) {
     for (const t of INSTALL_MAP[bucket]) {
       const srcPath = resolve(pluginRoot, t.src);
@@ -93,6 +101,23 @@ function main() {
       mkdirSync(dirname(dstPath), { recursive: true });
       const tpl = readFileSync(srcPath, "utf-8");
       writeFileSync(dstPath, render(tpl, ctx));
+      installed.push(dstPath);
+      console.log(`wrote ${dstPath}`);
+    }
+
+    // Recursively copy the whole lib/ tree so phase snippets can resolve all deps
+    // (memory-bridge, memory-agent, gate-plan, verification-adapters/*, data/*, etc.)
+    const libCopy = LIB_COPY_MAP[bucket];
+    if (libCopy) {
+      const srcPath = resolve(pluginRoot, libCopy.srcDir);
+      const dstPath = resolve(target, libCopy.dstDir);
+      if (existsSync(dstPath) && !args.force) {
+        console.error(`Refusing to overwrite ${dstPath} (use --force)`);
+        process.exit(2);
+      }
+      if (args.force && existsSync(dstPath)) rmSync(dstPath, { recursive: true, force: true });
+      mkdirSync(dirname(dstPath), { recursive: true });
+      cpSync(srcPath, dstPath, { recursive: true });
       installed.push(dstPath);
       console.log(`wrote ${dstPath}`);
     }

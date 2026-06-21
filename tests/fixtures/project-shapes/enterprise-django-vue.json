@@ -46,6 +46,7 @@
     { "role": "design-reviewer", "kind": "reviewer", "mode": "quality", "auditToken": "VERIFICATION_AUDIT" },
     { "role": "security-reviewer", "kind": "reviewer", "mode": "quality", "auditToken": "VERIFICATION_AUDIT" },
     { "role": "data-reviewer", "kind": "reviewer", "mode": "quality", "auditToken": "VERIFICATION_AUDIT" },
-    { "role": "integration-dev", "kind": "reviewer", "mode": "quality", "auditToken": "VERIFICATION_AUDIT" }
+    { "role": "integration-dev", "kind": "reviewer", "mode": "quality", "auditToken": "VERIFICATION_AUDIT" },
+    { "role": "verification-reviewer-adversarial", "kind": "reviewer", "mode": "adversarial", "auditToken": "VERIFICATION_AUDIT" }
   ]
 }

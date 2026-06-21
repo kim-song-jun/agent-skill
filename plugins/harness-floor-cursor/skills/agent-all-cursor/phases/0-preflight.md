@@ -17,6 +17,40 @@ The coordinator (`agent-all-coordinator`) runs these checks before any pipeline 
    `templates/agent-all.config.json.hbs`.
 5. If `.agent-all-state.json` exists and `--resume` was passed, skip to the
    highest completed phase.
+
+   **5b. (resume checkpoint recall — on `--resume` only).** Recall the latest
+   checkpoint from disk via the fixed `checkpoint/LATEST` pointer so a fresh
+   post-death Cursor session needs zero lost coordinates:
+   ```javascript
+   import { join } from "node:path";
+   import { makeFileMirror } from "./.cursor/agent-all/lib/memory-bridge.mjs";
+   import { recallLatestCheckpoint } from "./.cursor/agent-all/lib/memory-agent.mjs";
+   if (flags.resume) {
+     const fileMirror = makeFileMirror({ rootDir: join(cwd, ".agent-skill/memory") });
+     const latest = await recallLatestCheckpoint({ fileMirror, toolCaller: null });
+     if (latest.found && latest.checkpoint?.inFlight) {
+       state.resumeCheckpoint = latest.checkpoint;
+       state.iter = latest.checkpoint.iter ?? state.iter;
+       state.decisions = { ...(state.decisions ?? {}), ...(latest.checkpoint.decisionsSoFar ?? {}) };
+       // Phase 3 re-enters wave=latest.checkpoint.wave at 3.0 using miniPlans, not a re-parse.
+     }
+   }
+   ```
+   Run via `read_bash`:
+   ```bash
+   node -e "
+   import { makeFileMirror } from './.cursor/agent-all/lib/memory-bridge.mjs';
+   import { recallLatestCheckpoint } from './.cursor/agent-all/lib/memory-agent.mjs';
+   const fm = makeFileMirror({ rootDir: process.cwd() + '/.agent-skill/memory' });
+   const r = await recallLatestCheckpoint({ fileMirror: fm, toolCaller: null });
+   console.log(JSON.stringify(r));
+   " 2>/dev/null || echo '{"found":false}'
+   ```
+   If `--resume` and `max(state.phases[*].phase) >= 0`, skip rest of Phase 0
+   EXCEPT keep `state.resumeCheckpoint` set above; Phase 3 step 3 reads it to
+   re-enter the dead wave at step 3.0 (checkpoint position) rather than
+   replaying from the plan's first task.
+
 6. Validate positional argument:
    - Ends with `.md` → must exist as a file. Stash `taskPath`.
    - Otherwise → must be non-empty string. Stash `prompt`.
@@ -109,17 +143,4 @@ node .cursor/agent-all/lib/state-rw.mjs read .agent-all-state.json
 
 # Step 7 — normalise / inspect the break-condition spec from config or user reply.
 node -e 'import("./.cursor/agent-all/lib/break-resolver.mjs").then(m => { const out = m.normalizeBreakCondition(process.argv[1]); console.log(out ? JSON.stringify(out) : ""); })' '<json-or-shell-string>'
-```
-
-## Shell helpers
-
-The coordinator runs these via `read_bash`. The lib modules are copied into
-`<repo>/.cursor/agent-all/lib/` by `harness-floor-cursor/bin/init.mjs`.
-
-```bash
-# Step 4 — load + validate `.agent-all.json` (returns built-in DEFAULTS if missing).
-node -e 'import("./.cursor/agent-all/lib/config-loader.mjs").then(m => { const r = m.loadConfig(".agent-all.json"); console.log(JSON.stringify(r, null, 2)); process.exit(r.ok ? 0 : 1); })'
-
-# Step 5 — read existing state for --resume detection (returns {} if missing).
-node .cursor/agent-all/lib/state-rw.mjs read .agent-all-state.json
 ```

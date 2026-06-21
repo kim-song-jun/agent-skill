@@ -105,8 +105,55 @@ evidence back to the coordinator for retry or pathspec commit review.
 
 Every `@agent-all-reviewer` invocation's chat body MUST include the following directive:
 
-> When evaluating the wave's diff, explicitly verify that each implementer ran `superpowers:verification-before-completion` and the verification passed. Look for the verification command output in commit messages, the implementer's reported output, or run the verification command yourself against the wave's tip commit.
+> When evaluating the wave's diff, explicitly verify that each implementer ran `superpowers:verification-before-completion` and the verification passed. Look for the verification command output in commit messages, or run the verification command yourself against the wave's tip commit.
 >
 > If verification was skipped OR failed, escalate as a `critical` issue regardless of code quality verdict — this blocks the wave at Phase 4 even if everything else looks fine.
 
 This complements the Phase 3 verification directive. Phase 3 instructs implementers to verify before claiming done; Phase 4 instructs reviewers to confirm that verification actually happened. Two-layer safety net.
+
+## Step 3-adversarial — Independent adversarial re-verification (mandatory when `gates.adversarialVerify === true`)
+
+When `config.gates.adversarialVerify === true`, `buildGatePlan()` appends one
+dispatch with `role: "verification-reviewer-adversarial"`, `kind: "reviewer"`,
+`mode: "adversarial"` (see `lib/gate-plan.mjs`). The coordinator dispatches it
+LAST, after every other `gatePlan.dispatches[]` entry, as a dedicated
+`@agent-all-reviewer` background invocation tagged
+`agent-all-gate-<wave>-adversarial-verification-reviewer-adversarial`.
+
+- **Independence is structural, not promised.** The adversarial `@agent-all-reviewer`
+  invocation MUST NOT read the implementer's self-report, commit messages, or any
+  role-produced output. It MUST re-derive the verdict from the wave diff and the wave
+  tip commit only — `git diff <wave.baseCommit>..<wave.endCommit>` plus the canonical
+  wrapper `adversarialVerify({diff, acceptanceCriteria, breakCondition, cwd})` from
+  `lib/verification-adapters/adversarial-verifier.mjs`. The invocation runs via
+  `read_bash`:
+  ```bash
+  WAVE_DIFF="$(git diff <wave.baseCommit>..<wave.endCommit>)" \
+  REPO_ROOT="$(pwd)" \
+  node --input-type=module -e "
+    import { adversarialVerify } from './.cursor/agent-all/lib/verification-adapters/adversarial-verifier.mjs';
+    const result = await adversarialVerify({ diff: process.env.WAVE_DIFF, acceptanceCriteria: [], breakCondition: <breakCondition>, cwd: process.env.REPO_ROOT });
+    console.log(JSON.stringify(result));
+  "
+  ```
+  and reports the returned `{ audit, evidence, exitCode }` literal. Do NOT call
+  `runVerificationAdapterSpec()` directly — the production path MUST go through
+  `adversarialVerify` so its structural-independence guard (the signature
+  excludes any self-report) is enforced on every live invocation.
+- **Prompt contract:** the adversarial `@agent-all-reviewer` chat body MUST NOT
+  include the implementer's implementation notes, self-assessments, or reported
+  verification output. Structural independence — not a promise.
+- **Required output:** exactly one of `VERIFICATION_AUDIT: passed`,
+  `VERIFICATION_AUDIT: failed`, or `VERIFICATION_AUDIT: skipped`, plus a
+  `verification-evidence/v1` evidence object (reuse `lib/verification-adapters/schema.mjs`).
+- **Failure is critical:** a `VERIFICATION_AUDIT: failed` from
+  `verification-reviewer-adversarial` is a `critical` issue that BLOCKS the wave;
+  the coordinator MUST enter the block-on-critical retry loop (step 6). A passing
+  self-reviewer verdict does NOT override a failing adversarial verdict.
+- **Nesting constraint:** the adversarial step lives at the coordinator level;
+  a reviewer or implementer subagent MUST NOT spawn it
+  (`references/orchestrator-routing.md`).
+- **Live-CLI posture (#27):** the `adversarialVerify` module is pure JS and runs
+  real behavior (proven by module tests). The *live `@agent-all-reviewer` background
+  dispatch* of this step is spec-level and live-CLI-unverified (#27) until a Cursor
+  background-agent spike is run against a real project.

@@ -52,9 +52,20 @@ Implements the Karpathy LLM-Wiki pattern (MIT). Core properties:
 5. **Pages follow the standard template.** Read `templates/page.md.tpl` before writing any page.
 6. **SessionStart digest is non-fatal.** The hook exits 0 even when the wiki is absent or malformed.
 
+## CLI
+
+Run directly from the skill directory:
+
+```
+node lib/wiki-index.mjs compile|status|list [dir]
+node lib/wiki-index.mjs route <query>
+```
+
+Exit codes: `0` = ok/match, `1` = drift/no-match, `2` = usage error. Can gate a pipeline or pre-commit check: `node lib/wiki-index.mjs compile && echo "wiki ok"`.
+
 ## Lib modules
 
-- `lib/wiki-index.mjs` — `parseIndex(wikiDir)` → entries; `routePhaseA(query, entries)` → match/candidates; `compileSelfAudit(wikiDir)` → diff=0 audit result; `appendIndexEntry(raw, entry)` → updated raw.
+- `lib/wiki-index.mjs` — `parseIndex(wikiDir)` → entries; `routePhaseA(query, entries)` → match/candidates; `compileSelfAudit(wikiDir)` → diff=0 audit result; `appendIndexEntry(raw, entry)` → updated raw. Also ships a `compile|status|route|list` CLI entrypoint (see ## CLI above).
 
 ## SessionStart hook
 

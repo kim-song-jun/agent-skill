@@ -44,7 +44,7 @@ test("gate-plan dispatches orchestrator first for shared hot files", () => {
 test("gate-plan preserves spec review before quality reviewer gates after coordinators", () => {
   const plan = buildGatePlan({
     files: ["src/api/http-client.ts", "apps/users/views.py", "backend/users/models.py"],
-    gates: { specReview: true, qualityReview: true },
+    gates: { specReview: true, qualityReview: true, adversarialVerify: false },
   });
 
   assert.deepEqual(
@@ -69,7 +69,7 @@ test("gate-plan preserves spec review before quality reviewer gates after coordi
 test("gate-plan can emit a stable task description for every dispatch", () => {
   const plan = buildGatePlan({
     files: ["src/components/Button.tsx"],
-    gates: { specReview: false, qualityReview: true },
+    gates: { specReview: false, qualityReview: true, adversarialVerify: false },
     taskId: "12",
     title: "Update checkout CTA",
   });
@@ -89,7 +89,7 @@ test("gate-plan can emit a stable task description for every dispatch", () => {
 test("gate-plan exposes gate criteria for coordinator and audit verdict collection", () => {
   const plan = buildGatePlan({
     files: ["package.json", "src/components/Button.tsx"],
-    gates: { specReview: true, qualityReview: true },
+    gates: { specReview: true, qualityReview: true, adversarialVerify: false },
   });
 
   assert.deepEqual(plan.requiredAudits, {
@@ -149,10 +149,10 @@ test("gate-plan verification-reviewer-adversarial appears after quality reviewer
   assert.ok(advIdx > qdrIdx, "adversarial dispatch must appear after quality reviewers");
 });
 
-test("gate-plan omits verification-reviewer-adversarial when gate absent or false", () => {
+test("gate-plan omits verification-reviewer-adversarial when adversarialVerify is explicitly false", () => {
   const plan = buildGatePlan({
     files: ["src/feature.ts"],
-    gates: { specReview: false, qualityReview: true },
+    gates: { specReview: false, qualityReview: true, adversarialVerify: false },
   });
   assert.equal(plan.dispatches.find((d) => d.role === "verification-reviewer-adversarial"), undefined);
 });

@@ -34,6 +34,7 @@
   "gates": {
     "specReview": true,
     "qualityReview": true,
+    "adversarialVerify": true,
     "blockOnCritical": true
   },
   "policy": {

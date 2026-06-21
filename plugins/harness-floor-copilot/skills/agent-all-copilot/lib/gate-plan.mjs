@@ -3,7 +3,7 @@ import { classifyChangedFiles } from "./changed-file-classifier.mjs";
 const DEFAULT_GATES = {
   specReview: true,
   qualityReview: true,
-  adversarialVerify: false,
+  adversarialVerify: true,
 };
 
 const REVIEWER_ORDER = [

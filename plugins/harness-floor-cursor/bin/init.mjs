@@ -18,7 +18,7 @@
 // Runtime templates (analysis-prompt, report, pr-body, page-prompt) stay
 // in the plugin — the skills render them at run time.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, cpSync, rmSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { render } from "./lib/render.mjs";
@@ -57,7 +57,7 @@ const LIB_MAP = {
     dstDir: ".cursor/visual-qa/lib",
   },
   "agent-all": {
-    files: ["config-loader.mjs", "plan-parser.mjs", "state-rw.mjs"],
+    recursive: true,
     srcDir: "skills/agent-all-cursor/lib",
     dstDir: ".cursor/agent-all/lib",
   },
@@ -149,21 +149,36 @@ function main() {
     // Copy lib modules verbatim (no template rendering — they're .mjs source).
     const libGroup = LIB_MAP[bucket];
     if (libGroup) {
-      for (const file of libGroup.files) {
-        const srcPath = resolve(pluginRoot, libGroup.srcDir, file);
-        const dstPath = resolve(target, libGroup.dstDir, file);
-        if (!existsSync(srcPath)) {
-          // Spec allows lib modules to be optional; skip silently.
-          continue;
-        }
+      if (libGroup.recursive) {
+        // Recursive whole-dir copy (covers transitive deps: data/, policy/, verification-adapters/, etc.)
+        const srcPath = resolve(pluginRoot, libGroup.srcDir);
+        const dstPath = resolve(target, libGroup.dstDir);
         if (existsSync(dstPath) && !args.force) {
           console.error(`Refusing to overwrite ${dstPath} (use --force)`);
           process.exit(2);
         }
+        if (args.force && existsSync(dstPath)) rmSync(dstPath, { recursive: true, force: true });
         mkdirSync(dirname(dstPath), { recursive: true });
-        copyFileSync(srcPath, dstPath);
+        cpSync(srcPath, dstPath, { recursive: true });
         installed.push(dstPath);
         console.log(`wrote ${dstPath}`);
+      } else {
+        for (const file of libGroup.files) {
+          const srcPath = resolve(pluginRoot, libGroup.srcDir, file);
+          const dstPath = resolve(target, libGroup.dstDir, file);
+          if (!existsSync(srcPath)) {
+            // Spec allows lib modules to be optional; skip silently.
+            continue;
+          }
+          if (existsSync(dstPath) && !args.force) {
+            console.error(`Refusing to overwrite ${dstPath} (use --force)`);
+            process.exit(2);
+          }
+          mkdirSync(dirname(dstPath), { recursive: true });
+          copyFileSync(srcPath, dstPath);
+          installed.push(dstPath);
+          console.log(`wrote ${dstPath}`);
+        }
       }
     }
 

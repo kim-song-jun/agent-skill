@@ -24,6 +24,7 @@
    from disk via the fixed `checkpoint/LATEST` pointer so a fresh post-death session
    needs zero lost coordinates:
    ```javascript
+   import { join } from "node:path";
    import { makeFileMirror } from "./lib/memory-bridge.mjs";
    import { recallLatestCheckpoint } from "./lib/memory-agent.mjs";
    if (flags.resume) {

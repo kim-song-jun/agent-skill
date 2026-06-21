@@ -16,7 +16,7 @@ export const DEFAULTS = {
     large:  { maxParallel: 8, rolesAllowed: ["dev", "frontend-dev", "backend-dev", "designer", "qa-*", "reviewer", "doc-writer"] },
   },
   loop: { breakCondition: "npm test", stableIters: 1, maxRuntimeSec: null, maxRepeatedFailureSignature: 3 },
-  gates: { specReview: true, qualityReview: true, blockOnCritical: true },
+  gates: { specReview: true, qualityReview: true, adversarialVerify: true, blockOnCritical: true },
   pr: { branchPrefix: "feat/agent-all/", baseBranch: "main" },
   policy: { decisionSurfacing: true, verification: true, reviewerAudit: true, qaAudit: true },
   security: {
@@ -106,6 +106,11 @@ function validate(cfg) {
       }
     } else {
       errors.push({ path: "loop.breakCondition", message: "must be string or {type,...}" });
+    }
+  }
+  for (const key of ["specReview", "qualityReview", "adversarialVerify", "blockOnCritical"]) {
+    if (cfg.gates?.[key] !== undefined && typeof cfg.gates[key] !== "boolean") {
+      errors.push({ path: `gates.${key}`, message: "must be boolean" });
     }
   }
   return errors;
