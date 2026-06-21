@@ -25,6 +25,94 @@ Gemini does not get hard hook blocking in this release. This is soft enforcement
 - Use superpowers-style planning and verification where available.
 - Route large logs and broad searches through context-mode or file-backed artifacts where available.
 
+## Project Wiki (prose-only port)
+
+<!-- Attribution: Karpathy LLM-Wiki pattern (MIT) — adapted for Gemini CLI host context -->
+
+> Prose-only port (spec decision 7). Gemini CLI has no runnable /wiki command and no wiki hook in this release; treat as prompt-level policy. Perform these steps manually using `replace`/`write_file` for writes and implicit reads for lookups, with `run_shell_command` for shell tasks.
+
+This project uses a structured markdown knowledge base at `.wiki/` governed by an `INDEX.md` index-as-router. Follow the specs below manually using the Gemini primitives already named in Operating Principles (`replace`/`write_file` for writes, `run_shell_command` for shell).
+
+### Command verb specs
+
+| Verb | Invocation | What to do |
+|------|-----------|------------|
+| bare query | `<query>` | Phase A router: search `INDEX.md` for the query (exact slug, then title substring, then tags). If one match found, read the page. If multiple matches, list candidates. If no match, offer to write a new page (Phase B). |
+| `write <title>` | Phase B | Write a new page: create `.wiki/<slug>.md` using the page schema below via `write_file`, then add an entry row to `.wiki/INDEX.md` via `replace`. |
+| `update <slug>` | Phase B | Update an existing page: read `.wiki/<slug>.md`, apply changes via `replace`, update the `updated` frontmatter field, re-run compile (diff=0 check). |
+| `compile` | self-audit gate | Perform diff=0 self-audit: every entry in `INDEX.md` must have a corresponding `.md` file on disk, and every `.md` file (excluding `INDEX.md`) must be listed in `INDEX.md`. List any drift and refuse to consider the wiki healthy until diff=0. |
+| `status` | index summary | Count indexed entries vs `.md` files on disk; print entry count, drift status, and top grades. |
+| `list` | all pages | List every page row from `INDEX.md` (title, slug, grade, tags). |
+
+### Page schema
+
+Every wiki page follows this template (sourced from `plugins/harness-floor/skills/wiki/templates/page.md.tpl`):
+
+```markdown
+---
+title: <title>
+slug: <slug>
+grade: <grade>
+tags: [<tags>]
+updated: <updated>
+---
+
+# <title>
+
+**BLUF:** <one-sentence bottom-line-up-front>
+
+## Details
+
+<body content>
+
+## Provenance
+
+Grade: <grade>
+- A = primary source (official docs, spec, source code)
+- B = secondary source (blog post, talk, third-party guide)
+- C = inferred / synthesised from context
+
+Sources:
+- <source>
+
+## Contradictions
+
+<!-- Record conflicts here rather than silently resolving them. -->
+
+## Related
+
+- [<related title>](<related file>) — <note>
+```
+
+Fixed sections (always present, in order): BLUF, Details, Provenance, Contradictions, Related.
+Frontmatter keys (always present): `title`, `slug`, `grade`, `tags`, `updated`.
+Default grade is C. Promote to B when citing a secondary source, A when citing primary docs.
+
+### Index-as-router invariant
+
+`INDEX.md` is the single source of truth for all wiki navigation. Never write a page without adding its entry to `INDEX.md`. Never reference a page not in the index. Contradictions go in the page's Contradictions section — do not silently resolve conflicts.
+
+### Compile (diff=0) rule
+
+After every write or update: verify that every `INDEX.md` entry has a matching `.md` file on disk, AND every `.md` file on disk (excluding `INDEX.md`) is listed in `INDEX.md`. If any drift exists, list the missing items and refuse to declare the wiki healthy until diff=0.
+
+### First thing to do each session
+
+At the start of any session where `.wiki/INDEX.md` exists, perform this check yourself (this is a prompt-level instruction — there is no automatic hook on Gemini; this replaces the Claude Code SessionStart digest hook and the Codex PreToolUse first-call hook):
+
+1. Read `.wiki/INDEX.md` and count the number of entry rows (indexed pages).
+2. Count the number of `.md` files in `.wiki/` excluding `INDEX.md` (pages on disk).
+3. Emit the digest line:
+
+   `wiki: N page(s) indexed, N on disk`
+
+   If the counts differ, append: `[drift: X missing page(s), Y unindexed page(s)]`
+
+4. Then proceed with the session.
+
+Example digest output: `wiki: 12 page(s) indexed, 12 on disk`
+Example with drift: `wiki: 12 page(s) indexed, 11 on disk [drift: 1 missing page(s), 0 unindexed page(s)]`
+
 ## Roles
 
 | Role | When | Skill file |

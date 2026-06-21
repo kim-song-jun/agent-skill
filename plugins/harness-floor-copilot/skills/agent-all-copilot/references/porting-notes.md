@@ -99,3 +99,23 @@ These two paths are explicitly NOT asserted by any test and are documented here
 as #27-deferred. No green stub is used to claim they work. Per spec §5/§6 and
 decision 6, presence/contract tests (port-ssot E5) assert the prose wiring;
 real-behavior tests assert the module-level contracts.
+
+## Wiki prose-only port (G10) — #27 posture
+
+The G10 slice ports the `/wiki` knowledge-base surface to Copilot as a **prose-only** embed in the builder-owned host context file (`plugins/harness-builder-copilot/skills/copilot-init/templates/copilot-instructions.md.hbs`), which renders to `.github/copilot-instructions.md`.
+
+**What this IS:**
+- A `## Project Wiki (prose-only port)` section inlined into the Copilot host context file (always-read memory).
+- Prose specs for the five command verbs (`write`, `update`, `compile`, `status`, `list`) + bare-query Phase A router, mapped onto the Copilot primitives `view`/`create`/`edit` already listed in Operating Principles.
+- The page schema (frontmatter: `title`/`slug`/`grade`/`tags`/`updated`; fixed sections: BLUF, Details, Provenance, Contradictions, Related) inlined verbatim.
+- A `### First thing to do each session` digest instruction (prompt-level policy, NOT an automatic hook).
+- Karpathy LLM-Wiki (MIT) attribution.
+
+**What this is NOT:**
+- No runnable `/wiki` skill, no wiki lib, no SessionStart or PreToolUse hook on Copilot.
+- The digest-as-instruction is prompt-level policy; it does not fire automatically.
+- The live Copilot CLI execution of these prose steps is spec-level / live-CLI-unverified (#27, decision 6, same posture as G7).
+
+**Cross-family note:** The host context file is owned by `harness-builder-copilot` (builder plugin), not `harness-floor-copilot`. There is no host-context file inside the floor plugin. The prose lands in the builder template; this porting-notes doc (floor-owned) carries the reference and honest-labeling.
+
+**Tests:** `tests/lib/copilot/wiki-prose-surface.test.mjs` — doc-surface contract (presence/contract only, not behavior). Asserts the `## Project Wiki` heading, verb specs, schema keys, digest instruction, #27 token, and a negative guard ensuring no hook-fires claim is made in the prose.

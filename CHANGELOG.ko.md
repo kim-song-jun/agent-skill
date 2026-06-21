@@ -6,6 +6,8 @@
 
 ## 미출시
 
+- G10/G11: Copilot(`copilot-instructions.md.hbs`) 및 Gemini(`GEMINI.md.hbs`) 호스트 컨텍스트 템플릿에 wiki prose-only 포트를 인라인으로 추가했습니다. 커맨드 동사 스펙(write/update/compile/status/list + bare-query Phase A 라우터), 페이지 스키마(BLUF/Details/Provenance/Contradictions/Related; frontmatter title/slug/grade/tags/updated), 세션 시작 시 첫 번째로 수행할 status-digest 지시사항, Karpathy LLM-Wiki(MIT) 귀속 표시, 그리고 정직한 prose-only / #27 레이블링을 포함합니다. 실행 가능한 surface, hook, 새 플러그인 없음. 양 플랫폼에 대한 porting-notes 업데이트. Doc-surface 계약 테스트 추가: `tests/lib/copilot/wiki-prose-surface.test.mjs`(19개 테스트), `tests/lib/gemini/wiki-prose-surface.test.mjs`(20개 테스트). Suite: 2150/2150 통과; focused release smoke 571/571 통과.
+
 ## Agent-skill v0.6.17 — 2026-06-20
 
 - Copilot 포트를 문서화된 hook 계약으로 정정했습니다:

@@ -6,6 +6,8 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+- G10/G11: Inlined wiki prose-only port into Copilot (`copilot-instructions.md.hbs`) and Gemini (`GEMINI.md.hbs`) host context templates. Adds command verb specs (write/update/compile/status/list + bare-query Phase A router), page schema (BLUF/Details/Provenance/Contradictions/Related; frontmatter title/slug/grade/tags/updated), status-digest first-thing-to-do instruction, Karpathy LLM-Wiki (MIT) attribution, and honest prose-only / #27 labeling. No runnable surface, no hook, no new plugin. Porting-notes updated for both platforms. Doc-surface contract tests added: `tests/lib/copilot/wiki-prose-surface.test.mjs` (19 tests) and `tests/lib/gemini/wiki-prose-surface.test.mjs` (20 tests). Suite: 2150/2150 passing; focused release smoke 571/571 passing.
+
 ## Agent-skill v0.6.17 — 2026-06-20
 
 - Corrected the Copilot port to use the documented hook contract:

@@ -105,6 +105,26 @@ Three reasons:
    their respective APIs. Gemini requires either an unconfirmed flag or
    an estimation heuristic.
 
+## Wiki prose-only port (G11)
+
+The G11 slice ports the `/wiki` knowledge-base surface to Gemini as a **prose-only** embed in the builder-owned host context file (`plugins/harness-builder-gemini/skills/gemini-init/templates/GEMINI.md.hbs`), which renders to `GEMINI.md` in the project root.
+
+**What this IS:**
+- A `## Project Wiki (prose-only port)` section inlined into the Gemini host context file, placed after `## Operational Soft Rules` (the existing soft-enforcement framing) and before `## Roles`.
+- Prose specs for the five command verbs (`write`, `update`, `compile`, `status`, `list`) + bare-query Phase A router, mapped onto the Gemini primitives `replace`/`write_file`/`run_shell_command` already named in Operating Principles.
+- The page schema (frontmatter: `title`/`slug`/`grade`/`tags`/`updated`; fixed sections: BLUF, Details, Provenance, Contradictions, Related) inlined verbatim.
+- A `### First thing to do each session` digest instruction (prompt-level policy, NOT an automatic hook). Co-located with the existing Operational Soft Rules soft-enforcement framing.
+- Karpathy LLM-Wiki (MIT) attribution.
+
+**What this is NOT:**
+- No runnable `/wiki` skill, no wiki lib, no SessionStart or PreToolUse hook on Gemini.
+- The digest-as-instruction is prompt-level policy; it does not fire automatically.
+- No `#27` / live-CLI-unverified flag (Gemini's row in spec §3.4 carries no #27 flag; the surrounding `## Operational Soft Rules` framing already establishes the soft-enforcement / no-hard-hook posture).
+
+**Cross-family note:** The host context file is owned by `harness-builder-gemini` (builder plugin), not `harness-floor-gemini`. There is no host-context file inside the floor plugin (the `gemini-extension.json` is a bare visual-qa scaffold manifest). The prose lands in the builder template; this porting-notes doc (floor-owned) carries the reference and honest-labeling.
+
+**Tests:** `tests/lib/gemini/wiki-prose-surface.test.mjs` — doc-surface contract (presence/contract only, not behavior). Asserts the `## Project Wiki` heading, verb specs, schema keys, digest instruction, prose-only label, and a negative guard ensuring no hook-fires claim is made in the prose.
+
 ## Future work
 
 - More schema fixtures from authenticated Gemini CLI runs.
