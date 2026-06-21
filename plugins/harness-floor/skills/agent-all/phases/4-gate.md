@@ -139,7 +139,15 @@ This complements the Phase 3 verification directive. Phase 3 instructs implement
 After dispatching all `gatePlan.dispatches[]` entries in step 3, the orchestrator MUST dispatch one additional subagent with dispatch kind `verification-reviewer-adversarial` (role `"verification-reviewer-adversarial"`, mode `"adversarial"`):
 
 - **Model tier:** this subagent MUST run as **opus** (judge node, spec §3.1 / rule 11). Never sonnet or haiku.
-- **Independence is structural:** the adversarial verifier MUST NOT read the implementer's self-report, commit messages, or any implementer-produced output. It MUST re-derive the verdict from the wave diff and the wave tip commit only — `git diff <wave.baseCommit>..<wave.endCommit>` plus running `breakCondition` against the wave tip commit via `runVerificationAdapterSpec()` (`lib/verification-adapters/registry.mjs:822`).
+- **Independence is structural:** the adversarial verifier MUST NOT read the implementer's self-report, commit messages, or any implementer-produced output. It MUST re-derive the verdict from the wave diff and the wave tip commit only — `git diff <wave.baseCommit>..<wave.endCommit>` plus invoking the canonical wrapper `adversarialVerify({diff, acceptanceCriteria, breakCondition, cwd})` from `lib/verification-adapters/adversarial-verifier.mjs`. The dispatched subagent runs it, e.g.:
+  ```bash
+  node --input-type=module -e "
+    import { adversarialVerify } from './plugins/harness-floor/skills/agent-all/lib/verification-adapters/adversarial-verifier.mjs';
+    const result = await adversarialVerify({ diff: process.env.WAVE_DIFF, acceptanceCriteria: [], breakCondition: <breakCondition>, cwd: process.env.REPO_ROOT });
+    console.log(JSON.stringify(result));
+  "
+  ```
+  and reports the returned `{ audit, evidence, exitCode }` literal. Do NOT call `runVerificationAdapterSpec()` directly — the production path MUST go through `adversarialVerify` so its structural-independence guard (signature excludes any self-report) is enforced on every live invocation.
 - **Prompt contract:** the verifier's prompt MUST NOT include the implementer's implementation notes, self-assessments, or reported verification output. Structural independence — not a promise.
 - **Required output:** exactly one of `VERIFICATION_AUDIT: passed`, `VERIFICATION_AUDIT: failed`, or `VERIFICATION_AUDIT: skipped`, plus a `verification-evidence/v1` evidence object (reuse `lib/verification-adapters/schema.mjs`).
 - **Failure is critical:** a `VERIFICATION_AUDIT: failed` from `verification-reviewer-adversarial` is a `critical` issue that BLOCKS the wave; the orchestrator MUST enter the block-on-critical retry loop (step 5). A passing self-reviewer verdict does NOT override a failing adversarial verdict.

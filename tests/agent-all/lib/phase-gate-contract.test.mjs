@@ -53,6 +53,47 @@ test("phase 4 dispatches verification-reviewer-adversarial with BLOCKING languag
     "adversarial step must specify diff and tip commit as the evidence source");
 });
 
+test("phase 4 adversarial step wires through adversarialVerify canonical wrapper, not raw runVerificationAdapterSpec", () => {
+  // The adversarial section MUST reference the canonical wrapper so the structural-
+  // independence guard (signature excludes self-report) is enforced on every live invocation.
+  assert.match(
+    phase4,
+    /adversarialVerify\(\s*\{/,
+    "4-gate.md adversarial section must reference adversarialVerify({ ... }) canonical wrapper"
+  );
+
+  // It must also name the correct source module so the dispatch is unambiguous.
+  assert.match(
+    phase4,
+    /adversarial-verifier\.mjs/,
+    "4-gate.md adversarial section must name adversarial-verifier.mjs as the source"
+  );
+
+  // The instruction MUST NOT instruct callers to call runVerificationAdapterSpec directly
+  // (bypassing the wrapper reopens the self-report-drift risk).
+  // Only a reference that says "Do NOT call" is acceptable — bare presence of the name
+  // must be paired with a prohibition. We check by asserting the instruction context:
+  // "Do NOT call runVerificationAdapterSpec() directly" must appear in the adversarial section.
+  assert.match(
+    phase4,
+    /Do NOT call `runVerificationAdapterSpec\(\)` directly/,
+    "4-gate.md must explicitly forbid direct runVerificationAdapterSpec() calls in the adversarial section"
+  );
+
+  // TEETH PROOF: verify the canonical-wrapper regex would NOT match the OLD text
+  // (the text before this fix, which referenced runVerificationAdapterSpec directly
+  //  without adversarialVerify).
+  const oldAdversarialText =
+    "MUST re-derive the verdict from the wave diff and the wave tip commit only " +
+    "— `git diff <wave.baseCommit>..<wave.endCommit>` plus running `breakCondition` " +
+    "against the wave tip commit via `runVerificationAdapterSpec()` (`lib/verification-adapters/registry.mjs:822`).";
+  assert.doesNotMatch(
+    oldAdversarialText,
+    /adversarialVerify\(\s*\{/,
+    "TEETH PROOF: old text that bypassed the wrapper must NOT match the canonical-wrapper regex"
+  );
+});
+
 test("phase 4 adversarial dispatch is wired into the block-on-critical retry loop", () => {
   // Loose proximity check (kept for baseline coverage):
   assert.match(phase4, /verification-reviewer-adversarial[\s\S]{0,260}critical|critical[\s\S]{0,260}verification-reviewer-adversarial/,
