@@ -166,7 +166,8 @@ run_step "focused release contracts" \
     tests/lib/agent-all-codex-adversarial.test.mjs \
     tests/lib/agent-all-codex-checkpoint.test.mjs \
     tests/lib/copilot/agent-all-adversarial.test.mjs \
-    tests/lib/copilot/agent-all-checkpoint.test.mjs
+    tests/lib/copilot/agent-all-checkpoint.test.mjs \
+    tests/lib/wiki-compile-gate.test.mjs
 
 run_step "vendored libs" node scripts/sync-lib.mjs --check
 run_step "support matrix" node scripts/generate-support-matrix.mjs --check

@@ -23,3 +23,6 @@ Thumbs.db
 # Local QA/debug run artifacts
 /.playwright-mcp/
 /qa-*.png
+
+# SDD scratch (agent-skill internal, not for version control)
+.superpowers/

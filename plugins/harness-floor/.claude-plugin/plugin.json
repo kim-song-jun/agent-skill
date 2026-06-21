@@ -1,5 +1,17 @@
 {
   "name": "harness-floor",
   "version": "0.6.17",
-  "description": "Visual QA + agent-all pipeline (cost-unrestricted patterns)"
+  "description": "Visual QA + agent-all pipeline (cost-unrestricted patterns)",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/wiki/bin/wiki-session-digest.mjs\""
+          }
+        ]
+      }
+    ]
+  }
 }
