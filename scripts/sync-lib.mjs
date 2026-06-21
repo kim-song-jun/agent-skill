@@ -234,22 +234,26 @@ const MEMORY_BRIDGE_TARGETS = [
 ].map((p) => resolve(repoRoot, p));
 
 // memory-agent.mjs — IMPORT-REWRITE: CC source imports the copilot bridge via
-// a cross-plugin relative path; codex copy MUST import the LOCAL ./memory-bridge.mjs
-// instead (codex vendors it above). The transform is applied identically for
-// both --check (compare) and --sync (write) to stay symmetric.
+// a cross-plugin relative path; codex AND copilot copies MUST import the LOCAL
+// ./memory-bridge.mjs instead (both vendor it locally). The transform is
+// applied identically for both --check (compare) and --sync (write).
 const MEMORY_AGENT_SOURCE = resolve(
   repoRoot,
   "plugins/harness-floor/skills/agent-all/lib/memory-agent.mjs",
 );
 const MEMORY_AGENT_TARGETS = [
   "plugins/harness-floor-codex/skills/agent-all-codex/lib/memory-agent.mjs",
+  // copilot: same import-rewrite target — copilot vendors ./memory-bridge.mjs
+  // locally (it is the canonical bridge SOURCE) and ./artifact-paths.mjs, so
+  // the rewritten file is byte-identical to the codex copy. G7.
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/memory-agent.mjs",
 ].map((p) => resolve(repoRoot, p));
 // The CC import anchor string that must be replaced.
 const MEMORY_AGENT_CC_IMPORT =
   '"../../../../harness-floor-copilot/skills/agent-all-copilot/lib/memory-bridge.mjs"';
-const MEMORY_AGENT_CODEX_IMPORT = '"./memory-bridge.mjs"';
-function codexMemoryAgentTransform(src) {
-  return src.replace(MEMORY_AGENT_CC_IMPORT, MEMORY_AGENT_CODEX_IMPORT);
+const MEMORY_AGENT_LOCAL_IMPORT = '"./memory-bridge.mjs"';
+function localMemoryAgentTransform(src) {
+  return src.replace(MEMORY_AGENT_CC_IMPORT, MEMORY_AGENT_LOCAL_IMPORT);
 }
 
 const COST_TELEMETRY_SOURCE = resolve(
@@ -639,7 +643,7 @@ function collectDrift() {
     );
     process.exit(2);
   }
-  const memoryAgentWant = codexMemoryAgentTransform(memoryAgentSrcRaw);
+  const memoryAgentWant = localMemoryAgentTransform(memoryAgentSrcRaw);
   for (const destPath of MEMORY_AGENT_TARGETS) {
     const destContent = readOrNull(destPath);
     if (destContent == null) {

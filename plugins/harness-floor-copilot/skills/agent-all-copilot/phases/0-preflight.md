@@ -12,8 +12,32 @@
    If `task` is unavailable, abort with an upgrade/install hint.
 4. Load `.agent-all.json` via `view`. If missing: warn + use built-ins
    from `templates/agent-all.config.json.hbs`.
-5. Read `.agent-all-state.json` via `view` if present. If `--resume` and
-   `max(state.phases[*].phase) >= 0`, skip rest of Phase 0.
+5. Read `.agent-all-state.json` via `view` if present.
+
+   **5b. (resume checkpoint recall — on `--resume` only).** Recall the latest
+   checkpoint from disk via the fixed `checkpoint/LATEST` pointer so a fresh
+   post-death session needs zero lost coordinates:
+   ```javascript
+   import { makeFileMirror } from "./lib/memory-bridge.mjs";
+   import { recallLatestCheckpoint } from "./lib/memory-agent.mjs";
+   if (flags.resume) {
+     const fileMirror = makeFileMirror({ rootDir: join(cwd, ".agent-skill/memory") });
+     const latest = await recallLatestCheckpoint({ fileMirror, toolCaller: null });
+     if (latest.found && latest.checkpoint?.inFlight) {
+       state.resumeCheckpoint = latest.checkpoint;
+       state.iter = latest.checkpoint.iter ?? state.iter;
+       state.decisions = { ...(state.decisions ?? {}), ...(latest.checkpoint.decisionsSoFar ?? {}) };
+       // Phase 3 re-enters wave=latest.checkpoint.wave at 3a.0 using miniPlans, not a re-parse.
+     }
+   }
+   ```
+   (`toolCaller:null` is correct — copilot recall reads Layer-1 file mirror only,
+   per memory-bridge canonical. The module call is real pure-JS behavior; the live
+   resume on a running Copilot CLI is #27-unverified until the Copilot CLI spike.)
+
+   If `--resume` and `max(state.phases[*].phase) >= 0`, skip rest of Phase 0
+   EXCEPT keep `state.resumeCheckpoint` set above; Phase 3 step 4 reads it to
+   re-enter the dead wave at 3a.0.
 6. Validate positional argument (same as Claude port):
    - Ends with `.md`: must exist as file. Stash `taskPath`.
    - Otherwise: non-empty string. Stash `prompt`.

@@ -68,3 +68,34 @@ VS Code compatible `SubagentStop` payloads.
 - Per-platform agent file emission (Copilot doesn't use `.copilot/agents/`
   but does honor `.github/copilot-instructions.md` — consider seeding a
   pipeline-aware instructions section there).
+
+## Smartness ports (G7) — live-CLI posture (#27)
+
+The G7 slice ports three "smartness" capabilities to Copilot: adversarial
+re-verification (`adversarialVerify`), pre-dispatch checkpoint flush
+(`flushCheckpoint`), and resume checkpoint recall (`recallLatestCheckpoint`).
+
+**What IS real behavior (module-level, fully tested):**
+- `adversarialVerify` in `lib/verification-adapters/adversarial-verifier.mjs`
+  is pure JS. The copilot-vendored copy is byte-identical to the CC source
+  (proven by diff). Tests in `tests/lib/copilot/agent-all-adversarial.test.mjs`
+  drive it with real pass/fail runners and a real child process — structural
+  independence is verified at the function-signature level, not just prose.
+- `flushCheckpoint` and `recallLatestCheckpoint` in `lib/memory-agent.mjs` are
+  pure JS + fs I/O. Tests in `tests/lib/copilot/agent-all-checkpoint.test.mjs`
+  drive a genuine mid-wave-death round-trip: flush inFlight:true, discard all
+  in-memory state, reconstruct from disk via `recallLatestCheckpoint` using only
+  the fixed `checkpoint/LATEST` pointer.
+
+**What is spec-level / live-CLI-unverified (#27, decision 6, deferred to G12):**
+- The live Copilot `task` dispatch of the adversarial verifier step (Phase 4
+  Step 3-adversarial) — the `task` invocation itself is spec-level; the pure-JS
+  module it calls is real.
+- The live mid-wave-death + `--resume` re-entry path on a running Copilot CLI —
+  the file I/O round-trip is real; the live CLI orchestrator executing the
+  Phase-0 recall + Phase-3 re-entry is spec-level.
+
+These two paths are explicitly NOT asserted by any test and are documented here
+as #27-deferred. No green stub is used to claim they work. Per spec §5/§6 and
+decision 6, presence/contract tests (port-ssot E5) assert the prose wiring;
+real-behavior tests assert the module-level contracts.

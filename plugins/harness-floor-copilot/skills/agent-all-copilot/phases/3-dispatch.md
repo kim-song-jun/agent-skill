@@ -36,6 +36,34 @@
    Workflow remains a sibling route that hands off through a task doc.
 
 4. For each wave:
+
+   If `state.resumeCheckpoint` is set and `state.resumeCheckpoint.wave === i`,
+   re-enter this wave at step 3a.0 using `state.resumeCheckpoint.miniPlans`
+   instead of re-parsing the plan; this covers the mid-wave death scenario
+   where dispatched `task`s never returned.
+
+   **3a.0 (pre-dispatch checkpoint).** BEFORE invoking any implementation
+   `task` for this wave, flush the in-flight scoping intent derived from the
+   wave plan so a mid-wave context death is recoverable. Do NOT include task
+   outputs or transcript bodies — only mini-plan metadata from the wave plan:
+   ```javascript
+   import { makeFileMirror } from "./lib/memory-bridge.mjs";
+   import { flushCheckpoint } from "./lib/memory-agent.mjs";
+   const fileMirror = makeFileMirror({ rootDir: join(cwd, ".agent-skill/memory") });
+   const tasksInWave = waves[i];
+   await flushCheckpoint({
+     cwd, runId, wave: i, iter: state.iter ?? 0, phase: "3a", inFlight: true,
+     taskIds: tasksInWave.map((t) => t.id),
+     miniPlans: tasksInWave.map((t) => ({ taskId: t.id, title: t.title, files: t.files, role: t.role })),
+     requiredAgents: state.orchestration?.requiredAgents ?? [],
+     decisionsSoFar: state.decisions ?? {},
+     fileMirror, config,
+   });
+   ```
+   (The `flushCheckpoint`/`makeFileMirror` module calls are real pure-JS behavior
+   proven by module tests; the live wave-death/resume on a running Copilot CLI is
+   #27-unverified until the Copilot CLI spike.)
+
    a. **Capture `baseCommit` before implementation:**
       ```bash
       git rev-parse HEAD
@@ -96,7 +124,18 @@
 5. If `state.costUSD > config.defaults.maxCostUSD` after the wave: push
    `{phase: 3, status: "cost-cap"}`, abort.
 
-6. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`.
+6. Append to `state.waves`. Push `{phase: 3, completedAt}` to `phases`. Then
+   flush a completion marker checkpoint to supersede the in-flight 3a.0 pointer:
+   ```javascript
+   await flushCheckpoint({
+     cwd, runId, wave: i, iter: state.iter ?? 0,
+     phase: "3-complete", inFlight: false,
+     miniPlans: [], taskIds: [], requiredAgents: [],
+     fileMirror, config,
+   });
+   ```
+   This overwrites `checkpoint/LATEST` with `inFlight:false`, so a `--resume`
+   after this point does NOT re-enter the wave.
 
 ## On error
 
