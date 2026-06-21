@@ -6,7 +6,27 @@
 
 ## 미출시
 
-- G10/G11: Copilot(`copilot-instructions.md.hbs`) 및 Gemini(`GEMINI.md.hbs`) 호스트 컨텍스트 템플릿에 wiki prose-only 포트를 인라인으로 추가했습니다. 커맨드 동사 스펙(write/update/compile/status/list + bare-query Phase A 라우터), 페이지 스키마(BLUF/Details/Provenance/Contradictions/Related; frontmatter title/slug/grade/tags/updated), 세션 시작 시 첫 번째로 수행할 status-digest 지시사항, Karpathy LLM-Wiki(MIT) 귀속 표시, 그리고 정직한 prose-only / #27 레이블링을 포함합니다. 실행 가능한 surface, hook, 새 플러그인 없음. 양 플랫폼에 대한 porting-notes 업데이트. Doc-surface 계약 테스트 추가: `tests/lib/copilot/wiki-prose-surface.test.mjs`(19개 테스트), `tests/lib/gemini/wiki-prose-surface.test.mjs`(20개 테스트). Suite: 2150/2150 통과; focused release smoke 571/571 통과.
+## Agent-skill v0.7.0 — 2026-06-21
+
+### 더 스마트해진 agent-all
+
+- **독립적 adversarial 검증기 (G1):** `adversarialVerify({diff, acceptanceCriteria, breakCondition, cwd})`는 `runVerificationAdapterSpec`을 통해 `breakCondition`을 실행하는 방식으로 판정을 재도출합니다 — 구현자 자기보고(self-report)가 시그니처에 포함되지 않습니다. `VERIFICATION_AUDIT: passed/failed` 감사 문자열과 함께 `verification-evidence/v1`을 발행합니다. `toString()` 구조적 서명 가드가 구조적 독립성이 단일 편집으로 조용히 제거되지 않도록 보장합니다. 실제 `defaultCommandRunner` 통합 테스트 포함.
+- **Phase-4 게이트 배선 수정 (G2 + 최종 검토):** Phase-4 adversarial 단계가 저수준 `runVerificationAdapterSpec()`이 아닌 정식 `adversarialVerify()` 래퍼를 직접 호출하도록 배선하여 구조적 독립성 가드에 실제 프로덕션 호출자가 생겼습니다. 새 `phase-gate-contract` 테스트가 이 배선을 고정합니다. `adversarialVerify:false` 기본값으로 기존 호출자는 그린 유지; gate-plan 테스트 +3개 (curated smoke 498→501).
+- **No-git 파일+JSONL 메모리 에이전트 (G3):** Layer 1은 Copilot의 `makeFileMirror`/`storeRepoMemory`/`recallRepoMemory`를 `.agent-skill/memory/`에서 자유형식 스크래치패드 필드와 함께 재사용합니다. Layer 2는 `memory-log/v1` 스키마로 `.agent-skill/runs/<runId>/memory-log.jsonl`에 추가합니다. git 작업 없음. G4 재사용을 위해 `sanitizeRunId` + `memoryLogPath`를 익스포트합니다. 컨텍스트 리셋 테스트는 어댑터를 null로 만들어 회상이 디스크에서 읽힘을 증명합니다.
+- **자동 플러시 체크포인트와 mid-3a 컨텍스트 생존 (G4):** 캡처가 `3a.0`(디스패치 전)으로 이동하여 스코핑 중 종료도 커버합니다. `flushCheckpoint`는 고정 키 `checkpoint/LATEST` 포인터와 이력 키를 기록하여 종료 후 세션이 `recallLatestCheckpoint`를 통해 wave/iter 좌표 손실 없이 복구됩니다. Phase-0 5b 단계가 디스크에서 `state.resumeCheckpoint`를 재구성하고, Phase 3이 `miniPlans`의 `3a`부터 죽은 wave를 재진입합니다. 진짜 end-to-end 라운드트립 테스트 + no-op 플러시 teeth 검사 포함.
+- **합성 증명 + 라이브 실행 runbook (G5):** `adversarial-verifier-isolation.test.mjs`가 G1(정확한 감사 리터럴로 block/pass)과 G4(mid-3a 체크포인트가 디스크에서 라운드트립; no-fileMirror → `ok:false`)의 합성을 삭제된 픽스처 의존성 없이 end-to-end로 증명합니다. `g5-live-proof-checklist.md`는 사용자 주도 라이브 `/agent-all` 증명을 위한 운영자 runbook입니다. 메모리 에이전트 컨텍스트 리셋 테스트가 fresh-mirror + rm-mirror 디스크 회상 증명으로 강화되었습니다.
+- **Codex 포트 (G6):** `adversarial-verifier.mjs`, `memory-bridge.mjs`, `memory-agent.mjs`(Codex 로컬 import 재작성 포함)를 `sync-lib`을 통해 `harness-floor-codex`에 벤더링합니다. Codex `4-gate.md` Step 3-adversarial이 `adversarialVerify` 래퍼를 호출합니다(Codex 순차 관용구; 원시 `runVerificationAdapterSpec` 우회 금지). `3a.0` 체크포인트 + Phase-0 재개가 Codex 로컬 메모리 에이전트에 배선됩니다. Codex용 `port-ssot E5` 스킵 해제. 실제 자식 프로세스 adversarial + 체크포인트 테스트.
+- **Copilot 포트 (G7):** Codex 셸 관용구가 아닌 Copilot 태스크 프리미티브를 사용하여 검증된 G6 포트를 미러링합니다. Copilot `4-gate.md` Step 3-adversarial이 `adversarialVerify` 래퍼(opus 티어)를 호출합니다. `memory-agent.mjs`가 공유 로컬 import 재작성 변환을 통해 벤더링됩니다(중복 함수 없음). `3a.0` 체크포인트 + Phase-0 재개 배선. Copilot용 `port-ssot E5` 스킵 해제(마지막 지연된 스킵). 이제 CC + Codex + Copilot 모두 smartness 적용.
+- **CC 플러그인 자체 완결 (최종 검토 수정):** 플래그십 Claude Code 플러그인의 memory-bridge import가 크로스 플러그인 import 없이 자체 완결(self-contained)되도록 재작성되었습니다. `g5-live-proof-checklist.md` Evidence 4가 CC 로컬 memory-bridge를 가리키도록 업데이트되었습니다.
+
+### llm-wiki 스킬
+
+- **CC 네이티브 llm-wiki 스킬 (G8):** Claude Code 스킬(`harness-floor` / `wiki`)로 전체 Karpathy 패턴 위키를 구현했습니다. `routePhaseA`가 exact-slug, title-substring, disambiguation, tag-only, no-match 케이스를 모두 테스트 커버합니다. `SessionStart` 훅이 일일 상태 다이제스트를 발행합니다. `compile` 명령이 자기 감사 게이트를 실행하여 오래되거나 누락된 페이지를 잡습니다. `formatIndexRow` 익스포트 해제(소비자 없음). Curated smoke 501→523.
+- **Codex 근-네이티브 llm-wiki 스킬 (G9):** CC 위키를 실제 Codex 스킬(`harness-floor-codex` / `wiki-codex` → `.codex/skills/wiki`)로 미러링합니다. `wiki-index.mjs` 벤더링; 라우트, 페이지 스키마, 온디스크 픽스처 테스트가 CC와 일치합니다. `PreToolUse` 첫 호출 다이제스트(`SessionStart` 훅 미사용). MIT 귀속 표시 보존. Curated smoke 523→532.
+- **Copilot + Gemini prose-only 포트 (G10/G11):** `copilot-instructions.md.hbs`와 `GEMINI.md.hbs` 호스트 컨텍스트 템플릿에 위키 prose를 인라인으로 추가했습니다. 커맨드 동사 스펙(write/update/compile/status/list + bare-query Phase A 라우터), 페이지 스키마(BLUF/Details/Provenance/Contradictions/Related; frontmatter title/slug/grade/tags/updated), 세션 시작 status-digest 지시사항, Karpathy LLM-Wiki(MIT) 귀속 표시, 정직한 prose-only / #27 레이블링을 포함합니다. 실행 가능한 surface, hook, 새 플러그인 없음. Doc-surface 계약 테스트: `tests/lib/copilot/wiki-prose-surface.test.mjs`(19개 테스트), `tests/lib/gemini/wiki-prose-surface.test.mjs`(20개 테스트). Curated smoke 532→571.
+- **Cursor 제외** — wiki 포트 없음; Cursor MDC surface가 필요한 툴 디스패치 패턴을 지원하지 않습니다.
+
+Suite: 2151/2151 통과; focused release smoke 571/571 통과.
 
 ## Agent-skill v0.6.17 — 2026-06-20
 
