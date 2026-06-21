@@ -153,7 +153,7 @@ After the good run (EVIDENCE-2), simulate a dead-session resume:
 ```bash
 node -e "
 import('./plugins/harness-floor/skills/agent-all/lib/memory-agent.mjs').then(async ({ recallLatestCheckpoint }) => {
-  const { makeFileMirror } = await import('./plugins/harness-floor-copilot/skills/agent-all-copilot/lib/memory-bridge.mjs');
+  const { makeFileMirror } = await import('./plugins/harness-floor/skills/agent-all/lib/memory-bridge.mjs');
   const fileMirror = makeFileMirror({ rootDir: process.cwd() + '/.agent-skill/memory' });
   const r = await recallLatestCheckpoint({ fileMirror, toolCaller: null });
   if (!r.found || r.source !== 'file') {
@@ -170,7 +170,7 @@ If your Node version requires a `.mjs` extension for top-level `await`, write th
 ```bash
 node --input-type=module << 'MJS'
 import { recallLatestCheckpoint } from './plugins/harness-floor/skills/agent-all/lib/memory-agent.mjs';
-import { makeFileMirror } from './plugins/harness-floor-copilot/skills/agent-all-copilot/lib/memory-bridge.mjs';
+import { makeFileMirror } from './plugins/harness-floor/skills/agent-all/lib/memory-bridge.mjs';
 const fileMirror = makeFileMirror({ rootDir: process.cwd() + '/.agent-skill/memory' });
 const r = await recallLatestCheckpoint({ fileMirror, toolCaller: null });
 if (!r.found || r.source !== 'file') {
