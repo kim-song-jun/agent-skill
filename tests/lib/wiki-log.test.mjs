@@ -117,16 +117,18 @@ test("compile re-export gates diff=0: clean wiki ok, orphaned index entry fails"
 });
 
 test("every export is NON-THROWING on bad input (spec C2: a wiki step never fails the run)", () => {
-  // Bad/empty/odd inputs must return { ok:... } objects, never throw.
-  assert.doesNotThrow(() => ensureWiki(""));
-  assert.doesNotThrow(() => findOrCreatePage("/nonexistent-xyz/.wiki", null));
-  assert.doesNotThrow(() => readPage("/nonexistent-xyz/.wiki", undefined));
-  assert.doesNotThrow(() => compile("/nonexistent-xyz/.wiki"));
-  // writePage to an impossible path (a file as a parent dir) returns ok:false, not throw.
+  // Bad/odd inputs must return { ok:... } objects, never throw — and the test must
+  // NOT pollute cwd (an empty "" path resolves to the repo root and would write a
+  // stray INDEX.md there, so we use an impossible path under a file instead).
   const f = mkdtempSync(join(tmpdir(), "wiki-log-bad-"));
   const filePath = join(f, "afile");
   writeFileSync(filePath, "x");
-  const r = writePage(join(filePath, ".wiki"), { title: "X", bluf: "b", details: "d" });
+  const underFile = join(filePath, ".wiki"); // a regular file used as a parent dir → mkdir fails
+  assert.doesNotThrow(() => ensureWiki(underFile));   // returns {ok:false}, no throw, no cwd pollution
+  assert.doesNotThrow(() => findOrCreatePage("/nonexistent-xyz/.wiki", null));
+  assert.doesNotThrow(() => readPage("/nonexistent-xyz/.wiki", undefined));
+  assert.doesNotThrow(() => compile("/nonexistent-xyz/.wiki"));
+  const r = writePage(underFile, { title: "X", bluf: "b", details: "d" });
   assert.equal(r.ok, false, "writePage under a non-dir path returns ok:false (non-throwing)");
   rmSync(f, { recursive: true, force: true });
 });
