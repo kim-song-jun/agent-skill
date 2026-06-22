@@ -18,6 +18,12 @@
    - If `--dispatch=sequential` was passed, accept the override.
 5. Load `.agent-all.json` via implicit file read. If missing: warn + use
    built-ins from `templates/agent-all.config.json.hbs`.
+   **Auto-wiki toggle:** the agent-all↔wiki auto-loop is default-on
+   (`config.wiki.auto`, default `true`). `--no-wiki` opts out — normalize once so
+   downstream phases only check `config.wiki.auto`:
+   ```javascript
+   if (flags["no-wiki"]) config.wiki = { ...config.wiki, auto: false };
+   ```
 6. Read `.agent-all-state.json` if present.
 
    **6b. (resume checkpoint recall — on `--resume` only).** Recall the latest checkpoint

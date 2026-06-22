@@ -58,6 +58,26 @@ If `--no-pr` OR `config.defaults.createPR === false`: skip. Push
    If `gh` missing: warn `gh missing — PR not created`, stash `prUrl: null`.
 8. Stash `prUrl` in state. Push `{phase: 5, completedAt}`.
 
+9. **Wiki outcome (if `config.wiki.auto`).** Update the page Phase 2 created with
+   what shipped (the *write* half, final pass). Non-fatal.
+   ```javascript
+   import { findOrCreatePage, readPage, writePage, compile } from "./.codex/skills/agent-all/lib/wiki-log.mjs";
+   if (config.wiki?.auto) {
+     const target = findOrCreatePage(".wiki", task.title);
+     const prior = readPage(".wiki", target.slug);
+     const res = writePage(".wiki", {
+       title: task.title, slug: target.slug, grade: "B", tags: [],
+       bluf: "<one-sentence: what shipped>",
+       details: "<outcome: what was built + changed-file map + verification verdict>",
+       contradictions: "<if the outcome diverged from the recorded plan, record both sides>",
+       sources: [`task: ${task.path}`, `plan: ${plan.path}`, ...(prUrl ? [`PR: ${prUrl}`] : [])],
+     });
+     if (!res.ok) console.warn(`wiki outcome skipped: ${res.error}`);
+     const audit = compile(".wiki");   // compile gate (non-fatal): warn on drift, never abort
+     if (audit.ok && !audit.audit.ok) console.warn(`wiki drift after write: index-only=${audit.audit.indexOnly?.join(",")} pages-only=${audit.audit.pagesOnly?.join(",")}`);
+   }
+   ```
+
 ## Output
 
-Print: `PR: <prUrl or '(skipped|pushed-locally|gh-missing)'>`.
+Print: `PR: <prUrl or '(skipped|pushed-locally|gh-missing)'>` plus, when `config.wiki.auto`, `Wiki: updated .wiki/<slug>.md (outcome, grade B)`.

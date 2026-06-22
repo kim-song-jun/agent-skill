@@ -136,3 +136,8 @@ The G11 slice ports the `/wiki` knowledge-base surface to Gemini as a **prose-on
   so coordinator can report per-task progress mid-wave.
 - `--dispatch=mcp-server` alternative strategy if Google ships a
   managed-agents MCP server in the future.
+
+**agent-all↔wiki auto-loop (v0.7.4) — NOT on this port.** The auto-loop (agent-all
+auto-reading `.wiki/` at Phase 1 and auto-writing it at Phase 2/5 via `wiki-log.mjs`)
+runs only on Claude Code + Codex. Gemini ships no `wiki-log.mjs` and its agent-all
+phase docs carry no wiki step — honest, consistent with the prose-only wiki labeling.

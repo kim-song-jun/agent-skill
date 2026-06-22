@@ -109,6 +109,37 @@ If `--no-pr` OR `config.defaults.createPR === false`: skip Phase 5. Push `{phase
 
 9. Stash `prUrl` in state. Push `{phase: 5, completedAt}` to `phases`.
 
+10. **Wiki outcome (if `config.wiki.auto`).** Update the page Phase 2 created with
+    what actually shipped — the *write* half of the auto-loop, final pass. Non-fatal.
+    ```javascript
+    import { findOrCreatePage, readPage, writePage, compile } from "./lib/wiki-log.mjs";
+    if (config.wiki?.auto) {
+      const target = findOrCreatePage(".wiki", task.title);
+      const prior = readPage(".wiki", target.slug);          // read the plan-capture page to merge into
+      // CONTRADICTION DETECTION: if the shipped outcome reverses a decision recorded
+      // in `prior.content`, append BOTH (old + new) to contradictions — never overwrite.
+      const res = writePage(".wiki", {
+        title: task.title,
+        slug: target.slug,
+        grade: "B",                  // promoted C→B: now backed by shipped code
+        tags: [],
+        bluf: "<one-sentence: what shipped>",
+        details: "<outcome: what was built + the changed-file map + the verification verdict>",
+        contradictions: "<if the outcome diverged from the recorded plan/decision, record both sides here>",
+        sources: [`task: ${task.path}`, `plan: ${plan.path}`, ...(prUrl ? [`PR: ${prUrl}`] : [])],
+        related: [],
+      });
+      if (!res.ok) console.warn(`wiki outcome skipped: ${res.error}`);
+      // COMPILE GATE (non-fatal): index↔pages must match (diff=0). Warn on drift; never abort.
+      const audit = compile(".wiki");
+      if (audit.ok && !audit.audit.ok) {
+        console.warn(`wiki drift after write: index-only=${audit.audit.indexOnly?.join(",")} pages-only=${audit.audit.pagesOnly?.join(",")}`);
+      }
+    }
+    ```
+    Cross-link is carried in `sources` (task id + PR url). Author the prose; the
+    helper writes the file + upserts the index row + re-grades C→B in place.
+
 ## Output to user
 
-Print: `PR: <prUrl or '(skipped|pushed-locally|gh-missing)'>`.
+Print: `PR: <prUrl or '(skipped|pushed-locally|gh-missing)'>` plus, when `config.wiki.auto`, `Wiki: updated .wiki/<slug>.md (outcome, grade B)`.

@@ -6,6 +6,20 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.4 — 2026-06-22
+
+### agent-all ↔ wiki auto-loop (all-in-one knowledge base)
+
+`/agent-all` now consults and grows a project wiki in `.wiki/` as it works, so the wiki maintains itself without ever invoking `/wiki` by hand. **Default-on** (`.agent-all.json` → `wiki.auto`, default `true`; opt out with `--no-wiki`). Runs on Claude Code + Codex (the runnable-wiki ports); Copilot/Gemini/Cursor carry an honest "not on this port" note. The whole feature was adversarially verified (lib lifecycle + phase-doc wiring + scope-honesty, all SHIP, 0 blockers) before release.
+
+- **Read → plan → record loop, woven into the existing phases:** Phase 1 routes the intent through the wiki index and folds a matched page's prior decisions/contradictions into planning (the *read* half); Phase 2 auto-creates `.wiki/` on first run (one-time notice) and records the plan + decisions at grade **C**; Phase 5 updates the SAME page with the outcome — changed-file map, verification verdict, PR + task cross-links — promoting it **C→B**, recording any contradiction with the recorded plan, then running the compile self-audit (diff=0).
+- **Topic-merge (anti-bloat):** `routePhaseA(intent)` resolves the same topic back to ONE page (update, not a new file per run), so the wiki accretes instead of sprawling.
+- **Install-safe by construction:** the mechanics live in a new `lib/wiki-log.mjs` that imports a **locally vendored** `./wiki-index.mjs` — never a cross-skill import (which would be the v0.7.2 ERR_MODULE_NOT_FOUND class on Codex, where agent-all and wiki install to different dirs). Both libs are vendored verbatim into each runnable port's own agent-all lib; the Codex phase docs import the install-anchored `./.codex/skills/agent-all/lib/wiki-log.mjs`.
+- **Non-fatal:** every wiki export returns `{ ok, ... }` and never throws; a wiki failure warns and continues — it can never fail an agent-all run. Page *content* is authored by the orchestrator (LLM); only the file/index/audit mechanics are code.
+- **New config:** `wiki.auto` (default `true`) in `config-loader` DEFAULTS + both config templates, validated as boolean. New `--no-wiki` flag normalized once in Phase 0.
+
+Suite: 2278/2278 passing (+20 from v0.7.3: wiki-log lifecycle, config wiki.auto, and the CC+Codex+prose phase-doc contract).
+
 ## Agent-skill v0.7.3 — 2026-06-22
 
 ### Wiki discoverability + adversarial-gate hardening

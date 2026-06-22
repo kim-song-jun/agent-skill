@@ -73,8 +73,29 @@ Create a durable task ledger entry from the free-form prompt:
 
 ## All branches
 
+**Wiki recall (if `config.wiki.auto`).** Before planning, consult the project
+wiki so the plan builds on accumulated knowledge instead of re-deriving it. This
+is the *read* half of the auto-loop. Skip silently when `config.wiki.auto` is
+false or no `.wiki/` exists yet (a fresh project has nothing to recall).
+```javascript
+import { findOrCreatePage, readPage } from "./lib/wiki-log.mjs";
+if (config.wiki?.auto) {
+  // Route the intent through the index (topic-merge): a hit means we've worked
+  // on this area before — read that page's BLUF / Details / Contradictions and
+  // fold them into the planning context handed to Phase 2.
+  const hit = findOrCreatePage(".wiki", task.title);
+  if (hit.ok && hit.existed) {
+    const page = readPage(".wiki", hit.slug);
+    if (page.ok && page.found) state.wikiContext = { slug: hit.slug, content: page.content };
+  }
+}
+```
+If `state.wikiContext` is set, summarise its prior decisions/contradictions to
+the user and treat them as known constraints when planning.
+
 Push `{phase: 1, completedAt}` to `phases`.
 
 ## Output to user
 
-Print: `Task ready: <task.path> ("<task.title>")`.
+Print: `Task ready: <task.path> ("<task.title>")` plus, when `state.wikiContext`
+is set, `Wiki: recalled <slug> (prior knowledge folded into planning)`.

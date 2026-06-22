@@ -43,6 +43,7 @@ Runs a complete multi-agent pipeline from a free-form prompt or an existing task
   interactive prompt, and any saved config value.
 - `--wave-size=small|medium|large` — override config default.
 - `--no-pr` — skip Phase 5 (PR creation).
+- `--no-wiki` — opt out of the auto-wiki loop (see below); on by default.
 - `--no-brainstorm` — skip Phase 1's brainstorming for free-form prompts.
 - `--resume` — skip phases already complete per `.agent-all-state.json`.
   When a task path is supplied, automatically discover `/agent-handoff`
@@ -52,6 +53,26 @@ Runs a complete multi-agent pipeline from a free-form prompt or an existing task
 - `--force` — wipe state and restart.
 - `--yes` — skip all interactive confirms (including the break-condition prompt;
   falls back to the config or built-in default).
+
+## Wiki auto-loop
+
+**Default-on** (`.agent-all.json` → `wiki.auto`, default `true`; opt out with
+`--no-wiki`). agent-all consults and grows a project knowledge base in `.wiki/`
+as it works, so you never have to invoke `/wiki` by hand:
+
+- **Phase 1 — read.** Routes the intent through the wiki index; a topic hit folds
+  that page's prior decisions/contradictions into planning.
+- **Phase 2 — record plan.** Auto-creates `.wiki/` on first run (one-time notice),
+  then writes/updates the topic page with the plan + decisions at grade C.
+- **Phase 5 — record outcome.** Updates the SAME page (topic-merge) with what
+  shipped — file map, verdict, PR + task cross-links — promoting it C→B, recording
+  any contradiction with the recorded plan, then runs the compile self-audit (diff=0).
+
+Mechanics live in `lib/wiki-log.mjs` (vendored, install-anchored — never a
+cross-skill import); page **content** is authored by the orchestrator. Every wiki
+step is **non-fatal**: a wiki failure warns and continues, never failing the run.
+Auto-wiki is available on Claude Code + Codex (runnable wiki); the Copilot/Gemini/
+Cursor ports do not run it.
 
 ## Gates
 

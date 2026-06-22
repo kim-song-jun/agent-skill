@@ -119,3 +119,5 @@ The G10 slice ports the `/wiki` knowledge-base surface to Copilot as a **prose-o
 **Cross-family note:** The host context file is owned by `harness-builder-copilot` (builder plugin), not `harness-floor-copilot`. There is no host-context file inside the floor plugin. The prose lands in the builder template; this porting-notes doc (floor-owned) carries the reference and honest-labeling.
 
 **Tests:** `tests/lib/copilot/wiki-prose-surface.test.mjs` — doc-surface contract (presence/contract only, not behavior). Asserts the `## Project Wiki` heading, verb specs, schema keys, digest instruction, #27 token, and a negative guard ensuring no hook-fires claim is made in the prose.
+
+**agent-all↔wiki auto-loop (v0.7.4) — NOT on this port.** The auto-loop (agent-all auto-reading `.wiki/` at Phase 1 and auto-writing it at Phase 2/5 via `wiki-log.mjs`) runs only on Claude Code + Codex (the runnable-wiki ports). Copilot ships no `wiki-log.mjs` and its agent-all phase docs carry no wiki step — honest prose-only, consistent with the #27 wiki labeling above.

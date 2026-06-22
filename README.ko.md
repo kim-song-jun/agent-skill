@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-2258%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-19-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-2278%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-19-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **스스로 굴러가는 agent-first 워크플로.** 프로젝트당 `/agent-init` 한 번, 기능당 `/agent-all "..." --loop --qa` 한 번 — agent가 brainstorm → 계획 → 구현 → 테스트 → **모든 페이지 visual QA** → PR을 알아서 진행하고, **테스트와 UI 둘 다 통과할 때까지 알아서 반복**합니다. 매 턴 babysitting 필요 없음.
 
@@ -860,7 +860,7 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 - **GitHub 거버넌스** — 공개 PR smoke CI, issue template, PR template, label taxonomy는 [docs/github-governance.md](docs/github-governance.md) 참조.
 - **Release provenance** — `node scripts/release-provenance.mjs --release=<rc-tag>`로 `release-manifest.json`과 `release-manifest.sha256`를 생성하고, 설치/갱신 시 `--verify-checksums` / `--verify-provenance`로 다시 검증할 수 있습니다.
 - **19개 플러그인 전체 목록** — [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json) 참조.
-- **변경 히스토리** — [CHANGELOG.md](CHANGELOG.md) 참조. 2258 tests, 모두 통과.
+- **변경 히스토리** — [CHANGELOG.md](CHANGELOG.md) 참조. 2278 tests, 모두 통과.
 - **플랫폼별 포팅** — `docs/superpowers/specs/`의 `-impl-spec.md` 또는 `-decomposition.md`로 끝나는 spec 참조.
 - **Skill utility benchmark** — [docs/superpowers/specs/2026-06-11-skill-utility-benchmark.md](docs/superpowers/specs/2026-06-11-skill-utility-benchmark.md) 참조, 실행은 `node scripts/skill-eval.mjs --smoke`.
 - **아키텍처 & 레이아웃** — 플러그인별 raw design 문서는 [docs/superpowers/specs/](docs/superpowers/specs/) 참조.
@@ -873,7 +873,7 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 
 | 레이어 | 상태 | 비고 |
 |---|---|---|
-| Unit/integration 테스트 | ✅ **2258/2258 통과** | Mock toolCaller + 격리된 lib 테스트; release-doc, policy, policy hook error handling/no-silent-catch guard, advisory hook diagnostics guard, Codex hook-schema, native Codex plugin updater, Copilot runtime debt guard, task-ledger, Codex exec, release-audit, release-candidate evidence, provenance manifest, public GitHub governance, docs structure, release publish preflight, target-project smoke, skill-eval, command-surface, doctor, cleanup, visual-qa 회귀 포함 |
+| Unit/integration 테스트 | ✅ **2278/2278 통과** | Mock toolCaller + 격리된 lib 테스트; release-doc, policy, policy hook error handling/no-silent-catch guard, advisory hook diagnostics guard, Codex hook-schema, native Codex plugin updater, Copilot runtime debt guard, task-ledger, Codex exec, release-audit, release-candidate evidence, provenance manifest, public GitHub governance, docs structure, release publish preflight, target-project smoke, skill-eval, command-surface, doctor, cleanup, visual-qa 회귀 포함 |
 | Release gate | ✅ PR smoke + local gate 검증 | 공개 PR CI는 `.github/workflows/smoke.yml`, `.github/workflows/docs.yml`, `.github/workflows/templates.yml`로 smoke/docs/templates drift를 검증; 배포는 여전히 local release-candidate evidence, release-audit, release provenance manifest/checksum evidence, fresh fixture, `./scripts/release-smoke.sh --fast --with-live-cli`, target-project smoke, `node --test`, vendored-lib sync, support matrix drift check로 검증 |
 | Project install 렌더러 (Claude + 5개 플랫폼) | ✅ end-to-end 검증 | `install-all.sh` + `install-platform.sh` |
 | 마켓플레이스 등록 | ✅ 19 플러그인 등록 | local + origin 동기화 |
@@ -883,7 +883,7 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 | `/thrift` compact 전달 | ⚠️ API-gated advisory path | Claude/Codex 모두 durable summary 파일을 쓰고 `/compact` 사용을 안내; programmatic compact injection은 host CLI가 안정 API를 노출하면 연결 |
 | Provider-backed thrift summarizer | ✅ release-scoped | Claude의 선택적 `@anthropic-ai/sdk` summarizer 경로는 구현/테스트 완료; Codex는 dependency-free heuristic summarizer, configurable `gpt-5-nano` model metadata, OpenAI-rate audit heuristic을 제공 |
 
-버전: `harness-builder` `v0.7.3`, `harness-floor` `v0.7.3`, 나머지 설치 가능한 `agent-skill` 플러그인 17개도 같은 release train의 `v0.7.3`로 배포합니다. 내부 artifact/config schema version은 별도의 호환성 계약으로 유지됩니다.
+버전: `harness-builder` `v0.7.4`, `harness-floor` `v0.7.4`, 나머지 설치 가능한 `agent-skill` 플러그인 17개도 같은 release train의 `v0.7.4`로 배포합니다. 내부 artifact/config schema version은 별도의 호환성 계약으로 유지됩니다.
 
 ### 릴리즈 후보 라이프사이클
 
@@ -940,7 +940,7 @@ node scripts/skill-eval.mjs --smoke --no-write --json  # CI-safe utility benchma
 node scripts/skill-eval.mjs --full       # 수동/full benchmark; .agent-skill/evals/<date>/ 기록
 node scripts/release-publish-preflight.mjs --base=origin/main
 node scripts/target-project-smoke.mjs --target=/path/to/project --platform=claude,codex --lang=ko
-node --test                              # 2258/2258 통과 필수
+node --test                              # 2278/2278 통과 필수
 node scripts/sync-lib.mjs --check        # vendored shared libs 동기화 확인
 node scripts/generate-support-matrix.mjs --check
 ```

@@ -67,8 +67,25 @@ prompting in the chat surface directly.
 
 ## All branches
 
+**Wiki recall (if `config.wiki.auto`).** Before planning, consult the project
+wiki so the plan builds on accumulated knowledge (the *read* half of the
+auto-loop). Skip silently when `config.wiki.auto` is false or no `.wiki/` exists.
+```javascript
+import { findOrCreatePage, readPage } from "./.codex/skills/agent-all/lib/wiki-log.mjs";
+if (config.wiki?.auto) {
+  const hit = findOrCreatePage(".wiki", task.title);
+  if (hit.ok && hit.existed) {
+    const page = readPage(".wiki", hit.slug);
+    if (page.ok && page.found) state.wikiContext = { slug: hit.slug, content: page.content };
+  }
+}
+```
+If `state.wikiContext` is set, treat its prior decisions/contradictions as known
+constraints when planning.
+
 Push `{phase: 1, completedAt}` to `phases` via `apply_patch`.
 
 ## Output
 
-Print: `Task ready: <task.path> ("<task.title>")`.
+Print: `Task ready: <task.path> ("<task.title>")` plus, when `state.wikiContext`
+is set, `Wiki: recalled <slug>`.

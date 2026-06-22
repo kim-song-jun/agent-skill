@@ -18,6 +18,15 @@
    if (warning) { /* print: ".agent-all.json not found; using built-ins. Run /agent-init --theme=floor to seed." */ }
    ```
 
+   **4b. (auto-wiki toggle).** The agent-all↔wiki auto-loop is **default-on**
+   (`config.wiki.auto`, default `true`): Phase 1 reads relevant wiki pages into
+   planning, Phase 2 records the plan, Phase 5 records the outcome. The `--no-wiki`
+   flag opts out — normalize it once here so every downstream phase only checks
+   `config.wiki.auto`:
+   ```javascript
+   if (flags["no-wiki"]) config.wiki = { ...config.wiki, auto: false };
+   ```
+
 5. Read `.agent-all-state.json` if present. If `--resume` and a task path is
    known, discover `/agent-handoff` artifacts before skipping:
    `.agent-skill/handoff/<display-id>-<slug>.handoff.md` and

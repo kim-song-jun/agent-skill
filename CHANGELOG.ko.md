@@ -6,6 +6,20 @@
 
 ## 미출시
 
+## Agent-skill v0.7.4 — 2026-06-22
+
+### agent-all ↔ wiki 자동 루프 (올인원 지식 베이스)
+
+`/agent-all`이 작업하며 `.wiki/` 프로젝트 위키를 **읽고 키웁니다** — `/wiki`를 직접 칠 필요 없이 위키가 스스로 유지됩니다. **기본 켬**(`.agent-all.json` → `wiki.auto`, 기본 `true`; `--no-wiki`로 끔). Claude Code + Codex(실행 가능 위키 포트)에서 동작하고, Copilot/Gemini/Cursor는 "이 포트엔 없음" 정직 노트를 가집니다. 출시 전 적대 검증(lib 라이프사이클 + phase-doc 배선 + scope-honesty, 전부 SHIP, 블로커 0).
+
+- **읽기 → 계획 → 기록 루프, 기존 phase에 통합:** Phase 1이 의도를 위키 인덱스로 라우팅해 매칭 페이지의 과거 결정/모순을 계획에 반영(*읽기* 절반); Phase 2가 첫 실행 시 `.wiki/`를 자동 생성(1회 안내)하고 계획+결정을 grade **C**로 기록; Phase 5가 같은 페이지를 결과로 갱신 — 변경 파일맵·검증 결과·PR/task 크로스링크 — grade **C→B** 승격, 기록된 계획과의 모순 명시, compile 자가 감사(diff=0) 실행.
+- **토픽 병합(비대화 방지):** `routePhaseA(의도)`가 같은 주제를 ONE 페이지로 되돌려(실행마다 새 파일이 아니라 갱신), 위키가 폭증 대신 누적됩니다.
+- **설계상 install-safe:** 메커니즘은 새 `lib/wiki-log.mjs`에 있고 **로컬 벤더링된** `./wiki-index.mjs`를 import — cross-skill import 안 함(Codex에서 agent-all과 wiki가 다른 디렉터리에 설치되는 v0.7.2 ERR_MODULE_NOT_FOUND 클래스 회피). 두 lib는 각 실행 포트의 agent-all lib에 verbatim 벤더링; Codex phase 문서는 install-anchored `./.codex/skills/agent-all/lib/wiki-log.mjs`를 import.
+- **비-치명적:** 모든 wiki export가 `{ ok, ... }`를 반환하고 절대 throw 안 함; wiki 실패는 warn 후 계속 — agent-all 실행을 절대 중단 안 함. 페이지 *내용*은 오케스트레이터(LLM)가 작성; 파일/인덱스/감사 메커니즘만 코드.
+- **새 config:** `wiki.auto`(기본 `true`)를 config-loader DEFAULTS + 양 config 템플릿에 추가, boolean 검증. 새 `--no-wiki` 플래그는 Phase 0에서 1회 정규화.
+
+Suite: 2278/2278 통과 (v0.7.3 대비 +20: wiki-log 라이프사이클, config wiki.auto, CC+Codex+prose phase-doc 계약).
+
 ## Agent-skill v0.7.3 — 2026-06-22
 
 ### Wiki 발견 가능성 + 적대 게이트 하드닝

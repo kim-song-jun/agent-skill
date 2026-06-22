@@ -89,3 +89,8 @@ Cursor port is slower in one dimension:
   fan-out completion.
 - Spec-reviewer vs quality-reviewer split if Cursor adds finer-grained
   subagent routing.
+
+**agent-all↔wiki auto-loop (v0.7.4) — NOT on this port.** The auto-loop (agent-all
+auto-reading `.wiki/` at Phase 1 and auto-writing it at Phase 2/5 via `wiki-log.mjs`)
+runs only on Claude Code + Codex. Cursor ships no `wiki-log.mjs` and its agent-all
+phase docs carry no wiki step — honest prose-only.

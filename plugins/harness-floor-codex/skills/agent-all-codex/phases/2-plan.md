@@ -19,6 +19,26 @@
 
 3. Push `{phase: 2, completedAt}` to `phases`.
 
+4. **Wiki plan-capture (if `config.wiki.auto`).** Record the plan + decisions
+   (the *write* half of the auto-loop, first pass). Non-fatal: warn + continue.
+   ```javascript
+   import { ensureWiki, findOrCreatePage, writePage } from "./.codex/skills/agent-all/lib/wiki-log.mjs";
+   if (config.wiki?.auto) {
+     const ready = ensureWiki(".wiki");
+     if (ready.ok && ready.created) console.log("started a project wiki at .wiki/ — disable with --no-wiki");
+     const target = findOrCreatePage(".wiki", task.title);
+     const res = writePage(".wiki", {
+       title: task.title, slug: target.slug, grade: "C", tags: [],
+       bluf: "<one-sentence plan summary>",
+       details: "<the plan: approach + key decisions, with rationale>",
+       contradictions: target.existed ? "<note any decision that reverses a prior one>" : "",
+       sources: [`task: ${task.path}`, `plan: ${plan.path}`],
+     });
+     if (!res.ok) console.warn(`wiki plan-capture skipped: ${res.error}`);
+   }
+   ```
+   Keep `slug` = `target.slug` so Phase 5 updates the SAME page.
+
 ## Output
 
-Print: `Plan written: <plan.path>`.
+Print: `Plan written: <plan.path>` plus, when `config.wiki.auto`, `Wiki: recorded plan → .wiki/<slug>.md`.

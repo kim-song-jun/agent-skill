@@ -37,9 +37,17 @@ repository.
 ## Flags
 
 Same as Claude Code: `--loop`, `--max-iter=<N>`, `--max-cost=<USD>`,
-`--max-runtime-sec=<seconds>`, `--wave-size=small|medium|large`, `--no-pr`, `--no-brainstorm`,
+`--max-runtime-sec=<seconds>`, `--wave-size=small|medium|large`, `--no-pr`, `--no-wiki`, `--no-brainstorm`,
 `--resume`, `--force`, `--yes`,
 `--break-condition=<spec>`, `--reconfigure`, `--qa`.
+
+**Auto-wiki loop (default-on, `--no-wiki` to opt out):** like Claude Code, Codex
+consults and grows a `.wiki/` knowledge base as it works — Phase 1 reads relevant
+pages into planning, Phase 2 records the plan (grade C), Phase 5 records the
+outcome (grade C→B) + cross-links + a compile self-audit. Mechanics live in the
+install-anchored `.codex/skills/agent-all/lib/wiki-log.mjs` (vendored, never a
+cross-skill import); every wiki step is non-fatal. Codex + Claude Code are the
+only ports that run it.
 
 `--resume` checks for `/agent-handoff` sibling artifacts
 (`.agent-skill/tasks/<NN>-<slug>.handoff.md` and `.session.md`) and uses their

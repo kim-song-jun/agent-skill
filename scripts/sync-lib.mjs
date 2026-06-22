@@ -271,6 +271,23 @@ const WIKI_INDEX_SOURCE = resolve(
 );
 const WIKI_INDEX_TARGETS = [
   "plugins/harness-floor-codex/skills/wiki-codex/lib/wiki-index.mjs",
+  // Vendored into agent-all too so the wiki auto-loop helper (wiki-log.mjs) can
+  // import it LOCALLY (`./wiki-index.mjs`) — never cross-skill from the wiki
+  // skill, which installs to a different dir on Codex (the v0.7.2 install-anchor
+  // class). One source of truth (the wiki skill copy), vendored everywhere.
+  "plugins/harness-floor/skills/agent-all/lib/wiki-index.mjs",
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/wiki-index.mjs",
+].map((p) => resolve(repoRoot, p));
+
+// wiki-log.mjs — the agent-all↔wiki auto-loop helper. Lives in agent-all's lib
+// (CC source), imports the LOCAL vendored wiki-index.mjs. Vendored verbatim to
+// the Codex agent-all port (its own local wiki-index.mjs is vendored above).
+const WIKI_LOG_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/wiki-log.mjs",
+);
+const WIKI_LOG_TARGETS = [
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/wiki-log.mjs",
 ].map((p) => resolve(repoRoot, p));
 
 // wiki templates — index.md.tpl and page.md.tpl are verbatim copies of the CC
@@ -691,6 +708,20 @@ function collectDrift() {
       drift.push({ file: "wiki-index.mjs", dest: destPath, reason: "diverged", sourceContent: wikiIndexSrc });
     }
   }
+  // wiki-log.mjs (agent-all CC source → Codex agent-all copy, verbatim).
+  const wikiLogSrc = readOrNull(WIKI_LOG_SOURCE);
+  if (wikiLogSrc == null) {
+    console.error(`Source missing: ${WIKI_LOG_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of WIKI_LOG_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "wiki-log.mjs", dest: destPath, reason: "missing", sourceContent: wikiLogSrc });
+    } else if (destContent !== wikiLogSrc) {
+      drift.push({ file: "wiki-log.mjs", dest: destPath, reason: "diverged", sourceContent: wikiLogSrc });
+    }
+  }
   // wiki templates (CC source → Codex wiki skill copies, verbatim).
   for (const { file, src, dst } of WIKI_TEMPLATES) {
     const srcContent = readOrNull(src);
@@ -930,6 +961,7 @@ function totalChecked() {
     + HARNESS_CLEANER_TARGETS.length
     + DEBUG_SKILL_LIB_FILES.length * DEBUG_SKILL_LIB_TARGETS.length
     + WIKI_INDEX_TARGETS.length
+    + WIKI_LOG_TARGETS.length
     + WIKI_TEMPLATES.length;
 }
 

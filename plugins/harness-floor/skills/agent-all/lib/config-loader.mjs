@@ -17,6 +17,7 @@ export const DEFAULTS = {
   },
   loop: { breakCondition: "npm test", stableIters: 1, maxRuntimeSec: null, maxRepeatedFailureSignature: 3 },
   gates: { specReview: true, qualityReview: true, adversarialVerify: true, blockOnCritical: true },
+  wiki: { auto: true },
   pr: { branchPrefix: "feat/agent-all/", baseBranch: "main" },
   policy: { decisionSurfacing: true, verification: true, reviewerAudit: true, qaAudit: true },
   security: {
@@ -112,6 +113,9 @@ function validate(cfg) {
     if (cfg.gates?.[key] !== undefined && typeof cfg.gates[key] !== "boolean") {
       errors.push({ path: `gates.${key}`, message: "must be boolean" });
     }
+  }
+  if (cfg.wiki?.auto !== undefined && typeof cfg.wiki.auto !== "boolean") {
+    errors.push({ path: "wiki.auto", message: "must be boolean" });
   }
   return errors;
 }

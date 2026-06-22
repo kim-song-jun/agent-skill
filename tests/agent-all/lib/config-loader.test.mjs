@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
+import { dirname, resolve, join } from "node:path";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { loadConfig, DEFAULTS } from "../../../plugins/harness-floor/skills/agent-all/lib/config-loader.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -64,4 +66,27 @@ test("rejects invalid cost telemetry config types", () => {
   assert.ok(result.errors.some(e => e.path === "telemetry.cost.enabled" && /boolean/i.test(e.message)));
   assert.ok(result.errors.some(e => e.path === "telemetry.cost.warnAtRatio" && /number/i.test(e.message)));
   assert.ok(result.errors.some(e => e.path === "telemetry.cost.modelRates" && /object/i.test(e.message)));
+});
+
+test("wiki.auto defaults to true (the agent-all↔wiki auto-loop is default-on)", () => {
+  assert.equal(DEFAULTS.wiki.auto, true);
+});
+
+test("wiki.auto: a config can opt out (false), and a non-boolean is rejected", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cfg-wiki-"));
+  try {
+    const off = join(dir, "off.json");
+    writeFileSync(off, JSON.stringify({ wiki: { auto: false } }));
+    const r1 = loadConfig(off);
+    assert.equal(r1.ok, true);
+    assert.equal(r1.config.wiki.auto, false, "explicit --no-wiki / config opt-out is honored");
+
+    const bad = join(dir, "bad.json");
+    writeFileSync(bad, JSON.stringify({ wiki: { auto: "yes" } }));
+    const r2 = loadConfig(bad);
+    assert.equal(r2.ok, false);
+    assert.ok(r2.errors.some(e => e.path === "wiki.auto" && /boolean/i.test(e.message)), "non-boolean wiki.auto rejected");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
