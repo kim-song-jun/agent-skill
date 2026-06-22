@@ -278,11 +278,16 @@ export function appendIndexEntry(raw, entry) {
 
 // ---------------------------------------------------------------------------
 // CLI entrypoint: node lib/wiki-index.mjs compile|status|list [dir] | route <query>
+// Wiki root resolution: an explicit [dir] positional (compile|status|list only) >
+// the WIKI_DIR env var > ".wiki" relative to cwd. `route` takes only <query>
+// (which may be multi-word, so it has no positional dir slot) and therefore reads
+// the wiki root from WIKI_DIR env or the ".wiki" default — never a trailing arg.
 // Exit codes: 0 = ok/match, 1 = drift/no-match, 2 = usage error
 // ---------------------------------------------------------------------------
 function cliMain(argv) {
   const [cmd, dirArg] = argv;
-  const wikiDir = dirArg || WIKI_DIR_DEFAULT; // ".wiki" default
+  const envDir = process.env.WIKI_DIR || WIKI_DIR_DEFAULT; // WIKI_DIR env > ".wiki"
+  const wikiDir = dirArg || envDir; // explicit positional [dir] wins for compile|status|list
   switch (cmd) {
     case "compile": {
       const r = compileSelfAudit(wikiDir);
@@ -311,10 +316,10 @@ function cliMain(argv) {
     case "route": {
       const query = argv.slice(1).join(" ");
       if (!query) {
-        process.stderr.write("usage: wiki-index.mjs route <query>\n");
+        process.stderr.write("usage: wiki-index.mjs route <query>   (wiki root: WIKI_DIR env or .wiki)\n");
         return 2;
       }
-      const { entries } = parseIndex(WIKI_DIR_DEFAULT);
+      const { entries } = parseIndex(envDir);
       const r = routePhaseA(query, entries);
       process.stdout.write(JSON.stringify(r) + "\n");
       return r.match ? 0 : 1;

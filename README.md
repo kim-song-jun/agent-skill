@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-2246%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-19-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-2258%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-19-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **Agent-first workflows that run themselves.** One `/agent-init` per project; one `/agent-all "..." --loop --qa` per feature; the agent brainstorms → plans → writes → tests → **visually QAs every page** → opens the PR — and keeps iterating until tests AND the UI both pass — without you babysitting every turn.
 
@@ -16,6 +16,7 @@ Works on Claude Code today, with cross-platform ports for **Cursor, GitHub Copil
 /thrift                                      # keep long sessions affordable (auto-summarize, audit)
 /explore                                     # codebase map; /explore where Foo → O(1) lookup
 /debug "tests flaky 30% of runs"             # reproduce → bisect → hypothesize → verify
+/wiki compile                                # self-auditing project knowledge base in .wiki/ (diff=0 gate)
 ```
 
 **Three things that make it click:**
@@ -309,6 +310,21 @@ Step-by-step workflow with persistent state so you don't lose context across lon
 
 Parses 10 error formats (Python tracebacks, JS stack traces, pytest/jest/rust/tsc/gcc/ESLint output, etc.) into clickable citations.
 
+### `/wiki` — a self-auditing project knowledge base
+
+A structured markdown wiki in `.wiki/`, implementing the Karpathy LLM-Wiki pattern (MIT): an `INDEX.md` **index-as-router**, provenance-graded pages (A primary / B secondary / C inferred), explicit contradiction preservation, and a `compile` **self-audit gate** that fails on any index↔page drift (every index entry must have a page and every page must be indexed — `diff=0`). A SessionStart digest prints wiki status at every session open.
+
+```
+/wiki <query>           # Phase A: look up a query in the index → read or write the page
+/wiki write <title>     # Phase B: write a new page
+/wiki update <slug>     # Phase B: update an existing page
+/wiki compile           # self-audit gate (diff=0): index ↔ pages must match
+/wiki status            # index summary (entry count, drift, top grades)
+/wiki list              # list all indexed pages
+```
+
+Ships as a runnable skill in **harness-floor** (Claude Code) and **harness-floor-codex** (Codex, near-native, with a PreToolUse first-call digest). Copilot and Gemini get a prose-only port inlined into their host-context templates, and Cursor carries a prose surface — none with a runnable `/wiki` command. Point the CLI at a non-default root with the `WIKI_DIR` env var.
+
 ---
 
 ## Common workflows
@@ -363,7 +379,7 @@ Themes bundle plugins for a specific kind of work:
 | Theme | Command | What it gives you |
 |---|---|---|
 | **Builder** (A) | `/agent-init` | Project scaffolding. Run once. |
-| **Floor** (C) | `/agent-all`, `/visual-qa` | Ship features. Cost-unrestricted. |
+| **Floor** (C) | `/agent-all`, `/visual-qa`, `/wiki` | Ship features + a self-auditing knowledge base. Cost-unrestricted. |
 | **Thrift** (B) | `/thrift` | Cost optimization for long sessions. |
 | **Explore** (D) | `/explore` | Codebase mapping & queries. |
 | **Debug** (E) | `/debug` | Systematic debugging. |
@@ -854,7 +870,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 - **GitHub governance** — see [docs/github-governance.md](docs/github-governance.md) for public PR smoke CI, issue templates, PR template, and label taxonomy.
 - **Release provenance** — run `node scripts/release-provenance.mjs --release=<rc-tag>` to write `release-manifest.json` plus `release-manifest.sha256`; installers can re-check it with `--verify-checksums` / `--verify-provenance`.
 - **All 19 plugins enumerated** — see [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json).
-- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 2246 tests, all green.
+- **Change history** — see [CHANGELOG.md](CHANGELOG.md). 2258 tests, all green.
 - **Per-platform porting** — see specs ending in `-impl-spec.md` or `-decomposition.md` under `docs/superpowers/specs/`.
 - **Skill utility benchmark** — see [docs/superpowers/specs/2026-06-11-skill-utility-benchmark.md](docs/superpowers/specs/2026-06-11-skill-utility-benchmark.md) and run `node scripts/skill-eval.mjs --smoke`.
 - **Architecture & layout** — see [docs/superpowers/specs/](docs/superpowers/specs/) for raw design docs per plugin.
@@ -866,7 +882,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 
 | Layer | Status | Note |
 |---|---|---|
-| Unit/integration tests | ✅ **2246/2246 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, policy hook error handling/no-silent-catch guard, advisory hook diagnostics guard, Codex hook-schema, native Codex plugin updater, Copilot runtime debt guard, task-ledger, Codex exec, release-audit, release-candidate evidence, provenance manifests, public GitHub governance, docs structure, release publish preflight, target-project smoke, skill-eval, command-surface, doctor, cleanup, and visual-qa regressions |
+| Unit/integration tests | ✅ **2258/2258 passing** | Mock toolCallers + isolated lib tests; release-doc, policy, policy hook error handling/no-silent-catch guard, advisory hook diagnostics guard, Codex hook-schema, native Codex plugin updater, Copilot runtime debt guard, task-ledger, Codex exec, release-audit, release-candidate evidence, provenance manifests, public GitHub governance, docs structure, release publish preflight, target-project smoke, skill-eval, command-surface, doctor, cleanup, and visual-qa regressions |
 | Release gate | ✅ PR smoke + local gate verified | Public PR CI now covers smoke/docs/templates drift via `.github/workflows/smoke.yml`, `.github/workflows/docs.yml`, and `.github/workflows/templates.yml`; deployment still uses local release-candidate evidence, release-audit, release provenance manifest/checksum evidence, fresh fixtures, `./scripts/release-smoke.sh --fast --with-live-cli`, target-project smoke, `node --test`, vendored-lib sync, and support matrix drift checks |
 | Project install renderers (Claude + 5 platforms) | ✅ end-to-end verified | `install-all.sh` + `install-platform.sh` |
 | Marketplace registration | ✅ 19 plugins listed | sync between local + origin |
@@ -876,7 +892,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 | `/thrift` compact delivery | ⚠️ API-gated advisory path | Claude/Codex both write durable summary files and prompt `/compact`; programmatic compact injection connects when host CLIs expose a stable API |
 | Provider-backed thrift summarizers | ✅ release-scoped | Claude's optional `@anthropic-ai/sdk` summarizer path is implemented and tested; Codex ships a dependency-free heuristic summarizer with configurable `gpt-5-nano` model metadata and OpenAI-rate audit heuristics |
 
-Versioning: `harness-builder` at `v0.7.2`, `harness-floor` at `v0.7.2`, and the other 17 installable `agent-skill` plugins at `v0.7.2` on the same release train. Internal artifact/config schema versions remain separate compatibility contracts.
+Versioning: `harness-builder` at `v0.7.3`, `harness-floor` at `v0.7.3`, and the other 17 installable `agent-skill` plugins at `v0.7.3` on the same release train. Internal artifact/config schema versions remain separate compatibility contracts.
 
 ### Release Candidate Lifecycle
 
@@ -933,7 +949,7 @@ node scripts/skill-eval.mjs --smoke --no-write --json  # CI-safe utility benchma
 node scripts/skill-eval.mjs --full       # manual/full benchmark; writes .agent-skill/evals/<date>/
 node scripts/release-publish-preflight.mjs --base=origin/main
 node scripts/target-project-smoke.mjs --target=/path/to/project --platform=claude,codex --lang=ko
-node --test                              # 2246/2246 must pass
+node --test                              # 2258/2258 must pass
 node scripts/sync-lib.mjs --check        # vendored shared libs in sync
 node scripts/generate-support-matrix.mjs --check
 ```

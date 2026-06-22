@@ -68,3 +68,41 @@ test("wiki CLI unknown command exits 2", () => {
   const r = runCli(["frobnitz"]);
   assert.equal(r.status, 2, `expected exit 2 for unknown command, got ${r.status}`);
 });
+
+// --- route: honors the WIKI_DIR env var (v0.7.3 fix for the dir-arg defect) ---
+// `route` has no positional [dir] slot (its args are the multi-word query), so the
+// wiki root must come from WIKI_DIR env. Before the fix, route hardcoded the ".wiki"
+// default and silently ignored any directory, making it impossible to route against
+// a non-cwd wiki. cwd is forced to /tmp here so a pass can ONLY come from WIKI_DIR.
+test("wiki CLI route honors WIKI_DIR env and matches an exact slug (exit 0)", () => {
+  const r = runCli(["route", "auth-flow"], {
+    cwd: "/tmp",
+    env: { ...process.env, WIKI_DIR: resolve(FIXTURES, "complete") },
+  });
+  assert.equal(r.status, 0, `expected exit 0 (match), got ${r.status}; stderr: ${r.stderr}`);
+  assert.match(r.stdout, /"slug":"auth-flow"/, `stdout must carry the matched page: ${r.stdout}`);
+});
+
+test("wiki CLI route honors WIKI_DIR env: a non-matching query exits 1 with match:null", () => {
+  const r = runCli(["route", "zzz-no-such-page"], {
+    cwd: "/tmp",
+    env: { ...process.env, WIKI_DIR: resolve(FIXTURES, "complete") },
+  });
+  assert.equal(r.status, 1, `expected exit 1 (no match), got ${r.status}; stdout: ${r.stdout}`);
+  assert.match(r.stdout, /"match":null/, `stdout must report match:null: ${r.stdout}`);
+});
+
+test("wiki CLI route without WIKI_DIR and no .wiki in cwd does not crash (exit 1, no match)", () => {
+  const r = runCli(["route", "auth-flow"], {
+    cwd: "/tmp",
+    env: { ...process.env, WIKI_DIR: "" },
+  });
+  assert.equal(r.status, 1, `expected exit 1 (no .wiki, no match), got ${r.status}; stderr: ${r.stderr}`);
+  assert.match(r.stdout, /"match":null/, `stdout must report match:null: ${r.stdout}`);
+});
+
+test("wiki CLI route with no query exits 2 (usage)", () => {
+  const r = runCli(["route"]);
+  assert.equal(r.status, 2, `expected exit 2 (usage), got ${r.status}; stderr: ${r.stderr}`);
+  assert.match(r.stderr, /usage:/i, `stderr must show usage: ${r.stderr}`);
+});

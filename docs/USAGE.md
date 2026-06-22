@@ -186,6 +186,55 @@ npm run dev                                       # dev server on :3000
 
 Output: `.agent-skill/reports/visual-qa/<date>-<hex>/report.md` + per-image `.png` + `.analysis.{json,md}`.
 
+## Project knowledge base (`/wiki`)
+
+`/wiki` is a self-auditing project knowledge base stored in `.wiki/`. It implements the Karpathy LLM-Wiki pattern (MIT): an `INDEX.md` index-as-router, provenance-graded pages (A primary / B secondary / C inferred), explicit contradiction preservation, and a `compile` self-audit gate that fails on any index↔page drift (diff=0). A SessionStart digest prints wiki status at session open.
+
+### Look up a query
+
+```
+/wiki <query>
+```
+
+Phase A: looks up a query in the index, then reads or writes the relevant page.
+
+### Write or update a page
+
+```
+/wiki write <title>
+/wiki update <slug>
+```
+
+Phase B: write a new page or update an existing one.
+
+### Self-audit gate
+
+```
+/wiki compile
+```
+
+Verifies that every index entry has a page and vice-versa (diff=0). Fails loudly on any index↔page drift.
+
+### Status and listing
+
+```
+/wiki status
+/wiki list
+```
+
+`/wiki status` prints a summary of entry count, drift, and top grades. `/wiki list` lists all indexed pages.
+
+### Availability
+
+| Platform | Support |
+|---|---|
+| Claude Code (`harness-floor`) | Runnable `/wiki` skill |
+| Codex (`harness-floor-codex`) | Near-native runnable `/wiki` |
+| Copilot / Gemini | Prose-only port via host-context templates |
+| Cursor | Prose surface (no runnable `/wiki` command) |
+
+Use the `WIKI_DIR` env var to point the CLI at a non-default wiki root.
+
 ## Artifact policy
 
 Generated control-plane artifacts default to `.agent-skill/`: task docs in

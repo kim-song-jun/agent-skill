@@ -14,7 +14,7 @@
     {
       "name": "harness-floor",
       "source": "./plugins/harness-floor",
-      "description": "Cost-unrestricted patterns starting with /visual-qa (visual regression + LLM analysis via Playwright MCP)"
+      "description": "Cost-unrestricted patterns: /visual-qa (visual regression + LLM analysis via Playwright MCP) and /wiki — a self-auditing project knowledge base in .wiki/ (Karpathy LLM-Wiki pattern): INDEX.md router, provenance-graded pages (A/B/C), contradiction preservation, and a 'compile' self-audit gate (diff=0); SessionStart digest prints wiki status on open"
     },
     {
       "name": "harness-builder-codex",
@@ -39,7 +39,7 @@
     {
       "name": "harness-floor-codex",
       "source": "./plugins/harness-floor-codex",
-      "description": "visual-qa scaffold for Codex CLI — emits .visual-qa.json + Playwright MCP entry"
+      "description": "visual-qa scaffold for Codex CLI — emits .visual-qa.json + Playwright MCP entry; ships near-native /wiki (self-auditing knowledge base in .wiki/), the closest Codex port of the harness-floor wiki skill"
     },
     {
       "name": "harness-floor-copilot",

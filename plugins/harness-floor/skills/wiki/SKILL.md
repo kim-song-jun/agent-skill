@@ -61,6 +61,8 @@ node lib/wiki-index.mjs compile|status|list [dir]
 node lib/wiki-index.mjs route <query>
 ```
 
+Wiki root: `compile`/`status`/`list` take an optional `[dir]` positional; all commands also honor the `WIKI_DIR` env var, defaulting to `.wiki` relative to cwd. `route` takes only `<query>` (which may be multi-word, so it has no positional dir slot) — point it at a non-cwd wiki with `WIKI_DIR=/path/to/.wiki node lib/wiki-index.mjs route <query>`.
+
 Exit codes: `0` = ok/match, `1` = drift/no-match, `2` = usage error. Can gate a pipeline or pre-commit check: `node lib/wiki-index.mjs compile && echo "wiki ok"`.
 
 ## Lib modules

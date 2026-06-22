@@ -54,8 +54,18 @@ export const ADVERSARIAL_ROLE = "verification-reviewer-adversarial";
 
 export function adversarialAuditBlocks(adversarialAuditText) {
   const text = String(adversarialAuditText ?? "");
-  const m = auditTokenPattern("VERIFICATION_AUDIT").exec(text);
-  const verdict = m?.[1] ?? null;        // "passed"|"failed"|"skipped"|null
-  const blocked = verdict === "failed";  // failed => block; passed/skipped/missing => no block
+  // Fail-safe, defense-in-depth beyond the doc-mandated single lowercase token:
+  // scan EVERY VERIFICATION_AUDIT verdict occurrence, case-insensitively, and
+  // block if ANY of them is `failed`. This closes two bypasses an earlier
+  // first-match/case-sensitive matcher had — uppercase `FAILED` (fail-open) and
+  // a stray `passed` preceding the real `failed` (first-match-wins). A compliant
+  // reviewer emits exactly one lowercase token, for which this reduces to the
+  // obvious result. Uses its own global+insensitive regex (not auditTokenPattern,
+  // whose single-match `.exec` semantics other validators depend on).
+  const re = new RegExp(`VERIFICATION_AUDIT:\\s*(${VERDICTS})\\b`, "gi");
+  const verdicts = [...text.matchAll(re)].map((m) => m[1].toLowerCase());
+  const blocked = verdicts.includes("failed");  // any failed => block
+  const verdict =
+    verdicts.length === 0 ? null : blocked ? "failed" : verdicts[verdicts.length - 1];
   return { blocked, verdict, role: ADVERSARIAL_ROLE };
 }

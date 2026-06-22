@@ -141,6 +141,7 @@ bash /tmp/agent-skill/scripts/install-platform.sh --platform=vscode-copilot --ta
 | `/debug` | Reproduces failures and narrows root cause | `/debug "npm test fails on login"` |
 | `/data-runner` | Guides SQL, notebook, and batch artifact verification | `/data-runner sql .agent-skill/tasks/T-YYYYMMDD-001-report.md` |
 | `/agent-handoff` | Writes a handoff and resume prompt for a later session | `/agent-handoff .agent-skill/tasks/T-YYYYMMDD-001-login.md` |
+| `/wiki` | Self-auditing project knowledge base in `.wiki/` (Karpathy LLM-Wiki pattern) | `/wiki <query>`, `/wiki compile` |
 
 ## Writing Good Requests
 
@@ -203,6 +204,23 @@ Cost-saving habits:
 - Include success criteria in the request.
 - Name the screens that need UI validation.
 - Use `/debug` first when the same failure repeats.
+
+## `/wiki` — Project Knowledge Base
+
+`/wiki` maintains a self-auditing knowledge base in `.wiki/`, implementing the Karpathy LLM-Wiki pattern (MIT). It stores project knowledge as provenance-graded pages (A primary / B secondary / C inferred) with an `INDEX.md` that acts as a router. Contradictions are preserved explicitly rather than silently resolved. A SessionStart digest prints wiki status at each session open.
+
+Core commands:
+
+| Command | What it does |
+|---|---|
+| `/wiki <query>` | Look up a query in the index, then read or write the page |
+| `/wiki write <title>` | Write a new wiki page |
+| `/wiki update <slug>` | Update an existing page |
+| `/wiki compile` | Self-audit gate: every index entry must have a page and vice-versa (diff=0) |
+| `/wiki status` | Index summary — entry count, drift, top grades |
+| `/wiki list` | List all indexed pages |
+
+Availability: runnable skill in Claude Code (harness-floor) and Codex (harness-floor-codex, near-native). Copilot, Gemini, and Cursor have prose-only ports in their host-context templates with no runnable `/wiki` command. The `WIKI_DIR` env var redirects the CLI to a non-default wiki root.
 
 ## Agent Definitions And Workflow
 

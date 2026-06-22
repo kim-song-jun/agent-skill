@@ -1,6 +1,6 @@
 {
   "name": "harness-data",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "Data analysis harness for notebooks, SQL validation, artifact diffs, and durable verification evidence through agent-all adapters.",
   "keywords": [
     "harness",

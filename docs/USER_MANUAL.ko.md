@@ -141,6 +141,27 @@ bash /tmp/agent-skill/scripts/install-platform.sh --platform=vscode-copilot --ta
 | `/data-runner` | SQL, notebook, batch artifact 검증 흐름 안내 | `/data-runner sql .agent-skill/tasks/T-YYYYMMDD-001-report.md` |
 | `/agent-handoff` | 긴 작업을 다른 세션으로 넘길 요약과 재개 프롬프트 생성 | `/agent-handoff .agent-skill/tasks/T-YYYYMMDD-001-login.md` |
 
+## `/wiki` — 프로젝트 지식 베이스
+
+`/wiki`는 `.wiki/` 폴더에 프로젝트 지식 베이스를 자가 감사 방식으로 쌓아 두는 스킬입니다. [Karpathy LLM-Wiki 패턴(MIT)](https://github.com/karpathy/llm-wiki)을 구현하며, 세 가지 요소로 동작합니다.
+
+- **INDEX.md** — 인덱스-as-라우터. 모든 페이지의 진입점입니다.
+- **페이지 provenance 등급** — A(1차 출처), B(2차 출처), C(추론)로 분류합니다.
+- **compile 자가 감사 게이트** — 인덱스와 페이지가 일치(diff=0)하지 않으면 실패합니다.
+
+모순된 정보는 삭제하지 않고 **명시적으로 보존**합니다. 세션이 시작될 때마다 SessionStart digest가 현재 위키 상태를 요약해 출력합니다.
+
+| 명령 | 설명 |
+|---|---|
+| `/wiki <query>` | 인덱스에서 쿼리 조회 → 관련 페이지 읽기/쓰기 |
+| `/wiki write <title>` | 새 페이지 작성 |
+| `/wiki update <slug>` | 기존 페이지 갱신 |
+| `/wiki compile` | 자가 감사 게이트 실행 (인덱스↔페이지 일치 확인) |
+| `/wiki status` | 인덱스 요약 (항목 수, drift, 상위 등급) |
+| `/wiki list` | 인덱스된 모든 페이지 나열 |
+
+**플랫폼별 지원 범위:** Claude Code(`harness-floor`)와 Codex(`harness-floor-codex`)에서는 실행 가능한 스킬로 동작합니다. Copilot·Gemini는 host-context 템플릿에 prose-only 포트로 포함되어 있으며, Cursor에는 prose 표면만 있습니다(실행 가능한 `/wiki` 명령 없음). 기본 위치(`.wiki/`) 대신 다른 폴더를 쓰려면 `WIKI_DIR` 환경변수를 지정합니다.
+
 ## 좋은 요청을 쓰는 방법
 
 `/agent-all`에는 작업 목표, 성공 기준, 확인해야 할 화면이나 명령을 같이 적으면 좋습니다.

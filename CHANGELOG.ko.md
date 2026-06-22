@@ -6,6 +6,18 @@
 
 ## 미출시
 
+## Agent-skill v0.7.3 — 2026-06-22
+
+### Wiki 발견 가능성 + 적대 게이트 하드닝
+
+후속 적대적 검증 라운드(독립 opus 심사자가 *리터럴* 운영자 명령을 실행 + 스위트를 mutation-testing)에서 v0.7.2의 llm-wiki·적대 게이트·메모리/체크포인트가 **런타임에서 진짜로 동작함**을 확인했습니다 — wiki `compile`/`status`/`list`/digest가 live 실행되고, 게이트는 실제 failed 판정에 exit 2로 차단하며, 손상된 `LATEST` 체크포인트는 wave 이력에서 복구됩니다. 검증은 **critical 결함 1건 — 문서화** 와 minor 견고성 gap 2건을 드러냈고, 이번 릴리스에서 닫습니다. (보고된 발견 1건 "`sync-lib --check`가 `wiki-index.mjs`를 커버하지 않음"은 검증 false positive였습니다: `collectDrift()`와 `totalChecked()`가 이미 Codex `wiki-index.mjs` 사본을 감시하므로 — `scripts/sync-lib.mjs`를 읽어 반증, 변경 없음.)
+
+- **`/wiki`가 이제 모든 사용자 대면 surface에서 발견 가능 (critical 문서 수정):** v0.7.0–v0.7.2에 스킬은 출하됐지만 README·README.ko·USER_MANUAL(+ko)·USAGE(+ko)·`marketplace.json` 양쪽 중 **0곳**에 등장 — README를 읽는 신규 사용자는 존재 자체를 알 수 없었습니다(README slash-command 목록에서 빠진 유일한 harness-floor 스킬). 두 README에 `/wiki` 퀵레퍼런스 라인·`### /wiki` 섹션·Floor 테마 항목을, 두 USAGE cookbook에 `/wiki` 레시피를, 두 USER_MANUAL에 `/wiki` 하위 섹션을, 두 marketplace에 harness-floor / harness-floor-codex 설명 노트를, 릴리스 사용설명서 생성기에 `/wiki` 행을 추가했습니다. 각 문서는 Copilot/Gemini/Cursor를 prose-only(실행 가능한 `/wiki` 없음)로 정직하게 라벨링합니다.
+- **`wiki-index.mjs route`가 구성 가능한 wiki 루트를 존중 (일관성 수정):** `route`는 `parseIndex(WIKI_DIR_DEFAULT)`를 하드코딩해 디렉터리를 조용히 무시하고 항상 cwd의 `.wiki`를 읽었습니다 — `[dir]`를 받는 `compile`/`status`/`list`와의 비대칭. 이제 `route`는 `WIKI_DIR` 환경변수에서 wiki 루트를 해석하며(인자가 다단어 질의라 positional dir 자리가 없음), 헤더와 `SKILL.md`에 문서화했습니다. cwd를 `/tmp`로 강제해 매칭이 오직 `WIKI_DIR`에서만 오도록 하는 새 `wiki-cli` 테스트로 커버.
+- **적대 게이트가 대소문자/토큰 순서에 fail-open하지 않음 (`adversarialAuditBlocks` 하드닝):** 대문자 `VERIFICATION_AUDIT: FAILED`가 `verdict=absent`(exit 0, fail-open)로 파싱되고, 진짜 `failed` 앞의 stray `passed` 토큰이 first-match로 이겼습니다. 이제 함수는 **모든** 판정 occurrence를 대소문자 무시로 스캔하고 **하나라도 `failed`면 차단**(fail-safe)합니다. 게이트 전용 `adversarialAuditBlocks`에 격리(다른 validator가 의존하는 공유 `auditTokenPattern`은 미변경)했고, codex/copilot/cursor에 byte-identical 재벤더링, `gate-check.test.mjs`에서 subprocess 레벨로 검증.
+
+Suite: 2258/2258 통과.
+
 ## Agent-skill v0.7.2 — 2026-06-22
 
 ### 적대적 검증 리메디에이션 (verify→fix→re-verify 3라운드)

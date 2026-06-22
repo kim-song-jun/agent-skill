@@ -6,6 +6,18 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.3 — 2026-06-22
+
+### Wiki discoverability + adversarial-gate hardening
+
+A follow-up adversarial-verification round (independent opus judges running the *literal* operator commands + mutation-testing the suite) confirmed the v0.7.2 llm-wiki, adversarial gate, and memory/checkpoint subsystems **genuinely work at runtime** — wiki `compile`/`status`/`list`/digest run live, the gate blocks (exit 2) on a real failed verdict, and corrupt-`LATEST` checkpoints recover from wave history. It surfaced **one critical defect — documentation**, plus two minor robustness gaps. This release closes them. (One reported finding, "`sync-lib --check` does not cover `wiki-index.mjs`", was a verification false positive: `collectDrift()` and `totalChecked()` already guard the Codex `wiki-index.mjs` copy — disproven by reading `scripts/sync-lib.mjs`, so no change was made.)
+
+- **`/wiki` is now discoverable from every user-facing surface (critical doc fix):** the skill shipped in v0.7.0–v0.7.2 but appeared in **zero** of README, README.ko, USER_MANUAL(+ko), USAGE(+ko), and both `marketplace.json` files — a new user reading the README would never learn it exists (it was the only harness-floor skill missing from the slash-command list). Added a `/wiki` quick-reference line, a `### /wiki` section, and a Floor-theme entry to both READMEs; a `/wiki` recipe to both USAGE cookbooks; a `/wiki` subsection to both USER_MANUALs; a harness-floor / harness-floor-codex description note to both marketplaces; and a `/wiki` row to the release user-manual generator. Each doc honestly labels Copilot/Gemini/Cursor as prose-only (no runnable `/wiki`).
+- **`wiki-index.mjs route` honors a configurable wiki root (consistency fix):** `route` hardcoded `parseIndex(WIKI_DIR_DEFAULT)`, silently ignoring any directory and always reading `.wiki` from cwd — an asymmetry with `compile`/`status`/`list`, which accept a `[dir]`. `route` now resolves its wiki root from the `WIKI_DIR` env var (its args are the multi-word query, so it has no positional dir slot), documented in the header and `SKILL.md`. Covered by new `wiki-cli` tests that force cwd to `/tmp` so a match can only come from `WIKI_DIR`.
+- **Adversarial gate no longer fails open on casing or token order (`adversarialAuditBlocks` hardening):** an uppercase `VERIFICATION_AUDIT: FAILED` parsed as `verdict=absent` (exit 0, fail-open), and a stray `passed` token preceding the real `failed` won via first-match. The function now scans **every** verdict occurrence case-insensitively and **blocks if any is `failed`** (fail-safe). Isolated to the gate-only `adversarialAuditBlocks` (the shared `auditTokenPattern` other validators depend on is untouched), re-vendored byte-identical to codex/copilot/cursor, and verified at the subprocess level in `gate-check.test.mjs`.
+
+Suite: 2258/2258 passing.
+
 ## Agent-skill v0.7.2 — 2026-06-22
 
 ### Adversarial-verification remediation (three verify→fix→re-verify rounds)

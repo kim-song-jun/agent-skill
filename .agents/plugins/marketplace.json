@@ -7,6 +7,7 @@
     },
     {
       "name": "harness-floor-codex",
+      "description": "Codex agent floor: /agent-all-codex, /visual-qa-codex, /agent-handoff-codex. Includes near-native /wiki support — a self-auditing project knowledge base in .wiki/ (Karpathy LLM-Wiki pattern, MIT): INDEX.md index-as-router, provenance-graded pages (A primary / B secondary / C inferred), explicit contradiction preservation, and a 'compile' self-audit gate (diff=0). Commands: /wiki <query>, /wiki write <title>, /wiki update <slug>, /wiki compile, /wiki status, /wiki list. SessionStart digest prints wiki status at session open. WIKI_DIR env var overrides the default wiki root.",
       "source": { "source": "local", "path": "./plugins/harness-floor-codex" }
     },
     {

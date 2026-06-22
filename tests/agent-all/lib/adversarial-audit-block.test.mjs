@@ -66,6 +66,47 @@ test("adversarialAuditBlocks: null/undefined input => blocked=false gracefully",
   assert.equal(adversarialAuditBlocks("").blocked, false);
 });
 
+// --- v0.7.3 hardening: fail-safe, case-insensitive, all-occurrences scan ---
+
+test("adversarialAuditBlocks: uppercase VERIFICATION_AUDIT: FAILED still blocks (no case fail-open)", () => {
+  const result = adversarialAuditBlocks("VERIFICATION_AUDIT: FAILED");
+  assert.equal(result.blocked, true, "uppercase FAILED must not fail open");
+  assert.equal(result.verdict, "failed");
+});
+
+test("adversarialAuditBlocks: mixed-case Failed blocks", () => {
+  assert.equal(adversarialAuditBlocks("VERIFICATION_AUDIT: Failed").blocked, true);
+});
+
+test("adversarialAuditBlocks: a stray `passed` BEFORE the real `failed` still blocks (no first-match bypass)", () => {
+  const report = [
+    "Example of a compliant line: VERIFICATION_AUDIT: passed",
+    "But my actual independent verdict is:",
+    "VERIFICATION_AUDIT: failed",
+  ].join("\n");
+  const result = adversarialAuditBlocks(report);
+  assert.equal(result.blocked, true, "a later failed must win over an earlier passed");
+  assert.equal(result.verdict, "failed");
+});
+
+test("adversarialAuditBlocks: `failed` then `passed` also blocks (order-independent)", () => {
+  const result = adversarialAuditBlocks("VERIFICATION_AUDIT: failed\nVERIFICATION_AUDIT: passed");
+  assert.equal(result.blocked, true);
+  assert.equal(result.verdict, "failed");
+});
+
+test("adversarialAuditBlocks: multiple passed with no failed does not block; reports last passed", () => {
+  const result = adversarialAuditBlocks("VERIFICATION_AUDIT: passed\nVERIFICATION_AUDIT: skipped");
+  assert.equal(result.blocked, false);
+  assert.equal(result.verdict, "skipped");
+});
+
+test("adversarialAuditBlocks: an unknown verdict token does not block (grammar still enforced)", () => {
+  const result = adversarialAuditBlocks("VERIFICATION_AUDIT: maybe");
+  assert.equal(result.blocked, false);
+  assert.equal(result.verdict, null, "non-grammar verdict is not a recognized token");
+});
+
 test("ADVERSARIAL_ROLE matches the gate-plan dispatch role", () => {
   assert.equal(ADVERSARIAL_ROLE, "verification-reviewer-adversarial");
 });

@@ -186,6 +186,21 @@ npm run dev                                       # dev 서버 :3000에서
 
 출력: `.agent-skill/reports/visual-qa/<date>-<hex>/report.md` + 이미지별 `.png` + `.analysis.{json,md}`.
 
+## 위키 지식 베이스 (`/wiki`)
+
+`.wiki/`에 자가 감사 프로젝트 지식 베이스를 유지합니다. Karpathy LLM-Wiki 패턴(MIT)을 구현하며, `INDEX.md`가 인덱스-라우터 역할을 합니다. 각 페이지에는 provenance 등급(A: 1차 출처 / B: 2차 출처 / C: 추론)이 표시되고, 모순은 삭제하지 않고 명시적으로 보존합니다. `compile` 자가 감사 게이트는 인덱스↔페이지 drift가 있으면 실패합니다(diff=0). `SessionStart digest`는 세션 시작마다 위키 상태를 자동으로 출력합니다.
+
+```
+/wiki <query>        # Phase A: 인덱스에서 쿼리 조회 → 페이지 읽기/쓰기
+/wiki write <title>  # Phase B: 새 페이지 작성
+/wiki update <slug>  # Phase B: 기존 페이지 갱신
+/wiki compile        # 자가 감사 게이트(diff=0): 인덱스↔페이지 일치 검사
+/wiki status         # 인덱스 요약(항목 수, drift, 상위 등급)
+/wiki list           # 인덱스된 모든 페이지 나열
+```
+
+기본 위키 루트는 `.wiki/`이며, `WIKI_DIR` 환경 변수로 변경할 수 있습니다. Claude Code(`harness-floor`)와 Codex(`harness-floor-codex`, near-native)에서 실행 가능한 스킬로 제공됩니다. Copilot/Gemini는 host-context 템플릿의 prose-only 포트로, Cursor는 prose 표면(실행 가능한 `/wiki` 명령 없음)으로 지원합니다.
+
 ## Artifact policy
 
 생성되는 control-plane 산출물은 기본적으로 `.agent-skill/` 아래에 저장됩니다.

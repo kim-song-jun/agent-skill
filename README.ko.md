@@ -2,7 +2,7 @@
 
 # agent-skill
 
-![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-2246%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-19-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-release--smoke--verified-blue) ![tests](https://img.shields.io/badge/tests-2258%20passing-brightgreen) ![plugins](https://img.shields.io/badge/plugins-19-blue) ![themes](https://img.shields.io/badge/themes-5%20(A%20B%20C%20D%20E)-blueviolet) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **스스로 굴러가는 agent-first 워크플로.** 프로젝트당 `/agent-init` 한 번, 기능당 `/agent-all "..." --loop --qa` 한 번 — agent가 brainstorm → 계획 → 구현 → 테스트 → **모든 페이지 visual QA** → PR을 알아서 진행하고, **테스트와 UI 둘 다 통과할 때까지 알아서 반복**합니다. 매 턴 babysitting 필요 없음.
 
@@ -16,6 +16,7 @@
 /thrift                                        # 긴 세션 저렴하게 (자동 요약, audit)
 /explore                                       # 코드베이스 맵; /explore where Foo → O(1) lookup
 /debug "테스트가 30% 실행에서 flaky"            # 재현 → bisect → 가설 → 검증
+/wiki compile                                  # .wiki/ 자가 감사 지식 베이스 (diff=0 게이트)
 ```
 
 **핵심 3가지:**
@@ -301,6 +302,21 @@ Audit report는 기본적으로 `.agent-skill/reports/thrift/audit-<date>.md`에
 
 10개 에러 포맷 파싱 (Python tracebacks, JS stack traces, pytest/jest/rust/tsc/gcc/ESLint 등) — 클릭 가능한 citation으로 변환.
 
+### `/wiki` — 자가 감사 프로젝트 지식 베이스
+
+`.wiki/`에 구조화된 마크다운 위키를 둡니다. Karpathy LLM-Wiki 패턴(MIT) 구현: `INDEX.md` **index-as-router**, provenance 등급 페이지(A 1차 / B 2차 / C 추론), 모순 명시 보존, 그리고 인덱스↔페이지 drift가 있으면 실패하는 `compile` **자가 감사 게이트**(모든 인덱스 항목엔 페이지가, 모든 페이지엔 인덱스 항목이 있어야 함 — `diff=0`). SessionStart digest가 세션 시작마다 위키 상태를 출력합니다.
+
+```
+/wiki <query>           # Phase A: 인덱스에서 쿼리 조회 → 페이지 읽기/쓰기
+/wiki write <title>     # Phase B: 새 페이지 작성
+/wiki update <slug>     # Phase B: 기존 페이지 갱신
+/wiki compile           # 자가 감사 게이트 (diff=0): 인덱스 ↔ 페이지 일치 검증
+/wiki status            # 인덱스 요약 (항목 수, drift, 상위 등급)
+/wiki list              # 인덱스된 모든 페이지 나열
+```
+
+**harness-floor**(Claude Code)와 **harness-floor-codex**(Codex, near-native, PreToolUse first-call digest)에서 실행 가능한 스킬로 제공됩니다. Copilot과 Gemini는 host-context 템플릿에 인라인된 prose-only 포트를, Cursor는 prose 표면을 가지며 — 실행 가능한 `/wiki` 명령은 없습니다. `WIKI_DIR` 환경변수로 기본 외 루트를 지정할 수 있습니다.
+
 ---
 
 ## 자주 쓰는 워크플로
@@ -355,7 +371,7 @@ git clone <repo> && cd <repo>
 | 테마 | 명령 | 무엇을 주나 |
 |---|---|---|
 | **Builder** (A) | `/agent-init` | 프로젝트 스캐폴딩. 한 번만 실행. |
-| **Floor** (C) | `/agent-all`, `/visual-qa` | 기능 출시. 비용 무제한. |
+| **Floor** (C) | `/agent-all`, `/visual-qa`, `/wiki` | 기능 출시 + 자가 감사 지식 베이스. 비용 무제한. |
 | **Thrift** (B) | `/thrift` | 긴 세션 비용 최적화. |
 | **Explore** (D) | `/explore` | 코드베이스 매핑 & 쿼리. |
 | **Debug** (E) | `/debug` | 체계적 디버깅. |
@@ -844,7 +860,7 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 - **GitHub 거버넌스** — 공개 PR smoke CI, issue template, PR template, label taxonomy는 [docs/github-governance.md](docs/github-governance.md) 참조.
 - **Release provenance** — `node scripts/release-provenance.mjs --release=<rc-tag>`로 `release-manifest.json`과 `release-manifest.sha256`를 생성하고, 설치/갱신 시 `--verify-checksums` / `--verify-provenance`로 다시 검증할 수 있습니다.
 - **19개 플러그인 전체 목록** — [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json) 참조.
-- **변경 히스토리** — [CHANGELOG.md](CHANGELOG.md) 참조. 2246 tests, 모두 통과.
+- **변경 히스토리** — [CHANGELOG.md](CHANGELOG.md) 참조. 2258 tests, 모두 통과.
 - **플랫폼별 포팅** — `docs/superpowers/specs/`의 `-impl-spec.md` 또는 `-decomposition.md`로 끝나는 spec 참조.
 - **Skill utility benchmark** — [docs/superpowers/specs/2026-06-11-skill-utility-benchmark.md](docs/superpowers/specs/2026-06-11-skill-utility-benchmark.md) 참조, 실행은 `node scripts/skill-eval.mjs --smoke`.
 - **아키텍처 & 레이아웃** — 플러그인별 raw design 문서는 [docs/superpowers/specs/](docs/superpowers/specs/) 참조.
@@ -857,7 +873,7 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 
 | 레이어 | 상태 | 비고 |
 |---|---|---|
-| Unit/integration 테스트 | ✅ **2246/2246 통과** | Mock toolCaller + 격리된 lib 테스트; release-doc, policy, policy hook error handling/no-silent-catch guard, advisory hook diagnostics guard, Codex hook-schema, native Codex plugin updater, Copilot runtime debt guard, task-ledger, Codex exec, release-audit, release-candidate evidence, provenance manifest, public GitHub governance, docs structure, release publish preflight, target-project smoke, skill-eval, command-surface, doctor, cleanup, visual-qa 회귀 포함 |
+| Unit/integration 테스트 | ✅ **2258/2258 통과** | Mock toolCaller + 격리된 lib 테스트; release-doc, policy, policy hook error handling/no-silent-catch guard, advisory hook diagnostics guard, Codex hook-schema, native Codex plugin updater, Copilot runtime debt guard, task-ledger, Codex exec, release-audit, release-candidate evidence, provenance manifest, public GitHub governance, docs structure, release publish preflight, target-project smoke, skill-eval, command-surface, doctor, cleanup, visual-qa 회귀 포함 |
 | Release gate | ✅ PR smoke + local gate 검증 | 공개 PR CI는 `.github/workflows/smoke.yml`, `.github/workflows/docs.yml`, `.github/workflows/templates.yml`로 smoke/docs/templates drift를 검증; 배포는 여전히 local release-candidate evidence, release-audit, release provenance manifest/checksum evidence, fresh fixture, `./scripts/release-smoke.sh --fast --with-live-cli`, target-project smoke, `node --test`, vendored-lib sync, support matrix drift check로 검증 |
 | Project install 렌더러 (Claude + 5개 플랫폼) | ✅ end-to-end 검증 | `install-all.sh` + `install-platform.sh` |
 | 마켓플레이스 등록 | ✅ 19 플러그인 등록 | local + origin 동기화 |
@@ -867,7 +883,7 @@ harness는 state 파일 (`.agent-all-state.json`), 실패 시 resume, 비용 cap
 | `/thrift` compact 전달 | ⚠️ API-gated advisory path | Claude/Codex 모두 durable summary 파일을 쓰고 `/compact` 사용을 안내; programmatic compact injection은 host CLI가 안정 API를 노출하면 연결 |
 | Provider-backed thrift summarizer | ✅ release-scoped | Claude의 선택적 `@anthropic-ai/sdk` summarizer 경로는 구현/테스트 완료; Codex는 dependency-free heuristic summarizer, configurable `gpt-5-nano` model metadata, OpenAI-rate audit heuristic을 제공 |
 
-버전: `harness-builder` `v0.7.2`, `harness-floor` `v0.7.2`, 나머지 설치 가능한 `agent-skill` 플러그인 17개도 같은 release train의 `v0.7.2`로 배포합니다. 내부 artifact/config schema version은 별도의 호환성 계약으로 유지됩니다.
+버전: `harness-builder` `v0.7.3`, `harness-floor` `v0.7.3`, 나머지 설치 가능한 `agent-skill` 플러그인 17개도 같은 release train의 `v0.7.3`로 배포합니다. 내부 artifact/config schema version은 별도의 호환성 계약으로 유지됩니다.
 
 ### 릴리즈 후보 라이프사이클
 
@@ -924,7 +940,7 @@ node scripts/skill-eval.mjs --smoke --no-write --json  # CI-safe utility benchma
 node scripts/skill-eval.mjs --full       # 수동/full benchmark; .agent-skill/evals/<date>/ 기록
 node scripts/release-publish-preflight.mjs --base=origin/main
 node scripts/target-project-smoke.mjs --target=/path/to/project --platform=claude,codex --lang=ko
-node --test                              # 2246/2246 통과 필수
+node --test                              # 2258/2258 통과 필수
 node scripts/sync-lib.mjs --check        # vendored shared libs 동기화 확인
 node scripts/generate-support-matrix.mjs --check
 ```

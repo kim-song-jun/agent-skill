@@ -44,6 +44,19 @@ test("gate-check: reads the verdict from $GATE_VERDICT_TEXT when set", () => {
   assert.equal(r.status, 2, `env-supplied failed verdict must exit 2; got ${r.status} — ${r.stderr}`);
 });
 
+// v0.7.3 hardening (verified at the subprocess level, not just the pure fn):
+// the gate must not fail open on uppercase casing, and must not be bypassed by a
+// stray earlier `passed` token. See adversarialAuditBlocks in audit-tokens.mjs.
+test("gate-check: uppercase VERIFICATION_AUDIT: FAILED still exits 2 (no case fail-open)", () => {
+  const r = run(GATE_CHECK, "VERIFICATION_AUDIT: FAILED");
+  assert.equal(r.status, 2, `uppercase FAILED must still BLOCK (exit 2); got ${r.status} — ${r.stderr}`);
+});
+
+test("gate-check: a `passed` token preceding the real `failed` still exits 2 (no first-match bypass)", () => {
+  const r = run(GATE_CHECK, "quoting the rubric: VERIFICATION_AUDIT: passed\nverdict: VERIFICATION_AUDIT: failed");
+  assert.equal(r.status, 2, `a later failed must win over an earlier passed; got ${r.status} — ${r.stderr}`);
+});
+
 test("gate-check: every vendored port copy is runnable and blocks on failed", () => {
   for (const p of ["codex", "copilot", "cursor"]) {
     const copy = resolve(
