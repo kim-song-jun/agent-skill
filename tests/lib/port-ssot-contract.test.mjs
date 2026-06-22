@@ -11,7 +11,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 const PORTS = ["codex", "copilot", "cursor", "gemini"];
@@ -66,6 +66,21 @@ for (const p of PORTS) {
       `${p} must vendor lib/task-ledger.mjs so the Phase-5 gate can run`,
     );
   });
+
+  // E7: the quality-debt-reviewer verdict must be a Phase-4 gate PASS CONDITION,
+  // not merely dispatched informationally. The 2026-06-22 adversarial round found
+  // cursor and codex 4-gate.md dispatched the reviewer but omitted its verdict
+  // from the pass conditions (CC/copilot/gemini already gated on it), so quality
+  // debt was advisory-only on those two ports. This asserts the binding clause.
+  test(`port ssot contract [${p}]: E7 quality-debt-reviewer verdict gates the wave`, () => {
+    const gate = read(p, "phases/4-gate.md");
+    assert.ok(gate, `${p} phases/4-gate.md must exist`);
+    assert.match(
+      gate,
+      /`quality-debt-reviewer` reports no unapproved quality debt/,
+      `${p} 4-gate must make the quality-debt-reviewer verdict a gate pass condition, not just dispatch it`,
+    );
+  });
 }
 
 // E5: adversarial verification dispatch — blocking-language guard.
@@ -97,4 +112,85 @@ for (const p of ADVERSARIAL_PORTS) {
         `${p} 4-gate must NOT trust the implementer's reported output`);
     },
   );
+
+  // E8: the adversarial block must be enforced by the deterministic gate-check.mjs
+  // process (exit-coded), not a prose code-fence the LLM must mentally evaluate
+  // (2026-06-22 adversarial round defect C2/C4: adversarialAuditBlocks had zero
+  // runtime caller — only a markdown code-fence). The phase doc must invoke the
+  // vendored gate-check.mjs and document its exit-2-blocks contract.
+  test(`port ssot contract [${p}]: E8 adversarial block enforced by gate-check.mjs (exit-coded, not prose)`, () => {
+    const gate = read(p, "phases/4-gate.md");
+    assert.ok(gate, `${p} phases/4-gate.md must exist`);
+    assert.match(gate, /gate-check\.mjs/,
+      `${p} 4-gate must invoke gate-check.mjs so the block decision is deterministic code, not LLM judgement`);
+    assert.match(gate, /exit 2[\s\S]{0,80}BLOCK/i,
+      `${p} 4-gate must document gate-check exit 2 = BLOCKED`);
+    assert.ok(existsSync(resolve(dir(p), "lib/policy/gate-check.mjs")),
+      `${p} must vendor lib/policy/gate-check.mjs (its sibling audit-tokens.mjs must also be present)`);
+    assert.ok(existsSync(resolve(dir(p), "lib/policy/audit-tokens.mjs")),
+      `${p} must vendor lib/policy/audit-tokens.mjs (gate-check imports adversarialAuditBlocks from it)`);
+  });
+}
+
+// E8-CC: the canonical harness-floor (Claude) port also enforces via gate-check.mjs.
+test("port ssot contract [CC]: E8 adversarial block enforced by gate-check.mjs (exit-coded)", () => {
+  const root = resolve("plugins/harness-floor/skills/agent-all");
+  const gate = readFileSync(resolve(root, "phases/4-gate.md"), "utf-8");
+  assert.match(gate, /gate-check\.mjs/, "CC 4-gate must invoke gate-check.mjs");
+  assert.match(gate, /exit 2[\s\S]{0,80}BLOCK/i, "CC 4-gate must document gate-check exit 2 = BLOCKED");
+  assert.ok(existsSync(resolve(root, "lib/policy/gate-check.mjs")), "CC must ship lib/policy/gate-check.mjs (source of truth)");
+});
+
+// E6: phase-doc lib imports must be install-anchored, never a bare "./lib/...".
+// The 2026-06-22 adversarial round found copilot phase docs importing
+// `from "./lib/<f>.mjs"`; a re-audit found the SAME drift in codex + cursor
+// agent-all, and an independent adversarial verifier then found it AGAIN in
+// visual-qa-codex (5 imports) — invisible to the first version of this test
+// because it scanned only agent-all-{p}. Every install-to-subdir (port, skill)
+// copies its lib tree into a project subdir and Phase 0 mandates repo-root cwd,
+// so a bare "./lib/..." resolves to <repo-root>/lib/... = ERR_MODULE_NOT_FOUND.
+// This guard scans EVERY such (port, skill) by its install-anchored prefix, so
+// the defect class is closed repo-wide for the remediation surface, not per-skill.
+// In-place CC ports (harness-floor) legitimately use "./lib/" (run from the skill
+// dir) and are excluded. gemini is excluded: init copies NO lib (prose-guided).
+// (Out of this remediation's scope: harness-debug-codex/debug-codex also installs
+// to .codex/skills/debug and carries one bare "./lib/" — surfaced to the user.)
+const INSTALL_ANCHOR_SCAN = [
+  { skill: "agent-all-codex",   dir: "plugins/harness-floor-codex/skills/agent-all-codex",     prefix: ".codex/skills/agent-all" },
+  { skill: "agent-all-copilot", dir: "plugins/harness-floor-copilot/skills/agent-all-copilot", prefix: ".copilot/agent-all" },
+  { skill: "agent-all-cursor",  dir: "plugins/harness-floor-cursor/skills/agent-all-cursor",   prefix: ".cursor/agent-all" },
+  { skill: "visual-qa-codex",   dir: "plugins/harness-floor-codex/skills/visual-qa-codex",     prefix: ".codex/skills/visual-qa" },
+  { skill: "visual-qa-cursor",  dir: "plugins/harness-floor-cursor/skills/visual-qa-cursor",   prefix: ".cursor/visual-qa" },
+  { skill: "visual-qa-copilot", dir: "plugins/harness-floor-copilot/skills/visual-qa-copilot", prefix: ".copilot/visual-qa" },
+  // harness-debug-codex installs to .codex/skills/debug (a SEPARATE plugin from the
+  // agent-all family) — the same install-anchor class, surfaced by the round-3
+  // adversary and folded into v0.7.2 per the user's decision.
+  { skill: "debug-codex",       dir: "plugins/harness-debug-codex/skills/debug-codex",         prefix: ".codex/skills/debug" },
+];
+
+for (const sc of INSTALL_ANCHOR_SCAN) {
+  test(`install-anchor guard [${sc.skill}]: phase-doc lib imports are install-anchored (no bare ./lib/, file exists)`, () => {
+    const phasesDir = resolve(sc.dir, "phases");
+    if (!existsSync(phasesDir)) return; // skill ships no phases
+    const anchored = `./${sc.prefix}/lib/`;
+    const libRoot = resolve(sc.dir, "lib");
+    // Matches static `from "./...lib/x.mjs"` and dynamic `import("./...lib/x.mjs")`.
+    const importRe = /(?:from|import\()\s*['"](\.\/[^'"]*?lib\/[^'"]+\.mjs)['"]/g;
+    for (const f of readdirSync(phasesDir).filter((x) => x.endsWith(".md"))) {
+      const body = readFileSync(resolve(phasesDir, f), "utf-8");
+      let m;
+      while ((m = importRe.exec(body)) !== null) {
+        const importPath = m[1];
+        assert.ok(
+          importPath.startsWith(anchored),
+          `${sc.skill}/phases/${f} imports "${importPath}" — must be install-anchored "${anchored}..." (a bare "./lib/" resolves to <repo-root>/lib from the mandated repo-root cwd = ERR_MODULE_NOT_FOUND)`,
+        );
+        const rel = importPath.slice(anchored.length);
+        assert.ok(
+          existsSync(resolve(libRoot, rel)),
+          `${sc.skill}/phases/${f} imports "${importPath}" but lib/${rel} is absent from the skill's vendored lib tree (doc-vs-install drift)`,
+        );
+      }
+    }
+  });
 }

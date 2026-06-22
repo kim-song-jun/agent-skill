@@ -28,8 +28,8 @@
    - **`mode === "comprehensive"`**:
      Discover pages and components before building the matrix:
      ```javascript
-     import { crawl } from "./lib/crawler.mjs";
-     import { walkDom } from "./lib/dom-walker.mjs";
+     import { crawl } from "./.codex/skills/visual-qa/lib/crawler.mjs";
+     import { walkDom } from "./.codex/skills/visual-qa/lib/dom-walker.mjs";
 
      let pages = await crawl({
        scope: config.comprehensive.scope,
@@ -39,7 +39,7 @@
      });
 
      if (config.comprehensive.cache?.gitDiffScope !== false) {
-       const { scopeDiff } = await import("./lib/git-diff-scoper.mjs");
+       const { scopeDiff } = await import("./.codex/skills/visual-qa/lib/git-diff-scoper.mjs");
        const verdict = scopeDiff({ changedFiles, cwd: "." });
        if (verdict.scope === "none") pages = [];
        if (verdict.scope === "some") {

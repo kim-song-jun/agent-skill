@@ -12,11 +12,22 @@
 // Attribution: Karpathy LLM-Wiki pattern (MIT licence) — adapted for
 // Claude Code slash-command surface by the agent-skill harness.
 
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
 export const INDEX_FILENAME = "INDEX.md";
 export const WIKI_DIR_DEFAULT = ".wiki";
+
+// statSync that returns null instead of throwing (ENOENT, EACCES, …), so the
+// compile guard can distinguish "absent / not a regular file" cleanly without an
+// unhandled EISDIR/permission stack trace.
+function statSafe(p) {
+  try {
+    return statSync(p);
+  } catch {
+    return null;
+  }
+}
 
 // IndexEntry shape:
 //   { title: string, file: string, slug: string, grade: "A"|"B"|"C", tags: string[] }
@@ -28,10 +39,11 @@ export const WIKI_DIR_DEFAULT = ".wiki";
 export function parseIndex(wikiDir) {
   const indexPath = resolve(wikiDir, INDEX_FILENAME);
   if (!existsSync(indexPath)) {
-    return { entries: [], raw: "" };
+    return { entries: [], raw: "", malformed: [] };
   }
   const raw = readFileSync(indexPath, "utf-8");
-  return { entries: parseIndexRaw(raw), raw };
+  const { entries, malformed } = parseIndexRows(raw);
+  return { entries, raw, malformed };
 }
 
 /**
@@ -42,10 +54,21 @@ export function parseIndex(wikiDir) {
  *   | [Title](file.md) | slug | A | tag1, tag2 |
  */
 export function parseIndexRaw(raw) {
+  return parseIndexRows(raw).entries;
+}
+
+/**
+ * Single-pass parser returning BOTH valid entries and MALFORMED declared-page
+ * rows. A malformed row carries a real `[title](file)` page link but fails
+ * slug/grade validation. Such rows were previously silently dropped, which hid a
+ * declared (and possibly missing-on-disk) page from the compile gate and let a
+ * malformed index vacuously pass diff=0 (2026-06-22 adversarial round).
+ */
+function parseIndexRows(raw) {
   const entries = [];
+  const malformed = [];
   const lines = raw.split(/\r?\n/);
   let tableStarted = false;
-  let headerSeen = false;
   let separatorSeen = false;
 
   for (const line of lines) {
@@ -54,7 +77,6 @@ export function parseIndexRaw(raw) {
       // Reset table parse state when we leave a table
       if (tableStarted) {
         tableStarted = false;
-        headerSeen = false;
         separatorSeen = false;
       }
       continue;
@@ -62,7 +84,6 @@ export function parseIndexRaw(raw) {
 
     if (!tableStarted) {
       tableStarted = true;
-      headerSeen = true;
       continue; // first row = header
     }
 
@@ -82,7 +103,25 @@ export function parseIndexRaw(raw) {
       .slice(1, -1)
       .map((c) => c.trim());
 
-    if (cols.length < 3) continue;
+    // A first cell that is a markdown-link attempt (`](`) or a bare `*.md`
+    // filename is a page DECLARATION. Detect it BEFORE the column-count and
+    // strict-link guards so a malformed page row (too few columns, unparseable
+    // link, or bad grade/slug) is recorded as malformed rather than silently
+    // dropped — a silent drop hides the declared page and vacuously passes
+    // diff=0 (e.g. `| [Short](short.md) |`, `[Paren](file(1).md)`, `[Empty]()`,
+    // a bare `page.md`). A plain non-page text row is ignored as before.
+    // Scan EVERY cell, not just the first: a page link or `*.md` filename in any
+    // column (e.g. a drifted/hand-edited row `| Plain | [Ghost](ghost.md) | A |`)
+    // still declares a page and must not silently pass when its file is absent.
+    const firstCell = cols[0] ?? "";
+    const looksLikePageDecl = cols.some((c) => /\]\(/.test(c) || /[^\s|]+\.md\b/i.test(c));
+
+    if (cols.length < 3) {
+      if (looksLikePageDecl) {
+        malformed.push({ title: firstCell, file: null, slug: cols[1] ?? null, grade: cols[2] ?? null });
+      }
+      continue;
+    }
 
     const titleLink = cols[0];
     const slug = cols[1];
@@ -95,17 +134,27 @@ export function parseIndexRaw(raw) {
             .filter(Boolean)
         : [];
 
-    // Extract title and file from markdown link [title](file)
+    // Only rows with a real `[title](file)` link are valid page declarations.
     const linkMatch = titleLink.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-    if (!linkMatch) continue;
+    if (!linkMatch) {
+      if (looksLikePageDecl) {
+        malformed.push({ title: titleLink, file: null, slug, grade });
+      }
+      continue;
+    }
     const title = linkMatch[1];
     const file = linkMatch[2];
 
-    if (!slug || !["A", "B", "C"].includes(grade)) continue;
+    if (!slug || !["A", "B", "C"].includes(grade)) {
+      // Declares a page file but is malformed — record it, do NOT silently drop
+      // (dropping would hide the declared page and vacuously pass the gate).
+      malformed.push({ title, file, slug, grade });
+      continue;
+    }
 
     entries.push({ title, file, slug, grade, tags });
   }
-  return entries;
+  return { entries, malformed };
 }
 
 /**
@@ -141,31 +190,44 @@ export function routePhaseA(query, entries) {
  */
 export function compileSelfAudit(wikiDir) {
   const absDir = resolve(wikiDir);
-  const { entries } = parseIndex(absDir);
+
+  // Guard: a nonexistent directory, or a directory without an INDEX.md, is NOT a
+  // valid empty wiki — it is a wrong/typo'd path. Reporting diff=0 there is a
+  // vacuous pass that defeats the gate's purpose (2026-06-22 adversarial round
+  // defect C5: `compile /tmp/nonexistent` printed "ok ... diff=0" exit 0). A
+  // genuinely-empty-but-valid wiki (dir + INDEX.md present, zero page rows) still
+  // passes the diff=0 check below.
+  const dirStat = statSafe(absDir);
+  if (!dirStat || !dirStat.isDirectory()) {
+    return { ok: false, missing: "directory", indexOnly: [], pagesOnly: [], matched: [], malformed: [], entryCount: 0, pageCount: 0 };
+  }
+  // INDEX.md must be a readable regular file — not absent, and not itself a
+  // directory (which would EISDIR-crash parseIndex's readFileSync).
+  const indexStat = statSafe(resolve(absDir, INDEX_FILENAME));
+  if (!indexStat || !indexStat.isFile()) {
+    return { ok: false, missing: "INDEX.md", indexOnly: [], pagesOnly: [], matched: [], malformed: [], entryCount: 0, pageCount: 0 };
+  }
+
+  const { entries, malformed } = parseIndex(absDir);
 
   // Declared page files from index (just the filename, not full path)
   const indexFiles = new Set(entries.map((e) => e.file));
 
-  // Actual .md files in wikiDir, excluding INDEX.md
-  let diskFiles;
-  if (!existsSync(absDir)) {
-    diskFiles = new Set();
-  } else {
-    diskFiles = new Set(
-      readdirSync(absDir)
-        .filter((f) => f.endsWith(".md") && f !== INDEX_FILENAME),
-    );
-  }
+  // Actual .md files in wikiDir, excluding INDEX.md (absDir exists per guard above)
+  const diskFiles = new Set(
+    readdirSync(absDir).filter((f) => f.endsWith(".md") && f !== INDEX_FILENAME),
+  );
 
   const indexOnly = [...indexFiles].filter((f) => !diskFiles.has(f));
   const pagesOnly = [...diskFiles].filter((f) => !indexFiles.has(f));
   const matched = [...indexFiles].filter((f) => diskFiles.has(f));
 
   return {
-    ok: indexOnly.length === 0 && pagesOnly.length === 0,
+    ok: indexOnly.length === 0 && pagesOnly.length === 0 && malformed.length === 0,
     indexOnly,
     pagesOnly,
     matched,
+    malformed,
     entryCount: entries.length,
     pageCount: diskFiles.size,
   };
@@ -229,6 +291,8 @@ function cliMain(argv) {
         return 0;
       }
       process.stderr.write("wiki compile: FAILED\n");
+      if (r.missing) process.stderr.write(`  Not a valid wiki at "${wikiDir}": missing ${r.missing}\n`);
+      if (r.malformed?.length) process.stderr.write(`  Malformed index rows (declared page, unparseable link or invalid grade/slug): ${r.malformed.map((m) => m.file ?? m.title ?? "?").join(", ")}\n`);
       if (r.indexOnly.length) process.stderr.write(`  Index-only (not on disk):   ${r.indexOnly.join(", ")}\n`);
       if (r.pagesOnly.length) process.stderr.write(`  Pages-only (not indexed):   ${r.pagesOnly.join(", ")}\n`);
       return 1;

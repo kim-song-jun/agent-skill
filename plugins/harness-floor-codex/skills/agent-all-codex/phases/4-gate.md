@@ -23,7 +23,7 @@ For each wave with `status === "completed"`:
    (`4b825dc642cb6eb9a060e54bf8d69288fbee4904`) as the diff base.
 2. Build the deterministic gate plan:
    ```
-   import { buildGatePlan } from "./lib/gate-plan.mjs";
+   import { buildGatePlan } from "./.codex/skills/agent-all/lib/gate-plan.mjs";
    const orchestration = wave.orchestration ?? state.orchestration ?? null;
    const requiredReviewerRoles = (orchestration?.requiredAgents ?? [])
      .filter((agent) => agent.kind === "reviewer")
@@ -76,6 +76,9 @@ For each wave with `status === "completed"`:
      `verification-reviewer`, AND
    - `QA_AUDIT` is `passed` or `skipped` for `qa-reviewer` when the classifier
      returned `qa-reviewer`, AND
+   - `quality-debt-reviewer` reports no unapproved quality debt; every accepted
+     exception must be recorded in the task doc `Quality Debt Exceptions` table
+     with reason, owner, follow-up issue, and expiry, AND
    - no returned coordinator reports HOT-file ownership conflicts, unsafe retry
      sequencing, or pathspec commit risk, AND
    - no returned reviewer persona reports blocking issues.
@@ -174,5 +177,18 @@ a spawned subagent.
   `verification-reviewer-adversarial` is a `critical` issue that BLOCKS the wave; the
   coordinator MUST enter the block-on-critical retry loop (step 5). A passing
   self-reviewer verdict does NOT override a failing adversarial verdict.
+- **Deterministic block enforcement:** do NOT mentally evaluate the verdict — pipe
+  the adversarial step's reported output through `gate-check.mjs` and branch on its
+  EXIT CODE, so the block decision is computed by code (it calls
+  `adversarialAuditBlocks`), not judgement. `$ADV_AUDIT_TEXT` = the adversarial
+  step's full reported output:
+  ```bash
+  printf '%s' "$ADV_AUDIT_TEXT" | node ./.codex/skills/agent-all/lib/policy/gate-check.mjs
+  # exit 2 -> BLOCKED (VERIFICATION_AUDIT: failed): enter the step-5 block-on-critical
+  #           retry loop; a passing self-reviewer does NOT override this.
+  # exit 0 -> not blocked (passed | skipped | token absent).
+  ```
+  The invocation is coordinator-issued (no runtime hook auto-runs phase markdown),
+  but the verdict→block mapping is exit-coded, not an LLM judgement call.
 - **Nesting constraint:** the adversarial step lives at the coordinator level; a
   sequential role-skill MUST NOT invoke it (`references/orchestrator-routing.md`).

@@ -326,6 +326,26 @@ const AUDIT_TOKENS_SOURCE = resolve(
 );
 const AUDIT_TOKENS_TARGETS = [
   "plugins/harness-floor-codex/skills/agent-all-codex/lib/policy/audit-tokens.mjs",
+  // gate-check.mjs (below) imports adversarialAuditBlocks from ./audit-tokens.mjs,
+  // so the canonical governance grammar must travel to every port that vendors
+  // gate-check (copilot + cursor run the adversarial gate from a project path).
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/policy/audit-tokens.mjs",
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/policy/audit-tokens.mjs",
+].map((p) => resolve(repoRoot, p));
+
+// gate-check.mjs — deterministic adversarial-audit gate (Claude source → port
+// copies). It makes the BLOCK DECISION exit-coded code instead of LLM judgement.
+// Travels with audit-tokens.mjs (its only import). Vendored to the ports that run
+// the adversarial gate from a project-relative install path (codex/copilot/cursor);
+// CC runs the source in place; gemini disables the adversarial gate (no copy).
+const GATE_CHECK_SOURCE = resolve(
+  repoRoot,
+  "plugins/harness-floor/skills/agent-all/lib/policy/gate-check.mjs",
+);
+const GATE_CHECK_TARGETS = [
+  "plugins/harness-floor-codex/skills/agent-all-codex/lib/policy/gate-check.mjs",
+  "plugins/harness-floor-copilot/skills/agent-all-copilot/lib/policy/gate-check.mjs",
+  "plugins/harness-floor-cursor/skills/agent-all-cursor/lib/policy/gate-check.mjs",
 ].map((p) => resolve(repoRoot, p));
 
 const FOUNDATION_CHECK_SOURCE = resolve(
@@ -755,6 +775,20 @@ function collectDrift() {
       drift.push({ file: "audit-tokens.mjs", dest: destPath, reason: "diverged", sourceContent: auditTokensSrc });
     }
   }
+  // gate-check.mjs deterministic adversarial-audit gate (Claude source → port copies).
+  const gateCheckSrc = readOrNull(GATE_CHECK_SOURCE);
+  if (gateCheckSrc == null) {
+    console.error(`Source missing: ${GATE_CHECK_SOURCE}`);
+    process.exit(2);
+  }
+  for (const destPath of GATE_CHECK_TARGETS) {
+    const destContent = readOrNull(destPath);
+    if (destContent == null) {
+      drift.push({ file: "gate-check.mjs", dest: destPath, reason: "missing", sourceContent: gateCheckSrc });
+    } else if (destContent !== gateCheckSrc) {
+      drift.push({ file: "gate-check.mjs", dest: destPath, reason: "diverged", sourceContent: gateCheckSrc });
+    }
+  }
   // foundation-check.mjs (Claude source → Codex init copy).
   const foundationSrc = readOrNull(FOUNDATION_CHECK_SOURCE);
   if (foundationSrc == null) {
@@ -887,6 +921,7 @@ function totalChecked() {
     + GATE_PLAN_TARGETS.length
     + COORDINATOR_AUDIT_VALIDATOR_TARGETS.length
     + AUDIT_TOKENS_TARGETS.length
+    + GATE_CHECK_TARGETS.length
     + SUMMARISER_TARGETS.length
     + AGENT_ALL_RENDER_TARGETS.length
     + TASK_LEDGER_FILES.length * TASK_LEDGER_TARGETS.length

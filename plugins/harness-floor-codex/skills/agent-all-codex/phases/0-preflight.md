@@ -25,8 +25,8 @@
    needs zero lost coordinates:
    ```javascript
    import { join } from "node:path";
-   import { makeFileMirror } from "./lib/memory-bridge.mjs";
-   import { recallLatestCheckpoint } from "./lib/memory-agent.mjs";
+   import { makeFileMirror } from "./.codex/skills/agent-all/lib/memory-bridge.mjs";
+   import { recallLatestCheckpoint } from "./.codex/skills/agent-all/lib/memory-agent.mjs";
    if (flags.resume) {
      const fileMirror = makeFileMirror({ rootDir: join(cwd, ".agent-skill/memory") });
      const latest = await recallLatestCheckpoint({ fileMirror, toolCaller: null });

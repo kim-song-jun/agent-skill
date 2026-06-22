@@ -6,6 +6,21 @@
 
 ## 미출시
 
+## Agent-skill v0.7.2 — 2026-06-22
+
+### 적대적 검증 리메디에이션 (verify→fix→re-verify 3라운드)
+
+독립 opus 검증자가 *패러프레이즈가 아닌 리터럴 운영자 명령*을 직접 실행하는 다중 라운드 적대 리뷰로, v0.7.1이 unit-test-green이지만 포트별 실제 런타임 결함을 안고 있음을 발견했습니다. 아래 모든 수정은 운영자가 내보내는 정확한 명령/입력을 재실행해 검증했습니다.
+
+- **설치-앵커 phase-doc import (ERR_MODULE_NOT_FOUND 수정, repo-wide):** phase-doc lib import가 bare `./lib/...`라 mandated repo-root cwd에서 `<repo-root>/lib/...`로 해석되어 실제 설치에서 크래시했습니다. install-to-subdir 스킬 전체 — `agent-all-{codex,copilot,cursor}`, `visual-qa-codex`, `debug-codex` — 의 import를 설치 경로로 앵커(예: `./.codex/skills/agent-all/lib/...`)했습니다. 새 `INSTALL_ANCHOR_SCAN` 가드가 (port, skill)별 리터럴 import 문자열을 단언해 클래스를 repo-wide로 닫습니다. (in-place Claude 포트는 `./lib/` 정당; Gemini는 프로젝트 lib 미설치라 reference-logic으로 문서화.)
+- **적대 게이트는 결정론적 exit-coded 결정 (C2/C4 정직성):** `adversarialAuditBlocks()`에 런타임 호출자가 없어 차단이 산문이었습니다. `lib/policy/gate-check.mjs`(`adversarialAuditBlocks` 호출, **`VERIFICATION_AUDIT: failed`에 exit 2**, 그 외 0)를 추가해 codex/copilot/cursor에 벤더하고 4포트 Phase-4 게이트에 `printf '%s' "$ADV_AUDIT_TEXT" | node <path>/gate-check.mjs`로 배선했습니다. 차단 *결정*은 이제 코드(exit-coded)이며, SKILL.md는 *호출*이 여전히 오케스트레이터-발행임을 정직하게 명시합니다. doc-contract 테스트가 포트별 리터럴 명령(설치 시뮬레이션)을 실행해 exit 2를 단언합니다.
+- **`quality-debt-reviewer`가 모든 포트에서 웨이브를 게이트:** Cursor/Codex가 dispatch는 했으나 verdict를 Phase-4 통과조건에서 누락(정보용)했습니다. 모든 포트에서 quality debt가 차단되도록 binding 조건을 추가했습니다.
+- **Gemini 정직한 다운그레이드:** Gemini가 `adversarialVerify`(발화 안 됨)와 실행 불가한 `/agent-handoff` + `--resume`를 광고했습니다. config 템플릿에 `adversarialVerify:false`(기본 gate plan이 더 이상 adversarial dispatch 미생성), phase 문서를 lib 스니펫=reference logic으로 정합화(gemini-init은 프로젝트 lib 미복사), SKILL.md에 `/agent-handoff` 미번들 명시.
+- **Wiki compile 게이트의 vacuous pass 제거:** `compile`이 없는 dir, 누락/디렉터리인 `INDEX.md`, malformed-grade 행, 파싱 불가 링크 행, `<3`-컬럼 페이지 행, 비-첫-컬럼 페이지 선언에 대해 `ok ... diff=0`을 보고했습니다. 파서가 이제 모든 셀을 스캔해 page-선언이지만 malformed인 행을 기록하고, `compileSelfAudit`이 누락/비정규 `INDEX.md`에 실패(`statSync().isFile()`)합니다 — 진짜 빈-유효 위키는 여전히 통과.
+- **원자적 체크포인트 쓰기 + 크래시 복구:** `memory-bridge` `write()`가 임시 파일에 쓰고 `renameSync`(POSIX 원자적)하여 크래시가 `checkpoint/LATEST`를 truncate하지 않게 했고, `recallLatestCheckpoint`가 `LATEST` 누락/손상 시 최신 per-wave 체크포인트로 폴백합니다.
+
+Suite: 2246/2246 통과.
+
 ## Agent-skill v0.7.1 — 2026-06-22
 
 ### v0.7.0 실제로 동작하게 만들기 (기능 수정)

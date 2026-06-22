@@ -175,19 +175,56 @@ export async function flushCheckpoint({
 // This is the SAME function Phase 0 step 5b calls on --resume.
 //
 // Returns: { found: boolean, checkpoint: object|null, key: string|null, source: "file"|"memory"|null }
+// A usable checkpoint is a parsed object carrying wave coordinates — NOT a raw
+// string (parseMaybeJson returns the raw text on malformed JSON, so a truncated
+// LATEST surfaces here as a string we must reject and fall back from).
+function isUsableCheckpoint(v) {
+  return v != null && typeof v === "object" && typeof v.wave === "number";
+}
+
+// Fallback when checkpoint/LATEST is missing or corrupt: scan the per-wave
+// history checkpoints (`checkpoint/wave-<w>-iter-<i>`) and return the newest
+// usable one, so a corrupt fixed pointer never loses recoverable coordinates.
+async function recallNewestWaveCheckpoint({ fileMirror, toolCaller = null }) {
+  const none = { found: false, checkpoint: null, key: null, source: null };
+  if (!fileMirror || typeof fileMirror.listKeys !== "function") return none;
+  // safeKey turns "checkpoint/wave-0-iter-1" into "checkpoint_wave-0-iter-1".
+  const re = /^checkpoint[_/]wave-(\d+)-iter-(\d+)$/;
+  let best = null;
+  for (const key of fileMirror.listKeys()) {
+    const m = key.match(re);
+    if (!m) continue;
+    const wave = Number(m[1]);
+    const iter = Number(m[2]);
+    if (!best || wave > best.wave || (wave === best.wave && iter > best.iter)) {
+      best = { key, wave, iter };
+    }
+  }
+  if (!best) return none;
+  const r = await recallRepoMemory({
+    key: best.key,
+    toolCaller: typeof toolCaller === "function" ? toolCaller : null,
+    fileMirror,
+  });
+  if (!r.ok || !isUsableCheckpoint(r.value)) return none;
+  return { found: true, checkpoint: r.value, key: best.key, source: r.source, recoveredFrom: "wave-history" };
+}
+
 export async function recallLatestCheckpoint({ fileMirror, toolCaller = null }) {
   const r = await recallRepoMemory({
     key: "checkpoint/LATEST",
     toolCaller: typeof toolCaller === "function" ? toolCaller : null,
     fileMirror,
   });
-  if (!r.ok) {
-    return { found: false, checkpoint: null, key: null, source: null };
+  if (r.ok && isUsableCheckpoint(r.value)) {
+    return {
+      found: true,
+      checkpoint: r.value,
+      key: r.value?.pointerTo ?? "checkpoint/LATEST",
+      source: r.source,
+    };
   }
-  return {
-    found: true,
-    checkpoint: r.value,
-    key: r.value?.pointerTo ?? "checkpoint/LATEST",
-    source: r.source,
-  };
+  // LATEST absent or corrupt (e.g. truncated mid-write before the atomic-write
+  // fix, or external corruption) → recover from the newest per-wave checkpoint.
+  return recallNewestWaveCheckpoint({ fileMirror, toolCaller });
 }

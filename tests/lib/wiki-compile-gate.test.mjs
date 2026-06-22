@@ -10,7 +10,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import {
   compileSelfAudit,
   parseIndex,
@@ -52,6 +54,138 @@ test("wiki compile gate fails when a page on disk is not listed in the index", (
   assert.equal(result.ok, false, "compile gate must fail when a page on disk is not indexed");
   assert.deepEqual(result.indexOnly, [], "indexOnly must be empty — all index entries have pages");
   assert.ok(result.pagesOnly.includes("orphan-page.md"), `pagesOnly must contain orphan-page.md; got ${JSON.stringify(result.pagesOnly)}`);
+});
+
+// C5 guard (2026-06-22 adversarial round): a nonexistent or INDEX-less directory
+// must NOT vacuously pass with diff=0 — that reports a wrong/typo'd wiki path as a
+// clean compile and defeats the gate. A genuinely-empty-but-valid wiki still passes.
+test("wiki compile gate FAILS on a nonexistent directory (no vacuous diff=0 pass)", () => {
+  const result = compileSelfAudit("/tmp/agent-skill-wiki-does-not-exist-zzz-9999");
+  assert.equal(result.ok, false, "compile must fail for a nonexistent wiki directory");
+  assert.equal(result.missing, "directory", "result must flag the missing directory");
+});
+
+test("wiki compile gate FAILS on a directory with no INDEX.md", () => {
+  const dir = mkdtempSync(join(tmpdir(), "wiki-guard-no-index-"));
+  try {
+    const result = compileSelfAudit(dir);
+    assert.equal(result.ok, false, "compile must fail for a directory without INDEX.md");
+    assert.equal(result.missing, "INDEX.md", "result must flag the missing INDEX.md");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("wiki compile gate PASSES for a valid but empty wiki (INDEX.md present, zero rows)", () => {
+  // Distinguishes 'empty valid wiki' (legitimate, diff=0) from 'path not found'.
+  const result = compileSelfAudit(resolve(fixtureDir, "empty-valid"));
+  assert.equal(result.ok, true, `valid empty wiki must pass; got ${JSON.stringify(result)}`);
+  assert.equal(result.missing, undefined, "a valid empty wiki must not be flagged as missing anything");
+  assert.equal(result.entryCount, 0);
+  assert.equal(result.pageCount, 0);
+});
+
+// E residual (2026-06-22 adversarial round): a row that declares a real
+// [Title](file.md) page but fails grade/slug validation was silently dropped by
+// parseIndex, hiding the declared (missing-on-disk) page and re-opening the
+// vacuous diff=0 pass. The malformed row must now FAIL the gate.
+test("wiki compile gate FAILS on a malformed declared-page row (invalid grade), not a vacuous pass", () => {
+  const result = compileSelfAudit(resolve(fixtureDir, "malformed-row"));
+  assert.equal(result.ok, false, "a malformed declared-page row must fail the compile gate, not pass diff=0");
+  assert.equal(result.malformed.length, 1, `exactly one malformed row expected; got ${JSON.stringify(result.malformed)}`);
+  assert.equal(result.malformed[0].file, "ghost-page.md", "the malformed row's declared page file must be surfaced");
+});
+
+test("wiki parseIndex separates valid entries from malformed declared-page rows", () => {
+  const raw = [
+    "| Page | Slug | Grade | Tags |",
+    "|---|---|---|---|",
+    "| [Good](good.md) | good | A | t |",
+    "| [Bad](bad.md) | bad | X | t |",
+  ].join("\n");
+  const entries = parseIndexRaw(raw);
+  assert.equal(entries.length, 1, "only the well-formed row is a valid entry");
+  assert.equal(entries[0].file, "good.md");
+});
+
+test("wiki compile gate FAILS cleanly when INDEX.md is a directory (no EISDIR crash)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "wiki-guard-eisdir-"));
+  try {
+    mkdirSync(join(dir, "INDEX.md"));
+    const result = compileSelfAudit(dir); // must not throw
+    assert.equal(result.ok, false, "INDEX.md as a directory must fail, not crash");
+    assert.equal(result.missing, "INDEX.md", "non-regular-file INDEX.md must be flagged missing");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// Round-2 re-verification residual: a row that LOOKS like a page declaration but
+// whose markdown link does not strictly parse (`[Paren](file(1).md)`, `[Empty]()`,
+// or a bare `page.md`) was dropped BEFORE the malformed[] collection, leaking the
+// same silent-drop vacuous diff=0 pass. Such rows must now fail the gate.
+test("wiki compile gate FAILS on a link-malformed declared-page row (no silent-drop vacuous pass)", () => {
+  for (const row of [
+    "| [Paren](file(1).md) | parenfile | A | t |",
+    "| [Empty]() | emptylink | A | t |",
+    "| bare-page.md | bareslug | A | t |",
+    // <3-column page-declaring rows: dropped by the `cols.length < 3` guard
+    // BEFORE the page-decl detection until the round-3.1 hoist (re-verified leak).
+    "| [Short](short.md) |",
+    "| [Two](two.md) | onlytwo |",
+    // Page link / *.md in a NON-FIRST column (drifted/hand-edited row): caught
+    // only after looksLikePageDecl scans EVERY cell (round-3.2 re-verified leak).
+    "| Plain Title | [Ghost](ghost.md) | A | t |",
+    "| Plain | ghost.md | A | t |",
+  ]) {
+    const dir = mkdtempSync(join(tmpdir(), "wiki-linkmal-"));
+    try {
+      writeFileSync(
+        join(dir, "INDEX.md"),
+        `# Wiki Index\n\n| Page | Slug | Grade | Tags |\n|---|---|---|---|\n${row}\n`,
+      );
+      const r = compileSelfAudit(dir);
+      assert.equal(r.ok, false, `link-malformed row "${row}" must fail the gate, not vacuously pass diff=0`);
+      assert.equal(r.malformed.length, 1, `row "${row}" must be recorded malformed; got ${JSON.stringify(r.malformed)}`);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+});
+
+test("wiki compile gate IGNORES a plain non-page text row (not a false malformed)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "wiki-plain-"));
+  try {
+    writeFileSync(
+      join(dir, "INDEX.md"),
+      `# Wiki Index\n\n| Page | Slug | Grade | Tags |\n|---|---|---|---|\n| just commentary | x | A | t |\n`,
+    );
+    const r = compileSelfAudit(dir);
+    assert.equal(r.ok, true, "a plain text row (no link, no .md) must be ignored, not flagged malformed");
+    assert.equal(r.malformed.length, 0);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// cols.some scans every cell; guard against it false-flagging a VALID page row
+// whose later cell merely mentions a .md filename — the col0 link parses, so the
+// malformed branch is never reached and the row stays a valid entry.
+test("wiki compile gate does NOT false-flag a valid page row that mentions .md in a later cell", () => {
+  const dir = mkdtempSync(join(tmpdir(), "wiki-fp-"));
+  try {
+    writeFileSync(
+      join(dir, "INDEX.md"),
+      `# Wiki Index\n\n| Page | Slug | Grade | Tags |\n|---|---|---|---|\n| [Valid](valid.md) | valid | A | see other.md |\n`,
+    );
+    writeFileSync(join(dir, "valid.md"), "# Valid\n");
+    const r = compileSelfAudit(dir);
+    assert.equal(r.ok, true, `a valid col0 page row must pass even if a later cell mentions .md; got ${JSON.stringify(r)}`);
+    assert.equal(r.malformed.length, 0);
+    assert.equal(r.entryCount, 1);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("wiki phase A routing finds exact slug match", () => {

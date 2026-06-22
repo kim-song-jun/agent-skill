@@ -16,7 +16,7 @@
 // `toolCaller({name, args})` is the host's tool primitive (mockable).
 // `fileMirror` is a `{read(key) → string|null, write(key, value), pathFor(key)}` shape.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, renameSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 // Host adapter contract: expose store/recall operations with `{key, value?,
@@ -42,10 +42,25 @@ export function makeFileMirror({ rootDir }) {
       if (!existsSync(p)) return null;
       return readFileSync(p, "utf-8");
     },
+    listKeys() {
+      // Best-effort enumeration of stored keys (in on-disk safeKey form). Used by
+      // the recall fallback to find per-wave history checkpoints when the fixed
+      // `checkpoint/LATEST` pointer is missing or corrupt.
+      if (!existsSync(root)) return [];
+      return readdirSync(root)
+        .filter((f) => f.endsWith(".json"))
+        .map((f) => f.slice(0, -5));
+    },
     write(key, value) {
       const p = join(root, `${safeKey(key)}.json`);
       mkdirSync(dirname(p), { recursive: true });
-      writeFileSync(p, typeof value === "string" ? value : JSON.stringify(value, null, 2));
+      // Atomic write: serialise to a temp sibling, then rename (atomic on POSIX)
+      // so a crash/OOM/compaction-death mid-write never leaves a truncated JSON
+      // that recall cannot parse — defeating the very crash-recovery the fixed
+      // `checkpoint/LATEST` pointer targets (2026-06-22 adversarial round, #7).
+      const tmp = `${p}.tmp`;
+      writeFileSync(tmp, typeof value === "string" ? value : JSON.stringify(value, null, 2));
+      renameSync(tmp, p);
       return p;
     },
   };

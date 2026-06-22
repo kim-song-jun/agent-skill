@@ -6,6 +6,21 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.2 — 2026-06-22
+
+### Adversarial-verification remediation (three verify→fix→re-verify rounds)
+
+A multi-round adversarial review (independent opus verifiers running the *literal* operator commands, not paraphrases) found that v0.7.1 was unit-test-green but carried real per-port runtime defects. Every fix below was confirmed by re-executing the exact command/input an operator emits.
+
+- **Install-anchored phase-doc imports (ERR_MODULE_NOT_FOUND fix, repo-wide):** Phase-doc lib imports used a bare `./lib/...` which, from the mandated repo-root cwd, resolved to `<repo-root>/lib/...` and crashed on real installs. Anchored every import to its install location across all install-to-subdir skills — `agent-all-{codex,copilot,cursor}`, `visual-qa-codex`, and `debug-codex` (e.g. `./.codex/skills/agent-all/lib/...`). A new `INSTALL_ANCHOR_SCAN` guard asserts the literal phase-doc import string per (port, skill), closing the class repo-wide. (In-place Claude ports legitimately keep `./lib/`; Gemini ships no project lib and is documented as reference-logic.)
+- **Adversarial gate is a deterministic, exit-coded decision (C2/C4 honesty):** `adversarialAuditBlocks()` had no runtime caller — blocking was prose. Added `lib/policy/gate-check.mjs` (calls `adversarialAuditBlocks`, **exits 2 on `VERIFICATION_AUDIT: failed`**, 0 otherwise), vendored to codex/copilot/cursor, and wired into all four ports' Phase-4 gate as `printf '%s' "$ADV_AUDIT_TEXT" | node <path>/gate-check.mjs`. The block *decision* is now code (exit-coded); SKILL.md states honestly that the *invocation* is still orchestrator-issued. A doc-contract test runs the literal per-port command (install-simulated) and asserts exit 2.
+- **`quality-debt-reviewer` gates the wave on every port:** Cursor and Codex dispatched it but omitted its verdict from the Phase-4 pass conditions (advisory-only). Added the binding clause so quality debt blocks on all ports.
+- **Gemini honest downgrade:** Gemini advertised `adversarialVerify` (never dispatched) and `/agent-handoff` + `--resume` it cannot run. Set `adversarialVerify:false` in the Gemini config template (the default gate plan no longer emits the adversarial dispatch), reconciled the phase docs to treat lib snippets as reference logic (gemini-init copies no project lib), and disclosed in SKILL.md that `/agent-handoff` is not bundled on this port.
+- **Wiki compile gate no longer vacuously passes:** `compile` reported `ok ... diff=0` for a nonexistent dir, missing/`INDEX.md`-as-directory, malformed-grade rows, unparseable-link rows, `<3`-column page rows, and pages declared in a non-first column. The parser now records every page-declaring-but-malformed row (scanning all cells) and `compileSelfAudit` fails (`ok:false`) on a missing/non-regular `INDEX.md` (via `statSync().isFile()`) — a genuinely-empty-but-valid wiki still passes.
+- **Atomic checkpoint write + crash recovery:** `memory-bridge` `write()` now writes a temp file and `renameSync`s it (atomic on POSIX) so a crash never leaves a truncated `checkpoint/LATEST`; `recallLatestCheckpoint` falls back to the newest per-wave history checkpoint when `LATEST` is missing or corrupt.
+
+Suite: 2246/2246 passing.
+
 ## Agent-skill v0.7.1 — 2026-06-22
 
 ### Made v0.7.0 actually work (functional fixes)

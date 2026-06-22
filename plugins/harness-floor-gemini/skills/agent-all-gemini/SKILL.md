@@ -38,6 +38,12 @@ recommended action is auto-selected and logged to
 `.agent-skill/runs/handoff-audit.jsonl` plus the shared
 `.agent-skill/runs/handoff/interactions.jsonl`.
 
+> **Port note:** the `/agent-handoff` skill is not bundled on the Gemini port
+> (this plugin ships only `agent-all-gemini` and `visual-qa-gemini`). On Gemini,
+> `--resume` only surfaces handoff metadata when the `.handoff.md`/`.session.md`
+> siblings were produced elsewhere (e.g. by another port's `/agent-handoff`);
+> with no such artifacts it simply resumes from `.agent-all-state.json`.
+
 `--qa` is the one-flag shortcut for end-to-end verification: equivalent
 to `--break-condition='{"type":"composite","steps":[{"type":"test-auto"},
 {"type":"visual-qa","mode":"comprehensive"}]}'`. Tests run as a cheap gate;

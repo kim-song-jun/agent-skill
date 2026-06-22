@@ -19,7 +19,13 @@
 6. Load `.agent-all.json` via `read_file`. If missing: warn + use built-ins
    from `templates/agent-all.config.json.hbs`.
 7. Read `.agent-all-state.json` if present. If `--resume` and
-   `max(state.phases[*].phase) >= 0`, skip rest of Phase 0.
+   `max(state.phases[*].phase) >= 0`, skip rest of Phase 0. NOTE: on the Gemini
+   port `--resume` only skips already-completed phases recorded in
+   `.agent-all-state.json`; it does NOT restore in-flight wave checkpoints or
+   handoff artifacts. The `memory-bridge`/`memory-agent` checkpoint recall used
+   by the CC/Codex/Copilot/Cursor ports is not installed here, so a mid-wave
+   context death resumes at the last completed phase boundary, not at the exact
+   dead wave's mini-plans.
 8. Validate positional argument:
    - Ends with `.md`: must exist. Stash `taskPath`.
    - Otherwise: non-empty string. Stash `prompt`.

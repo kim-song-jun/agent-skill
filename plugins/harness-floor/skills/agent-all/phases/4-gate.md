@@ -90,19 +90,27 @@ For each wave with `status === "completed"` (skip already-incomplete waves):
    - `quality-debt-reviewer` reports no unapproved quality debt; every accepted
      exception must be recorded in the task doc `Quality Debt Exceptions` table
      with reason, owner, follow-up issue, and expiry, AND
-   - `adversarialAuditBlocks(<adversarial dispatch's reported audit text>).blocked === false` for the `verification-reviewer-adversarial` dispatch when `gates.adversarialVerify !== false` (a `VERIFICATION_AUDIT: failed` from the adversarial verifier is a distinct critical block — it routes into step 5 block-on-critical even if the self-reviewer `VERIFICATION_AUDIT` passed), AND
+   - the deterministic `gate-check.mjs` gate exits 0 for the `verification-reviewer-adversarial` dispatch when `gates.adversarialVerify !== false` (it exits 2 = BLOCKED on a `VERIFICATION_AUDIT: failed` from the adversarial verifier — a distinct critical block routing into step 5 block-on-critical even if the self-reviewer `VERIFICATION_AUDIT` passed; see the command below), AND
    - no returned coordinator reports HOT-file ownership conflicts, unsafe retry sequencing, or pathspec commit risk, AND
    - no returned reviewer persona reports blocking issues.
 
-   Programmatic check for the adversarial gate condition (import from `lib/policy/audit-tokens.mjs`):
-   ```javascript
-   import { adversarialAuditBlocks } from "./lib/policy/audit-tokens.mjs";
-   const advDispatch = gatePlan.dispatches.find((d) => d.role === "verification-reviewer-adversarial");
-   if (advDispatch) {
-     const { blocked } = adversarialAuditBlocks(advReportedAuditText);
-     if (blocked) { /* enter step 5 block-on-critical retry loop; a passing self-reviewer does NOT override this */ }
-   }
+   Deterministic gate enforcement — do NOT mentally evaluate the verdict. Run the
+   `gate-check.mjs` process on the adversarial dispatch's reported output and act on
+   its EXIT CODE, so the block decision is computed by code (it calls
+   `adversarialAuditBlocks`), not judgement. `$ADV_AUDIT_TEXT` = the
+   `verification-reviewer-adversarial` dispatch's full reported output:
+   ```bash
+   printf '%s' "$ADV_AUDIT_TEXT" | node ./lib/policy/gate-check.mjs
+   # exit 2 -> BLOCKED (VERIFICATION_AUDIT: failed): enter step 5 block-on-critical
+   #           retry loop; a passing self-reviewer does NOT override this.
+   # exit 0 -> not blocked (passed | skipped | token absent).
    ```
+   (Run from the skill directory — `./lib/...` resolves to the floor plugin's
+   `skills/agent-all/` dir where the lib tree ships, same as the adversarial verifier
+   invocation in step 3-adversarial. The block decision is deterministic code; the
+   orchestrator only runs the command and branches on its exit code. The invocation
+   is still orchestrator-issued — there is no runtime hook that auto-runs this — but
+   the verdict→block mapping is no longer an LLM judgement call.)
 
    Tech success ≠ user-flow success. A `passed` Verification audit alongside a `failed` QA audit fails the wave; the QA defect report becomes input to the next iteration's plan.
 

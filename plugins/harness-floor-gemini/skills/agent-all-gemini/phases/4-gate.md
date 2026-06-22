@@ -137,6 +137,23 @@ required audit token (`ORCHESTRATION_AUDIT`, `VERIFICATION_AUDIT`, or
 persona is missing from `.gemini/skills/`, abort with
 `missing review persona: <persona> — upgrade /gemini-init`.
 
+**Adversarial verification is not supported on the Gemini port.** The
+`verification-reviewer-adversarial` gate — a structurally-isolated reviewer that
+re-derives the diff and BLOCKS the wave on `VERIFICATION_AUDIT: failed` — is
+disabled by default (`gates.adversarialVerify: false` in the config template):
+the `gemini -p` subprocess model cannot guarantee the implementer-context
+isolation that gate requires, so advertising it would be dishonest. Use the CC,
+Codex, Copilot, or Cursor port when an adversarial gate is required.
+
+**The node-lib snippets in these phase docs (gate-plan, task-ledger,
+break-resolver, verification-adapters) are reference logic on this port.** The
+lib is vendored in the Gemini *plugin*, but `/gemini-init` installs only config
+templates into the *project* — it does NOT copy the `lib/` tree — so the
+orchestrator follows the documented logic rather than running `node ./lib/...`
+from the project root. Where sibling phase docs say a module is "vendored — use
+it," they mean exactly this: follow its logic, not execute it from the project
+cwd.
+
 ## Output
 
 Print one line per wave: `Wave <i> gate: <issuesCount> issues (<critical>c <major>m <minor>n), <retries> retries`.

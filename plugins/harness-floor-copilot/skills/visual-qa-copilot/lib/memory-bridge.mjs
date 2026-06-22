@@ -4,7 +4,7 @@
 // Used by hosts that provide private shared memory. The public Copilot
 // harness path shares matrix state through files.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, renameSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 const STORE_TOOL = "store_memory";
@@ -28,7 +28,11 @@ export function makeFileMirror({ rootDir }) {
     write(key, value) {
       const p = join(root, `${safeKey(key)}.json`);
       mkdirSync(dirname(p), { recursive: true });
-      writeFileSync(p, typeof value === "string" ? value : JSON.stringify(value, null, 2));
+      // Atomic write (temp + rename) so a crash mid-write never leaves truncated
+      // JSON — same hardening as the agent-all memory-bridge (2026-06-22, #7).
+      const tmp = `${p}.tmp`;
+      writeFileSync(tmp, typeof value === "string" ? value : JSON.stringify(value, null, 2));
+      renameSync(tmp, p);
       return p;
     },
   };

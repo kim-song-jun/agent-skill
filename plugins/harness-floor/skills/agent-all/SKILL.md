@@ -71,7 +71,7 @@ To disable adversarial re-verification for cost-sensitive projects, add to `.age
 }
 ```
 
-The runtime behavior when `adversarialVerify === true` is documented in `phases/4-gate.md` (Step 3-adversarial). The programmatic block check is `adversarialAuditBlocks()` from `lib/policy/audit-tokens.mjs`.
+The runtime behavior when `adversarialVerify === true` is documented in `phases/4-gate.md` (Step 3-adversarial). The block **decision** is deterministic code, not an LLM judgement call: the orchestrator pipes the adversarial dispatch's reported output to `lib/policy/gate-check.mjs`, which calls `adversarialAuditBlocks()` (`lib/policy/audit-tokens.mjs`) and **exits 2 on `VERIFICATION_AUDIT: failed`**, 0 otherwise — the orchestrator branches on that exit code. Honest scope: the *invocation* is still orchestrator-issued by following the phase doc (there is no runtime hook that auto-runs phase markdown), but the verdict→block mapping is exit-coded rather than a prose instruction the LLM must evaluate in its head.
 
 ## Pipeline
 

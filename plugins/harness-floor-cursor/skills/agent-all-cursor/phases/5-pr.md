@@ -11,7 +11,7 @@ If `--no-pr` OR `config.defaults.createPR === false`: skip. Push
    from `lib/task-ledger.mjs`:
 
    ```javascript
-   import { validateTaskLedger } from "./lib/task-ledger.mjs";
+   import { validateTaskLedger } from "./.cursor/agent-all/lib/task-ledger.mjs";
 
    const taskRoot = task.path?.startsWith("docs/tasks/") ? "docs/tasks" : ".agent-skill/tasks";
    const indexText = /* read ${taskRoot}/index.md if it exists, else null */;

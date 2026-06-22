@@ -24,7 +24,7 @@ For each wave with `status === "completed"`:
 
 2. Build the deterministic gate plan:
    ```javascript
-   import { buildGatePlan } from "./lib/gate-plan.mjs";
+   import { buildGatePlan } from "./.copilot/agent-all/lib/gate-plan.mjs";
    const orchestration = wave.orchestration ?? state.orchestration ?? null;
    const requiredReviewerRoles = (orchestration?.requiredAgents ?? [])
      .filter((agent) => agent.kind === "reviewer")
@@ -203,6 +203,19 @@ LAST, after every other `gatePlan.dispatches[]` entry, as a dedicated Copilot
   `verification-reviewer-adversarial` is a `critical` issue that BLOCKS the wave;
   the orchestrator MUST enter the block-on-critical retry loop (step 5). A
   passing self-reviewer verdict does NOT override a failing adversarial verdict.
+- **Deterministic block enforcement:** do NOT mentally evaluate the verdict — pipe
+  the adversarial `task`'s reported output through `gate-check.mjs` and branch on its
+  EXIT CODE, so the block decision is computed by code (it calls
+  `adversarialAuditBlocks`), not judgement. `$ADV_AUDIT_TEXT` = the adversarial
+  `task`'s full reported output:
+  ```bash
+  printf '%s' "$ADV_AUDIT_TEXT" | node ./.copilot/agent-all/lib/policy/gate-check.mjs
+  # exit 2 -> BLOCKED (VERIFICATION_AUDIT: failed): enter the step-5 block-on-critical
+  #           retry loop; a passing self-reviewer does NOT override this.
+  # exit 0 -> not blocked (passed | skipped | token absent).
+  ```
+  The invocation is orchestrator-issued (no runtime hook auto-runs phase markdown),
+  but the verdict→block mapping is exit-coded, not an LLM judgement call.
 - **Nesting constraint:** the adversarial `task` lives at the orchestrator level;
   a reviewer or implementer `task` MUST NOT spawn it (`references/orchestrator-routing.md`).
 - **Live-CLI posture (#27):** the `adversarialVerify` module is pure JS and runs

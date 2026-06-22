@@ -20,7 +20,7 @@
 
 4. **Comprehensive-mode verdict.** When `state.mode === "comprehensive"`:
    ```javascript
-   import { computeVerdict, firstRunVerdict } from "./lib/verdict.mjs";
+   import { computeVerdict, firstRunVerdict } from "./.codex/skills/visual-qa/lib/verdict.mjs";
 
    const policy = config.comprehensive.verdict;
    let verdict;
@@ -47,7 +47,7 @@
 5. **DOM-hash cache writeback.** Also in comprehensive mode, when
    `state.domHashCache` exists:
    ```javascript
-   import { writeCache } from "./lib/dom-hash.mjs";
+   import { writeCache } from "./.codex/skills/visual-qa/lib/dom-hash.mjs";
    writeCache(state.domHashCachePath, state.domHashCache);
    ```
 

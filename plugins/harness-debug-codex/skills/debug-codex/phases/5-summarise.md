@@ -17,7 +17,7 @@ Render the durable debug-log artifact and populate `state.resolution`.
    error frames.
 4. Prefer the deterministic helper:
    ```
-   import { finishDebugSession } from "./lib/debug-artifacts.mjs";
+   import { finishDebugSession } from "./.codex/skills/debug/lib/debug-artifacts.mjs";
    const result = finishDebugSession({ projectRoot, state, slug, now });
    ```
    It renders the markdown, writes the log atomically, updates

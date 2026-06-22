@@ -11,7 +11,7 @@ If `--no-pr` OR `config.defaults.createPR === false`: skip. Push
    ```javascript
    import { existsSync, readFileSync } from "node:fs";
    import { resolve } from "node:path";
-   import { validateTaskLedger } from "./lib/task-ledger.mjs";
+   import { validateTaskLedger } from "./.copilot/agent-all/lib/task-ledger.mjs";
 
    const taskRoot = task.path?.startsWith("docs/tasks/") ? "docs/tasks" : ".agent-skill/tasks";
    const indexText = existsSync(`${taskRoot}/index.md`)
