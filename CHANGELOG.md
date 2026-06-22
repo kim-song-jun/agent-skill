@@ -6,6 +6,19 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.5 — 2026-06-22
+
+### Token-aware wiki auto-loop — authoring delegated to a cheap model
+
+The v0.7.4 auto-loop had the **main orchestrator model** author the wiki page prose inline (expensive). v0.7.5 delegates that authoring to a **cheap-model wiki-scribe subagent** so growing the wiki never costs main-thread / expensive-model tokens.
+
+- **Wiki-scribe delegation (Claude Code):** Phase 2 and Phase 5 now dispatch a Task subagent on `config.wiki.model` (new, default **`haiku`**) that reads the plan/outcome and returns ONLY the page prose `{ bluf, details, contradictions }` from its own isolated context. The expensive authoring runs on the cheap tier; the main thread pays only for the compact JSON return.
+- **Install-safe by design (Option A):** the scribe authors but does NOT touch the lib — the orchestrator calls `writePage()` itself in the skill's own context, so the `./lib/wiki-log.mjs` import stays install-anchored (the scribe never resolves `./lib` against the project cwd, avoiding the v0.7.2 ERR_MODULE_NOT_FOUND class). The lib mechanics are unchanged and remain free code.
+- **`wiki.model` config:** added to `config-loader` DEFAULTS (default `haiku`) + both config templates, validated as a string and overridable (e.g. `"sonnet"`).
+- **Codex port honesty:** Codex runs a single model per session (no per-dispatch model tier), so it authors inline — documented plainly in its phase docs (`wiki.model` is accepted but inert there). Adversarially reviewed (SHIP); one residual contradictory doc trailer from the edit was caught and removed (Phase 2 no longer says "author the prose yourself"), with a contract-test guard added so it cannot recur.
+
+Suite: 2278 → 2282 passing (+4: wiki.model default/validate, the CC cheap-model scribe contract, and the Codex inline-authoring honesty note).
+
 ## Agent-skill v0.7.4 — 2026-06-22
 
 ### agent-all ↔ wiki auto-loop (all-in-one knowledge base)

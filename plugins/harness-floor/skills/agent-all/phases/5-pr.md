@@ -111,34 +111,37 @@ If `--no-pr` OR `config.defaults.createPR === false`: skip Phase 5. Push `{phase
 
 10. **Wiki outcome (if `config.wiki.auto`).** Update the page Phase 2 created with
     what actually shipped — the *write* half of the auto-loop, final pass. Non-fatal.
+    **Token-aware: the outcome prose is authored by the same cheap wiki-scribe model,
+    not the main thread.**
+    a. **Mechanical prep (orchestrator, ~0 model tokens):**
     ```javascript
     import { findOrCreatePage, readPage, writePage, compile } from "./lib/wiki-log.mjs";
     if (config.wiki?.auto) {
       const target = findOrCreatePage(".wiki", task.title);
-      const prior = readPage(".wiki", target.slug);          // read the plan-capture page to merge into
-      // CONTRADICTION DETECTION: if the shipped outcome reverses a decision recorded
-      // in `prior.content`, append BOTH (old + new) to contradictions — never overwrite.
+      const prior = readPage(".wiki", target.slug);   // the plan-capture page to merge into
+    ```
+    b. **Delegate authoring (Task subagent, `model: config.wiki.model`, default `haiku`).**
+    > `description`: `Update wiki page: <task.title>`
+    > `model`: `config.wiki.model`
+    > `prompt`: "Concise wiki scribe. The recorded plan page is below; the shipped outcome is
+    > `<changed-file map + verification verdict + PR>`. Return JSON `{ bluf: <what shipped, ≤1 sentence>,
+    > details: <what was built + file map + verdict>, contradictions: <if the outcome reverses a decision
+    > in the page, BOTH sides; else ''> }`. Recorded page:\n`<prior.content>`"
+    c. **Persist + compile gate (orchestrator, install-safe context):**
+    ```javascript
+      const authored = /* scribe's returned { bluf, details, contradictions } */;
       const res = writePage(".wiki", {
-        title: task.title,
-        slug: target.slug,
-        grade: "B",                  // promoted C→B: now backed by shipped code
-        tags: [],
-        bluf: "<one-sentence: what shipped>",
-        details: "<outcome: what was built + the changed-file map + the verification verdict>",
-        contradictions: "<if the outcome diverged from the recorded plan/decision, record both sides here>",
+        title: task.title, slug: target.slug, grade: "B", tags: [],   // C→B: now backed by shipped code
+        bluf: authored.bluf, details: authored.details, contradictions: authored.contradictions,
         sources: [`task: ${task.path}`, `plan: ${plan.path}`, ...(prUrl ? [`PR: ${prUrl}`] : [])],
-        related: [],
       });
       if (!res.ok) console.warn(`wiki outcome skipped: ${res.error}`);
-      // COMPILE GATE (non-fatal): index↔pages must match (diff=0). Warn on drift; never abort.
-      const audit = compile(".wiki");
-      if (audit.ok && !audit.audit.ok) {
-        console.warn(`wiki drift after write: index-only=${audit.audit.indexOnly?.join(",")} pages-only=${audit.audit.pagesOnly?.join(",")}`);
-      }
+      const audit = compile(".wiki");   // compile gate (non-fatal): warn on drift, never abort
+      if (audit.ok && !audit.audit.ok) console.warn(`wiki drift after write: index-only=${audit.audit.indexOnly?.join(",")} pages-only=${audit.audit.pagesOnly?.join(",")}`);
     }
     ```
-    Cross-link is carried in `sources` (task id + PR url). Author the prose; the
-    helper writes the file + upserts the index row + re-grades C→B in place.
+    Cross-link rides in `sources` (task id + PR url). The scribe (cheap model)
+    authors; `writePage` runs here in skill context (install-safe) and re-grades C→B.
 
 ## Output to user
 

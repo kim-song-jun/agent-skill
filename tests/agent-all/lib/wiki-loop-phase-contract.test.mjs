@@ -46,6 +46,29 @@ test("Phase 5 records the outcome (C→B), cross-links, detects contradiction, a
   assert.match(body, /non-fatal|never abort|warn/i, "the compile gate is non-fatal (warn, never abort)");
 });
 
+test("CC delegates wiki authoring to a cheap-model scribe (config.wiki.model) — token-aware", () => {
+  for (const f of ["2-plan.md", "5-pr.md"]) {
+    const body = read(f);
+    assert.match(body, /config\.wiki\.model/, `${f}: the wiki step dispatches the scribe on config.wiki.model`);
+    assert.match(body, /scribe/i, `${f}: names the wiki-scribe delegate`);
+    assert.match(body, /haiku/i, `${f}: defaults the scribe to the cheap haiku tier`);
+    // The lib write must stay in the orchestrator (skill) context — install-safe —
+    // not inside the scribe (which runs in the project cwd).
+    assert.match(body, /writePage runs (here|HERE)|install-safe|install-anchored/i, `${f}: writePage runs in skill context, scribe never touches the lib path`);
+    // Guard against the GAP-1 leftover: no residual "author ... yourself" trailer
+    // (that would tell the MAIN thread to author, contradicting the scribe delegation).
+    assert.doesNotMatch(body, /author[^.\n]*\byourself\b/i, `${f}: no contradictory "author ... yourself" instruction (authoring is delegated to the scribe)`);
+  }
+});
+
+test("Codex honestly documents inline authoring (no per-dispatch model tier)", () => {
+  for (const f of ["2-plan.md", "5-pr.md"]) {
+    const body = readCodex(f);
+    assert.match(body, /single-model|inline|no per-dispatch model tier/i, `codex ${f}: documents inline authoring`);
+    assert.match(body, /wiki\.model.*inert|inert.*wiki\.model|inert/i, `codex ${f}: notes wiki.model is inert on Codex`);
+  }
+});
+
 test("the loop is honestly non-fatal in the write phases (a wiki failure never fails the run)", () => {
   for (const f of ["2-plan.md", "5-pr.md"]) {
     const body = read(f);

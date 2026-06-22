@@ -6,6 +6,19 @@
 
 ## 미출시
 
+## Agent-skill v0.7.5 — 2026-06-22
+
+### 토큰 인식 위키 auto-loop — 작성을 경량 모델에 위임
+
+v0.7.4 auto-loop는 **메인 오케스트레이터 모델**이 위키 페이지 prose를 inline으로 작성(비쌈)했습니다. v0.7.5는 그 작성을 **경량 모델 wiki-scribe 서브에이전트**에 위임해, 위키를 키우는 데 메인 스레드/비싼 모델 토큰이 들지 않게 합니다.
+
+- **wiki-scribe 위임 (Claude Code):** Phase 2/5가 이제 `config.wiki.model`(신규, 기본 **`haiku`**) Task 서브에이전트를 띄워 계획/결과를 읽고 페이지 prose `{ bluf, details, contradictions }`만 격리 컨텍스트에서 반환합니다. 비싼 작성은 cheap 티어에서 돌고, 메인 스레드는 compact JSON 반환값만 부담.
+- **설계상 install-safe (Option A):** scribe는 작성만 하고 lib는 건드리지 않음 — orchestrator가 스킬 자체 컨텍스트에서 `writePage()`를 호출하므로 `./lib/wiki-log.mjs` import가 install-anchored 유지(scribe가 프로젝트 cwd 기준으로 `./lib`를 해석하는 v0.7.2 ERR_MODULE_NOT_FOUND 클래스 회피). lib 메커니즘은 불변, free code.
+- **`wiki.model` config:** config-loader DEFAULTS(기본 `haiku`) + 양 config 템플릿에 추가, 문자열 검증 + 오버라이드 가능(예: `"sonnet"`).
+- **Codex 포트 정직성:** Codex는 세션당 단일 모델(per-dispatch 모델 티어 없음)이라 inline 작성 — phase 문서에 명시(`wiki.model`은 Codex에선 inert). 적대 리뷰(SHIP); 편집 잔여 모순 trailer 1건을 잡아 제거(Phase 2가 더 이상 "직접 prose 작성"이라 말하지 않음), 재발 방지 contract-test guard 추가.
+
+Suite: 2278 → 2282 통과 (+4: wiki.model 기본값/검증, CC cheap-model scribe 계약, Codex inline 작성 정직 노트).
+
 ## Agent-skill v0.7.4 — 2026-06-22
 
 ### agent-all ↔ wiki 자동 루프 (올인원 지식 베이스)

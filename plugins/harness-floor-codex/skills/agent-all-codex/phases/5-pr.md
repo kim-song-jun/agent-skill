@@ -77,6 +77,8 @@ If `--no-pr` OR `config.defaults.createPR === false`: skip. Push
      if (audit.ok && !audit.audit.ok) console.warn(`wiki drift after write: index-only=${audit.audit.indexOnly?.join(",")} pages-only=${audit.audit.pagesOnly?.join(",")}`);
    }
    ```
+   **Note (port honesty):** authored inline — Codex has no per-dispatch model tier
+   (single-model session); `config.wiki.model` is accepted but inert on this port.
 
 ## Output
 

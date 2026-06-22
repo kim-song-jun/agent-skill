@@ -17,7 +17,7 @@ export const DEFAULTS = {
   },
   loop: { breakCondition: "npm test", stableIters: 1, maxRuntimeSec: null, maxRepeatedFailureSignature: 3 },
   gates: { specReview: true, qualityReview: true, adversarialVerify: true, blockOnCritical: true },
-  wiki: { auto: true },
+  wiki: { auto: true, model: "haiku" },
   pr: { branchPrefix: "feat/agent-all/", baseBranch: "main" },
   policy: { decisionSurfacing: true, verification: true, reviewerAudit: true, qaAudit: true },
   security: {
@@ -116,6 +116,9 @@ function validate(cfg) {
   }
   if (cfg.wiki?.auto !== undefined && typeof cfg.wiki.auto !== "boolean") {
     errors.push({ path: "wiki.auto", message: "must be boolean" });
+  }
+  if (cfg.wiki?.model !== undefined && typeof cfg.wiki.model !== "string") {
+    errors.push({ path: "wiki.model", message: "must be string" });
   }
   return errors;
 }

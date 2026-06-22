@@ -72,6 +72,27 @@ test("wiki.auto defaults to true (the agent-all↔wiki auto-loop is default-on)"
   assert.equal(DEFAULTS.wiki.auto, true);
 });
 
+test("wiki.model defaults to a cheap model (haiku) — the scribe authors on a cheap tier", () => {
+  assert.equal(DEFAULTS.wiki.model, "haiku");
+});
+
+test("wiki.model: overridable string, non-string rejected", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cfg-wikimodel-"));
+  try {
+    const ok = join(dir, "ok.json");
+    writeFileSync(ok, JSON.stringify({ wiki: { model: "sonnet" } }));
+    assert.equal(loadConfig(ok).config.wiki.model, "sonnet", "wiki.model is overridable");
+
+    const bad = join(dir, "bad.json");
+    writeFileSync(bad, JSON.stringify({ wiki: { model: 42 } }));
+    const r = loadConfig(bad);
+    assert.equal(r.ok, false);
+    assert.ok(r.errors.some(e => e.path === "wiki.model" && /string/i.test(e.message)), "non-string wiki.model rejected");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("wiki.auto: a config can opt out (false), and a non-boolean is rejected", () => {
   const dir = mkdtempSync(join(tmpdir(), "cfg-wiki-"));
   try {

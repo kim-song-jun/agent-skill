@@ -38,6 +38,10 @@
    }
    ```
    Keep `slug` = `target.slug` so Phase 5 updates the SAME page.
+   **Note (port honesty):** Codex runs a single model per session — there is no
+   per-dispatch model tier — so the prose is authored inline by the orchestrator.
+   The cheap-model wiki-scribe delegation (`config.wiki.model`) is a Claude Code
+   capability; on Codex `wiki.model` is accepted but inert.
 
 ## Output
 

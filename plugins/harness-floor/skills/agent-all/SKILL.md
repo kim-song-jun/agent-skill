@@ -69,10 +69,15 @@ as it works, so you never have to invoke `/wiki` by hand:
   any contradiction with the recorded plan, then runs the compile self-audit (diff=0).
 
 Mechanics live in `lib/wiki-log.mjs` (vendored, install-anchored — never a
-cross-skill import); page **content** is authored by the orchestrator. Every wiki
-step is **non-fatal**: a wiki failure warns and continues, never failing the run.
-Auto-wiki is available on Claude Code + Codex (runnable wiki); the Copilot/Gemini/
-Cursor ports do not run it.
+cross-skill import) and are free code. **Token-aware:** the page *prose* is
+authored by a **cheap-model wiki-scribe subagent** (`wiki.model`, default
+`haiku`) in its own isolated context, so growing the wiki never costs
+main-thread / expensive-model tokens; the orchestrator only does the free
+mechanical prep + the install-safe `writePage`. Every wiki step is **non-fatal**:
+a wiki failure warns and continues, never failing the run. Auto-wiki runs on
+Claude Code + Codex; the scribe model-tiering is Claude-Code-only (Codex is a
+single-model session, so it authors inline — `wiki.model` is inert there).
+Copilot/Gemini/Cursor do not run the loop.
 
 ## Gates
 

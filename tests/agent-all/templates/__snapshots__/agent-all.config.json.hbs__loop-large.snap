@@ -38,7 +38,8 @@
     "blockOnCritical": true
   },
   "wiki": {
-    "auto": true
+    "auto": true,
+    "model": "haiku"
   },
   "policy": {
     "qualityDebt": {
