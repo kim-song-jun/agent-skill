@@ -17,3 +17,11 @@ export function readGitState({ cwd = process.cwd(), execFile = execFileSync } = 
   const summary = `${branch}; ${statusLines.length === 0 ? "clean" : `${statusLines.length} changed file(s)`}`;
   return { branch, statusLines, logLines, summary };
 }
+
+// Extract working-tree paths from `git status --short` lines. The first 3 chars
+// are the XY status + space; rename rows ("R  old -> new") resolve to the NEW path.
+export function parseDirtyPaths(statusLines) {
+  return (statusLines ?? [])
+    .map((line) => String(line).slice(3).split(" -> ").pop().trim())
+    .filter(Boolean);
+}
