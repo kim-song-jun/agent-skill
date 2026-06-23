@@ -17,7 +17,12 @@ export const DEFAULTS = {
   },
   loop: { breakCondition: "npm test", stableIters: 1, maxRuntimeSec: null, maxRepeatedFailureSignature: 3 },
   gates: { specReview: true, qualityReview: true, adversarialVerify: true, blockOnCritical: true },
-  wiki: { auto: true, model: "haiku" },
+  wiki: {
+    auto: true, model: "haiku",
+    sources: ["docs/superpowers/specs", "docs/superpowers/plans", ".agent-skill/tasks"],
+    exclude: ["**/process-archive/**", "**/raw/**", "**/artifacts/**", "**/*-shots/**", "**/meeting-*/**"],
+    maxImportUSD: 2.0,
+  },
   pr: { branchPrefix: "feat/agent-all/", baseBranch: "main" },
   policy: { decisionSurfacing: true, verification: true, reviewerAudit: true, qaAudit: true },
   security: {
@@ -119,6 +124,15 @@ function validate(cfg) {
   }
   if (cfg.wiki?.model !== undefined && typeof cfg.wiki.model !== "string") {
     errors.push({ path: "wiki.model", message: "must be string" });
+  }
+  if (cfg.wiki?.sources !== undefined && (!Array.isArray(cfg.wiki.sources) || cfg.wiki.sources.some((s) => typeof s !== "string"))) {
+    errors.push({ path: "wiki.sources", message: "must be an array of strings" });
+  }
+  if (cfg.wiki?.exclude !== undefined && (!Array.isArray(cfg.wiki.exclude) || cfg.wiki.exclude.some((s) => typeof s !== "string"))) {
+    errors.push({ path: "wiki.exclude", message: "must be an array of strings" });
+  }
+  if (cfg.wiki?.maxImportUSD !== undefined && typeof cfg.wiki.maxImportUSD !== "number") {
+    errors.push({ path: "wiki.maxImportUSD", message: "must be a number" });
   }
   return errors;
 }
