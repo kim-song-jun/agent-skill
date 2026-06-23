@@ -138,7 +138,7 @@ d. In non-TTY mode, auto-select only the recommended/default option when it is n
 
 a. For each task, build a fresh prompt: the original mini-plan PLUS the mandatory Dispatch Prompt Contract below PLUS a section `## User Decisions for This Task` listing `decision.title → chosen option label + description`.
 b. Re-dispatch implementer subagent. PostToolUse hook validates `STATUS: DONE` came with `verification_passed` line.
-c. After each implementer returns, the orchestrator MUST inspect the reported changed files and `git diff`, stage only task-owned pathspecs, create the task commit, and record the orchestrator-created commit SHA on that task. If the diff includes unreported or forbidden files, do not commit; re-dispatch or escalate.
+c. After each implementer returns, the orchestrator MUST inspect the reported changed files and `git diff`, stage only task-owned pathspecs, create the task commit, and record the orchestrator-created commit SHA on that task. Exclude any path in `state.dirtySnapshot` from the staged set (the complement only); if a reported changed file is in `dirtySnapshot`, do NOT commit it — warn that a protected file was modified despite the guard and re-dispatch/escalate. If the diff includes unreported or forbidden files, do not commit; re-dispatch or escalate.
 d. Phase 4 (Gate) reviewer subagents likewise get the `Review Task N: <title>` description; PreToolUse hook injects the `VERIFICATION_AUDIT` directive; PostToolUse hook validates the token's presence.
 
 4. Capture wave result: `{index: i, baseCommit, startCommit, endCommit, orchestration: planned.orchestration, costTelemetry: state.costTelemetry?.summary, tasks: [{id, status, changedFiles, commits, decisions: state.decisions[id]}], status: "completed"|"incomplete"}`. `commits` are orchestrator-created pathspec commits, not subagent self-commits. Derive `startCommit` and `endCommit` from the first and last entries in `wave.tasks[].commits`.
@@ -179,7 +179,7 @@ Every 3a scoping and 3c implementation Task prompt MUST include:
 
 - Working directory: the repository root where commands must run.
 - Owned files or line ranges: the task's declared files, or an explicit note that no files were declared and the subagent must ask before broad edits.
-- Forbidden files or areas: files owned by other active wave tasks plus any out-of-scope paths.
+- Forbidden files or areas: files owned by other active wave tasks plus any out-of-scope paths. Forbidden files ALSO include every path in `state.dirtySnapshot` (pre-existing uncommitted user work — read-only this run).
 - DO NOT:
   - Do not run destructive commands, force-push, or reset shared state.
   - Do not edit outside the owned files without reporting the expansion.
