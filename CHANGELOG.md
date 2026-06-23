@@ -6,6 +6,12 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.9 — 2026-06-23
+
+### Wiki pointer in the compaction-recovery directive
+
+Builds on v0.7.8. The `session-resume.mjs` SessionStart hook now appends a one-line wiki pointer — `Relevant wiki: .wiki/<slug>.md` — to its post-compaction directive when Phase 2 has recorded the page (`state.wikiPage`). After a compaction the re-oriented orchestrator gets three durable anchors instead of two: the *where* (`.agent-all-state.json` coordinate), the *what* (the next phase file), and now the *why* (the wiki page's recorded plan, decisions, and rationale). It stays a pointer, not a context dump — the directive remains ~700 characters and never contributes to window pressure. Omitted when the wiki auto-loop is off or the page has not been recorded yet.
+
 ## Agent-skill v0.7.8 — 2026-06-23
 
 ### `/agent-all` survives in-session context compaction
