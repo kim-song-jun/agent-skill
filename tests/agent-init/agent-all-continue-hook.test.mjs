@@ -43,6 +43,7 @@ test("running + mid-pipeline blocks the stop with a continue directive", () => {
   assert.ok(out, "must emit decision:block");
   assert.match(out.reason, /Phase 3/);
   assert.match(out.reason, /Do NOT stop/i);
+  assert.match(out.reason, /phases\/3-dispatch\.md/);
 });
 
 test("stop_hook_active true allows the stop (loop guard)", () => {
