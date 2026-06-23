@@ -15,6 +15,12 @@ test("Phase 0 enters PROTECT mode on a dirty tree instead of aborting", () => {
   assert.match(body, /PROTECT/, "names PROTECT mode");
 });
 
+test("Phase 0 resume branch restores dirtySnapshot from checkpoint and re-exports AGENT_ALL_DIRTY_SNAPSHOT", () => {
+  const body = read("0-preflight.md");
+  assert.match(body, /resume[\s\S]{0,300}dirtySnapshot/i,
+    "5b resume branch must reference dirtySnapshot to restore PROTECT mode");
+});
+
 test("Phase 3c injects dirtySnapshot as forbidden + excludes it from the commit pathspec", () => {
   const body = readFileSync(resolve(PHASES, "3-dispatch.md"), "utf-8");
   assert.match(body, /dirtySnapshot/, "3-dispatch references the protected set");

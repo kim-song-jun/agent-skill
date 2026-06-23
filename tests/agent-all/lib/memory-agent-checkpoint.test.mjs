@@ -202,3 +202,35 @@ test("G4-6 (teeth check b): recallLatestCheckpoint on pristine cwd returns found
   assert.equal(none.key, null);
   assert.equal(none.source, null);
 });
+
+// T6-1: dirtySnapshot round-trip — checkpoint persists protected paths so --resume restores PROTECT mode
+test("T6-1: dirtySnapshot survives flush→recall round-trip (PROTECT mode persists across resume)", async () => {
+  const { cwd, fileMirror } = freshEnv();
+  const snapshot = ["src/app.ts", "config/local.json", "README.md"];
+
+  const result = await flushCheckpoint({
+    cwd,
+    runId: "run-dirty-rt",
+    wave: 1,
+    iter: 0,
+    phase: "3a",
+    inFlight: true,
+    taskIds: ["AS-TASK-010"],
+    miniPlans: [{ taskId: "AS-TASK-010", title: "Dirty-tree task", files: [], role: "dev" }],
+    requiredAgents: [],
+    dirtySnapshot: snapshot,
+    fileMirror,
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.recoverable, true);
+
+  // Simulate session death: build a fresh mirror from disk only
+  const freshMirror = makeFileMirror({ rootDir: join(cwd, ".agent-skill/memory") });
+  const latest = await recallLatestCheckpoint({ fileMirror: freshMirror, toolCaller: null });
+
+  assert.equal(latest.found, true);
+  assert.equal(latest.source, "file");
+  // dirtySnapshot must survive the round-trip intact
+  assert.deepEqual(latest.checkpoint.dirtySnapshot, snapshot,
+    "dirtySnapshot must be restored from disk so Phase 0 resume can re-enter PROTECT mode");
+});

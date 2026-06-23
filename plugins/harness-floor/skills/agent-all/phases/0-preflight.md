@@ -84,9 +84,15 @@
      const latest = await recallLatestCheckpoint({ fileMirror, toolCaller: null });
      if (latest.found && latest.checkpoint?.inFlight) {
        // A death occurred mid-3a: reconstruct in-flight scoping state FROM DISK.
-       state.resumeCheckpoint = latest.checkpoint;  // {phase,wave,iter,miniPlans,taskIds,requiredAgents,decisionsSoFar,...}
+       state.resumeCheckpoint = latest.checkpoint;  // {phase,wave,iter,miniPlans,taskIds,requiredAgents,decisionsSoFar,dirtySnapshot,...}
        state.iter = latest.checkpoint.iter ?? state.iter;
        state.decisions = { ...(state.decisions ?? {}), ...(latest.checkpoint.decisionsSoFar ?? {}) };
+       // Restore PROTECT mode if the pre-run dirty tree was snapshotted before the death.
+       state.dirtySnapshot = latest.checkpoint.dirtySnapshot ?? [];
+       if (state.dirtySnapshot.length > 0) {
+         // Re-export the env contract so the PreToolUse Edit|Write guard keeps protecting them.
+         process.env.AGENT_ALL_DIRTY_SNAPSHOT = join(cwd, `.agent-skill/runs/${runId}/dirty-snapshot.json`);
+       }
        // Phase 3 MUST re-enter at wave=latest.checkpoint.wave, sub-phase 3a, using miniPlans
        // instead of re-parsing — the scoping subagents that died are re-dispatched from this.
      }
