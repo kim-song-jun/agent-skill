@@ -18,3 +18,13 @@ test("SKILL documents /wiki import", () => {
   const body = read("SKILL.md");
   assert.match(body, /\/wiki import/, "usage lists /wiki import");
 });
+
+test("Phase 4 backfill is dry-run-first, configurable, cost-capped", () => {
+  const body = read("phases/4-import.md");
+  assert.match(body, /planBackfill/, "uses the pure planner");
+  assert.match(body, /config\.wiki\.sources/, "reads configurable source roots");
+  assert.match(body, /interactiv|multi-select|agent-interaction/i, "first-run interactive root selection");
+  assert.match(body, /dry-run[\s\S]{0,200}(DEFAULT|no writes|NO writes)/i, "dry-run preview is the default");
+  assert.match(body, /--apply/, "explicit apply gate");
+  assert.match(body, /maxImportUSD/, "cost cap");
+});

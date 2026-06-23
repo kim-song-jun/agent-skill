@@ -64,3 +64,27 @@ export function importDoc(wikiDir, docPath, { type = null, authored = {}, now = 
   const existed = !!(existing.ok && existing.found && /^grade:/m.test(existing.content));
   return { ok: res.ok, slug, existed, sources, error: res.error };
 }
+
+// Minimal glob match: supports ** and * segments; anchored anywhere in the path.
+function globToRe(glob) {
+  const re = glob.split("/").map((seg) =>
+    seg === "**" ? ".*" : seg.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^/]*")
+  ).join("/").replace(/\.\*\//g, "(?:.*/)?");
+  return new RegExp(re);
+}
+
+function dateOf(path) { return (/(\d{4}-\d{2}-\d{2})/.exec(path)?.[1]) || "0000-00-00"; }
+
+// Pure planner for the backfill dry-run + apply order. No LLM, no writes.
+export function planBackfill(files, { exclude = [] } = {}) {
+  const excludeRes = exclude.map(globToRe);
+  const kept = [];
+  let excludedCount = 0;
+  for (const f of files) {
+    if (excludeRes.some((re) => re.test(f))) { excludedCount++; continue; }
+    const { slug, type } = deriveTopic(f);
+    kept.push({ path: f, slug, type, date: dateOf(f) });
+  }
+  kept.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  return { ordered: kept, topics: kept.map((k) => k.slug), excludedCount };
+}
