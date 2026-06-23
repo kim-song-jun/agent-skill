@@ -22,6 +22,8 @@ Implements the Karpathy LLM-Wiki pattern (MIT). Core properties:
 /wiki <query>               # Phase A: look up query in index → read or write page
 /wiki write <title>         # Phase B: write a new page (prompts for content)
 /wiki update <slug>         # Phase B: update an existing page
+/wiki import <doc>          # Phase 4: record a project doc (spec/plan/task) into the wiki (reference+synthesize)
+/wiki import --all          # Phase 4: backfill all configured source roots (dry-run preview first)
 /wiki compile               # Run compile self-audit (diff=0 gate)
 /wiki status                # Print index summary (entry count, drift, top grades)
 /wiki list                  # List all pages in the index
@@ -42,6 +44,7 @@ Implements the Karpathy LLM-Wiki pattern (MIT). Core properties:
 | A | `phases/1-route.md` | Phase A: search INDEX.md for the query |
 | B | `phases/2-write.md` | Phase B: write or update a page + update index |
 | 3 | `phases/3-compile.md` | compile self-audit (diff=0 gate) — used by `/wiki compile` |
+| 4 | `phases/4-import.md` | record project docs into the wiki (single + --all backfill) |
 
 ## Rules
 
