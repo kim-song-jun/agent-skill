@@ -20,15 +20,21 @@
           { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/agent-policy-hook.mjs\"" }
         ]
       }{{/if}}
-    ]{{#if operationalProfile}},
+    ],
     "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/wiki-capture.mjs\"" }
+        ]
+      }{{#if operationalProfile}},
       {
         "matcher": "Task",
         "hooks": [
           { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/agent-policy-hook.mjs\" PostToolUse" }
         ]
-      }
-    ]{{/if}},
+      }{{/if}}
+    ],
     "Stop": [
       {
         "hooks": [

@@ -290,7 +290,15 @@ test("settings template wires operational policy hook only for operational profi
     !litePreToolCommands.some(command => command.includes(".claude/hooks/agent-policy-hook.mjs")),
     "lite settings should not register a policy hook file it does not install",
   );
-  assert.equal(lite.hooks.PostToolUse, undefined, "lite settings should not register Task PostToolUse hooks");
+  assert.ok(lite.hooks.PostToolUse, "lite settings should have PostToolUse (wiki-capture advisory)");
+  assert.ok(
+    !lite.hooks.PostToolUse.some(group => group.matcher === "Task"),
+    "lite settings should not register Task PostToolUse hooks",
+  );
+  assert.ok(
+    lite.hooks.PostToolUse.some(group => group.matcher === "Write|Edit" && group.hooks.some(h => h.command.includes("wiki-capture.mjs"))),
+    "lite settings should register Write|Edit wiki-capture advisory hook",
+  );
 });
 
 test("task ledger check rejects active index entries pointing to missing task docs", () => {

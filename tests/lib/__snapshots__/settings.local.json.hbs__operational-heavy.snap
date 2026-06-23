@@ -23,6 +23,12 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/wiki-capture.mjs\"" }
+        ]
+      },
+      {
         "matcher": "Task",
         "hooks": [
           { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/agent-policy-hook.mjs\" PostToolUse" }
