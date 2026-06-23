@@ -6,6 +6,19 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.10 — 2026-06-24
+
+### Project docs ↔ wiki: `/wiki import`
+
+Specs, plans, tasks, and hand-written project docs no longer bypass the `.wiki/` knowledge base. A new `/wiki import` engine records them by **reference + synthesis, never duplication** — each doc becomes (or merges into) a topic page with a one-line BLUF, a cheap-model synthesis, and a `sources:` link back to the primary doc.
+
+- **`/wiki import <doc>`** routes one doc into the wiki: `deriveTopic` normalizes the filename into a merge-key slug (so a feature's spec, plan, and tasks collapse into ONE topic page), and a cheap `wiki.model` scribe synthesizes the page with an explicit no-copy guardrail.
+- **`/wiki import --all`** backfills configured source roots: a dry-run preview (docs → distinct topics + estimated cost) runs first, `--apply` imports oldest-first, and a `wiki.maxImportUSD` cost cap bounds the run. Source roots are project-configurable (`wiki.sources`/`wiki.exclude` in `.agent-all.json`) and selected interactively on first run.
+- **`wiki-capture.mjs`** — a non-blocking advisory PostToolUse hook nudges `/wiki import` when a doc is written under a source root, suppressed while an `/agent-all` run is active (it records to the wiki itself).
+- **agent-all Phase 2** now records the brainstorming spec as a wiki source alongside the plan.
+
+Reference-not-duplicate is enforced by the scribe prompt + a ≤200-word synthesis bound, not a hard code cap. Existing operational installs re-run `/agent-init` once to pick up the new `wiki-capture` hook.
+
 ## Agent-skill v0.7.9 — 2026-06-23
 
 ### Wiki pointer in the compaction-recovery directive

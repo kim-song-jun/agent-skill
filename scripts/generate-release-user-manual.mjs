@@ -4,12 +4,12 @@ import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const ROOT = resolve(dirname(new URL(import.meta.url).pathname), "..");
-const RELEASE = "v0.7.9";
-const RELEASE_URL = "https://github.com/kim-song-jun/agent-skill/releases/tag/v0.7.9";
+const RELEASE = "v0.7.10";
+const RELEASE_URL = "https://github.com/kim-song-jun/agent-skill/releases/tag/v0.7.10";
 const OUT_DIR = resolve(
   ROOT,
   process.argv.find((arg) => arg.startsWith("--out-dir="))?.slice("--out-dir=".length)
-    || ".agent-skill/releases/v0.7.9/user-manual",
+    || ".agent-skill/releases/v0.7.10/user-manual",
 );
 const CARD_DIR = join(OUT_DIR, "cards");
 const PAGE_DIR = join(OUT_DIR, "pages");
@@ -76,9 +76,9 @@ function summariseClaudePlugins() {
     return "Claude plugin list 확인 실패: 수동으로 `claude plugin list`를 실행하세요.";
   }
   const blocks = res.stdout.split(/\n\s*\n/).filter((block) => block.includes("@agent-skill"));
-  const bad = blocks.filter((block) => !block.includes("Version: 0.7.9") || !block.includes("Status: ✔ enabled"));
+  const bad = blocks.filter((block) => !block.includes("Version: 0.7.10") || !block.includes("Status: ✔ enabled"));
   if (blocks.length === 19 && bad.length === 0) {
-    return "로컬 Claude user scope에 agent-skill 플러그인 19개가 모두 v0.7.9으로 설치되어 있습니다.";
+    return "로컬 Claude user scope에 agent-skill 플러그인 19개가 모두 v0.7.10으로 설치되어 있습니다.";
   }
   return `Claude plugin list에서 agent-skill ${blocks.length}/19개가 보입니다. 빠진 항목은 marketplace update 후 plugin update/install이 필요합니다.`;
 }
