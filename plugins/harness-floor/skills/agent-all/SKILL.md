@@ -138,6 +138,28 @@ The runtime behavior when `adversarialVerify === true` is documented in `phases/
    high-risk options are never auto-approved.
 9. **Orchestrator routing.** `/agent-all` is for durable, gated, PR-shipping code changes. Evidence-producing work (research, multi-unit audits, design/findings reports) belongs to the built-in `Workflow` (ultracode) tool instead — they are siblings, never nested. Phase 1 gauges this; the full decision table, the no-nesting constraint, and the governance-across-the-seam rule live in `references/orchestrator-routing.md`.
 
+## Compaction recovery (in-session)
+
+An **in-session compaction** (auto when the window fills, or a manual `/compact`) is NOT session
+death — the process keeps running, so `--resume` never re-runs Phase 0. A compaction can summarize
+away your place in the pipeline and the phase instructions, stranding you (classically: plan written,
+Phase 3 never entered).
+
+Two installed hooks make this recoverable; obey them:
+
+1. **`session-resume.mjs` (SessionStart, compact/resume)** re-injects a directive naming the next
+   phase. When you see it, do exactly that: re-read this SKILL and the named `phases/<N>-*.md`, then
+   continue from Phase `<N>`.
+2. **`agent-all-continue.mjs` (Stop)** blocks you from ending the turn while `status:"running"` and the
+   pipeline is unfinished. If your turn is force-continued with a "still mid-pipeline" reason, resume
+   the named phase — do not argue with it.
+
+Self-heal even without a directive: if you are unsure where you are mid-run, read
+`.agent-all-state.json` and resume **after `max(phases[*].phase)`**. Trust `state.json` over your own
+recollection (the subagent-driven-development "Durable Progress" principle). On a `status:"running"`
+state: **never restart from Phase 0**, and **do not stop after the plan** — Phase 2 completing means
+Phase 3 is next.
+
 ## Lib modules
 
 - `lib/config-loader.mjs` — `loadConfig(path)` → `{ok, config | errors, warning?}`. Returns built-in `DEFAULTS` when path missing.
