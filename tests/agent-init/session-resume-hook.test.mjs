@@ -46,6 +46,20 @@ test("compact + running[0,1,2] injects a continue-from-Phase-3 directive", () =>
   assert.match(ctx, /3-dispatch\.md/);
 });
 
+test("wiki pointer is included when state.wikiPage is set", () => {
+  const dir = project(running({ wikiPage: ".wiki/add-signup-form.md" }));
+  const { stdout } = runHook({ source: "compact", session_id: "S1" }, dir);
+  const ctx = JSON.parse(stdout).hookSpecificOutput.additionalContext;
+  assert.match(ctx, /Relevant wiki: \.wiki\/add-signup-form\.md/);
+});
+
+test("wiki pointer is omitted when state.wikiPage is absent", () => {
+  const dir = project(running());
+  const { stdout } = runHook({ source: "compact", session_id: "S1" }, dir);
+  const ctx = JSON.parse(stdout).hookSpecificOutput.additionalContext;
+  assert.doesNotMatch(ctx, /Relevant wiki/);
+});
+
 test("every source writes current-session.json", () => {
   const dir = project(running());
   runHook({ source: "clear", session_id: "S9" }, dir);

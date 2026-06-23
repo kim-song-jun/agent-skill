@@ -43,12 +43,15 @@
        sources: [`task: ${task.path}`, `plan: ${plan.path}`],
      });
      if (!res.ok) console.warn(`wiki plan-capture skipped: ${res.error}`);
+     else state.wikiPage = `.wiki/${target.slug}.md`;   // record so session-resume can point compaction recovery at the WHY (decisions/rationale)
    }
    ```
    (`writePage` runs HERE, in the skill's own context, so its `./lib` import stays
    install-anchored — the scribe never touches the lib path.)
    The scribe (not the main thread) authors the prose; `writePage` only writes the
    file + index row. Keep `slug` = `target.slug` so Phase 5 updates the SAME page.
+   Persisting `state.wikiPage` lets the `session-resume.mjs` SessionStart hook add a
+   one-line wiki pointer to its post-compaction directive (a pointer, not a context dump).
 
 ## Output to user
 

@@ -57,6 +57,12 @@ try {
   if (nextPhase > 6) process.exit(0);
   const list = completed.length ? [...completed].sort((a, b) => a - b).join(", ") : "none";
   const runId = state.runId ? String(state.runId) : "unknown";
+  // Optional semantic-memory pointer: the project wiki page for this task (recorded by
+  // Phase 2 as state.wikiPage). Points at the WHY (plan, decisions, rationale) — a pointer,
+  // not a context dump. Omitted when the wiki auto-loop is off or the page isn't recorded yet.
+  const wikiLine = state.wikiPage
+    ? `Relevant wiki: ${state.wikiPage} (recorded plan, decisions & rationale). `
+    : "";
   const directive =
     `⚠️ A /agent-all run (${runId}) is IN PROGRESS — not finished. ` +
     `Completed phases: ${list}. NEXT: Phase ${nextPhase} (${PHASE_NAME[nextPhase]}). ` +
@@ -64,6 +70,7 @@ try {
     `Re-read the agent-all SKILL and phases/${PHASE_SLUG[nextPhase]}.md, then CONTINUE from Phase ${nextPhase}. ` +
     `Do NOT stop after the plan; do NOT restart from Phase 0. ` +
     `If you intended to start a different task, ignore this and proceed with the new request. ` +
+    wikiLine +
     `Progress SSOT: .agent-all-state.json.`;
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: directive } }) + "\n");
 } catch (err) { warn("emit resume directive", err); }
