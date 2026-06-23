@@ -19,6 +19,8 @@ test("Phase 0 resume branch restores dirtySnapshot from checkpoint and re-export
   const body = read("0-preflight.md");
   assert.match(body, /resume[\s\S]{0,300}dirtySnapshot/i,
     "5b resume branch must reference dirtySnapshot to restore PROTECT mode");
+  assert.match(body, /resume[\s\S]{0,400}AGENT_ALL_DIRTY_SNAPSHOT/i,
+    "resume branch re-exports AGENT_ALL_DIRTY_SNAPSHOT so the hook protects on resume");
 });
 
 test("Phase 3c injects dirtySnapshot as forbidden + excludes it from the commit pathspec", () => {

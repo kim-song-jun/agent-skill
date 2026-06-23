@@ -91,6 +91,9 @@
        state.dirtySnapshot = latest.checkpoint.dirtySnapshot ?? [];
        if (state.dirtySnapshot.length > 0) {
          // Re-export the env contract so the PreToolUse Edit|Write guard keeps protecting them.
+         // IMPORTANT: on --resume the orchestrator MUST reuse the ORIGINAL run's runId (the one the
+         // recalled checkpoint was written under) — otherwise this path resolves to a non-existent file
+         // and PROTECT silently lapses. Read runId from the recalled checkpoint, not a newly-generated one.
          process.env.AGENT_ALL_DIRTY_SNAPSHOT = join(cwd, `.agent-skill/runs/${runId}/dirty-snapshot.json`);
        }
        // Phase 3 MUST re-enter at wave=latest.checkpoint.wave, sub-phase 3a, using miniPlans
