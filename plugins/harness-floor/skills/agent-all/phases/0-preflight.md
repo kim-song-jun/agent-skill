@@ -106,6 +106,33 @@
    **EXCEPT** keep `state.resumeCheckpoint` set above; Phase 3 step 3 reads it
    to re-enter the dead wave at 3a.
 
+   **5c. (session ownership + sequential multi-session guard).**
+   Claim this session's ownership and refuse to clobber another run.
+   ```javascript
+   import { readFileSync } from "node:fs";
+   import { join } from "node:path";
+   // The session-resume.mjs SessionStart hook writes this on every session entry.
+   let currentSessionId = null;
+   try {
+     currentSessionId = JSON.parse(readFileSync(join(cwd, ".agent-skill/runs/current-session.json"), "utf-8")).sessionId ?? null;
+   } catch { /* hook hasn't run yet (first install) — single-session assumption */ }
+
+   // Guard: a pre-existing RUNNING state that this invocation is not resuming.
+   if (!flags.resume && state.status === "running") {
+     const updatedAt = Date.parse(state.updatedAt || "");
+     const stale = Number.isFinite(updatedAt) && (Date.now() - updatedAt) > 12 * 60 * 60 * 1000;
+     if (stale) {
+       // Dead prior run — default to start fresh (offer resume).
+       // agent-interaction/v1: ["Start fresh (default)", "Resume that run"]
+     } else {
+       // Fresh foreign running state — likely another in-progress run (possibly a concurrent session,
+       // which is UNSAFE on a shared worktree: interleaved commits). Do NOT auto-proceed (rule 14).
+       // agent-interaction/v1 decision: ["Abort (default)", "Resume that run", "Start fresh (overwrites state — only if the other run is truly dead)"].
+       // On Abort → exit 0 with: "Another /agent-all run (<runId>) appears in progress (updated <updatedAt>). Concurrent runs on one worktree are unsafe; finish or abort it first, or run --resume."
+     }
+   }
+   ```
+
 6. Validate positional argument:
    - If ends with `.md`: must exist as a file. If not: abort `task file not found: <path>`. Stash as `taskPath`.
    - Otherwise: must be non-empty string. Stash as `prompt`. If empty: abort `provide a prompt or task path`.
@@ -119,7 +146,7 @@
 
 8. **Resolve loop break-condition (if `--loop` is set).** See `### Break-condition resolution` below. Mutates `config.loop.breakCondition` in memory; may rewrite `.agent-all.json` if user opts in.
 
-9. Push `{phase: 0, completedAt: "<iso>"}` to state. Use atomic write (temp + rename). Create `.agent-all-state.json` with `{"phases": [], "decisions": {}, "interactions": {}}` if missing. The `decisions` and `interactions` maps are populated by Phase 3b (decision-surfacing) and keyed by canonical task id (`AS-TASK-*`) when available.
+9. Generate/confirm `runId` (reuse the recalled checkpoint's runId on `--resume`; otherwise a fresh collision-resistant id) and push `{phase: 0, completedAt: "<iso>"}` to state. Set `state.status = "running"`, `state.runId = runId`, `state.sessionId = currentSessionId` (from 5c, may be null), `state.updatedAt = "<iso>"`, and initialize `state.awaitingUser = null`. Use atomic write (temp + rename). Create `.agent-all-state.json` with `{"status":"running","runId":runId,"sessionId":currentSessionId,"updatedAt":"<iso>","awaitingUser":null,"phases": [], "decisions": {}, "interactions": {}}` if missing. The `decisions` and `interactions` maps are populated by Phase 3b (decision-surfacing) and keyed by canonical task id (`AS-TASK-*`) when available.
 
 ## Break-condition resolution
 
