@@ -246,11 +246,24 @@ function inspectCommitArgs(tokens, start, end) {
   return result;
 }
 
-function analyzeGitInvocation(tokens, invocation) {
+function hitsProtected(tokens, start, end, protectedPaths) {
+  const set = new Set(protectedPaths);
+  for (let c = start; c < end; c += 1) {
+    if (tokens[c] === "--") continue;
+    if (set.has(tokens[c])) return tokens[c];
+  }
+  return null;
+}
+
+function analyzeGitInvocation(tokens, invocation, protectedPaths) {
   switch (invocation.subcommand) {
     case "add":
       if (hasTokenBeforePathspec(tokens, invocation.argsStart, invocation.end, (token) => token === "-A" || token === "--all")) {
         return { blocked: true, reason: "git add -A" };
+      }
+      if (protectedPaths.length > 0) {
+        const hit = hitsProtected(tokens, invocation.argsStart, invocation.end, protectedPaths);
+        if (hit) return { blocked: true, reason: `protected path: ${hit}` };
       }
       break;
     case "commit": {
@@ -281,6 +294,10 @@ function analyzeGitInvocation(tokens, invocation) {
       for (let cursor = invocation.argsStart; cursor < invocation.end - 1; cursor += 1) {
         if (tokens[cursor] === "--") return { blocked: true, reason: "git checkout --" };
       }
+      if (protectedPaths.length > 0) {
+        const hit = hitsProtected(tokens, invocation.argsStart, invocation.end, protectedPaths);
+        if (hit) return { blocked: true, reason: `protected path: ${hit}` };
+      }
       break;
     default:
       break;
@@ -289,7 +306,7 @@ function analyzeGitInvocation(tokens, invocation) {
   return null;
 }
 
-function analyzeBuiltInCommand(tokens) {
+function analyzeBuiltInCommand(tokens, protectedPaths) {
   for (const segment of commandSegments(tokens)) {
     const start = commandStart(tokens, segment);
     if (start === null) continue;
@@ -297,7 +314,7 @@ function analyzeBuiltInCommand(tokens) {
     if (tokens[start] === "git") {
       const result = parseGitInvocation(tokens, start, segment.end);
       if (!result) continue;
-      const gitResult = analyzeGitInvocation(tokens, result);
+      const gitResult = analyzeGitInvocation(tokens, result, protectedPaths);
       if (gitResult) return gitResult;
       continue;
     }
@@ -325,7 +342,7 @@ function commandHasConfirmFlag(tokens, flag) {
 
 export function analyzeShellCommand(command, options = {}) {
   const text = String(command || "");
-  const { destructiveCommands = [], destructiveConfirmFlags = [] } = options || {};
+  const { destructiveCommands = [], destructiveConfirmFlags = [], protectedPaths = [] } = options || {};
   const tokens = shellTokens(text);
 
   for (const pattern of destructiveCommands) {
@@ -340,7 +357,7 @@ export function analyzeShellCommand(command, options = {}) {
     }
   }
 
-  const builtInResult = analyzeBuiltInCommand(tokens);
+  const builtInResult = analyzeBuiltInCommand(tokens, protectedPaths);
   if (builtInResult) return builtInResult;
 
   return { blocked: false, reason: null };

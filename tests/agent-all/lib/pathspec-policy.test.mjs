@@ -79,3 +79,9 @@ test("blocks project-configured destructive confirmation flags", () => {
     reason: "destructive confirmation flag: --confirm",
   });
 });
+
+test("protectedPaths blocks git add of a protected file but allows others", () => {
+  const opts = { protectedPaths: ["src/wip.py"] };
+  assert.equal(analyzeShellCommand("git add src/wip.py", opts).blocked, true);
+  assert.equal(analyzeShellCommand("git add src/other.py", opts).blocked, false);
+});
