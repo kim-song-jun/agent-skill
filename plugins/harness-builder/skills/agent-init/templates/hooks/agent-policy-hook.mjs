@@ -1283,13 +1283,27 @@ function handleTaskHook(event, payload) {
 function handleFileWriteHook(event, payload) {
   if (event !== "PreToolUse") return false;
   const tool = payload?.tool_name;
-  if (tool !== "Edit" && tool !== "Write") return false;
+  if (tool !== "Edit" && tool !== "Write" && tool !== "MultiEdit" && tool !== "NotebookEdit") return false;
   const snapshotPath = process.env.AGENT_ALL_DIRTY_SNAPSHOT;
   if (!snapshotPath) return true; // no protection configured → allow
   let protectedPaths = [];
-  try { protectedPaths = JSON.parse(readFileSync(snapshotPath, "utf-8")); } catch { return true; }
+  try {
+    protectedPaths = JSON.parse(readFileSync(snapshotPath, "utf-8"));
+  } catch (error) {
+    console.error(`agent-policy-hook warning: AGENT_ALL_DIRTY_SNAPSHOT set but snapshot unreadable/malformed — skipping file guard${hookErrorDetail(error)}`);
+    return true;
+  }
   const filePath = payload?.tool_input?.file_path;
-  if (filePath && new Set(protectedPaths).has(String(filePath).replace(/^\.\//, ""))) {
+  if (!filePath) return true;
+  // C1/C2: canonicalize both sides to absolute paths for comparison.
+  // Claude Code passes file_path as absolute; snapshot holds relative paths.
+  // path.resolve normalizes traversals (a/../b → b) and makes relative paths absolute.
+  const projectRoot = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+  const absFilePath = resolve(projectRoot, String(filePath));
+  const protectedAbsPaths = new Set(
+    protectedPaths.map((p) => resolve(projectRoot, String(p)))
+  );
+  if (protectedAbsPaths.has(absFilePath)) {
     console.error(`protected file (pre-existing uncommitted): ${filePath} — agent-all PROTECT mode forbids editing it. Commit it first, or it stays untouched.`);
     process.exit(2);
   }
