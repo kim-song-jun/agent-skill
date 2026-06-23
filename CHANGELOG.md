@@ -6,6 +6,22 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.8 — 2026-06-23
+
+### `/agent-all` survives in-session context compaction
+
+A long `/agent-all` run could lose its place across an in-session context compaction (auto-compaction or a manual `/compact`) — classically completing Phase 2 (plan) then stalling without entering Phase 3 (dispatch). The `--resume` path only covered session *death*, not in-session compaction, so nothing re-oriented the orchestrator mid-run. v0.7.8 closes this with a deterministic re-injection (Tier B) plus enforcement (Tier A) layer.
+
+- **Run-status lifecycle in `.agent-all-state.json`:** new `status` (`running`/`done`/`aborted`), `runId`, `sessionId`, `updatedAt`, and `awaitingUser` fields, refreshed at every phase boundary, give the hooks an in-flight signal the existing `phases[]` array lacked.
+- **`session-resume.mjs` (SessionStart hook — Tier B):** on `source ∈ {compact, resume}`, reads the state and re-injects a "continue from Phase N — do not stop after the plan, do not restart from Phase 0" directive into the post-compaction context, and captures the live session id to `current-session.json`. Project-level (not plugin-level) to avoid the unreliable plugin `additionalContext` path.
+- **`agent-all-continue.mjs` (Stop hook — Tier A):** blocks the orchestrator from ending its turn while a run is mid-pipeline, with a `stop_hook_active` loop guard, a 10-minute `awaitingUser` pause window, a 12-hour staleness guard, and session-ownership gating.
+- **Phase 0 sequential multi-session guard:** a non-`--resume` run that finds a fresh foreign `running` state surfaces an `agent-interaction/v1` decision (default Abort) instead of clobbering it. Concurrent runs on one shared worktree remain unsupported (interleaved commits).
+- **Phase 3 PROTECT/task overlap:** when a pre-existing protected (dirty) file is also a task target, the run surfaces an adopt-vs-keep-protected decision (default keep) instead of silently hitting the read-only guard.
+- **SKILL "Compaction recovery" section:** documents the self-heal contract (trust `.agent-all-state.json`, resume after `max(phase)`, never restart from Phase 0).
+- **Uninstall + re-vendor:** `harness-cleaner.mjs` now removes both new hooks (files + settings registrations) across the Claude and Codex variants.
+
+Existing operational installs must re-run `/agent-init` to pick up the two new SessionStart/Stop hooks (the same re-init v0.7.7 required for its Edit/Write guard).
+
 ## Agent-skill v0.7.7 — 2026-06-23
 
 ### agent-all now runs on a dirty working tree (PROTECT mode)

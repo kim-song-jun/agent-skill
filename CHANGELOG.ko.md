@@ -6,6 +6,22 @@
 
 ## 미출시
 
+## Agent-skill v0.7.8 — 2026-06-23
+
+### `/agent-all`이 인-세션 컨텍스트 컴팩션에서도 중단 없이 실행됩니다
+
+긴 `/agent-all` 실행 도중 인-세션 컨텍스트 컴팩션(자동 컴팩션 또는 수동 `/compact`)이 발생하면 진행 위치를 잃을 수 있었습니다 — 전형적으로 Phase 2(계획)를 완료한 뒤 Phase 3(디스패치) 진입 없이 멈추는 형태였습니다. `--resume` 경로는 세션 *종료*만 처리하고 인-세션 컴팩션은 처리하지 않아, 컴팩션 이후 오케스트레이터를 재정향시키는 로직이 없었습니다. v0.7.8은 결정론적 재주입(Tier B)과 강제(Tier A) 레이어로 이를 해결합니다.
+
+- **`.agent-all-state.json`의 run-status 라이프사이클:** 새로운 `status`(`running`/`done`/`aborted`), `runId`, `sessionId`, `updatedAt`, `awaitingUser` 필드가 매 phase 경계마다 갱신되어 기존 `phases[]` 배열에 없던 진행 중 신호를 훅에 제공합니다.
+- **`session-resume.mjs` (SessionStart 훅 — Tier B):** `source ∈ {compact, resume}`이면 상태를 읽어 "Phase N에서 계속 — 계획 후 멈추지 말 것, Phase 0부터 재시작 금지" 지시를 컴팩션 후 컨텍스트에 재주입하고, 현재 세션 id를 `current-session.json`에 기록합니다. 신뢰할 수 없는 플러그인 `additionalContext` 경로를 피해 프로젝트 레벨로 구현했습니다.
+- **`agent-all-continue.mjs` (Stop 훅 — Tier A):** 파이프라인 진행 중 오케스트레이터가 턴을 종료하지 못하도록 차단합니다. `stop_hook_active` 루프 가드, 10분 `awaitingUser` 일시정지 윈도우, 12시간 스탈리니스 가드, 세션 소유권 게이팅을 포함합니다.
+- **Phase 0 순차 멀티-세션 가드:** `--resume` 없는 실행이 최신 외부 `running` 상태를 발견하면 덮어쓰는 대신 `agent-interaction/v1` 결정(기본 Abort)을 표시합니다. 하나의 공유 작업트리에서 동시 실행은 여전히 미지원(커밋 인터리빙)입니다.
+- **Phase 3 PROTECT/task 겹침:** 보호된(dirty) 파일이 task 대상이기도 한 경우, 읽기 전용 가드에 조용히 부딪히는 대신 adopt-vs-keep-protected 결정(기본 keep)을 표시합니다.
+- **SKILL "Compaction recovery" 섹션:** 자가 복원 계약을 문서화합니다(`.agent-all-state.json` 신뢰, `max(phase)` 이후 재개, Phase 0에서 재시작 금지).
+- **언인스톨 + 재배포:** `harness-cleaner.mjs`가 이제 두 새 훅(파일 + 설정 등록)을 Claude와 Codex 변형 모두에서 제거합니다.
+
+기존 운영 설치는 두 새 SessionStart/Stop 훅을 적용하기 위해 `/agent-init`을 다시 실행해야 합니다(v0.7.7의 Edit/Write guard가 요구했던 것과 동일한 재-init입니다).
+
 ## Agent-skill v0.7.7 — 2026-06-23
 
 ### agent-all이 이제 dirty working tree에서도 실행됩니다 (PROTECT 모드)
