@@ -1280,6 +1280,22 @@ function handleTaskHook(event, payload) {
   return false;
 }
 
+function handleFileWriteHook(event, payload) {
+  if (event !== "PreToolUse") return false;
+  const tool = payload?.tool_name;
+  if (tool !== "Edit" && tool !== "Write") return false;
+  const snapshotPath = process.env.AGENT_ALL_DIRTY_SNAPSHOT;
+  if (!snapshotPath) return true; // no protection configured → allow
+  let protectedPaths = [];
+  try { protectedPaths = JSON.parse(readFileSync(snapshotPath, "utf-8")); } catch { return true; }
+  const filePath = payload?.tool_input?.file_path;
+  if (filePath && new Set(protectedPaths).has(String(filePath).replace(/^\.\//, ""))) {
+    console.error(`protected file (pre-existing uncommitted): ${filePath} — agent-all PROTECT mode forbids editing it. Commit it first, or it stays untouched.`);
+    process.exit(2);
+  }
+  return true; // recognized + allowed
+}
+
 let input = "";
 try {
   input = readFileSync(0, "utf-8");
@@ -1295,6 +1311,7 @@ try {
 }
 
 const event = process.argv[2] || payload?.hook_event_name || payload?.hookEventName || "";
+if (handleFileWriteHook(event, payload)) { process.exit(0); }
 if (isTaskPayload(payload) && handleTaskHook(event, payload)) {
   process.exit(0);
 }
