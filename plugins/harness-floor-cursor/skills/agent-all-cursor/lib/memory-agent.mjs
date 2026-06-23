@@ -95,6 +95,7 @@ export async function flushCheckpoint({
   taskIds = [],
   requiredAgents = [],
   decisionsSoFar = {},
+  dirtySnapshot = [],
   fileMirror,
   config = {},
   now = new Date(),
@@ -125,6 +126,7 @@ export async function flushCheckpoint({
     miniPlans,
     requiredAgents,
     decisionsSoFar,
+    dirtySnapshot,
     flushedAt,
   };
   fileMirror.write(historyKey, historyPayload);
@@ -156,6 +158,7 @@ export async function flushCheckpoint({
     taskIds,
     miniPlans,
     requiredAgents,
+    dirtySnapshot,
   };
   appendFileSync(logPath, `${JSON.stringify(entry)}\n`, "utf-8");
 
