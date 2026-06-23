@@ -1,129 +1,158 @@
-# agent-all Compaction-Resilient Progress — Design
+# agent-all Compaction-Resilient & Multi-Run Progress — Design
 
 **Status:** Approved for planning (2026-06-23)
-**Scope:** `/agent-all` (harness-floor plugin) + the `agent-init` install template (harness-builder).
-**Supersedes/relates:** independent of the dirty-tree PROTECT mode (v0.7.7); rides the same `/agent-init` re-init that v0.7.7 already requires.
+**Scope:** `/agent-all` (harness-floor) + the `agent-init` install template (harness-builder).
+**Builds on:** dirty-tree PROTECT mode (v0.7.7). Rides the same `/agent-init` re-init that v0.7.7 already requires.
 
-## Problem
+This design covers four interlocking robustness gaps surfaced together:
 
-During a long `/agent-all` run, an **in-session context compaction** (auto-compaction when the window fills, or a manual `/compact`) can erase the orchestrator's working memory of *where it is in the pipeline*. The observed symptom: the orchestrator completes **Phase 2 (plan)** and then **stalls without entering Phase 3 (task creation / dispatch)** — "plan까지만 하고 task를 안 만들어."
+1. **Compaction survival** — an in-session compaction strands the orchestrator mid-run (Phase 2 done, Phase 3 never entered).
+2. **Tier-A enforcement** — make "don't stop mid-pipeline" a *blocked action*, not just a nudge.
+3. **PROTECT/task overlap** — a pre-existing uncommitted file that the task itself must modify is currently un-editable (file-guard blocks it).
+4. **Sequential multi-session** — splitting a job into several runs across fresh sessions must be safe on the shared worktree.
 
-### Root cause
+## Problem & root cause (compaction)
 
-1. Phase→phase advancement relies on **conversation memory**. The SKILL text and phase files were read earlier in the session via tool calls; a compaction summarizes those tool results away, so the orchestrator loses both its *place* in the pipeline and the *phase instructions* themselves.
-2. The only existing recovery path, `--resume`, assumes **session death** — a fresh `/agent-all --resume` invocation that re-runs Phase 0 (step 5/5b) to reconstruct state and skip completed phases. **In-session compaction is not session death**: the process keeps running, `/agent-all --resume` is never re-invoked, so Phase 0 recovery never fires.
-3. The memory-agent checkpoint (`.agent-skill/memory/checkpoint_LATEST.json`, `inFlight` flag) is **only written starting at Phase 3 (3a.0)**. At the exact 2→3 stall point there is no checkpoint at all — only `.agent-all-state.json` with `phases:[{0},{1},{2}]`.
+During a long `/agent-all` run, an in-session context compaction (auto when the window fills, or manual `/compact`) summarizes away the SKILL text and phase-file tool results, so the orchestrator loses both its *place* in the pipeline and the *phase instructions*. Observed symptom: completes **Phase 2 (plan)** then stalls without entering **Phase 3 (dispatch)** — "plan까지만 하고 task를 안 만들어."
 
-So the data needed to recover *already exists on disk* (`state.json` pushes `{phase:N}` at the end of every phase, including Phase 2). What is missing is (a) a deterministic mechanism to **re-inject** a recovery directive after compaction, and (b) a way to tell an **in-flight** run apart from a finished one.
+Why existing machinery doesn't catch it:
 
-## Goal
+- Phase→phase advancement relies on **conversation memory**, which compaction erases.
+- The only recovery path, `--resume`, assumes **session death** (a fresh `/agent-all --resume` re-runs Phase 0 recovery). In-session compaction is not death: the process keeps running, `--resume` is never re-invoked, Phase 0 recovery never fires.
+- The memory-agent checkpoint is only written from **Phase 3 (3a.0)** onward; at the 2→3 stall there is no checkpoint — only `.agent-all-state.json` with `phases:[{0},{1},{2}]`.
 
-After any in-session compaction during a `/agent-all` run, the orchestrator is deterministically re-oriented to **continue the pipeline from the correct next phase** — for every phase boundary (0→1→…→6), not just 2→3 — without restarting from Phase 0 and without stopping after the plan.
+The recovery data already exists on disk (every phase pushes `{phase:N}` at its end). What is missing is a deterministic way to (a) **re-inject** a recovery directive after compaction, (b) tell an **in-flight** run from a finished one, and (c) **prevent** premature stops.
 
-## Non-goals
+## Platform capability model (the load-bearing distinction)
 
-- Steering the compaction *summary content* itself (PreCompact hooks cannot do this — side-effects only; confirmed).
-- Mid-subagent (within a single Phase 3 wave) state reconstruction beyond what `state.json` + the existing checkpoint already carry. The re-injection points the orchestrator back into Phase 3, which then uses its existing 3a.0 checkpoint / `--resume` machinery.
-- A new human-readable run ledger. (Considered and dropped — YAGNI. `state.json` is the single source of truth; a second artifact would need synchronizing.)
+Claude Code has **no primitive that forces an agent to take an action.** Every guarantee reduces to one of two tiers:
 
-## Key platform facts (verified)
+- **Tier A — deterministic (cannot be ignored):** `PreToolUse` blocks a bad action; `PostToolUse` requires an audit token before completion; a `Stop` hook refuses to end the turn. Code enforces regardless of LLM cooperation.
+- **Tier B — trust-based (strong nudge, can be ignored):** the orchestrator reads a phase file and chooses to advance. Re-injection (`SessionStart`) raises reliability but is still Tier B.
 
-- `SessionStart` fires after a compaction with `source: "compact"` (both auto and manual). Other sources: `"resume"`, `"startup"`, `"clear"`.
-- A `SessionStart` hook's `additionalContext` (or stdout) is injected into the **post-compaction** context window — this is the re-injection lever.
-- **Plugin-level** SessionStart `additionalContext` is unreliable (Claude Code issue #16538). **Project-level** hooks registered in `settings.local.json` work as documented. → the hook is installed at project level by `agent-init`, not at plugin level.
-- `SessionStart` does **not** support matchers. The hook must **self-filter** by reading `source` from its stdin payload.
-- `${CLAUDE_PROJECT_DIR}` is available to settings-registered hook commands (already used throughout the existing template).
+This design uses **both**: `SessionStart` re-injection (Tier B — supplies the instructions to continue) **plus** a `Stop` hook (Tier A — forbids stopping mid-pipeline). They are complementary: Stop forbids premature *yielding*; SessionStart supplies the *instructions* to yield-correctly-later.
 
-## Architecture
+## Verified platform facts
 
-Three thin layers; data already on disk, so the new code is small.
+- `SessionStart` fires post-compaction with `source:"compact"` (auto and manual); other sources `"resume"`, `"startup"`, `"clear"`. No matcher support — hooks self-filter on `source` from stdin.
+- A `SessionStart` hook's `additionalContext` is injected into the post-compaction window. **Plugin-level** `additionalContext` is unreliable (CC issue #16538); **project-level** (settings.local.json) hooks work as documented → install at project level via `agent-init`.
+- A `Stop` hook can force continuation by emitting `{"decision":"block","reason":"…"}`; its payload carries `stop_hook_active` (true once a Stop-block has already fired this cycle) — honor it to avoid infinite loops.
+- On Claude, in-band user prompts (`AskUserQuestion` / native `agent-interaction`) are **tool calls, not turn-ends**, so they do **not** trigger `Stop`. The Stop-enforcement false-positive surface is therefore small; `awaitingUser` (below) covers only the rare "yield to ask the user to do something external" case and non-Claude surfaces.
+- `${CLAUDE_PROJECT_DIR}` is available to settings-registered hook commands.
+- `PreCompact` cannot steer summary content (side-effects only) — not used here.
+
+## Architecture — six layers
 
 ### Layer 1 — `state.json` status lifecycle (data)
 
-Add three top-level fields to `.agent-all-state.json`:
+Add top-level fields to `.agent-all-state.json`:
 
 | Field | Type | Set when |
 |-------|------|----------|
 | `status` | `"running" \| "done" \| "aborted"` | `running` at Phase 0; `done` at "When done"; `aborted` on abort paths that can still write |
-| `runId` | string | Phase 0 (generated once; reused verbatim on `--resume` per the existing dirty-snapshot rule) |
-| `updatedAt` | ISO 8601 string | refreshed at **every** phase-boundary write |
+| `runId` | string | Phase 0 (generated once; reused verbatim on `--resume`) |
+| `sessionId` | string \| null | the owning session id, claimed at run start (multi-session guard); null if unknown |
+| `updatedAt` | ISO 8601 | refreshed at **every** phase-boundary write |
+| `awaitingUser` | `{at:ISO} \| null` | set just before the orchestrator yields the turn to wait on an **external** user action; cleared when the run resumes |
 
-- Phase 0 step 9: when initializing/creating state, set `status:"running"`, `runId:<runId>`, `updatedAt:<iso>`. This also closes an existing gap — `state.runId` is read at Phase 5 (`?? "agent-all"`) but never explicitly persisted today.
-- Every phase's final "Push `{phase:N}` to `phases`" step also refreshes `updatedAt` (and keeps `status:"running"`).
-- SKILL "When done": set `status:"done"`, refresh `updatedAt`.
-- Abort paths: set `status:"aborted"` before aborting where the orchestrator still controls the write. Aborts that cannot write (crash) leave `status:"running"`; the staleness guard (Layer 2) prevents zombie nags.
-- All writes atomic (temp + rename), consistent with the existing Phase 0 step 9.
+- Phase 0 step 9: initialize `status:"running"`, `runId`, `updatedAt`; persist `runId` top-level (closes an existing gap — `state.runId` is read at Phase 5 `?? "agent-all"` but never explicitly written today).
+- Every phase's final "Push `{phase:N}`" step refreshes `updatedAt`, keeps `status:"running"`.
+- "When done": `status:"done"`. Abort paths: `status:"aborted"` where the orchestrator still controls the write (crash leaves `running`; staleness guard covers it).
+- All writes atomic (temp + rename).
 
-### Layer 2 — `session-resume.mjs` SessionStart hook (re-injection)
+### Layer 2 — `session-resume.mjs` SessionStart hook (Tier B re-injection)
 
-New `agent-init` hook template: `plugins/harness-builder/skills/agent-init/templates/hooks/session-resume.mjs`. Installed to `${CLAUDE_PROJECT_DIR}/.claude/hooks/session-resume.mjs`.
+New `agent-init` template → `${CLAUDE_PROJECT_DIR}/.claude/hooks/session-resume.mjs`. Self-contained (tiny phase-map + state read; no shared install artifact).
 
-Behavior:
+0. **Always (every source):** persist this session's `session_id` (from the stdin payload) to `.agent-skill/runs/current-session.json` (`{sessionId, at}`, atomic). This is how Phase 0 later learns its own session id to claim run ownership (Layer 5) — the skill runtime has no reliable env path to it, but the hook payload always carries it. Then:
+1. Act on the directive only when `source ∈ {"compact","resume"}` (else exit 0 after the step-0 write — `startup` excluded to avoid nagging unrelated new sessions; `clear` is a deliberate wipe).
+2. Read `.agent-all-state.json` (`${CLAUDE_PROJECT_DIR}||cwd`); absent/unparseable → non-fatal, exit 0.
+3. `status !== "running"` → silent. Staleness guard: `updatedAt` older than `STALE_AFTER_MS` (12h) → silent.
+4. `nextPhase = max(phases[].phase)+1`; if `> 6` → silent.
+5. Emit `{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"<directive>"}}`:
+   > ⚠️ A `/agent-all` run (`<runId>`) is IN PROGRESS — not finished. Completed phases: `<list>`. NEXT: **Phase `<Y>` (`<name>`)**. This context was just compacted, so your run memory may be incomplete. Re-read the agent-all SKILL and `phases/<Y>-<slug>.md`, then CONTINUE from Phase `<Y>`. Do NOT stop after the plan; do NOT restart from Phase 0. If you intended to start a *different* task, ignore this and proceed with the new request. Progress SSOT: `.agent-all-state.json`.
+6. Phase→slug const map `{0:"0-preflight",…,6:"6-loop"}`. Any error → stderr warn, exit 0. Never blocks.
 
-1. Read stdin payload; parse `source`. Act only when `source ∈ {"compact", "resume"}`. For any other source (`startup`, `clear`, unknown) → exit 0 silently. (`startup` excluded: a brand-new session is more likely unrelated work; `--resume` already has Phase 0 recovery but `resume` is kept here as a belt-and-suspenders re-injection.)
-2. Resolve `${CLAUDE_PROJECT_DIR} || process.cwd()`; read `.agent-all-state.json`. Absent or unparseable → non-fatal (stderr warn for parse error), exit 0.
-3. If `status !== "running"` → exit 0 silently (done/aborted).
-4. **Staleness guard:** if `updatedAt` is older than `STALE_AFTER_MS` (12h) → exit 0 silently. (An in-session compaction is by definition recent; this suppresses zombie state from a run that died without cleanup.)
-5. Compute `completed = phases.map(p => p.phase)`; `nextPhase = max(completed) + 1`. If `nextPhase > 6` → exit 0 silently (pipeline already past the last phase).
-6. Emit a directive via the documented JSON envelope:
-   ```json
-   {"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"<directive>"}}
-   ```
-   Directive text (runId omitted if absent):
-   > ⚠️ A `/agent-all` run (`<runId>`) is IN PROGRESS — not finished. Completed phases: `<list>`. NEXT: **Phase `<Y>` (`<name>`)**. This context was just compacted, so your memory of the run may be incomplete. Re-read the agent-all SKILL and `phases/<Y>-<slug>.md`, then CONTINUE the pipeline from Phase `<Y>`. Do NOT stop after the plan; do NOT restart from Phase 0. Progress SSOT: `.agent-all-state.json`.
-7. Phase number → file slug from an internal const map: `{0:"0-preflight",1:"1-intent",2:"2-plan",3:"3-dispatch",4:"4-gate",5:"5-pr",6:"6-loop"}`.
-8. Any error → stderr warn, exit 0. The hook never blocks and never fails the session (mirrors `wiki-session-digest.mjs` / `session-summary.mjs`).
+### Layer 3 — `agent-all-continue.mjs` Stop hook (Tier A enforcement)
 
-Directive size is well under the 10k additionalContext budget.
+New `agent-init` template → `${CLAUDE_PROJECT_DIR}/.claude/hooks/agent-all-continue.mjs`. Registered under `Stop` in settings.
 
-### Layer 3 — settings registration + SKILL recovery discipline
+1. Parse stdin. If `stop_hook_active === true` → exit 0 (allow; loop guard).
+2. Read `.agent-all-state.json`; absent/unparseable/`status!=="running"` → exit 0 (allow stop).
+3. Staleness guard (`updatedAt` > 12h) → exit 0 (allow stop; zombie run shouldn't trap the user).
+4. `awaitingUser` fresh (`at` within `AWAITING_USER_TTL`, 10m) → exit 0 (allow stop; legit external-action pause).
+5. `nextPhase = max(phases[].phase)+1`; if `> 6` → exit 0 (pipeline complete).
+6. Otherwise emit `{"decision":"block","reason":"<continue directive>"}` — the reason mirrors the Layer-2 directive ("continue from Phase `<Y>`; re-read `phases/<Y>-<slug>.md`; do not stop mid-pipeline"). This *forbids* the orchestrator from yielding after Phase 2.
 
-- `settings.local.json.hbs`: add to the existing `SessionStart` array, next to `cache-heal.mjs`:
-  ```json
-  { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/session-resume.mjs\"" }
-  ```
-  Ungated by `operationalProfile` — harmless when no `state.json` exists (exits silently), matching `cache-heal.mjs`.
-- SKILL.md gains a **"Compaction recovery (in-session)"** section:
-  - In-session compaction (not session death) can erase your place; unlike `--resume`, nothing re-enters Phase 0 automatically.
-  - When you see the `session-resume.mjs` directive after a compaction, obey it: re-read the SKILL + the named phase file, continue from the named phase.
-  - Self-heal even without the hook: if unsure where you are mid-run, read `.agent-all-state.json` and resume after `max(phases[*].phase)`. Trust `state.json` over recollection (the subagent-driven-development "Durable Progress" principle).
-  - On a `status:"running"` state, never restart from Phase 0; never stop after Phase 2.
-- Rule 2's documented `state.json` shape updated to include `status`, `runId`, `updatedAt`.
-- Each phase file's boundary step augmented with the `updatedAt`/`status` refresh (one line each).
+Subagent dispatches don't end the main turn (they're `SubagentStop`), so the hook only fires on a true orchestrator yield — exactly the premature-stop case.
 
-## Data flow (the 2→3 case)
+### Layer 4 — PROTECT/task overlap adopt-decision (dirty file the task must edit)
 
-1. Phase 0 writes `state.json` `{status:"running", runId, updatedAt, phases:[]}`.
-2. Phases 0,1,2 each push `{phase:N}` and refresh `updatedAt`. After Phase 2: `phases:[{0},{1},{2}]`, `status:"running"`.
-3. Compaction fires before Phase 3 begins. The orchestrator's memory is summarized.
-4. `SessionStart(source="compact")` runs `session-resume.mjs`: reads `state.json`, `status==="running"`, fresh, `max(phase)=2`, `nextPhase=3` → injects the "continue from Phase 3 (3-dispatch)" directive into the post-compaction window.
-5. The orchestrator re-reads `phases/3-dispatch.md` and proceeds with task creation / dispatch. No Phase 0 restart, no stall.
+PROTECT mode (v0.7.7) snapshots pre-existing uncommitted files read-only via the Edit|Write file-guard. When the task itself must modify one, the guard blocks the agent's own work. Resolution:
+
+- In **Phase 3**, after parsing the plan, compute `overlap = state.dirtySnapshot ∩ {plan Create/Modify target files}`.
+- If `overlap` is non-empty, surface an `agent-interaction/v1` decision (rule 14 — no auto-approve). Per overlapping file:
+  - **Adopt into this run** — remove it from `state.dirtySnapshot`, re-write the snapshot file + re-export `AGENT_ALL_DIRTY_SNAPSHOT`, so the file-guard now permits edits and Phase 3c may stage+commit it together with the run's changes.
+  - **Keep protected** (default) — the file stays read-only; the task cannot touch it → the orchestrator re-scopes the task to exclude it, or aborts if it cannot.
+- The adopt set persists in `state` (mutated `dirtySnapshot`) and survives compaction via Layer 1 + the existing Phase-3 checkpoint, so re-injection/Stop operate on the *current* protected set.
+- This decision sets `awaitingUser` while it waits (covers non-Claude surfaces / external pauses), cleared on resume.
+
+### Layer 5 — Sequential multi-session guard
+
+Goal: split a job into several runs across fresh sessions, safely, on the shared worktree. Concurrent runs on one worktree are **out of scope** (single `state.json` + interleaved commits make it fundamentally unsafe; a worktree-isolated future slice is the only true-concurrency answer and requires a git-safety opt-in).
+
+- **Phase 0 status-guard:** when a new (non-`--resume`) run finds an existing `state.json` with `status:"running"`:
+  - If stale (`updatedAt` > 12h) → treat as a dead prior run; offer **start fresh** (default) vs **resume**.
+  - If fresh → another run is likely in progress (possibly a concurrent session). Surface an `agent-interaction/v1` decision: **Resume that run** / **Start fresh (overwrites state — only if the other run is truly dead)** / **Abort**. Warn that concurrent runs on one worktree are unsafe. Default: **Abort** (safest).
+- **Session ownership:** Phase 0 reads `.agent-skill/runs/current-session.json` (written by `session-resume.mjs` step 0 on every session entry) and records its `sessionId` into `state.sessionId`. The `session-resume`/`agent-all-continue` hooks read `session_id` from their own stdin payload; if `state.sessionId` is set and differs, the hook **does not act** (it isn't this session's run) — preventing cross-session re-injection/Stop corruption even if a user ignores the warning and runs concurrently. If `current-session.json` is missing (first install, hook hasn't run yet) `state.sessionId` stays null and the hooks fall back to acting (single-session assumption — the safe status quo).
+- **Hand-off** between sequential sessions continues to use the existing `/agent-handoff` + `lib/session-prompt-writer.mjs` + `lib/resume-artifacts.mjs`; this layer adds only the status-guard and ownership tagging.
+
+### Layer 6 — SKILL recovery discipline (Tier B backstop + docs)
+
+- SKILL.md gains **"Compaction recovery (in-session)"**: obey the `session-resume` directive when it appears; self-heal without it by reading `state.json` and resuming after `max(phases[].phase)` (trust `state.json` over recollection — the subagent-driven-development "Durable Progress" principle); on `status:"running"` never restart from Phase 0, never stop after Phase 2.
+- Rule 2's documented `state.json` shape updated with `status`, `runId`, `sessionId`, `updatedAt`, `awaitingUser`.
+- Each phase's boundary step augmented with the `updatedAt`/`status` refresh (one line each). The decision-surfacing / break-condition / PROTECT-confirm / adopt steps set+clear `awaitingUser` around an external yield.
+- "On error" / "When done" sections updated for `status` transitions and the Phase 0 status-guard.
+
+## Data flow (the 2→3 case, with Tier A)
+
+1. Phase 0 writes `{status:"running",runId,sessionId,updatedAt,phases:[]}`.
+2. Phases 0–2 push `{phase:N}` + refresh `updatedAt`. After Phase 2: `phases:[0,1,2]`, `running`.
+3. Compaction fires; orchestrator memory is summarized.
+4. The orchestrator tries to yield after "wrote the plan" → **Stop hook** sees `running`, `nextPhase=3`, not awaiting, owns the session → `decision:block` → forces continuation.
+5. (If a `SessionStart(compact)` also fired) the **re-injection** supplies "continue from Phase 3 (3-dispatch), don't restart."
+6. Orchestrator re-reads `phases/3-dispatch.md` and dispatches. No stall, no Phase 0 restart.
 
 ## Testing (node --test, phase-contract style)
 
-- `tests/agent-init/session-resume-hook.test.mjs` — `execFileSync` the real hook with crafted stdin + a temp `state.json`:
-  - `source:"compact"`, `status:"running"`, `phases:[0,1,2]` → stdout JSON `additionalContext` contains "Phase 3" and "do not stop" / "do NOT restart"; exit 0.
-  - `source:"clear"` → no directive (empty/`{}`); exit 0.
-  - `status:"done"` → no directive; exit 0.
-  - no `state.json` → exit 0, no stdout directive.
-  - stale `updatedAt` (>12h) → no directive.
-  - malformed `state.json` → exit 0, stderr warn (non-fatal).
-  - `phases:[0..5]`, `nextPhase=6` → mentions Phase 6; `nextPhase>6` → silent.
-- `tests/agent-all/state-status-contract.test.mjs` — pin the real wiring: Phase 0 doc + SKILL set `status:"running"`/`"done"`; phase docs refresh `status`/`updatedAt` at the boundary; the SKILL "Compaction recovery" section exists. Each assertion must fail meaningfully against the pre-change docs (non-toothless).
-- Regenerate the `settings.local.json.hbs` operational-heavy snapshot.
+- `tests/agent-init/session-resume-hook.test.mjs` — `execFileSync` real hook + temp state: compact+running[0,1,2] → `additionalContext` mentions "Phase 3" + "do NOT stop"/"do NOT restart", exit 0; clear → no directive (but step-0 `current-session.json` still written); startup → no directive + `current-session.json` written; done → no directive; absent → silent; stale → no directive; malformed → exit 0 + stderr warn; `nextPhase>6` → silent; `sessionId` mismatch vs payload → no directive.
+- `tests/agent-init/agent-all-continue-hook.test.mjs` — `execFileSync` real hook: running + nextPhase≤6 + not awaiting + owner-match → stdout `{"decision":"block",…}`; `stop_hook_active` → allow (exit 0/no block); `status:"done"` → allow; fresh `awaitingUser` → allow; stale `awaitingUser` → block; `nextPhase>6` → allow; `sessionId` mismatch → allow.
+- `tests/agent-all/state-status-contract.test.mjs` — pin real wiring in the phase/SKILL docs: Phase 0 sets `status:"running"`+`runId`+`sessionId`; boundaries refresh `updatedAt`; "When done" sets `done`; SKILL "Compaction recovery" section exists; Phase 0 status-guard branch present; Phase 3 overlap/adopt branch present. Each assertion must fail meaningfully against pre-change docs.
+- Regenerate the `settings.local.json.hbs` operational-heavy snapshot (now two new SessionStart/Stop entries).
 
 ## Definition of Done
 
-- Hook unit-proven (the tests above, green; the new tests fail against pre-change code).
-- A real `/agent-all` run + a manual `/compact` shows the directive injected into the post-compaction window and the orchestrator continues to the correct next phase. Honest scope: deterministically forcing an *auto*-compaction mid-run is impractical to stage, so the live check uses manual `/compact` during a real run.
-- `/agent-init` (operational profile) installs `session-resume.mjs` and registers it; existing installs need one re-init (the same one v0.7.7 already requires).
-- Full test suite green.
+- All new hook tests green; the new tests fail against pre-change code (non-tautological).
+- Live: a real `/agent-all` run + manual `/compact` shows the orchestrator continue to the correct next phase (re-injection observed); a forced premature yield is blocked by the Stop hook. (Auto-compaction can't be staged deterministically — manual `/compact` is the honest live check.)
+- A dirty file listed in the plan triggers the adopt/keep decision; adopt makes the edit succeed; keep-protected keeps the guard blocking.
+- A second run started while a fresh `running` state exists hits the Phase 0 status-guard.
+- `/agent-init` (operational profile) installs both hooks + registers them. Existing installs need one re-init — the same one v0.7.7 already requires.
+- Full suite green.
 
-Release (separate, post-implementation): version bump 0.7.7 → 0.7.8 with the full version-bump-tax (manifests, README badges, CHANGELOG ×2, release-doc-contract escaped-regex asserts, test-count assertions, sync-lib `--check`, provenance/checksum), plus a RELEASE CHECKLIST note that operational installs must re-run `/agent-init` to get the new SessionStart hook.
+Release (separate, post-implementation): 0.7.7 → 0.7.8 with the full version-bump-tax (manifests, README badges, CHANGELOG ×2, release-doc-contract escaped-regex asserts, test-count, sync-lib `--check`, provenance/checksum) + a RELEASE CHECKLIST note that operational installs must re-run `/agent-init` for the two new hooks.
+
+## Non-goals
+
+- Steering compaction summary content (PreCompact can't).
+- A human-readable run ledger (YAGNI — `state.json` is the SSOT).
+- **Concurrent** `/agent-all` runs on one shared worktree (unsafe: shared state + interleaved commits). Worktree-isolated true concurrency is a deferred, git-safety-opt-in slice.
+- Mid-subagent reconstruction beyond the existing `state.json` + checkpoint; re-injection points back into Phase 3, which uses its own machinery.
 
 ## Tuning defaults (adopted)
 
-- Hook fires on `source ∈ {compact, resume}` (excludes `startup`, `clear`).
-- `STALE_AFTER_MS = 12h`.
+- `session-resume` fires on `source ∈ {compact, resume}`.
+- `STALE_AFTER_MS = 12h`; `AWAITING_USER_TTL = 10m`.
+- Phase 0 status-guard default: **Abort** on a fresh foreign `running` state; **start fresh** on a stale one.
+- PROTECT/task overlap default: **keep protected**.
 
-Both are single constants, easily revisited if field experience warrants.
+All single constants / default-arms, easily revisited from field experience.
