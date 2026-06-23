@@ -288,6 +288,7 @@ const WIKI_LOG_SOURCE = resolve(
 );
 const WIKI_LOG_TARGETS = [
   "plugins/harness-floor-codex/skills/agent-all-codex/lib/wiki-log.mjs",
+  "plugins/harness-floor/skills/wiki/lib/wiki-log.mjs",
 ].map((p) => resolve(repoRoot, p));
 
 // wiki templates — index.md.tpl and page.md.tpl are verbatim copies of the CC
