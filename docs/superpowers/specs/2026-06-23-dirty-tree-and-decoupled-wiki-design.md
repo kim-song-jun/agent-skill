@@ -16,6 +16,7 @@
 - **② Auto-wiki = ROBUST redefinition (not forced Stop-hook).** Investigation showed forced Stop-hook auto-capture is feasible but fragile (no guarantee the LLM records, slows every turn, non-official pattern, unverified). Instead: agent-all work accumulates via ① (robust); work *outside* agent-all (workflow / plain chat) uses a Stop-hook **reminder** (not a forced block) plus a lightweight `/wiki-log` command.
 - **③ `/wiki init`** — a sub-command on the existing `/wiki` skill (no new plugin) that configures *when* and *what* the wiki auto-captures.
 - **Sequence: ① first, then ②③.** ① alone restores robust wiki accumulation for agent-all work as a side effect; ②③ extend coverage to non-agent-all work.
+- **SCOPE NARROWED (2026-06-23, post-investigation) — ① ONLY.** Investigation confirmed ②③ are already covered by shipped assets: **adversarial-verifier** (Phase 4 default-on, opus, self-report-blind), **memory-agent** (`.agent-skill/memory/` checkpoint + scratchpad), and the **llm-wiki auto-loop** (Phase 1 read / 2·5 write). The root cause of "wiki never accumulated" was NOT a missing feature — it was agent-all not running on a dirty tree. **① alone re-activates all three in real (dirty) work.** ②③ are DROPPED (YAGNI / the project's #1 waste trap: "ALREADY SHIPS — do NOT rebuild"). The only residual gap — auto-capture for *pure* non-agent-all work (plain chat / raw workflow) — is low-value and already served by manual `/wiki`.
 
 ## ① agent-all dirty-tree support (PROTECT mode)
 
@@ -66,6 +67,6 @@ Unit-test-green is NOT done (this session's repeated trap, memory lines 100/120/
 - Full test isolation of dirty files (impossible without forbidden git stash).
 - Codex/Copilot/Cursor/Gemini ports of ①②③ — CC first; port only after CC is live-verified.
 
-## Build order
-1. **① dirty-tree PROTECT** (own plan): preflight snapshot + confirm/warn, parseDirtyPaths, Edit/Write guard hook, Phase 3c pathspec filter, pathspec-policy protectedPaths, checkpoint field. Live-verify on posco-mds.
-2. **②③ decoupled wiki** (own plan): `/wiki-log` command, Stop-hook reminder, `/wiki init` wizard + config. Live-verify.
+## Build order (SCOPE NARROWED 2026-06-23 → ① only)
+1. **① dirty-tree PROTECT** — the only slice. Plan: `docs/superpowers/plans/2026-06-23-dirty-tree-protect-mode.md`. Preflight snapshot + confirm/warn, parseDirtyPaths, Edit/Write guard hook, Phase 3c pathspec filter, pathspec-policy protectedPaths, checkpoint field. Live-verify on posco-mds.
+2. ~~②③ decoupled wiki~~ — **DROPPED.** Covered by existing assets (adversarial-verifier, memory-agent, llm-wiki auto-loop); ① re-activates them on dirty trees. The residual auto-capture gap for pure non-agent-all work is low-value and served by manual `/wiki`.
