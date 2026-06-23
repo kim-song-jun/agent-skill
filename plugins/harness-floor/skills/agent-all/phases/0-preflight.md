@@ -4,7 +4,19 @@
 
 1. Confirm `pwd` is a git repo: `git rev-parse --git-dir` exit 0. If not: abort `Not in a git repo. Run git init first.`
 
-2. Confirm working tree clean: `git status --porcelain` empty. If not: abort `Stash or commit local changes first; agent-all needs a clean tree.`
+2. **Working tree (clean → normal; dirty → PROTECT mode).** Run `git status --porcelain`.
+   - Empty → set `state.dirtySnapshot = []` and continue (unchanged path).
+   - Non-empty → enter **PROTECT mode** (do NOT abort):
+     ```javascript
+     import { readGitState, parseDirtyPaths } from "./lib/git-state-reader.mjs";
+     state.dirtySnapshot = parseDirtyPaths(readGitState({ cwd }).statusLines);
+     ```
+     a. Write the snapshot to `.agent-skill/runs/<runId>/dirty-snapshot.json` and export
+        `AGENT_ALL_DIRTY_SNAPSHOT=<that path>` so the PreToolUse Edit|Write guard protects them.
+     b. Show the user the protected list AND warn: *"These N files are uncommitted from before this run.
+        agent-all will treat them as read-only and commit only its own changes. They may also influence
+        the break-condition test result — agent-all cannot isolate them (git stash is forbidden)."*
+        Get confirmation via `agent-interaction/v1` (no silent auto-proceed — rule 14). On decline → abort exit 0.
 
 3. Confirm `.claude/agents/` exists and contains at minimum `planner.md`, `dev.md`, `reviewer.md`. If not: abort `Run /agent-init first to scaffold .claude/agents/.`
 
