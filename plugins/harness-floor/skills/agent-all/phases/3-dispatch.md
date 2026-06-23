@@ -26,6 +26,28 @@
    });
    ```
 
+1b. **PROTECT / task-target overlap (only when `state.dirtySnapshot?.length`).** A pre-existing
+   uncommitted file is read-only under PROTECT mode (the Edit|Write file-guard blocks it). If the
+   plan must modify one, resolve the conflict explicitly rather than letting the agent hit a silent block.
+   ```javascript
+   import { writeFileSync, renameSync } from "node:fs";
+   const targets = new Set(tasks.flatMap(t => t.files ?? []));
+   const overlap = (state.dirtySnapshot ?? []).filter(p => targets.has(p));
+   if (overlap.length) {
+     // Set awaitingUser before yielding for the decision (Stop hook must not force-continue here).
+     // state.awaitingUser = { at: <iso> }; atomic write.
+     // agent-interaction/v1 decision per overlapping file (rule 14 — no auto-approve):
+     //   - "Keep protected (default)": file stays read-only; re-scope the task to not touch it, or abort if impossible.
+     //   - "Adopt into this run": remove the file from state.dirtySnapshot, rewrite the snapshot file
+     //     at AGENT_ALL_DIRTY_SNAPSHOT (atomic temp+rename), and re-export
+     //     process.env.AGENT_ALL_DIRTY_SNAPSHOT so the file-guard now permits the edit; Phase 3c may
+     //     then stage+commit it together with the run's own changes.
+     // Clear awaitingUser (set null) once resolved; refresh updatedAt.
+   }
+   ```
+   The mutated `state.dirtySnapshot` persists in state and the existing Phase-3 checkpoint, so the
+   SessionStart/Stop hooks operate on the current protected set after a compaction.
+
 2. Build static waves first:
    ```javascript
    import { buildWaves } from "./lib/wave-builder.mjs";
