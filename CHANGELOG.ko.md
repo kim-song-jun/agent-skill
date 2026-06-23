@@ -6,6 +6,21 @@
 
 ## 미출시
 
+## Agent-skill v0.7.7 — 2026-06-23
+
+### agent-all이 이제 dirty working tree에서도 실행됩니다 (PROTECT 모드)
+
+기존에는 `/agent-all`이 깨끗한 working tree를 요구했습니다 — 미커밋 파일이 있으면 실행이 중단되었습니다. v0.7.7은 PROTECT 모드를 도입해 기존 미커밋 파일이 있는 상태에서도 안전하게 실행됩니다.
+
+- **Phase 0 dirty-tree 스냅샷:** 시작 시 `/agent-all`이 기존 미커밋 파일 전체(경로 + 콘텐츠 해시)를 checkpoint에 `dirtySnapshot`으로 저장합니다. 이 기록이 전체 run의 보호 기준이 됩니다.
+- **읽기 전용 가드 훅:** `agent-init` 템플릿과 `settings.local.json.hbs`에 주입되는 새 `PreToolUse Edit|MultiEdit|Write|NotebookEdit` 훅이 모든 파일 쓰기 툴 호출을 가로채, `dirtySnapshot`에 포함된 경로에 대한 덮어쓰기를 거부합니다. 에이전트가 새로 만든 파일은 스냅샷에 없으므로 자유롭게 쓸 수 있습니다.
+- **Phase 3c pathspec 커밋 필터:** 커밋 시 에이전트가 직접 생성·수정한 파일(`dirtySnapshot`에 없는 파일)만 명시적 pathspec으로 스테이징합니다. 기존 dirty 파일은 커밋에 포함되지 않습니다.
+- **`--resume` 스냅샷 유지:** `dirtySnapshot`이 checkpoint에 저장되므로, 재개(resume)된 run도 재스캔 없이 원래 보호 집합을 그대로 이어받습니다.
+
+> **기존 설치 안내:** 운영 중인 설치는 `/agent-init`을 다시 실행해야 새 `Edit|MultiEdit|Write|NotebookEdit` PreToolUse 매처가 `settings.local.json`에 적용됩니다. `/agent-init` 재실행 없이는 훅 가드가 없어 dirty-tree 보호가 동작하지 않습니다.
+
+Suite: 2283 → 2302 통과.
+
 ## Agent-skill v0.7.6 — 2026-06-23
 
 ### `.wiki/`를 이제 preflight에서 결정적으로 생성 (optional phase 단계가 아님)

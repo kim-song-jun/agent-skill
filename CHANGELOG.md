@@ -6,6 +6,21 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.7 — 2026-06-23
+
+### agent-all now runs on a dirty working tree (PROTECT mode)
+
+Previously, `/agent-all` required a clean working tree — any pre-existing uncommitted files would cause it to abort. v0.7.7 lifts that restriction with a PROTECT mode that makes the run safe regardless of what is already staged or modified.
+
+- **Phase 0 dirty-tree snapshot:** At startup, `/agent-all` snapshots all pre-existing uncommitted files (paths + content hashes) into the checkpoint as `dirtySnapshot`. This record is the source of truth for the entire run.
+- **Read-only guard hook:** A new `PreToolUse Edit|MultiEdit|Write|NotebookEdit` hook (injected into the `agent-init` template and `settings.local.json.hbs`) intercepts every file-write tool call and rejects any attempt to overwrite a path that was in `dirtySnapshot`. The agent's own new files are never in the snapshot and pass through freely.
+- **Phase 3c pathspec commit filter:** When committing, only files that the agent itself created or modified (not present in `dirtySnapshot`) are staged via explicit pathspec. Pre-existing dirty files are never swept into the commit.
+- **`--resume` survives the snapshot:** `dirtySnapshot` is persisted in the checkpoint, so a resumed run inherits the original protection set without rescanning.
+
+> **NOTE for existing installs:** Operational installs must re-run `/agent-init` to get the new `Edit|MultiEdit|Write|NotebookEdit` PreToolUse matcher wired into their `settings.local.json`. Without re-running `/agent-init`, the hook guard is absent and dirty-tree protection is not active.
+
+Suite: 2283 → 2302 passing.
+
 ## Agent-skill v0.7.6 — 2026-06-23
 
 ### `.wiki/` is now created deterministically in preflight (not an optional phase step)
