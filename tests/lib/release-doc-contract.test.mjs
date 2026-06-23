@@ -232,7 +232,7 @@ test("user manuals are image-backed and explain install versus init", () => {
 test("readme files describe the current Codex config surface and current test count", () => {
   for (const path of ["README.md", "README.ko.md"]) {
     const body = read(path);
-    assert.match(body, /2282\/2282/);
+    assert.match(body, /2283\/2283/);
     assert.doesNotMatch(body, /2278\/2278|2278%20passing|2278 tests|2258\/2258|2258%20passing|2258 tests|2246\/2246|2246%20passing|2246 tests|2205\/2205|2205%20passing|2205 tests|2202\/2202|2202%20passing|2202 tests|2151\/2151|2151%20passing|2151 tests|2150\/2150|2150%20passing|2150 tests|2037\/2037|2037%20passing|2037 tests|2026\/2026|2026%20passing|2026 tests|2011\/2011|2011%20passing|2011 tests|1991\/1991|1991%20passing|1991 tests/);
     assert.doesNotMatch(body, /1871\/1871|1871%20passing|1871 tests|1872\/1872|1872%20passing|1872 tests|1927\/1927|1927%20passing|1927 tests|1932\/1932|1932%20passing|1932 tests|1962\/1962|1962%20passing|1962 tests|1972\/1972|1972%20passing|1972 tests|1974\/1974|1974%20passing|1974 tests|1977\/1977|1977%20passing|1977 tests/);
     assert.doesNotMatch(body, /1721\/1721|1721%20passing|1721 tests|1726\/1726|1726%20passing|1726 tests|1729\/1729|1729%20passing|1729 tests|1741\/1741|1741%20passing|1741 tests|1742\/1742|1742%20passing|1742 tests|1746\/1746|1746%20passing|1746 tests|1749\/1749|1749%20passing|1749 tests|1752\/1752|1752%20passing|1752 tests|1755\/1755|1755%20passing|1755 tests|1756\/1756|1756%20passing|1756 tests|1758\/1758|1758%20passing|1758 tests|1759\/1759|1759%20passing|1759 tests|1760\/1760|1760%20passing|1760 tests|1761\/1761|1761%20passing|1761 tests|1762\/1762|1762%20passing|1762 tests|1763\/1763|1763%20passing|1763 tests|1764\/1764|1764%20passing|1764 tests|1766\/1766|1766%20passing|1766 tests|1769\/1769|1769%20passing|1769 tests|1772\/1772|1772%20passing|1772 tests|1775\/1775|1775%20passing|1775 tests|1788\/1788|1788%20passing|1788 tests|1797\/1797|1797%20passing|1797 tests/);
@@ -251,9 +251,9 @@ test("readme files describe the current Codex config surface and current test co
     assert.match(body, /scripts\/release-smoke\.sh --fast/);
     assert.match(body, /scripts\/release-smoke\.sh --fast --with-live-cli/);
     assert.match(body, /with-live-cli[\s\S]{0,260}(Claude plugin marketplace\/install|Claude plugin marketplace\/install 명령 표면)/i);
-    assert.match(body, /harness-builder[\s\S]{0,120}v0\.7\.5/i);
-    assert.match(body, /harness-floor[\s\S]{0,120}v0\.7\.5/i);
-    assert.match(body, /(other 17 installable|나머지 설치 가능한)[\s\S]{0,180}v0\.7\.5/i);
+    assert.match(body, /harness-builder[\s\S]{0,120}v0\.7\.6/i);
+    assert.match(body, /harness-floor[\s\S]{0,120}v0\.7\.6/i);
+    assert.match(body, /(other 17 installable|나머지 설치 가능한)[\s\S]{0,180}v0\.7\.6/i);
     assert.doesNotMatch(body, /other Claude Code core plugins at `v0\.2\.0`|나머지 Claude Code 코어 플러그인 `v0\.2\.0`/i);
     assert.match(body, /\/thrift` compact (delivery|전달)[\s\S]{0,220}API-gated advisory path/i);
     assert.match(body, /Provider-backed thrift summarizer/i);

@@ -18,11 +18,20 @@
    - If `--dispatch=sequential` was passed, accept the override.
 5. Load `.agent-all.json` via implicit file read. If missing: warn + use
    built-ins from `templates/agent-all.config.json.hbs`.
-   **Auto-wiki toggle:** the agent-all↔wiki auto-loop is default-on
-   (`config.wiki.auto`, default `true`). `--no-wiki` opts out — normalize once so
-   downstream phases only check `config.wiki.auto`:
+   **Auto-wiki toggle + deterministic creation:** the agent-all↔wiki auto-loop is
+   default-on (`config.wiki.auto`, default `true`). `--no-wiki` opts out — normalize
+   once so downstream phases only check `config.wiki.auto`. **Then create `.wiki/`
+   right here**, so the directory exists on EVERY run instead of hanging off the
+   optional Phase 2 sub-step (which can be skipped — the historical "`.wiki` never
+   shows up" cause). `ensureWiki` is idempotent + non-fatal, so Phase 2's later
+   `ensureWiki` becomes a no-op (`created:false` → no duplicate notice).
    ```javascript
+   import { ensureWiki } from "./.codex/skills/agent-all/lib/wiki-log.mjs";
    if (flags["no-wiki"]) config.wiki = { ...config.wiki, auto: false };
+   if (config.wiki?.auto) {
+     const ready = ensureWiki(".wiki");                       // deterministic: created on every run
+     if (ready.ok && ready.created) console.log("started a project wiki at .wiki/ — disable with --no-wiki");
+   }
    ```
 6. Read `.agent-all-state.json` if present.
 

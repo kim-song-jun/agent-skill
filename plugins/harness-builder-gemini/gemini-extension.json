@@ -1,6 +1,6 @@
 {
   "name": "harness-builder-gemini",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "description": "Run agent-init for Gemini CLI — emits GEMINI.md + .gemini/skills/",
   "contextFileName": "GEMINI.md"
 }

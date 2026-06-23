@@ -17,6 +17,14 @@ test("0-preflight normalizes --no-wiki into config.wiki.auto=false", () => {
   assert.match(body, /flags\["no-wiki"\][\s\S]{0,80}config\.wiki[\s\S]{0,40}auto: false/, "normalizes the flag to config.wiki.auto=false once");
 });
 
+test("0-preflight deterministically ensures .wiki up front when config.wiki.auto (creation no longer hangs off the optional Phase 2 step)", () => {
+  const body = read("0-preflight.md");
+  assert.match(body, /config\.wiki\?\.auto/, "the deterministic ensure is gated on config.wiki.auto");
+  assert.match(body, /from "\.\/lib\/wiki-log\.mjs"/, "imports the install-anchored ./lib/wiki-log.mjs (no cross-skill path)");
+  assert.match(body, /ensureWiki/, "preflight calls ensureWiki so the dir exists on EVERY run, not just when the LLM remembers the Phase 2 sub-step");
+  assert.match(body, /started a project wiki at \.wiki\/ — disable with --no-wiki/, "preflight prints the one-time first-creation notice");
+});
+
 test("Phase 1 reads the wiki into planning, gated on config.wiki.auto, install-anchored", () => {
   const body = read("1-intent.md");
   assert.match(body, /config\.wiki\?\.auto/, "the recall step is gated on config.wiki.auto");
@@ -82,7 +90,11 @@ const readCodex = (f) => readFileSync(resolve(CODEX_PHASES, f), "utf-8");
 const CODEX_ANCHOR = /from "\.\/\.codex\/skills\/agent-all\/lib\/wiki-log\.mjs"/;
 
 test("Codex port mirrors the wiki loop, gated + install-anchored to .codex/skills/agent-all/lib", () => {
-  assert.match(readCodex("0-preflight.md"), /flags\["no-wiki"\][\s\S]{0,80}auto: false/, "codex normalizes --no-wiki");
+  const codexPreflight = readCodex("0-preflight.md");
+  assert.match(codexPreflight, /flags\["no-wiki"\][\s\S]{0,80}auto: false/, "codex normalizes --no-wiki");
+  assert.match(codexPreflight, /config\.wiki\?\.auto/, "codex preflight gates the deterministic ensure");
+  assert.match(codexPreflight, CODEX_ANCHOR, "codex preflight anchored import for the up-front ensure");
+  assert.match(codexPreflight, /ensureWiki[\s\S]{0,300}started a project wiki/, "codex preflight deterministically ensures .wiki + first-creation notice");
   const intent = readCodex("1-intent.md");
   assert.match(intent, /config\.wiki\?\.auto/, "codex Phase 1 gated");
   assert.match(intent, CODEX_ANCHOR, "codex Phase 1 anchored import");

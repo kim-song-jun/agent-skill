@@ -1,6 +1,6 @@
 {
   "name": "harness-builder-cursor",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "description": "Run agent-init for Cursor — emits .cursor/rules + .cursor/agents/",
   "keywords": [
     "harness",

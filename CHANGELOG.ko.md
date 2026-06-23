@@ -6,6 +6,18 @@
 
 ## 미출시
 
+## Agent-skill v0.7.6 — 2026-06-23
+
+### `.wiki/`를 이제 preflight에서 결정적으로 생성 (optional phase 단계가 아님)
+
+v0.7.4/v0.7.5 auto-loop는 위키 생성을 **Phase 2(plan) 안의 optional·non-fatal 서브스텝**에 의존했습니다 — `ensureWiki`는 오케스트레이터 모델이 그 단계를 실행하고 run이 Phase 2까지 도달해야만 돌았습니다. 실제로는 디렉토리가 정상 run에서 자주 생기지 않았습니다: 게이트는 wired·단위테스트 통과였지만 side effect 자체가 건너뛸 수 있어, `wiki.auto: true`인 프로젝트도 여러 run 동안 `.wiki/`가 아예 없을 수 있었습니다. v0.7.6은 생성을 결정적으로 만듭니다.
+
+- **Preflight 생성 (Phase 0, 4b 단계):** `config.wiki.auto`가 켜져 있으면 `/agent-all`이 이제 preflight에서 `ensureWiki('.wiki')`를 먼저 호출해, optional Phase 2 서브스텝에 의존하지 않고 **모든** run에서 `.wiki/`가 생성됩니다. `ensureWiki`는 idempotent + non-fatal — Phase 2의 이후 호출은 no-op가 되고("started a project wiki" 알림 중복 없음), 위키 실패는 여전히 run을 실패시키지 않습니다.
+- **실행 가능한 두 포트:** Claude Code와 Codex `0-preflight.md`에 적용(Codex는 install-anchored `.codex/skills/agent-all/lib` 경로 사용). prose 포트(Copilot/Gemini/Cursor)는 loop를 돌리지 않으므로 영향 없음.
+- **Contract 테스트:** CC와 Codex preflight ensure-contract assertion 추가(`config.wiki.auto` 게이트, install-anchored import, 최초 1회 생성 알림) — 결정적 생성이 optional-only 배선으로 silent regression되지 못하게 보장.
+
+Suite: 2282 → 2283 통과 (+1: preflight 결정적 생성 contract).
+
 ## Agent-skill v0.7.5 — 2026-06-22
 
 ### 토큰 인식 위키 auto-loop — 작성을 경량 모델에 위임

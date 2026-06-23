@@ -6,6 +6,18 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.6 — 2026-06-23
+
+### `.wiki/` is now created deterministically in preflight (not an optional phase step)
+
+The v0.7.4/v0.7.5 auto-loop gated wiki creation on an **optional, non-fatal sub-step inside Phase 2 (plan)** — `ensureWiki` only ran if the orchestrating model executed that step and the run reached Phase 2. In practice the directory often never appeared on a real run: the gate was wired and unit-tested, but the side effect itself was skippable, so a project with `wiki.auto: true` could go many runs with no `.wiki/` at all. v0.7.6 makes creation deterministic.
+
+- **Preflight creation (Phase 0, step 4b):** when `config.wiki.auto` is on, `/agent-all` now calls `ensureWiki('.wiki')` up front in preflight, so `.wiki/` is created on **every** run instead of depending on the optional Phase 2 sub-step. `ensureWiki` is idempotent + non-fatal — Phase 2's later call becomes a no-op (no duplicate "started a project wiki" notice) and a wiki failure still never fails the run.
+- **Both runnable ports:** applied to Claude Code and Codex `0-preflight.md` (Codex uses its install-anchored `.codex/skills/agent-all/lib` path). Prose ports (Copilot/Gemini/Cursor) are unaffected — they do not run the loop.
+- **Contract tests:** added a preflight ensure-contract assertion for CC and Codex (gated on `config.wiki.auto`, install-anchored import, one-time first-creation notice) so the deterministic creation cannot silently regress back to the optional-only wiring.
+
+Suite: 2282 → 2283 passing (+1: the preflight deterministic-creation contract).
+
 ## Agent-skill v0.7.5 — 2026-06-22
 
 ### Token-aware wiki auto-loop — authoring delegated to a cheap model

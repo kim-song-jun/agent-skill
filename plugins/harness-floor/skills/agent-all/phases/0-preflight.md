@@ -18,13 +18,22 @@
    if (warning) { /* print: ".agent-all.json not found; using built-ins. Run /agent-init --theme=floor to seed." */ }
    ```
 
-   **4b. (auto-wiki toggle).** The agent-all↔wiki auto-loop is **default-on**
-   (`config.wiki.auto`, default `true`): Phase 1 reads relevant wiki pages into
-   planning, Phase 2 records the plan, Phase 5 records the outcome. The `--no-wiki`
-   flag opts out — normalize it once here so every downstream phase only checks
-   `config.wiki.auto`:
+   **4b. (auto-wiki toggle + deterministic creation).** The agent-all↔wiki
+   auto-loop is **default-on** (`config.wiki.auto`, default `true`): Phase 1 reads
+   relevant wiki pages into planning, Phase 2 records the plan, Phase 5 records the
+   outcome. The `--no-wiki` flag opts out — normalize it once here so every
+   downstream phase only checks `config.wiki.auto`. **Then create `.wiki/` right
+   here**, so the directory exists on EVERY run instead of hanging off the optional
+   Phase 2 sub-step (an LLM can skip that step — the historical "`.wiki` never shows
+   up" cause). `ensureWiki` is idempotent + non-fatal: it never fails the run, and
+   Phase 2's later `ensureWiki` becomes a no-op (`created:false` → no duplicate notice).
    ```javascript
+   import { ensureWiki } from "./lib/wiki-log.mjs";
    if (flags["no-wiki"]) config.wiki = { ...config.wiki, auto: false };
+   if (config.wiki?.auto) {
+     const ready = ensureWiki(".wiki");                       // deterministic: created on every run
+     if (ready.ok && ready.created) console.log("started a project wiki at .wiki/ — disable with --no-wiki");
+   }
    ```
 
 5. Read `.agent-all-state.json` if present. If `--resume` and a task path is
