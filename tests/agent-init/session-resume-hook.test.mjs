@@ -1,0 +1,100 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, writeFileSync, readFileSync, existsSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+const HOOK = "plugins/harness-builder/skills/agent-init/templates/hooks/session-resume.mjs";
+
+// Returns { code, stdout } — never throws on non-zero (hooks always exit 0 here).
+function runHook(payload, projectDir) {
+  try {
+    const stdout = execFileSync("node", [HOOK], {
+      input: JSON.stringify(payload),
+      env: { ...process.env, CLAUDE_PROJECT_DIR: projectDir },
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    return { code: 0, stdout: stdout.toString() };
+  } catch (e) {
+    return { code: e.status, stdout: (e.stdout || "").toString() };
+  }
+}
+
+function project(stateObj) {
+  const dir = mkdtempSync(join(tmpdir(), "sr-"));
+  if (stateObj) writeFileSync(join(dir, ".agent-all-state.json"), JSON.stringify(stateObj));
+  return dir;
+}
+
+const running = (extra = {}) => ({
+  status: "running", runId: "R1", sessionId: null,
+  updatedAt: new Date().toISOString(),
+  phases: [{ phase: 0 }, { phase: 1 }, { phase: 2 }], ...extra,
+});
+
+test("compact + running[0,1,2] injects a continue-from-Phase-3 directive", () => {
+  const dir = project(running());
+  const { code, stdout } = runHook({ source: "compact", session_id: "S1" }, dir);
+  assert.equal(code, 0);
+  const out = JSON.parse(stdout);
+  assert.equal(out.hookSpecificOutput.hookEventName, "SessionStart");
+  const ctx = out.hookSpecificOutput.additionalContext;
+  assert.match(ctx, /Phase 3/);
+  assert.match(ctx, /do NOT stop/i);
+  assert.match(ctx, /do NOT restart from Phase 0/i);
+  assert.match(ctx, /3-dispatch\.md/);
+});
+
+test("every source writes current-session.json", () => {
+  const dir = project(running());
+  runHook({ source: "clear", session_id: "S9" }, dir);
+  const cur = JSON.parse(readFileSync(join(dir, ".agent-skill/runs/current-session.json"), "utf-8"));
+  assert.equal(cur.sessionId, "S9");
+});
+
+test("clear source emits no directive", () => {
+  const dir = project(running());
+  const { stdout } = runHook({ source: "clear", session_id: "S1" }, dir);
+  assert.equal(stdout.trim(), "");
+});
+
+test("status done emits no directive", () => {
+  const dir = project(running({ status: "done" }));
+  const { stdout } = runHook({ source: "compact", session_id: "S1" }, dir);
+  assert.equal(stdout.trim(), "");
+});
+
+test("no state file emits no directive", () => {
+  const dir = project(null);
+  const { code, stdout } = runHook({ source: "compact", session_id: "S1" }, dir);
+  assert.equal(code, 0);
+  assert.equal(stdout.trim(), "");
+});
+
+test("stale updatedAt emits no directive", () => {
+  const old = new Date(Date.now() - 13 * 3600 * 1000).toISOString();
+  const dir = project(running({ updatedAt: old }));
+  const { stdout } = runHook({ source: "compact", session_id: "S1" }, dir);
+  assert.equal(stdout.trim(), "");
+});
+
+test("malformed state is non-fatal (exit 0, no directive)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "sr-"));
+  writeFileSync(join(dir, ".agent-all-state.json"), "{ not json");
+  const { code, stdout } = runHook({ source: "compact", session_id: "S1" }, dir);
+  assert.equal(code, 0);
+  assert.equal(stdout.trim(), "");
+});
+
+test("nextPhase > 6 emits no directive", () => {
+  const dir = project(running({ phases: [{ phase: 6 }] }));
+  const { stdout } = runHook({ source: "compact", session_id: "S1" }, dir);
+  assert.equal(stdout.trim(), "");
+});
+
+test("foreign session ownership: state.sessionId != payload → no directive", () => {
+  const dir = project(running({ sessionId: "OWNER" }));
+  const { stdout } = runHook({ source: "compact", session_id: "OTHER" }, dir);
+  assert.equal(stdout.trim(), "");
+});

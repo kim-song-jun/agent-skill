@@ -18,7 +18,8 @@
     "SessionStart": [
       {
         "hooks": [
-          { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/cache-heal.mjs\"" }
+          { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/cache-heal.mjs\"" },
+          { "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/session-resume.mjs\"" }
         ]
       }
     ]
