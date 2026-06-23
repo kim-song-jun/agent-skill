@@ -24,6 +24,11 @@ test("custom wiki.sources is accepted", () => {
   const { ok, config } = cfg({ wiki: { sources: ["docs/tasks", "docs/design"] } });
   assert.equal(ok, true);
   assert.deepEqual(config.wiki.sources, ["docs/tasks", "docs/design"]);
+  // deep-merge: a partial wiki override must retain the other wiki defaults.
+  assert.ok(Array.isArray(config.wiki.exclude) && config.wiki.exclude.length > 0, "default exclude retained");
+  assert.equal(typeof config.wiki.maxImportUSD, "number", "default maxImportUSD retained");
+  assert.equal(config.wiki.auto, true, "default auto retained");
+  assert.equal(config.wiki.model, "haiku", "default model retained");
 });
 
 test("wiki.sources must be an array of strings", () => {
