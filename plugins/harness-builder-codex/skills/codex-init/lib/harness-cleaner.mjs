@@ -41,6 +41,8 @@ const PLATFORM_FILES = {
     ".claude/hooks/session-summary.mjs",
     ".claude/hooks/cache-heal.mjs",
     ".claude/hooks/agent-policy-hook.mjs",
+    ".claude/hooks/session-resume.mjs",
+    ".claude/hooks/agent-all-continue.mjs",
   ],
   codex: [
     ".codex/hooks/agent-policy-hook.mjs",
@@ -126,6 +128,8 @@ const CLAUDE_HOOK_PATHS = [
   ".claude/hooks/session-summary.mjs",
   ".claude/hooks/cache-heal.mjs",
   ".claude/hooks/agent-policy-hook.mjs",
+  ".claude/hooks/session-resume.mjs",
+  ".claude/hooks/agent-all-continue.mjs",
 ];
 
 export function planHarnessCleanup({
