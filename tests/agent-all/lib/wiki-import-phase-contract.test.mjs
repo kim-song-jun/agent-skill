@@ -28,3 +28,9 @@ test("Phase 4 backfill is dry-run-first, configurable, cost-capped", () => {
   assert.match(body, /--apply/, "explicit apply gate");
   assert.match(body, /maxImportUSD/, "cost cap");
 });
+
+test("agent-all Phase 2 records the spec as a wiki source", () => {
+  const W = resolve("plugins/harness-floor/skills/agent-all/phases");
+  const body = readFileSync(resolve(W, "2-plan.md"), "utf-8");
+  assert.match(body, /sources:[\s\S]{0,200}spec:/i, "Phase 2 writePage sources include spec:");
+});

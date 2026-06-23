@@ -40,12 +40,14 @@
      const res = writePage(".wiki", {
        title: task.title, slug: target.slug, grade: "C", tags: [],
        bluf: authored.bluf, details: authored.details, contradictions: target.existed ? authored.contradictions : "",
-       sources: [`task: ${task.path}`, `plan: ${plan.path}`],
+       sources: [`task: ${task.path}`, `plan: ${plan.path}`, ...(state.specPath ? [`spec: ${state.specPath}`] : [])],
      });
      if (!res.ok) console.warn(`wiki plan-capture skipped: ${res.error}`);
      else state.wikiPage = `.wiki/${target.slug}.md`;   // record so session-resume can point compaction recovery at the WHY (decisions/rationale)
    }
    ```
+   Phase 1 records the brainstorming spec path as `state.specPath`; Phase 2 links it here so the wiki page points at the design, not just the plan.
+   
    (`writePage` runs HERE, in the skill's own context, so its `./lib` import stays
    install-anchored — the scribe never touches the lib path.)
    The scribe (not the main thread) authors the prose; `writePage` only writes the
