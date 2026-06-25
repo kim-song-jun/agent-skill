@@ -4,7 +4,7 @@
 
 export const ROUTING_TABLE = [
   { target: "/agent-init",    kind: "skill", when: "start a new project / adopt the harness on a repo",        signals: ["init", "scaffold", "set up", "new project", "adopt", "onboard", "bootstrap"] },
-  { target: "/agent-all",     kind: "skill", when: "ship a feature or bugfix as a gated PR",                   signals: ["feature", "implement", "build the", "ship", "pr", "add ", "bugfix"] },
+  { target: "/agent-all",     kind: "skill", when: "ship a feature or bugfix as a gated PR",                   signals: ["feature", "implement", "build the", "ship", " pr", "add ", "bugfix"] },
   { target: "/debug",         kind: "skill", when: "investigate a failing command / flaky test / regression",  signals: ["debug", "failing", "flaky", "regression", "crash", "stack trace", "why does"] },
   { target: "/explore",       kind: "skill", when: "map / understand the codebase",                            signals: ["explore", "map the", "understand", "where is", "architecture", "overview", "codebase"] },
   { target: "/thrift",        kind: "skill", when: "control cost / manage a long session's context",           signals: ["cost", "budget", "token", "long session", "context window", "expensive", "summarize session"] },
