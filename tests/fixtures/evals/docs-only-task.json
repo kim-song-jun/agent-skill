@@ -5,6 +5,9 @@
   "category": "docs-only",
   "smoke": true,
   "baselineFailure": "Baseline prompt can pass, making this fixture useful for spotting unnecessary overhead.",
+  "executable": true,
+  "taskPrompt": "Document the GET /widgets endpoint in README with a request/response example.",
+  "checkerCmd": "node tests/fixtures/evals/checkers/docs-only.check.mjs",
   "acceptanceCriteria": [
     "README and CHANGELOG mention the same feature",
     "No code files are touched",

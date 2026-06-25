@@ -5,6 +5,9 @@
   "category": "backend-api",
   "smoke": true,
   "baselineFailure": "Baseline prompt misses the API contract regression and requires manual review.",
+  "executable": true,
+  "taskPrompt": "Add a typed error response to the GET /widgets endpoint and a contract test.",
+  "checkerCmd": "node --test tests/fixtures/evals/checkers/backend-api.check.mjs",
   "acceptanceCriteria": [
     "API contract smoke passes",
     "Auth-sensitive path is reviewed",

@@ -5,6 +5,9 @@
   "category": "small-web-ui",
   "smoke": true,
   "baselineFailure": "Baseline prompt passes unit checks but misses a visual regression.",
+  "executable": true,
+  "taskPrompt": "Add an empty-state message to the widgets list component with a unit test.",
+  "checkerCmd": "node --test tests/fixtures/evals/checkers/small-web-ui.check.mjs",
   "acceptanceCriteria": [
     "Primary interaction test passes",
     "Visual regression is detected or resolved",

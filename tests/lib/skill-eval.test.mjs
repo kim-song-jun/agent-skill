@@ -10,6 +10,7 @@ import {
   loadEvalFixtures,
   renderEvalMarkdown,
   runSkillUtilityEval,
+  validateEvalFixture,
 } from "../../scripts/skill-eval.mjs";
 
 const NOW = new Date("2026-06-11T00:00:00.000Z");
@@ -28,6 +29,22 @@ test("skill eval loads documented fixture schema", () => {
     assert.ok(fixture.modes.baseline);
     assert.ok(fixture.modes["agent-all"]);
   }
+});
+
+test("validateEvalFixture requires taskPrompt and checkerCmd when executable", () => {
+  const base = {
+    schemaVersion: "agent-skill-eval-fixture/v1",
+    id: "x", title: "X", category: "docs-only", baselineFailure: "b",
+    acceptanceCriteria: ["c"],
+    modes: {
+      baseline: { passed: false, iterations: 0, wallClockMs: 0, manualInterventions: 0, failedReviewerGates: 0, qualityDebtFindings: 0, rollbackCount: 0 },
+      "agent-all": { passed: true, iterations: 0, wallClockMs: 0, manualInterventions: 0, failedReviewerGates: 0, qualityDebtFindings: 0, rollbackCount: 0 },
+    },
+    executable: true,
+  };
+  assert.throws(() => validateEvalFixture({ ...base }), /taskPrompt/);
+  assert.throws(() => validateEvalFixture({ ...base, taskPrompt: "do it" }), /checkerCmd/);
+  assert.doesNotThrow(() => validateEvalFixture({ ...base, taskPrompt: "do it", checkerCmd: "true" }));
 });
 
 test("skill eval smoke compares baseline and agent-all with cost telemetry summaries", () => {

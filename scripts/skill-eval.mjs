@@ -92,6 +92,10 @@ export function validateEvalFixture(fixture, source = "fixture") {
   for (const [mode, result] of Object.entries(fixture.modes)) {
     validateModeResult(fixture, mode, result);
   }
+  if (fixture.executable === true) {
+    assertString(fixture.taskPrompt, `${source}.taskPrompt`);
+    assertString(fixture.checkerCmd, `${source}.checkerCmd`);
+  }
   return fixture;
 }
 
