@@ -26,6 +26,8 @@ export function derivePriors({ cwd = process.cwd(), recordsDir, recentN = 5, thr
     return { priorRunCount: 0, rosterAdditions: [], suggestedProfile: null, suggestedMaxCostUSD: null };
   }
 
+  // roster additions and priorRunCount read the full recent window (both agent-all and
+  // eval-live), per project decision: "actuator reads both".
   const addCounts = {};
   for (const r of recent) {
     const scaffolded = new Set(r.scaffold?.roster ?? []);
@@ -38,14 +40,21 @@ export function derivePriors({ cwd = process.cwd(), recordsDir, recentN = 5, thr
     .map(([role]) => role)
     .sort();
 
+  // Profile and cost priors are derived only from real agent-all runs — synthetic eval-live
+  // records (written by recordCanonicalRun) use profiles like "lite"/"operational" and tiny
+  // costs that reflect eval mechanics, not production scaffold usage. Including them would
+  // skew suggestedProfile and suggestedMaxCostUSD toward eval mechanics and produce
+  // misleading recommendations.
+  const agentAllRecent = recent.filter((r) => r.source === "agent-all");
+
   const profileCounts = {};
-  for (const r of recent) {
+  for (const r of agentAllRecent) {
     const p = r.scaffold?.profile;
     if (p) profileCounts[p] = (profileCounts[p] ?? 0) + 1;
   }
   const suggestedProfile = Object.entries(profileCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
-  const costs = recent
+  const costs = agentAllRecent
     .map((r) => (r.telemetryRecords ?? []).reduce((s, t) => s + (Number(t.costUSD) || 0), 0))
     .filter((c) => c > 0);
   const suggestedMaxCostUSD = costs.length ? Number((Math.max(...costs) * 1.5).toFixed(2)) : null;

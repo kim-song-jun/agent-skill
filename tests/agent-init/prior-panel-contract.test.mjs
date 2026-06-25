@@ -22,3 +22,8 @@ test("SKILL.md documents the derive-priors lib module", () => {
   const skill = readFileSync(resolve("plugins/harness-builder/skills/agent-init/SKILL.md"), "utf-8");
   assert.match(skill, /derive-priors\.mjs/);
 });
+
+test("Phase 1 documents the cold-start silent-skip branch", () => {
+  assert.match(phase1, /priorRunCount === 0/, "doc must mention the zero-count guard");
+  assert.match(phase1, /skip/i, "doc must state the panel is skipped when priorRunCount === 0");
+});

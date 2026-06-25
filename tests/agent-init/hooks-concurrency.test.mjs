@@ -2,7 +2,7 @@
 // Task 2 will extend this same file with concurrency tests.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -28,6 +28,7 @@ test("writeRoutingStateAtomic round-trips valid JSON and leaves no tmp", () => {
     const p = join(dir, "context-mode-router.json");
     writeRoutingStateAtomic(p, { largeCommandCount: 2, lastCommand: "x" });
     assert.deepEqual(JSON.parse(readFileSync(p, "utf-8")), { largeCommandCount: 2, lastCommand: "x" });
+    assert.equal(existsSync(p + ".tmp"), false, "tmp file must be removed after atomic write");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
