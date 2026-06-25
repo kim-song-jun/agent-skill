@@ -17,6 +17,7 @@ Works on Claude Code today, with cross-platform ports for **Cursor, GitHub Copil
 /explore                                     # codebase map; /explore where Foo → O(1) lookup
 /debug "tests flaky 30% of runs"             # reproduce → bisect → hypothesize → verify
 /wiki compile                                # self-auditing project knowledge base in .wiki/ (diff=0 gate)
+/harness "not sure which to run"             # front door: describe intent → routes you to the right skill
 ```
 
 **Three things that make it click:**
@@ -206,6 +207,18 @@ configured `--max-runtime-sec`; completion is driven by the break condition in
 `.agent-all.json`. Use `--max-iter=0` or `loop.maxIter: null` for unlimited
 iteration count; cost/runtime budgets, hard policy hooks, user interruption,
 and repeated failure signatures still stop the loop.
+
+**Evolution loop — run records and prior-run awareness.** Every `/agent-all` run now emits a `run-record/v1` summary to `.agent-skill/runs/records/` containing cost, iteration count, break-condition result, and the skills invoked. `/agent-init` Phase 1 reads those records and surfaces an advisory "recent runs" panel — a roster of past tasks, cost profile, and suggestions for tightening budgets or iteration caps — so you start each new session with a concrete picture of what prior runs cost. The skill-utility benchmark (`node scripts/skill-eval.mjs`) gained a `--record` mode that records pre-run state, runs the evaluation, and then re-verifies outcomes against the recorded baseline, producing reproducible evidence for the release gate.
+
+### `/harness` — the front door
+
+The optional router for when you are not sure which skill to run. Describe your intent in plain language; `/harness` seeds candidates from its routing map, then presents an AskUserQuestion confirm panel — the recommended target first plus 2–3 alternatives — before routing you to the right skill (`/agent-all`, `/agent-init`, `/debug`, `/explore`, `/thrift`, `/wiki`, `/visual-qa`, `/data-runner`, `/agent-handoff`) or explaining the built-in Workflow tool. It never runs work itself and never auto-routes silently. Direct skill invocation still works as before.
+
+```
+/harness "auth login is failing intermittently"
+/harness "set up the harness on this repo"
+/harness "ship the new export button as a PR"
+```
 
 ### `/agent-handoff` — resume a long task cleanly
 
