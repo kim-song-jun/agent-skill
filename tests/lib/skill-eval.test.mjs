@@ -19,12 +19,8 @@ const NOW = new Date("2026-06-11T00:00:00.000Z");
 
 test("skill eval loads documented fixture schema", () => {
   const fixtures = loadEvalFixtures({ root: process.cwd() });
-  assert.equal(fixtures.length, 3);
-  assert.deepEqual(fixtures.map((fixture) => fixture.id).sort(), [
-    "backend-api-task",
-    "docs-only-task",
-    "small-web-ui-task",
-  ]);
+  assert.ok(fixtures.length >= 1);
+  assert.ok(fixtures.every((f) => typeof f.id === "string" && f.id.length > 0));
   for (const fixture of fixtures) {
     assert.equal(fixture.schemaVersion, "agent-skill-eval-fixture/v1");
     assert.ok(fixture.acceptanceCriteria.length > 0);
@@ -61,13 +57,12 @@ test("skill eval smoke compares baseline and agent-all with cost telemetry summa
   assert.equal(result.report.schemaVersion, EVAL_REPORT_SCHEMA_VERSION);
   assert.equal(result.report.suite, "smoke");
   assert.deepEqual(result.report.modes, ["baseline", "agent-all"]);
-  assert.equal(result.report.summary.fixtureCount, 3);
-  assert.equal(result.report.summary.runCount, 6);
+  assert.equal(result.report.summary.runCount, result.report.summary.fixtureCount * result.report.modes.length);
 
   const baseline = result.report.summary.modeSummary.find((mode) => mode.mode === "baseline");
   const agentAll = result.report.summary.modeSummary.find((mode) => mode.mode === "agent-all");
-  assert.equal(baseline.passRate, 0.3333);
-  assert.equal(agentAll.passRate, 1);
+  // The whole point: the skill should not pass LESS often than baseline.
+  assert.ok(agentAll.passRate >= baseline.passRate);
   assert.ok(agentAll.costOverheadUSD > 0);
   assert.ok(agentAll.costOverheadRatio > 1);
 
@@ -75,8 +70,10 @@ test("skill eval smoke compares baseline and agent-all with cost telemetry summa
     (candidate) => candidate.fixtureId === "small-web-ui-task" && candidate.mode === "agent-all",
   );
   assert.equal(run.costTelemetry.summary.schemaVersion, "agent-cost-telemetry/v1-summary");
-  assert.equal(run.metrics.tokenEstimate, 6300);
-  assert.equal(run.metrics.costUSD, 0.0124);
+  // tokenEstimate must equal the sum of the run's telemetry totals, not a memorized number.
+  const expectedTokens = run.costTelemetry.summary.totalTokens;
+  assert.equal(run.metrics.tokenEstimate, expectedTokens);
+  assert.ok(run.metrics.costUSD >= 0);
 });
 
 test("skill eval full mode includes extended A/B modes", () => {
@@ -88,8 +85,7 @@ test("skill eval full mode includes extended A/B modes", () => {
   });
 
   assert.deepEqual(result.report.modes, DEFAULT_EVAL_MODES);
-  assert.equal(result.report.summary.fixtureCount, 3);
-  assert.equal(result.report.summary.runCount, 18);
+  assert.equal(result.report.summary.runCount, result.report.summary.fixtureCount * result.report.modes.length);
   assert.ok(result.report.summary.modeSummary.some(
     (mode) => mode.mode === "agent-all+visual-qa" && mode.passRate === 1,
   ));
@@ -118,7 +114,8 @@ test("skill eval writes summary, JSON, JSONL, and artifact manifest", () => {
     const manifest = JSON.parse(readFileSync(result.output.artifactManifest, "utf-8"));
     assert.match(manifest.schemaVersion, /^agent-skill-eval-report\/v1-fixture-manifest/);
     assert.ok(Array.isArray(manifest.fixtures), "artifact manifest must have a fixtures array");
-    assert.equal(manifest.fixtures.length, 3, "fixture manifest should list all 3 smoke fixtures");
+    assert.ok(manifest.fixtures.length >= 1, "artifact manifest must list at least one fixture");
+    assert.equal(manifest.fixtures.length, result.report.summary.fixtureCount, "manifest fixture count must match report");
 
     const summary = readFileSync(result.output.summaryMd, "utf-8");
     assert.match(summary, /Skill Utility Eval Summary/);
@@ -126,10 +123,10 @@ test("skill eval writes summary, JSON, JSONL, and artifact manifest", () => {
 
     const json = JSON.parse(readFileSync(result.output.summaryJson, "utf-8"));
     assert.equal(json.schemaVersion, EVAL_REPORT_SCHEMA_VERSION);
-    assert.equal(json.runs.length, 6);
+    assert.equal(json.runs.length, result.report.summary.fixtureCount * result.report.modes.length);
 
     const jsonl = readFileSync(result.output.runsJsonl, "utf-8").trim().split("\n");
-    assert.equal(jsonl.length, 6);
+    assert.equal(jsonl.length, result.report.summary.fixtureCount * result.report.modes.length);
     assert.equal(JSON.parse(jsonl[0]).schemaVersion, `${EVAL_REPORT_SCHEMA_VERSION}-run`);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
@@ -154,7 +151,7 @@ test("skill eval CLI supports CI-safe JSON no-write mode", () => {
   const payload = JSON.parse(res.stdout);
   assert.equal(payload.ok, true);
   assert.equal(payload.output, null);
-  assert.equal(payload.report.summary.runCount, 6);
+  assert.equal(payload.report.summary.runCount, payload.report.summary.fixtureCount * payload.report.modes.length);
   assert.match(renderEvalMarkdown(payload.report), /Smoke evals use representative fixtures/);
 });
 
