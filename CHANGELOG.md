@@ -6,6 +6,16 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.11 — 2026-06-26
+
+### Measurable self-improvement — run-record evolution loop + `/harness` front door
+
+- **`run-record/v1` evolution loop** — `/agent-all` runs emit one atomic per-run record to `.agent-skill/runs/records/`; `/agent-init` Phase 1 surfaces an advisory "recent runs" panel (roster / profile / cost suggestions) derived from them via `derive-priors`. Per-repo, advisory, user-gated.
+- **Record-then-reverify eval** — executable eval fixtures (`taskPrompt` + `checkerCmd`) and a `--record` mode; hardcoded fixture-constant assertions retired for structural/relational ones.
+- **Multi-session hook hardening** — context-mode-router routing-state write is atomic (tmp+rename); session-summary uses an atomic exclusive-create header (kills a TOCTOU). Both gained main-guards.
+- **`/harness` front door** — describe intent in plain language; `/harness` routes you (confirm-first AskUserQuestion) to the right skill or the built-in Workflow tool. Optional; direct invocation still works.
+- **`orchestration-patterns.md`** — names the patterns `/agent-all` embodies (pipeline / fan-out-fan-in / generate-verify / supervisor); topology stays fixed by design.
+
 ## Agent-skill v0.7.10 — 2026-06-24
 
 ### Project docs ↔ wiki: `/wiki import`

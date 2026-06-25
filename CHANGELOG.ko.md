@@ -6,6 +6,16 @@
 
 ## 미출시
 
+## Agent-skill v0.7.11 — 2026-06-26
+
+### 측정 가능한 자기개선 — run-record 진화 루프 + /harness 프론트도어
+
+- **`run-record/v1` 진화 루프** — `/agent-all` 실행 시 `.agent-skill/runs/records/`에 원자적 per-run 레코드를 기록합니다. `/agent-init` Phase 1이 `derive-priors`를 통해 레코드에서 파생한 "최근 실행" 어드바이저리 패널(목록 / 프로파일 / 비용 제안)을 표시합니다. 저장소 단위, 어드바이저리, 사용자 게이트.
+- **Record-then-reverify 평가** — 실행 가능한 평가 픽스처(`taskPrompt` + `checkerCmd`)와 `--record` 모드를 도입합니다. 하드코딩된 픽스처 상수 단언은 구조적/관계적 단언으로 대체되어 은퇴합니다.
+- **멀티-세션 훅 강화** — context-mode-router 라우팅 상태 쓰기가 원자적(tmp+rename)으로 변경됩니다. session-summary는 원자적 exclusive-create 헤더를 사용해 TOCTOU를 제거합니다. 두 훅 모두 main-guard를 갖춥니다.
+- **`/harness` 프론트도어** — 의도를 자연어로 설명하면 `/harness`가 confirm-first AskUserQuestion으로 적절한 skill 또는 내장 Workflow 도구로 라우팅합니다. 선택 사항이며, 직접 호출도 여전히 작동합니다.
+- **`orchestration-patterns.md`** — `/agent-all`이 구현하는 패턴(pipeline / fan-out-fan-in / generate-verify / supervisor)의 이름을 정의합니다. 토폴로지는 설계상 고정됩니다.
+
 ## Agent-skill v0.7.10 — 2026-06-24
 
 ### 프로젝트 문서 ↔ 위키: `/wiki import`
