@@ -108,7 +108,7 @@ The runtime behavior when `adversarialVerify === true` is documented in `phases/
 | 2 | `phases/2-plan.md` | writing-plans for the task |
 | 3 | `phases/3-dispatch.md` | wave-builder + subagent-driven-development |
 | 4 | `phases/4-gate.md` | wave-level spec+quality reviews |
-| 5 | `phases/5-pr.md` | branch push + gh pr create |
+| 5 | `phases/5-pr.md` | branch push + gh pr create; emits a `run-record/v1` via `scripts/emit-run-record.mjs` for the evolution loop |
 | 6 | `phases/6-loop.md` | breakCondition + stableIters + optional maxIter/Cost/failure-signature stops |
 
 ## Rules

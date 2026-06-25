@@ -143,6 +143,18 @@ If `--no-pr` OR `config.defaults.createPR === false`: skip Phase 5. Push `{phase
     Cross-link rides in `sources` (task id + PR url). The scribe (cheap model)
     authors; `writePage` runs here in skill context (install-safe) and re-grades C→B.
 
+11. **Emit a run-record** (feeds the evolution loop). After the gate passes,
+    record this run's scaffold + outcome so `/agent-init` can learn from it:
+
+    ```bash
+    node "${CLAUDE_PLUGIN_ROOT}/../../../scripts/emit-run-record.mjs" \
+      --run-id="<runId>" --category="<taskCategory>" --passed=<true|false> \
+      --iterations=<N> --roles-invoked="<comma-separated roles actually dispatched this run>"
+    ```
+
+    `rolesActuallyInvoked` = the role agents you actually dispatched in Phase 3
+    (not the full scaffolded roster). This is the delta the actuator learns from.
+
 ## Output to user
 
 Print: `PR: <prUrl or '(skipped|pushed-locally|gh-missing)'>` plus, when `config.wiki.auto`, `Wiki: updated .wiki/<slug>.md (outcome, grade B)`.
