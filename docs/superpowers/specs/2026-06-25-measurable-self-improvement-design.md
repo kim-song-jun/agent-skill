@@ -36,7 +36,7 @@ The spine is the single run-record contract: real runs and evals **produce** it;
 
 ```
  [agent-all run completes] ──emit──┐
-                                   ├──▶ .agent-skill/runs/records/*.jsonl   (run-record/v1)
+                                   ├──▶ .agent-skill/runs/records/<runId>.json   (run-record/v1, one atomic file per run)
  [skill-eval --record] ─────emit───┘             │
                                                  │ read-back (per-repo; same repoFingerprint)
                                                  ▼
@@ -53,14 +53,14 @@ Design for isolation — four units, each independently testable through a narro
 
 | Unit | File | Does | Depends on |
 |------|------|------|------------|
-| A. Contract | `scripts/lib/run-record.mjs` | define + validate `run-record/v1`; serialize/parse JSONL | nothing (pure) |
-| B. Emitters | agent-all Phase 5/Stop hook + eval `--record` | append a run-record per run | A |
+| A. Contract | `scripts/lib/run-record.mjs` | define + validate `run-record/v1`; atomic per-run write (tmp+rename); read+parse-guard all records in a dir | nothing (pure) |
+| B. Emitters | agent-all Phase 5/Stop hook + eval `--record` | write one atomic run-record file per run | A |
 | C. Actuator | `plugins/harness-builder/skills/agent-init/lib/derive-priors.mjs` | read repo run-records → priors | A (read) |
 | D. Live eval | `scripts/skill-eval.mjs` `--record` mode | run baseline vs agent-all once, record real outcome, replace fixture constants | A, B, checker |
 
 ### 4A. `run-record/v1` contract
 
-`scripts/lib/run-record.mjs`. One JSONL line per run:
+`scripts/lib/run-record.mjs`. **One file per run** — `.agent-skill/runs/records/<runId>.json` holding one object, written atomically (tmp + `rename`). Per-run files (mirroring the existing `evidence-writer` per-runId pattern) mean two concurrent sessions never touch the same file, so there is no append interleaving and no lock:
 
 ```jsonc
 {
@@ -99,12 +99,13 @@ Design for isolation — four units, each independently testable through a narro
 
 ### 4B. Emitters
 
-- **Real runs:** `/agent-all` appends a run-record at Phase 5 completion (or via the Stop hook that already writes session-summary). It already aggregates cost telemetry; this adds the `scaffold` + `outcome` fields and a JSONL append to `.agent-skill/runs/records/`.
+- **Real runs:** `/agent-all` writes one run-record file at Phase 5 completion (or via the Stop hook that already writes session-summary). It already aggregates cost telemetry; this adds the `scaffold` + `outcome` fields and an **atomic per-run write** to `.agent-skill/runs/records/<runId>.json` via the contract's helper. Keyed by `runId`, so a re-fired hook overwrites its own file (idempotent) — never a duplicate.
 - **Evals:** `--record` mode (4D) emits the same contract with `source: "eval-live"`.
+- **Reuse, don't reinvent:** the atomic write follows the established `state-rw.mjs` / `memory-bridge.mjs` tmp+rename pattern; per-run paths follow `evidence-writer.mjs`'s `runs/<safeRunId>/` convention. No new concurrency primitive is introduced.
 
 ### 4C. Actuator — `derive-priors.mjs` (the missing piece)
 
-- **Input:** same-repo `.agent-skill/runs/records/*.jsonl`, filtered to matching `repoFingerprint`. **Per-repo only.**
+- **Input:** all `.agent-skill/runs/records/<runId>.json` files, filtered to matching `repoFingerprint`. **Per-repo only.** Reads are lock-free: atomic tmp+rename guarantees each file is seen either absent or fully-written (never torn), and any unparseable/in-progress file is skipped with a warning, not a crash.
 - **Priors derived (locked scope — roster + profile + costFlags only):**
   - **Roster:** a role appearing in `rolesActuallyInvoked` but not in `scaffold.roster` across **≥60% of the most recent N=5 records** → recommend adding it. (Locked micro-decision.)
   - **Profile:** the dominant `scaffold.profile` among recent records → recommend as default.
@@ -137,12 +138,28 @@ Extend `scripts/skill-eval.mjs` (do **not** rewrite the framework):
 | 5 | Pass criterion (live record) | Per-fixture deterministic `checkerCmd` exit code |
 | 6 | Prior threshold | Role added in ≥60% of most recent N=5 records |
 | 7 | Actuator exposure | `/agent-init` Phase 1 `AskUserQuestion` panel (advisory, user-gated) |
+| 8 | Multi-session safety | Per-run atomic files (tmp+rename), lock-free; reuse existing `state-rw`/`evidence-writer` patterns; audit + fix existing hooks |
 
-## 6. Error handling & safety
+## 6. Multi-session safety & error handling
 
+This harness is used with **multiple Claude Code sessions sharing one working tree** (global rules 6–10). Every new read/write path here, and the existing hook wiring agent-all depends on, must be correct under concurrency.
+
+**New machinery (run-records + actuator):**
+- **No shared write target.** Each run owns `runs/records/<runId>.json`, written atomically (tmp + `rename`). Two sessions emitting at once produce two distinct files — no interleaving, no lock. This is strictly safer than appending to a shared JSONL.
+- **Lock-free reads.** The actuator globs the dir; atomic rename guarantees whole-file reads; malformed/in-progress files are skipped with a warning.
+- **Idempotent emit.** Records are keyed by `runId`; a re-fired hook overwrites its own file, never duplicates.
+
+**Existing-hook audit (explicit deliverable — requested):** before/with this work, audit the installed hook wiring for multi-session correctness and fix what is unsafe. Known concerns found during design:
+- `templates/hooks/session-summary.mjs` (Stop hook) appends to a **shared** `.agent-skill/decisions/<date>-session.md` and has a header **TOCTOU** (two sessions both see the file absent → duplicate header). Fix: header-write must tolerate concurrent creation (idempotent header, or per-session file).
+- `templates/hooks/context-mode-router.mjs` writes `.agent-skill/state/context-mode-router.json` with a shared `largeCommandCount` counter → concurrent sessions can **lose updates**. Fix: atomic read-modify-write (tmp+rename) or accept-and-document the race.
+- Confirm `agent-policy-hook.mjs` and other PreToolUse/Task hooks hold **no cross-session shared mutable state**, and that **no hook performs `git stash`/`reset`/branch-switch** on the shared tree.
+- Verify hooks fire per-session and that `${CLAUDE_PROJECT_DIR}` resolution is correct when multiple sessions run from the same tree.
+- Add a regression test that simulates two concurrent sessions exercising these hooks.
+
+**General:**
 - **Shared-tree git safety:** `--record` runs baseline/agent-all in an isolated temp directory; never `git stash` / `git reset --hard` / branch-switch the live tree (global rules 6–8).
 - **Actuator is read-only + advisory:** a bad prior can never auto-mutate the scaffold; the user gates every applied suggestion.
-- **Write failures are loud, not silent:** a failed run-record append logs a meaningful warning and lets the run proceed; no empty `catch` (global rule 3). The run itself is never blocked by telemetry failure.
+- **Write failures are loud, not silent:** a failed run-record write logs a meaningful warning and lets the run proceed; no empty `catch` (global rule 3). The run itself is never blocked by telemetry failure.
 - **Schema drift:** `validateRunRecord` rejects records lacking `schemaVersion === "agent-skill-run-record/v1"`, so a future v2 cannot be silently misread.
 
 ## 7. Testing strategy (do not re-create the fake-fixture trap)
@@ -151,6 +168,7 @@ Extend `scripts/skill-eval.mjs` (do **not** rewrite the framework):
 - **C — actuator:** synthetic run-record inputs → expected priors. E.g. *5 records, `security-reviewer` invoked-but-unscaffolded in 4 → it appears in `rosterAdditions`; 0 records → empty priors; 3/5 (<60%) → excluded.* This is the behavioral core and must not be a placebo test.
 - **D — live eval:** a `--record` run produces real records once; then a **determinism test** asserts re-verification against the recorded baseline is stable. **Remove the hardcoded-constant assertions** (e.g. `tokenEstimate === 6300` in `skill-eval.test.mjs`) — retiring that debt is part of this work.
 - **Integration:** `/agent-init` Phase 1 with a seeded `.agent-skill/runs/records/` surfaces the prior panel; with an empty dir it does not.
+- **Concurrency:** simulate two concurrent emits → two distinct record files, both parsed by the actuator and aggregated; a torn/partial file is skipped, not fatal. Plus the existing-hook concurrency regression test (§6).
 
 ## 8. Scope / YAGNI boundaries
 
@@ -158,14 +176,15 @@ Extend `scripts/skill-eval.mjs` (do **not** rewrite the framework):
 - ❌ No cross-repo global priors in v1 (schema-ready only).
 - ❌ No every-eval live execution (record-then-reverify).
 - ❌ No selectable orchestration topology (separate spec).
-- ✅ In scope: per-repo, advisory, roster + profile + costFlags, one run-record contract, record-then-reverify eval.
+- ✅ In scope: per-repo, advisory, roster + profile + costFlags, one run-record contract, record-then-reverify eval, **multi-session-safe machinery (per-run atomic files, lock-free reads) + an audit and fix of the existing hooks agent-all relies on**.
 
 ## 9. Rollout sequence (for the plan)
 
-1. **A** `run-record.mjs` + tests (foundation; nothing depends on it yet).
+0. **Hook audit** — audit installed hooks for multi-session safety (session-summary TOCTOU, context-mode-router shared counter, no git-mutating hooks) + add a concurrency regression test. Independent of A–D; can run first or in parallel.
+1. **A** `run-record.mjs` (contract + atomic per-run write + lock-free dir read) + tests (foundation; nothing depends on it yet).
 2. **C** `derive-priors.mjs` + tests (read-back actuator; testable against synthetic records before B emits real ones).
 3. **B** wire `/agent-all` emission (real records start accruing).
 4. **`/agent-init` Phase 1** prior panel integration.
 5. **D** eval `--record` mode + canonical task `taskPrompt`/`checkerCmd` + retire hardcoded-constant assertions.
 
-A→C→B ordering lets the actuator be fully tested on synthetic data before any emitter exists, de-risking the highest-value unit first.
+A→C→B ordering lets the actuator be fully tested on synthetic data before any emitter exists, de-risking the highest-value unit first. Step 0 (hook audit) is the user-requested multi-session check and is independent.
