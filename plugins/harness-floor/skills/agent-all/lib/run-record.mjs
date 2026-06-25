@@ -55,3 +55,52 @@ export function validateRunRecord(record, source = "run-record") {
   if (!Array.isArray(record.telemetryRecords)) throw new Error(`${source}.telemetryRecords must be an array`);
   return record;
 }
+
+export function safeRunId(runId) {
+  const raw = typeof runId === "string" && runId.trim() ? runId.trim() : "default";
+  return raw.replace(/[^a-zA-Z0-9._-]/g, "_");
+}
+
+export function runRecordPath({ cwd = process.cwd(), runId = "default" } = {}) {
+  return resolve(cwd, ".agent-skill", "runs", "records", `${safeRunId(runId)}.json`);
+}
+
+// Stable per-repo id: sha256 of the git origin URL when present, else of the repo root path.
+// v1 actuator reads the local per-repo dir directly, so this is stored for FUTURE cross-repo
+// aggregation, not used for filtering yet.
+export function repoFingerprint({ cwd = process.cwd() } = {}) {
+  let basis = resolve(cwd);
+  try {
+    const url = execFileSync("git", ["-C", cwd, "remote", "get-url", "origin"], {
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    if (url) basis = url;
+  } catch { /* not a git repo or no origin — fall back to path */ }
+  return createHash("sha256").update(basis).digest("hex").slice(0, 16);
+}
+
+export function writeRunRecordAtomic(record, { cwd = process.cwd() } = {}) {
+  validateRunRecord(record);
+  const path = runRecordPath({ cwd, runId: record.runId });
+  mkdirSync(dirname(path), { recursive: true });
+  const tmp = `${path}.tmp`;
+  writeFileSync(tmp, `${JSON.stringify(record, null, 2)}\n`);
+  try { const fd = openSync(tmp, "r+"); fsyncSync(fd); closeSync(fd); } catch {}
+  renameSync(tmp, path);
+  return path;
+}
+
+export function readRunRecords({ cwd = process.cwd() } = {}) {
+  const dir = resolve(cwd, ".agent-skill", "runs", "records");
+  if (!existsSync(dir)) return [];
+  const out = [];
+  for (const file of readdirSync(dir)) {
+    if (!file.endsWith(".json")) continue; // excludes <name>.json.tmp in-progress writes
+    try {
+      const rec = JSON.parse(readFileSync(join(dir, file), "utf-8"));
+      if (rec?.schemaVersion === RUN_RECORD_SCHEMA_VERSION) out.push(rec);
+    } catch { /* torn/in-progress/invalid → skip (documented contract), never crash */ }
+  }
+  return out.sort((a, b) => String(a.ts).localeCompare(String(b.ts)));
+}
