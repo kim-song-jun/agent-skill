@@ -61,9 +61,10 @@ test("dominant profile and cost headroom are suggested", () => {
 
 test("eval-live records do not influence suggestedProfile or suggestedMaxCostUSD", () => {
   // 3 agent-all records with profile "operational" and costs ~3-4,
-  // plus 4 eval-live records with profile "lite" and costs ~0.5.
-  // Without the source filter the window (N=5) would be dominated by eval-live
-  // records and would flip profile to "lite" and drive cost near 0.75.
+  // plus 4 eval-live records with profile "lite" and costs 0.5/0.4/0.6/10 (last one is high).
+  // Without the source filter, all 7 records in the window (recentN=7) would include the
+  // eval-live cost of 10, driving Math.max(costs) to 10 → suggestedMaxCostUSD = 10 * 1.5 = 15.
+  // With the correct source filter, only agent-all records are used → max = 4.0 → suggestedMaxCostUSD = 6.0.
   const dir = mkdtempSync(join(tmpdir(), "priors-mixed-"));
   try {
     seed(dir, [
@@ -73,14 +74,14 @@ test("eval-live records do not influence suggestedProfile or suggestedMaxCostUSD
       { source: "eval-live",  profile: "lite",         cost: 0.5 },
       { source: "eval-live",  profile: "lite",         cost: 0.4 },
       { source: "eval-live",  profile: "lite",         cost: 0.6 },
-      { source: "eval-live",  profile: "lite",         cost: 0.5 },
+      { source: "eval-live",  profile: "lite",         cost: 10 },
     ]);
-    // recentN=5 window slices last 5: [agent-all op 3.5, eval-live ×4]
-    // but profile/cost must only use agent-all records from that window.
+    // window includes all 7 records; profile/cost must only use agent-all records from that window.
     const p = derivePriors({ cwd: dir, recentN: 7 }); // include all 7 to guarantee agent-all are present
     assert.equal(p.suggestedProfile, "operational", "eval-live records must not flip profile to lite");
     // max agent-all cost = 4.0, headroom = 4.0 * 1.5 = 6.0
-    assert.equal(p.suggestedMaxCostUSD, 6, "eval-live costs must not lower suggestedMaxCostUSD");
+    // (without the source filter, max would be 10 → suggestedMaxCostUSD = 15, failing this assertion)
+    assert.equal(p.suggestedMaxCostUSD, 6, "eval-live costs must not raise suggestedMaxCostUSD above agent-all maximum");
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
