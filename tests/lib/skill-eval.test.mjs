@@ -73,7 +73,7 @@ test("skill eval smoke compares baseline and agent-all with cost telemetry summa
   // tokenEstimate must equal the sum of the run's telemetry totals, not a memorized number.
   const expectedTokens = run.costTelemetry.summary.totalTokens;
   assert.equal(run.metrics.tokenEstimate, expectedTokens);
-  assert.ok(run.metrics.costUSD >= 0);
+  assert.ok(run.metrics.costUSD > 0, "costUSD must be positive when tokens were consumed");
 });
 
 test("skill eval full mode includes extended A/B modes", () => {
