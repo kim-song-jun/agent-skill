@@ -65,6 +65,25 @@
    - Else if `--theme=builder` was passed: `theme = "builder"` and `floorTheme = false`.
    - Else if `--visual-qa` was passed without `--theme=*`: `theme = "legacy-visual-qa"` and `floorTheme = false`.
    - Else if `--theme=floor` was passed OR no theme flag was passed: `theme = "floor"` and `floorTheme = true`.
+3.5. **Prior-run priors (evolution loop).** Before brainstorming, read learnings
+    from this repo's recent runs and offer them as defaults:
+
+    ```javascript
+    import { derivePriors } from "./lib/derive-priors.mjs";
+    const priors = derivePriors({ cwd }); // { priorRunCount, rosterAdditions, suggestedProfile, suggestedMaxCostUSD }
+    ```
+
+    If `priors.priorRunCount > 0` and any field is non-empty, present an
+    `AskUserQuestion` panel (advisory — the user confirms or overrides; never
+    auto-apply, per the Decision-Surfacing Protocol). Example:
+    - "Recent runs added **{rosterAdditions}** beyond the scaffolded roster in
+      ≥60% of recent runs. Include them by default?"
+    - "Dominant profile in recent runs was **{suggestedProfile}**. Use it?"
+    - "Suggested `--max-cost` from recent runs: **${suggestedMaxCostUSD}**."
+
+    Carry the accepted answers into the brainstorming prompt (step 4) and the
+    `ctx` object (step 7). If `priorRunCount === 0`, skip the panel silently.
+
 4. Invoke `Skill` with `superpowers:brainstorming` and these prompts (with the language directive from step 0 prepended when applicable):
    - Project purpose (1-2 sentences for CLAUDE.md preamble)
    - Size: small / medium / large (override: `--size`)
@@ -95,6 +114,7 @@
      local_guides,
      ...detected,                    // stack, runtime, services
      services_str: detected.services.join(", "), // pre-joined for template
+     priors,                          // derived in step 3.5; informs roster/profile/cost defaults
    };
    ```
 8. If `--dry-run` is set, print the discovered decisions and planned state summary without writing:
