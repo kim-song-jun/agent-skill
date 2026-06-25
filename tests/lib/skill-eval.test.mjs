@@ -1,13 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import {
   DEFAULT_EVAL_MODES,
   EVAL_REPORT_SCHEMA_VERSION,
   loadEvalFixtures,
+  parseArgs,
+  recordCanonicalRun,
   renderEvalMarkdown,
   runSkillUtilityEval,
   validateEvalFixture,
@@ -154,4 +156,37 @@ test("skill eval CLI supports CI-safe JSON no-write mode", () => {
   assert.equal(payload.output, null);
   assert.equal(payload.report.summary.runCount, 6);
   assert.match(renderEvalMarkdown(payload.report), /Smoke evals use representative fixtures/);
+});
+
+test("parseArgs recognizes --record", () => {
+  assert.equal(parseArgs(["--record"]).record, true);
+  assert.equal(parseArgs([]).record ?? false, false);
+});
+
+test("recordCanonicalRun writes an eval-live run-record via injected runner", () => {
+  const dir = mkdtempSync(join(tmpdir(), "eval-record-"));
+  try {
+    const fixture = {
+      schemaVersion: "agent-skill-eval-fixture/v1",
+      id: "docs-only-task", title: "Docs", category: "docs-only",
+      baselineFailure: "baseline fails without the skill",
+      acceptanceCriteria: ["produces a doc"],
+      modes: {
+        baseline: { passed: false, iterations: 0, wallClockMs: 0, manualInterventions: 0, failedReviewerGates: 0, qualityDebtFindings: 0, rollbackCount: 0 },
+        "agent-all": { passed: true, iterations: 1, wallClockMs: 1000, manualInterventions: 0, failedReviewerGates: 0, qualityDebtFindings: 0, rollbackCount: 0 },
+      },
+      executable: true, taskPrompt: "p", checkerCmd: "true",
+    };
+    const runMode = () => ({ telemetryRecords: [{ platform: "cli", model: "agent-all", totalTokens: 100, costUSD: 0.02 }], outcome: { iterations: 1 } });
+    const checker = () => true; // stand in for checkerCmd exit 0
+    const res = recordCanonicalRun(fixture, "agent-all", { runMode, checker, cwd: dir });
+    assert.equal(res.passed, true);
+    const recDir = join(dir, ".agent-skill", "runs", "records");
+    const files = readdirSync(recDir);
+    assert.equal(files.length, 1);
+    const rec = JSON.parse(readFileSync(join(recDir, files[0]), "utf-8"));
+    assert.equal(rec.source, "eval-live");
+    assert.equal(rec.taskCategory, "docs-only");
+    assert.equal(rec.telemetryRecords[0].totalTokens, 100);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

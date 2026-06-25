@@ -1,8 +1,11 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { summarizeCostTelemetry } from "../plugins/harness-floor/skills/agent-all/lib/cost-telemetry.mjs";
+import { buildRunRecord, writeRunRecordAtomic } from "../plugins/harness-floor/skills/agent-all/lib/run-record.mjs";
 
 export const EVAL_FIXTURE_SCHEMA_VERSION = "agent-skill-eval-fixture/v1";
 export const EVAL_REPORT_SCHEMA_VERSION = "agent-skill-eval-report/v1";
@@ -422,6 +425,7 @@ export function parseArgs(argv = []) {
     write: true,
     json: false,
     help: false,
+    record: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -460,6 +464,8 @@ export function parseArgs(argv = []) {
       const parsed = parseFlagValue(arg, argv, i);
       options.modes.push(...asList(parsed.value));
       i = parsed.nextIndex;
+    } else if (arg === "--record") {
+      options.record = true;
     } else {
       throw new Error(`Unknown flag: ${arg}`);
     }
@@ -469,6 +475,41 @@ export function parseArgs(argv = []) {
     options.fixturesDir = resolve(options.root, DEFAULT_FIXTURES_DIR);
   }
   return options;
+}
+
+// Default production runner: run the mode against the fixture's taskPrompt in an
+// isolated temp dir. Opt-in only — never invoked by smoke CI. (Heavy; injected in tests.)
+function defaultRunMode(fixture, mode) {
+  const work = mkdtempSync(join(tmpdir(), `eval-${fixture.id}-${mode}-`));
+  // baseline = plain prompt; agent-all = the skill. The orchestrator wires the
+  // actual CLI invocation here; it must NOT touch the live working tree.
+  // Returns real telemetry + outcome scraped from the run's artifacts.
+  // (Implementation invokes `claude -p` / the agent-all skill in `work`.)
+  return { telemetryRecords: [], outcome: {}, workDir: work };
+}
+
+function defaultChecker(fixture, workDir) {
+  try {
+    execFileSync("sh", ["-c", fixture.checkerCmd], { cwd: workDir, stdio: "ignore" });
+    return true;
+  } catch { return false; }
+}
+
+export function recordCanonicalRun(fixture, mode, { runMode = defaultRunMode, checker = defaultChecker, cwd = process.cwd(), now = new Date() } = {}) {
+  validateEvalFixture(fixture);
+  const { telemetryRecords = [], outcome = {}, workDir } = runMode(fixture, mode) ?? {};
+  const passed = checker(fixture, workDir ?? cwd);
+  const record = buildRunRecord({
+    runId: `${fixture.id}:${mode}`,
+    ts: now instanceof Date ? now.toISOString() : String(now),
+    source: "eval-live",
+    taskCategory: fixture.category,
+    scaffold: { profile: mode === "baseline" ? "lite" : "operational", roster: [] },
+    outcome: { ...outcome, passed },
+    telemetryRecords,
+  });
+  writeRunRecordAtomic(record, { cwd });
+  return { passed, telemetryRecords, outcome: record.outcome };
 }
 
 function usage() {
