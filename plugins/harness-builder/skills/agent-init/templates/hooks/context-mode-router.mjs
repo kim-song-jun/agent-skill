@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // PreToolUse hook for Bash. Emits a context-mode routing hint when the command
 // is likely to produce >20 lines. Pure stdout — does not block the tool call.
-import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, openSync, fsyncSync, closeSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -34,14 +34,13 @@ export function nextRoutingState(prevState, { cmd, now }) {
   return { state: nextState, shouldRecommend };
 }
 
-// Atomic write: tmp sibling + fsync + rename (rename(2) is atomic on POSIX).
+// Atomic write: tmp sibling + rename (rename(2) is atomic on POSIX).
 // NOTE: largeCommandCount is an advisory nudge counter; a lost increment under
 // concurrent sessions only delays the /thrift suggestion and is acceptable.
 export function writeRoutingStateAtomic(statePath, state) {
   mkdirSync(dirname(statePath), { recursive: true });
   const tmp = `${statePath}.tmp`;
   writeFileSync(tmp, JSON.stringify(state, null, 2));
-  try { const fd = openSync(tmp, "r+"); fsyncSync(fd); closeSync(fd); } catch {}
   renameSync(tmp, statePath);
   return statePath;
 }
