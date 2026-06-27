@@ -6,6 +6,18 @@
 
 ## 미출시
 
+## Agent-skill v0.7.13 — 2026-06-28
+
+### 공유 워크트리 강화 + instruction-file leanness (5축 갭 audit)
+
+하네스의 5개 기둥(하네스 구축·과도 테스트 방지·토큰 절감·CLAUDE.md 계층화·병렬 세션)을 코드 기준으로 감사한 결과, 기둥 1–3은 탄탄하나 **계층화**·**병렬 세션** 처리가 instruction 수준 의도보다 얇았습니다. 이번 릴리즈는 그중 셋을 런타임 메커니즘으로 이식합니다:
+
+- **git-안전 규칙 6/7/8을 hook으로 강제**(`agent-policy-hook`, Claude + Codex). 기존엔 `reset --hard`/`add -A`/`commit -a`/pathspec 없는 commit/`push --force`만 막았으나, 이제 `git stash`, `git checkout -b`/`git switch`(브랜치 생성·전환), `git clean`도 차단 — 사용자가 가장 강조한 공유 워크트리 규칙인데 instruction 의존이던 것들. read-only 형태는 허용(`git stash list/show`, `git clean -n`).
+- **SessionStart의 GIT INCIDENT 탐지** — `session-resume`가 매 세션 시작 시 인라인 git-무결성 체크를 돌려, `.git/HEAD`가 없거나 손상되면(동시 세션·크래시가 공유 워크트리를 망가뜨린 시그니처) "중지하고 복구하라"는 advisory 경고를 띄웁니다. 정상 repo·detached HEAD·미생성 브랜치·non-git 디렉터리는 절대 오탐 안 함. 예방은 hooked 세션을, 탐지는 예방이 못 막는 외부/unhooked 행위자를 커버.
+- **doctor의 instruction-file leanness 점검** — 새 advisory `instruction-leanness`가 버짓 초과 CLAUDE.md/AGENTS.md/folder guide(기본 root 400줄/16k자, guide 150/6k), global `~/.claude/CLAUDE.md`↔project↔folder 레이어 간 중복 규칙, 고아 folder guide를 표시합니다. 경고만 — doctor exit code 불변, 정상 설치는 깨끗.
+
+셋 모두 TDD 커버 + 관련 포트 전파(Codex hook + sync-lib로 4 빌더 포트의 leanness lib).
+
 ## Agent-skill v0.7.12 — 2026-06-27
 
 ### 비례 검증 — wave 중엔 scoped, 게이트에서 한 번 full

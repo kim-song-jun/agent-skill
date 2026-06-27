@@ -1,6 +1,6 @@
 {
   "name": "harness-thrift-cursor",
-  "version": "0.7.12",
+  "version": "0.7.13",
   "description": "Theme B for Cursor — advisory-only via .cursor/rules/thrift.mdc; no programmatic hooks, no cache prime, no metrics",
   "keywords": [
     "harness",

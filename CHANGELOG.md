@@ -6,6 +6,18 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.13 — 2026-06-28
+
+### Shared-worktree hardening + instruction-file leanness (5-pillar gap audit)
+
+A code-grounded audit of the harness's five pillars (harness construction, over-testing prevention, token control, CLAUDE.md layering, parallel sessions) found pillars 1–3 strong but **layering** and **parallel-session** handling thinner than their instruction-level intent. This release ports three of those gaps into runtime mechanisms:
+
+- **git-safety rules 6/7/8 now hook-enforced** (`agent-policy-hook`, Claude + Codex). The hook already blocked `reset --hard` / `add -A` / `commit -a` / pathspec-less commit / `push --force`; it now also blocks `git stash`, `git checkout -b`/`git switch` (branch create/switch), and `git clean` — the user's own top shared-worktree rules that were previously instruction-only. Read-only forms stay allowed (`git stash list/show`, `git clean -n`).
+- **GIT INCIDENT detection at SessionStart** — `session-resume` runs an inline git-integrity check on every session start; if `.git/HEAD` is missing or malformed (the signature of a concurrent session or crash clobbering the shared worktree) it surfaces an advisory STOP-and-restore warning. Healthy repos, detached HEADs, unborn branches, and non-git dirs are never flagged. Prevention covers hooked sessions; detection covers the unhooked/external actors prevention can't.
+- **instruction-file leanness check in doctor** — a new advisory `instruction-leanness` signal flags an over-budget CLAUDE.md/AGENTS.md/folder guide (defaults 400 lines/16k chars root, 150/6k guides), a rule restated across the global `~/.claude/CLAUDE.md` ↔ project ↔ folder layers, and orphaned harness-managed folder guides. Warnings only — doctor's exit code is unchanged; a fresh install stays clean.
+
+All three are TDD-covered and propagated to the relevant ports (Codex hook + the 4 builder ports' leanness lib via sync-lib).
+
 ## Agent-skill v0.7.12 — 2026-06-27
 
 ### Proportionate verification — scoped during waves, full at the gate
