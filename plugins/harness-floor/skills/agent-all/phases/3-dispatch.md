@@ -221,7 +221,7 @@ Now enforced by the `agent-policy-hook` (Pre+Post on `Task`, installed by `/agen
 
 PostToolUse validates each. A failing implementer (claims DONE without verification log) or failing reviewer (omits `VERIFICATION_AUDIT:` line) is rejected — the controller must re-dispatch with the hook's error message visible.
 
-Implementer subagents are expected to invoke `superpowers:verification-before-completion` (running the project's test command from `.agent-all.json` `breakCondition`, falling back to the stack-detected default) before reporting `STATUS: DONE`. The PostToolUse hook's verification check is the safety net for cases where they don't.
+Implementer subagents are expected to invoke `superpowers:verification-before-completion` before reporting `STATUS: DONE` — running the cheap **SCOPED** verification command (`resolveVerificationCommands(config).scoped` = `verification.scopedCommand ?? loop.breakCondition` from `.agent-all.json`, falling back to the stack-detected default), **NOT** the full suite. The authoritative full run happens once at the Phase 4 gate (`phases/4-gate.md` step 3-adversarial), so implementers do not each pay the whole suite (rule 24 — proportionate verification). When `verification.scopedCommand` is unset the scoped command resolves to `breakCondition` exactly as before (zero behavior change). The PostToolUse hook's verification check is the safety net for cases where they don't.
 
 If verification fails the implementer must report `STATUS: blocked, REASON: verification failed` with the failing output captured — not `DONE`. This is the "two-layer safety net" guarantee: implementer asserts + reviewer audits.
 

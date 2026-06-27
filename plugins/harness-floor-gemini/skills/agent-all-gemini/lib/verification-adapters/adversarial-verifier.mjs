@@ -16,13 +16,14 @@ import { runVerificationAdapterSpec } from "./registry.mjs";
  * @param {string}   params.diff               Wave-tip diff — informational metadata only; intentionally not read by the verdict logic.
  * @param {string[]} params.acceptanceCriteria Human-readable criteria — informational metadata only; intentionally not read by the verdict logic.
  * @param {object}   params.breakCondition     A verification-adapter spec: { adapter, config }.
+ * @param {object}   [params.command]          The resolved verification-adapter spec to run; takes precedence over breakCondition when supplied (the gate passes fullCommand ?? breakCondition).
  * @param {string}   params.cwd                Working directory.
  * @param {Function} [params._runner]          Internal test hook (a command runner; NOT public, NOT implementer output).
  * @returns {Promise<{ audit: string, evidence: object, exitCode: number }>}
  */
-export async function adversarialVerify({ diff, acceptanceCriteria, breakCondition, cwd, _runner }) {
+export async function adversarialVerify({ diff, acceptanceCriteria, breakCondition, command, cwd, _runner }) {
   const ctx = { cwd: cwd ?? "." };
-  const result = await runVerificationAdapterSpec(breakCondition, ctx, _runner);
+  const result = await runVerificationAdapterSpec(command ?? breakCondition, ctx, _runner);
   const passed = result.exitCode === 0;
   return {
     audit: passed ? "VERIFICATION_AUDIT: passed" : "VERIFICATION_AUDIT: failed",

@@ -1,6 +1,6 @@
 # agent-all Verification Calibration (scoped-during-waves, full-at-gate) — Design Spec
 
-**Status:** Approved (design); awaiting lean implementation (fresh session)
+**Status:** Implemented (rollout §6 steps 1–4 landed: config-loader knob+resolver+tests, adversarial-verifier explicit `command`+tests, Phase 3/4/loop doc edits, full `node --test` 2389 pass + release-smoke 613 pass + vendor-sync clean). Step 5 (release/version bump) is user-gated and pending.
 **Date:** 2026-06-27
 **Author:** sungjun
 **Origin:** Global CLAUDE.md rule 24 (proportionate verification) ported into the agent-all RUNTIME. The real-world driver: in target projects (e.g. posco-mds), the full test command (`tsc` typecheck + full suite, or `pytest`) is re-run many times per run — burning CPU/memory/time/tokens.

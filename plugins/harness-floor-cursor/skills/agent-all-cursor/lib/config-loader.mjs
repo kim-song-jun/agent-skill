@@ -16,6 +16,7 @@ export const DEFAULTS = {
     large:  { maxParallel: 8, rolesAllowed: ["dev", "frontend-dev", "backend-dev", "designer", "qa-*", "reviewer", "doc-writer"] },
   },
   loop: { breakCondition: "npm test", stableIters: 1, maxRuntimeSec: null, maxRepeatedFailureSignature: 3 },
+  verification: { scopedCommand: null, fullCommand: null },
   gates: { specReview: true, qualityReview: true, adversarialVerify: true, blockOnCritical: true },
   wiki: {
     auto: true, model: "haiku",
@@ -114,6 +115,20 @@ function validate(cfg) {
       errors.push({ path: "loop.breakCondition", message: "must be string or {type,...}" });
     }
   }
+  for (const key of ["scopedCommand", "fullCommand"]) {
+    const v = cfg.verification?.[key];
+    if (v === undefined || v === null) continue;
+    if (typeof v === "string") {
+      if (!v.trim()) errors.push({ path: `verification.${key}`, message: "string must be non-empty" });
+    } else if (v && typeof v === "object" && !Array.isArray(v)) {
+      const allowed = ["shell", "test-auto", "visual-qa", "verification-adapter", "composite"];
+      if (!allowed.includes(v.type)) {
+        errors.push({ path: `verification.${key}.type`, message: `must be one of ${allowed.join("|")}` });
+      }
+    } else {
+      errors.push({ path: `verification.${key}`, message: "must be string, {type,...}, or null" });
+    }
+  }
   for (const key of ["specReview", "qualityReview", "adversarialVerify", "blockOnCritical"]) {
     if (cfg.gates?.[key] !== undefined && typeof cfg.gates[key] !== "boolean") {
       errors.push({ path: `gates.${key}`, message: "must be boolean" });
@@ -161,4 +176,17 @@ export function loadConfig(path) {
   const errors = validate(raw);
   if (errors.length) return { ok: false, errors };
   return { ok: true, config: deepMerge(DEFAULTS, raw) };
+}
+
+// Resolve the proportionate verification commands for a loaded config.
+// `scoped` is the cheap per-wave/per-implementer check; `full` is the
+// authoritative gate run. Each falls back to loop.breakCondition when its
+// knob is null/unset, so an unconfigured project sees zero behavior change.
+export function resolveVerificationCommands(config) {
+  const fallback = config?.loop?.breakCondition ?? null;
+  const v = config?.verification ?? {};
+  return {
+    scoped: v.scopedCommand ?? fallback,
+    full: v.fullCommand ?? fallback,
+  };
 }

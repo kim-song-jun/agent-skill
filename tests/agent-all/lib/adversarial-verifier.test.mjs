@@ -86,6 +86,38 @@ test("structural signature guard — adversarialVerify must not reference any im
   );
 });
 
+test("explicit `command` takes precedence over breakCondition — the gate runs the resolved FULL command", async () => {
+  const dir = fixtureDir("explicit-command");
+  let ranCommand = null;
+  const recordingRunner = async (command) => { ranCommand = command; return { exitCode: 0, stdout: "", stderr: "" }; };
+  const result = await adversarialVerify({
+    diff: "informational only",
+    acceptanceCriteria: [],
+    breakCondition: { adapter: "cli", config: { command: "SCOPED_BREAK_CMD" } },
+    command: { adapter: "cli", config: { command: "FULL_GATE_CMD" } },
+    cwd: dir,
+    _runner: recordingRunner,
+  });
+  assert.equal(ranCommand, "FULL_GATE_CMD",
+    "when `command` is supplied, the gate must run it (the full command), not breakCondition");
+  assert.equal(result.audit, "VERIFICATION_AUDIT: passed");
+});
+
+test("without `command`, adversarialVerify still runs breakCondition (backward-compatible)", async () => {
+  const dir = fixtureDir("no-command");
+  let ranCommand = null;
+  const recordingRunner = async (command) => { ranCommand = command; return { exitCode: 0, stdout: "", stderr: "" }; };
+  await adversarialVerify({
+    diff: "informational only",
+    acceptanceCriteria: [],
+    breakCondition: { adapter: "cli", config: { command: "LEGACY_BREAK_CMD" } },
+    cwd: dir,
+    _runner: recordingRunner,
+  });
+  assert.equal(ranCommand, "LEGACY_BREAK_CMD",
+    "unchanged callers (command omitted) keep resolving breakCondition");
+});
+
 test("real command-runner integration — defaultCommandRunner spawns real child process (no _runner injection)", async () => {
   const dir = fixtureDir("real-runner");
 

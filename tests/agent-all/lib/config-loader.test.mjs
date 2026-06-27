@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve, join } from "node:path";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { loadConfig, DEFAULTS } from "../../../plugins/harness-floor/skills/agent-all/lib/config-loader.mjs";
+import { loadConfig, DEFAULTS, resolveVerificationCommands } from "../../../plugins/harness-floor/skills/agent-all/lib/config-loader.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fx = (name) => resolve(here, "..", "fixtures", "configs", name);
@@ -107,6 +107,64 @@ test("wiki.auto: a config can opt out (false), and a non-boolean is rejected", (
     const r2 = loadConfig(bad);
     assert.equal(r2.ok, false);
     assert.ok(r2.errors.some(e => e.path === "wiki.auto" && /boolean/i.test(e.message)), "non-boolean wiki.auto rejected");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("verification commands: default null, resolution falls back to breakCondition, configured values override", () => {
+  // Defaults are null → no regression: both scoped and full resolve to breakCondition.
+  assert.deepEqual(DEFAULTS.verification, { scopedCommand: null, fullCommand: null });
+  const def = resolveVerificationCommands(DEFAULTS);
+  assert.equal(def.scoped, DEFAULTS.loop.breakCondition, "unconfigured scoped → breakCondition");
+  assert.equal(def.full, DEFAULTS.loop.breakCondition, "unconfigured full → breakCondition");
+
+  const dir = mkdtempSync(join(tmpdir(), "cfg-verif-"));
+  try {
+    // Both configured → both override the fallback.
+    const both = join(dir, "both.json");
+    writeFileSync(both, JSON.stringify({
+      loop: { breakCondition: "npm test" },
+      verification: { scopedCommand: "vitest related --run", fullCommand: "npm run test:all" },
+    }));
+    const rBoth = loadConfig(both);
+    assert.equal(rBoth.ok, true);
+    assert.equal(rBoth.config.verification.scopedCommand, "vitest related --run");
+    const resBoth = resolveVerificationCommands(rBoth.config);
+    assert.equal(resBoth.scoped, "vitest related --run");
+    assert.equal(resBoth.full, "npm run test:all");
+
+    // Only full configured → scoped falls back to breakCondition, full overrides.
+    const partial = join(dir, "partial.json");
+    writeFileSync(partial, JSON.stringify({
+      loop: { breakCondition: "npm run test:unit" },
+      verification: { fullCommand: "npm run test:all" },
+    }));
+    const rPartial = loadConfig(partial);
+    assert.equal(rPartial.ok, true);
+    assert.equal(rPartial.config.verification.scopedCommand, null, "scoped stays null when unset");
+    const resPartial = resolveVerificationCommands(rPartial.config);
+    assert.equal(resPartial.scoped, "npm run test:unit", "null scoped → breakCondition fallback");
+    assert.equal(resPartial.full, "npm run test:all", "full overrides");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("verification commands: empty-string and non-command values are rejected", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cfg-verif-bad-"));
+  try {
+    const emptyScoped = join(dir, "empty.json");
+    writeFileSync(emptyScoped, JSON.stringify({ verification: { scopedCommand: "   " } }));
+    const r1 = loadConfig(emptyScoped);
+    assert.equal(r1.ok, false);
+    assert.ok(r1.errors.some(e => e.path === "verification.scopedCommand"), "blank scopedCommand rejected");
+
+    const numFull = join(dir, "num.json");
+    writeFileSync(numFull, JSON.stringify({ verification: { fullCommand: 42 } }));
+    const r2 = loadConfig(numFull);
+    assert.equal(r2.ok, false);
+    assert.ok(r2.errors.some(e => e.path === "verification.fullCommand"), "non-string/non-object fullCommand rejected");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

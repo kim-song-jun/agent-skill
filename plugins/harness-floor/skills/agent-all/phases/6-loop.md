@@ -19,7 +19,11 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}` to `phases`, exit norm
 
 ## Steps
 
-1. Resolve the break-condition spec via `lib/break-resolver.mjs`:
+1. Resolve the break-condition specs via `lib/break-resolver.mjs`. Per-iteration
+   checks use the cheap **SCOPED** command; the authoritative **FULL** command runs
+   only on the iteration that would declare success (the last `stableIters`
+   confirmation) — and/or at the wave gate (Phase 4 step 3-adversarial) — so a loop
+   does not pay the full suite every iteration (rule 24):
    ```javascript
    import {
      normalizeBreakCondition,
@@ -28,9 +32,14 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}` to `phases`, exit norm
      needsVerificationAdapterRunner,
      toVerificationAdapterSpec,
    } from "./lib/break-resolver.mjs";
-   const spec = normalizeBreakCondition(config.loop.breakCondition);
+   import { resolveVerificationCommands } from "./lib/config-loader.mjs";
+   const { scoped, full } = resolveVerificationCommands(config);
+   const spec = normalizeBreakCondition(scoped);       // per-iteration (cheap)
+   const fullSpec = normalizeBreakCondition(full);     // run once at the stable check
    if (!spec) { /* print error, abort with exit 2 */ }
    ```
+   When `verification.scopedCommand`/`fullCommand` are unset, both resolve to
+   `loop.breakCondition` — identical to the prior single-command behavior.
 
 2. Build a runner closure that matches the spec type:
 
@@ -234,6 +243,17 @@ If `--loop` not set: push `{phase: 6, status: "skipped"}` to `phases`, exit norm
      policyRunner,
    );
    ```
+
+5b. **Full command at the stable check (proportionate verification).** The
+   per-iteration `runner` runs `spec` (the SCOPED command). When a passing scoped
+   iteration would reach `consecutivePass === stableIters` — i.e. it is about to
+   declare the loop broken (success) — re-run once with `fullSpec` (build a one-off
+   runner from `fullSpec` exactly as in step 2). Treat the loop as broken only if
+   the FULL run also exits 0; if it fails, record its failure signature, reset
+   `consecutivePass` to 0, and continue. This keeps the cheap check on the hot path
+   and pays the full suite exactly once, when it actually gates success. When
+   `fullSpec` deep-equals `spec` (unconfigured), skip the re-run — the scoped pass
+   already is the full pass.
 
 6. Persist loop state after every evaluation:
    ```javascript

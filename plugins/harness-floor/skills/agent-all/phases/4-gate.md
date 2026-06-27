@@ -147,25 +147,26 @@ Do not self-commit from a reviewer subagent. Report findings and verification ev
 
 Every reviewer subagent's prompt MUST include the following directive:
 
-> When evaluating the wave's diff, explicitly verify that each implementer ran `superpowers:verification-before-completion` and the verification passed. Look for the verification command output in commit messages, or run the verification command yourself against the wave's tip commit.
+> When evaluating the wave's diff, explicitly verify that each implementer ran `superpowers:verification-before-completion` and the verification passed. Confirm this from the implementers' **SCOPED** verification evidence plus the single authoritative **FULL** run produced by the `verification-reviewer-adversarial` dispatch (step 3-adversarial). Do **NOT** re-run the full suite yourself per reviewer — that is the redundant cost this gate removes (rule 24). Only run a scoped check yourself if the implementer evidence is missing or inconsistent.
 >
 > If verification was skipped OR failed, escalate as a `critical` issue regardless of code quality verdict — this blocks the wave at Phase 4 even if everything else looks fine.
 
-This complements the Phase 3 verification directive. Phase 3 instructs implementers to verify before claiming done; Phase 4 instructs reviewers to confirm that verification actually happened. Two-layer safety net.
+This complements the Phase 3 verification directive. Phase 3 implementers verify with the cheap SCOPED command before claiming done; Phase 4 reviewers confirm verification happened, and the gate runs the authoritative FULL command exactly once (step 3-adversarial). Two-layer safety net, proportionate cost — scoped during waves, full at the gate.
 
 ## Step 3-adversarial — Independent adversarial re-verification (mandatory when `gates.adversarialVerify === true`)
 
 After dispatching all `gatePlan.dispatches[]` entries in step 3, the orchestrator MUST dispatch one additional subagent with dispatch kind `verification-reviewer-adversarial` (role `"verification-reviewer-adversarial"`, mode `"adversarial"`):
 
 - **Model tier:** this subagent MUST run as **opus** (judge node, spec §3.1 / rule 11). Never sonnet or haiku.
-- **Independence is structural:** the adversarial verifier MUST NOT read the implementer's self-report, commit messages, or any implementer-produced output. It MUST re-derive the verdict from the wave diff and the wave tip commit only — `git diff <wave.baseCommit>..<wave.endCommit>` plus invoking the canonical wrapper `adversarialVerify({diff, acceptanceCriteria, breakCondition, cwd})` from `lib/verification-adapters/adversarial-verifier.mjs`. The dispatched subagent runs it, e.g.:
+- **Independence is structural:** the adversarial verifier MUST NOT read the implementer's self-report, commit messages, or any implementer-produced output. It MUST re-derive the verdict from the wave diff and the wave tip commit only — `git diff <wave.baseCommit>..<wave.endCommit>` plus invoking the canonical wrapper `adversarialVerify({diff, acceptanceCriteria, command, cwd})` from `lib/verification-adapters/adversarial-verifier.mjs`. This single adversarial run is the **authoritative FULL verification of record** for the wave: it runs `command` = the resolved full command (`resolveVerificationCommands(config).full` = `verification.fullCommand ?? loop.breakCondition`), wrapped as a verification-adapter spec (`{ adapter, config }`). Running it once here de-duplicates the per-implementer + per-reviewer full re-runs (rule 24). The dispatched subagent runs it, e.g.:
   ```bash
   node --input-type=module -e "
     import { adversarialVerify } from './lib/verification-adapters/adversarial-verifier.mjs';
-    const result = await adversarialVerify({ diff: process.env.WAVE_DIFF, acceptanceCriteria: [], breakCondition: <breakCondition>, cwd: process.env.REPO_ROOT });
+    const result = await adversarialVerify({ diff: process.env.WAVE_DIFF, acceptanceCriteria: [], command: <fullCommand>, cwd: process.env.REPO_ROOT });
     console.log(JSON.stringify(result));
   "
   ```
+  (`<fullCommand>` = the resolved full command as a verification-adapter spec, e.g. `{ adapter: "cli", config: { command: "npm test" } }`. When `verification.fullCommand` is unset it resolves to `breakCondition` — identical to the prior behavior.)
   (Run from the skill directory; `./lib/...` resolves relative to the floor plugin's `skills/agent-all/` dir where the full `lib/` tree ships.)
   and reports the returned `{ audit, evidence, exitCode }` literal. Do NOT call `runVerificationAdapterSpec()` directly — the production path MUST go through `adversarialVerify` so its structural-independence guard (signature excludes any self-report) is enforced on every live invocation.
 - **Prompt contract:** the verifier's prompt MUST NOT include the implementer's implementation notes, self-assessments, or reported verification output. Structural independence — not a promise.
