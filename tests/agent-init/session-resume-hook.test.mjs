@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, readFileSync, existsSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync, existsSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -31,6 +31,56 @@ const running = (extra = {}) => ({
   status: "running", runId: "R1", sessionId: null,
   updatedAt: new Date().toISOString(),
   phases: [{ phase: 0 }, { phase: 1 }, { phase: 2 }], ...extra,
+});
+
+function gitProject(headContent, stateObj) {
+  const dir = project(stateObj);
+  mkdirSync(join(dir, ".git"), { recursive: true });
+  if (headContent !== null) writeFileSync(join(dir, ".git", "HEAD"), headContent);
+  return dir;
+}
+
+test("git integrity: healthy .git/HEAD (symbolic ref) emits no warning", () => {
+  const dir = gitProject("ref: refs/heads/main\n", null);
+  const { stdout } = runHook({ source: "startup", session_id: "S1" }, dir);
+  assert.equal(stdout.trim(), "");
+});
+
+test("git integrity: detached-HEAD sha is healthy (no warning)", () => {
+  const dir = gitProject("a1b2c3d4e5f60718293a4b5c6d7e8f9012345678\n", null);
+  const { stdout } = runHook({ source: "startup", session_id: "S1" }, dir);
+  assert.equal(stdout.trim(), "");
+});
+
+test("git integrity: missing .git/HEAD (the incident signature) emits a warning", () => {
+  const dir = gitProject(null, null); // .git dir exists, HEAD deleted
+  const { code, stdout } = runHook({ source: "startup", session_id: "S1" }, dir);
+  assert.equal(code, 0);
+  const ctx = JSON.parse(stdout).hookSpecificOutput.additionalContext;
+  assert.match(ctx, /GIT INTEGRITY/);
+  assert.match(ctx, /HEAD is missing/i);
+});
+
+test("git integrity: malformed .git/HEAD emits a warning", () => {
+  const dir = gitProject("garbage not a ref\n", null);
+  const { stdout } = runHook({ source: "startup", session_id: "S1" }, dir);
+  const ctx = JSON.parse(stdout).hookSpecificOutput.additionalContext;
+  assert.match(ctx, /GIT INTEGRITY/);
+  assert.match(ctx, /malformed/i);
+});
+
+test("git integrity: a non-git project (no .git) is not flagged", () => {
+  const dir = project(null);
+  const { stdout } = runHook({ source: "startup", session_id: "S1" }, dir);
+  assert.equal(stdout.trim(), "");
+});
+
+test("git integrity warning combines with the in-flight resume directive", () => {
+  const dir = gitProject(null, running()); // broken HEAD + a running agent-all run
+  const { stdout } = runHook({ source: "compact", session_id: "S1" }, dir);
+  const ctx = JSON.parse(stdout).hookSpecificOutput.additionalContext;
+  assert.match(ctx, /GIT INTEGRITY/);
+  assert.match(ctx, /Phase 3/);
 });
 
 test("compact + running[0,1,2] injects a continue-from-Phase-3 directive", () => {
