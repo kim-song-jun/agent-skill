@@ -6,6 +6,19 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.12 — 2026-06-27
+
+### Proportionate verification — scoped during waves, full at the gate
+
+`/agent-all` re-ran the whole test command many times per run — each implementer's `verification-before-completion`, the gate reviewer, the mandatory adversarial re-check, and every `--loop` iteration. For a large TS project that meant `tsc` + full suite ×5–10 per wave, the real CPU/memory/time/token cost driver. v0.7.12 ports global CLAUDE.md rule 24 (proportionate verification) into the agent-all runtime:
+
+- **`verification.{scopedCommand,fullCommand}` config knobs** (default `null`) + a `resolveVerificationCommands()` resolver. Waves and implementers run the cheap **scoped** command; the **full** authoritative run happens once at the gate. Both fall back to `loop.breakCondition` when unset, so unconfigured projects see **zero behavior change**.
+- **adversarial-verifier** now accepts an explicit `command` (the resolved full command), so the Phase 4 `verification-reviewer-adversarial` dispatch is the single full verification of record — de-duplicating the per-implementer + per-reviewer full re-runs.
+- **Phase 3 / Phase 4 / `--loop` directives** updated: implementers verify with the scoped command, reviewers confirm (not re-run) the one gate full run, and `--loop` runs scoped per iteration with the full check only at the stable confirmation.
+- Re-vendored `config-loader` / `adversarial-verifier` to the copilot/cursor/codex/gemini ports.
+
+Opt in per project, e.g. `scopedCommand: "vitest related --run"` / `fullCommand: "npm test"` (or `pytest tests/<area> -q` / full `pytest`). Spec: `docs/superpowers/specs/2026-06-27-agent-all-verification-calibration-design.md`.
+
 ## Agent-skill v0.7.11 — 2026-06-26
 
 ### Measurable self-improvement — run-record evolution loop + `/harness` front door

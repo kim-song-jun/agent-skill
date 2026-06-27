@@ -6,6 +6,19 @@
 
 ## 미출시
 
+## Agent-skill v0.7.12 — 2026-06-27
+
+### 비례 검증 — wave 중엔 scoped, 게이트에서 한 번 full
+
+`/agent-all`은 전체 테스트 명령을 한 실행에서 여러 번 재실행했습니다 — 각 implementer의 `verification-before-completion`, 게이트 reviewer, 필수 adversarial 재검증, 그리고 `--loop` 매 iteration까지. 큰 TS 프로젝트에서는 wave당 `tsc` + 풀 스위트 ×5–10으로, 실제 CPU/메모리/시간/토큰 비용의 주범이었습니다. v0.7.12는 글로벌 CLAUDE.md 규칙 24(비례 검증)를 agent-all 런타임에 이식합니다:
+
+- **`verification.{scopedCommand,fullCommand}` config 노브**(기본 `null`) + `resolveVerificationCommands()` 리졸버. wave/implementer는 값싼 **scoped** 명령을, **full** 권위 실행은 게이트에서 한 번만 돕니다. 미설정 시 둘 다 `loop.breakCondition`으로 폴백하므로 미설정 프로젝트는 **동작 변화 0**.
+- **adversarial-verifier**가 명시적 `command`(해석된 full 명령)를 받습니다. Phase 4 `verification-reviewer-adversarial` 디스패치가 단일 full 검증의 기준점이 되어 per-implementer + per-reviewer full 재실행을 중복 제거합니다.
+- **Phase 3 / Phase 4 / `--loop` 지시문** 갱신: implementer는 scoped로 검증, reviewer는 게이트 1회 full 결과를 확인(재실행 금지), `--loop`는 iteration마다 scoped + 안정 확인 시에만 full.
+- `config-loader` / `adversarial-verifier`를 copilot/cursor/codex/gemini 포트로 재벤더링.
+
+프로젝트별 opt-in 예: `scopedCommand: "vitest related --run"` / `fullCommand: "npm test"` (또는 `pytest tests/<area> -q` / 풀 `pytest`). 스펙: `docs/superpowers/specs/2026-06-27-agent-all-verification-calibration-design.md`.
+
 ## Agent-skill v0.7.11 — 2026-06-26
 
 ### 측정 가능한 자기개선 — run-record 진화 루프 + /harness 프론트도어
