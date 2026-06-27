@@ -46,7 +46,7 @@ const VENDORED_RENDER_ONLY = [
   "plugins/harness-debug-codex/bin/lib",
 ].map((p) => resolve(repoRoot, p));
 
-const FILES = ["render.mjs", "detect-stack.mjs", "sentinel-merge.mjs", "folder-guides.mjs"];
+const FILES = ["render.mjs", "detect-stack.mjs", "sentinel-merge.mjs", "folder-guides.mjs", "instruction-leanness.mjs"];
 const RENDER_ONLY_FILES = ["render.mjs"];
 
 // Phase D config-loader.mjs propagation: canonical lives in harness-floor;

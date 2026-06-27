@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { scanFoundationState } from "./foundation-check.mjs";
+import { analyzeInstructionLeanness } from "./instruction-leanness.mjs";
 
 export const CONTRACTS = {
   claude: {
@@ -332,6 +333,12 @@ export function runDoctor({
         instructions: warning.instructions,
       });
     }
+  }
+
+  // Advisory instruction-file leanness (budget / cross-layer duplication / orphaned
+  // folder guides). Warnings only — never a failure, so doctor's exit code is unchanged.
+  for (const lean of analyzeInstructionLeanness({ targetAbs, homeDir }).warnings) {
+    warnings.push({ type: "leanness", path: lean.path, message: lean.message });
   }
 
   return buildResult({
