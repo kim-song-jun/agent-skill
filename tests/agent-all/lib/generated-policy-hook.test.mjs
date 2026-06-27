@@ -81,6 +81,50 @@ test("generated policy hook reads .agent-skill/policy.json command policy", () =
   }
 });
 
+test("generated policy hook blocks shared-worktree git-safety violations (rules 6/7/8)", () => {
+  const projectDir = tempProject();
+  try {
+    // Rule 6 — git stash hides the WHOLE worktree's uncommitted changes (incl. other sessions')
+    for (const command of ["git stash", "git stash push -m wip", "git stash save", "git stash pop"]) {
+      const r = runHook({ projectDir, command });
+      assert.equal(r.status, 2, `${command} must be blocked`);
+      assert.match(r.stderr, /git stash/);
+    }
+    // read-only stash introspection stays allowed
+    for (const command of ["git stash list", "git stash show"]) {
+      const r = runHook({ projectDir, command });
+      assert.equal(r.status, 0, `${command} should stay allowed: ${r.stderr}`);
+    }
+
+    // Rule 7 — no branch creation/switch; stay on main
+    const checkoutB = runHook({ projectDir, command: "git checkout -b feature" });
+    assert.equal(checkoutB.status, 2, "git checkout -b must be blocked");
+    assert.match(checkoutB.stderr, /git checkout -b/);
+    for (const command of ["git switch -c feature", "git switch other-branch"]) {
+      const r = runHook({ projectDir, command });
+      assert.equal(r.status, 2, `${command} must be blocked`);
+      assert.match(r.stderr, /git switch/);
+    }
+    // the existing file-restore block still fires
+    const checkoutFile = runHook({ projectDir, command: "git checkout -- src/app.ts" });
+    assert.equal(checkoutFile.status, 2, "git checkout -- must stay blocked");
+
+    // Rule 8 — git clean destroys untracked worktree files (incl. other sessions')
+    for (const command of ["git clean -fd", "git clean -f", "git clean -fdx"]) {
+      const r = runHook({ projectDir, command });
+      assert.equal(r.status, 2, `${command} must be blocked`);
+      assert.match(r.stderr, /git clean/);
+    }
+    // dry-run preview is read-only → allowed
+    for (const command of ["git clean -n", "git clean --dry-run"]) {
+      const r = runHook({ projectDir, command });
+      assert.equal(r.status, 0, `${command} should stay allowed: ${r.stderr}`);
+    }
+  } finally {
+    rmSync(projectDir, { recursive: true, force: true });
+  }
+});
+
 test("generated policy hook blocks quality debt before commit", () => {
   const projectDir = tempProject();
   try {

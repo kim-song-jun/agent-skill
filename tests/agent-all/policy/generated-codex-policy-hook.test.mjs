@@ -44,6 +44,34 @@ test("generated Codex policy hook denies pathspec-less commit and writes audit J
   }
 });
 
+test("generated Codex policy hook blocks shared-worktree git-safety violations (rules 6/7/8)", () => {
+  const projectDir = tempProject();
+  try {
+    for (const command of ["git stash", "git stash push -m wip"]) {
+      const r = runHook({ projectDir, command });
+      assert.equal(r.status, 2, `${command} must be blocked`);
+      assert.match(r.stderr, /git stash/);
+    }
+    assert.equal(runHook({ projectDir, command: "git stash list" }).status, 0);
+
+    const checkoutB = runHook({ projectDir, command: "git checkout -b feature" });
+    assert.equal(checkoutB.status, 2, "git checkout -b must be blocked");
+    assert.match(checkoutB.stderr, /git checkout -b/);
+    for (const command of ["git switch -c feature", "git switch other-branch"]) {
+      assert.equal(runHook({ projectDir, command }).status, 2, `${command} must be blocked`);
+    }
+
+    for (const command of ["git clean -fd", "git clean -f"]) {
+      const r = runHook({ projectDir, command });
+      assert.equal(r.status, 2, `${command} must be blocked`);
+      assert.match(r.stderr, /git clean/);
+    }
+    assert.equal(runHook({ projectDir, command: "git clean -n" }).status, 0);
+  } finally {
+    rmSync(projectDir, { recursive: true, force: true });
+  }
+});
+
 test("generated Codex policy hook reads .agent-skill/policy.json command policy", () => {
   const projectDir = tempProject();
   try {

@@ -323,10 +323,40 @@ function analyzeGitInvocation(tokens, invocation) {
       }
       break;
     case "checkout":
+      if (hasTokenBeforePathspec(tokens, invocation.argsStart, invocation.end, (token) => token === "-b" || token === "-B")) {
+        return { blocked: true, reason: "git checkout -b (rule 7 — no branch creation; work on main)" };
+      }
       for (let cursor = invocation.argsStart; cursor < invocation.end - 1; cursor += 1) {
         if (tokens[cursor] === "--") return { blocked: true, reason: "git checkout --" };
       }
       break;
+    case "stash": {
+      // Rule 6 — `git stash` hides the ENTIRE worktree's uncommitted changes,
+      // including other sessions' in-progress work. Read-only introspection is fine.
+      const sub = tokens[invocation.argsStart];
+      if (sub !== "list" && sub !== "show") {
+        return { blocked: true, reason: "git stash (rule 6 — hides the shared worktree's uncommitted work; commit your files with an explicit pathspec instead)" };
+      }
+      break;
+    }
+    case "switch":
+      // Rule 7 — `git switch` only ever changes branches (switch or -c create).
+      return { blocked: true, reason: "git switch (rule 7 — no branch switch/creation; work on main)" };
+    case "clean": {
+      // Rule 8 — `git clean` destroys untracked worktree files, including other
+      // sessions'. A dry-run (`-n`/`--dry-run`) only previews, so it stays allowed.
+      let dryRun = false;
+      for (let cursor = invocation.argsStart; cursor < invocation.end; cursor += 1) {
+        const token = tokens[cursor];
+        if (token === "--") break;
+        if (token === "-n" || token === "--dry-run") { dryRun = true; break; }
+        if (token.length > 1 && token[0] === "-" && token[1] !== "-" && token.includes("n")) { dryRun = true; break; }
+      }
+      if (!dryRun) {
+        return { blocked: true, reason: "git clean (rule 8 — destroys untracked worktree files, incl. other sessions'; use 'git clean -n' to preview)" };
+      }
+      break;
+    }
     default:
       break;
   }
