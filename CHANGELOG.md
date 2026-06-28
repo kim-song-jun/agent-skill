@@ -6,6 +6,18 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.14 — 2026-06-28
+
+### Copilot CLI gets real hard git-safety (preToolUse hook, live-verified)
+
+Closes the long-standing `#27` "Copilot port unverified" gap. A live spike against the agentic GitHub Copilot CLI **v1.0.63** found the port was already largely correct (the older "wrong primitives / does not run" audit framing was stale — Copilot has real hooks and the port's `subagentStop` payload + schema already match). This release fixes the one real bug and adds hard enforcement:
+
+- **Hook install path** — `install-hooks` wrote a single `~/.copilot/hooks.json`, but the CLI loads user hooks from the `~/.copilot/hooks/` **directory**. Now writes `~/.copilot/hooks/agent-skill.json`.
+- **Real preToolUse git-safety (new)** — `git-safety.mjs` + `pre-tool-use-policy.mjs` give Copilot a `preToolUse` hook that DENIES shared-worktree-dangerous git (`stash`, `checkout -b`/`switch`, `clean`, `reset --hard`, `add -A`, pathspec-less/`-a`/`--amend` commit, `push --force`) via `{permissionDecision:"deny"}`. `preToolUse` is fail-closed, so the handler fails OPEN on any internal error to never brick the session.
+- **Live-verified** — a real `gh copilot -p "...git stash..." --allow-all` run returned `✗ Denied by preToolUse hook: git stash (rule 6 …)`. The probe also caught a bug no spec read would have: v1.0.63 delivers `toolArgs` as a JSON-encoded string, not an object — the handler now parses it.
+
+This upgrades Copilot from prompt-level guidance to the same hard git-safety the Claude/Codex `agent-policy-hook` enforces (built on the v0.7.13 git-safety rules).
+
 ## Agent-skill v0.7.13 — 2026-06-28
 
 ### Shared-worktree hardening + instruction-file leanness (5-pillar gap audit)

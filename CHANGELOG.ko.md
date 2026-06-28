@@ -6,6 +6,18 @@
 
 ## 미출시
 
+## Agent-skill v0.7.14 — 2026-06-28
+
+### Copilot CLI에 진짜 hard git-safety (preToolUse hook, 라이브 검증)
+
+오래된 `#27` "Copilot 포트 미검증" 갭을 닫습니다. 에이전트형 GitHub Copilot CLI **v1.0.63** 대상 라이브 spike 결과, 포트는 이미 대체로 정확했습니다(구버전 audit의 "wrong primitives/does not run" 프레이밍은 stale — copilot은 진짜 hook을 갖고 포트의 `subagentStop` payload·스키마도 일치). 이번 릴리즈는 버그 1건 수정 + 하드강제 추가:
+
+- **hook 설치 경로** — `install-hooks`가 단일 `~/.copilot/hooks.json`에 썼지만, CLI는 user hook을 `~/.copilot/hooks/` **디렉터리**에서 로드 → `~/.copilot/hooks/agent-skill.json`으로 수정.
+- **진짜 preToolUse git-safety (신규)** — `git-safety.mjs` + `pre-tool-use-policy.mjs`가 copilot에 위험 git(`stash`, `checkout -b`/`switch`, `clean`, `reset --hard`, `add -A`, pathspec 없는/`-a`/`--amend` commit, `push --force`)을 `{permissionDecision:"deny"}`로 **차단**하는 preToolUse hook을 부여. preToolUse는 fail-closed라, 핸들러는 내부 오류 시 fail-**open**(allow)으로 세션을 브릭하지 않음.
+- **라이브 검증** — 실 `gh copilot -p "...git stash..." --allow-all` 실행이 `✗ Denied by preToolUse hook: git stash (rule 6 …)` 반환. probe가 스펙만으론 못 찾을 버그도 잡음: v1.0.63은 `toolArgs`를 JSON 문자열로 전달 → 핸들러가 파싱하도록 수정.
+
+copilot을 포지셔닝의 "prompt-level"에서 Claude/Codex `agent-policy-hook`과 동일한 hard git-safety로 끌어올립니다(v0.7.13 git-safety 규칙 기반).
+
 ## Agent-skill v0.7.13 — 2026-06-28
 
 ### 공유 워크트리 강화 + instruction-file leanness (5축 갭 audit)
