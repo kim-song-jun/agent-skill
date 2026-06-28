@@ -8,7 +8,7 @@ import {
 } from "../../plugins/harness-floor/skills/harness-view/lib/markdown.mjs";
 import {
   collectArtifacts, renderDashboard, writeDashboard,
-  familyOf, deriveDocMeta,
+  familyOf, deriveDocMeta, renderSidebar,
 } from "../../plugins/harness-floor/skills/harness-view/lib/harness-html.mjs";
 
 test("inline: bold, inline code, link", () => {
@@ -219,4 +219,15 @@ test("deriveDocMeta extracts title, date, family, lang, id, status", () => {
 test("deriveDocMeta falls back to the file slug when there is no h1", () => {
   const m = deriveDocMeta("spec", "2026-01-01-no-title.md", "no heading here");
   assert.equal(m.title, "2026-01-01-no-title");
+});
+
+test("renderSidebar has a search box, run/tasks/specs sections, grouped specs, titles not filenames", () => {
+  const a = collectArtifacts({ cwd: fixtureProject(), now: "GEN" });
+  const html = renderSidebar(a);
+  assert.match(html, /<input[^>]*class="hv-search"/);
+  assert.match(html, /data-doc-id="home"/);                 // Run/overview row
+  assert.match(html, /data-doc-id="task:T-1"/);             // task row by id
+  assert.match(html, /First task/);                          // task title, not "T-1.md"
+  assert.match(html, /class="hv-group"[^>]*>/);             // a spec family group
+  assert.match(html, /Thing spec/);                          // spec title, not the filename
 });

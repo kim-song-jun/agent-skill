@@ -59,7 +59,8 @@ export function collectArtifacts({ cwd = process.cwd(), now = new Date().toISOSt
 
 // ───────────────────────── dashboard rendering ─────────────────────────
 const PHASE_NAMES = ["Preflight", "Intent", "Plan", "Dispatch", "Gate", "PR", "Loop"];
-const STATUS_CLASS = { running: "v-new", done: "v-pass", aborted: "v-fail" };
+const STATUS_CLASS = { running: "v-new", done: "v-pass", aborted: "v-fail", todo: "v-todo" };
+function badge(status) { return status ? `<span class="verdict ${STATUS_CLASS[status] || "v-removed"}">${escapeHtml(status)}</span>` : ""; }
 
 function renderRun(run) {
   if (!run) return `<p class="empty">No active <code>.agent-all-state.json</code>. Start a run with <code>/agent-all</code>.</p>`;
@@ -137,6 +138,33 @@ export function writeDashboard({ cwd = process.cwd(), now = new Date().toISOStri
   writeFileSync(tmp, html);
   renameSync(tmp, path);
   return path;
+}
+
+// ───────────────────────── sidebar rendering ─────────────────────────
+function navRow(meta, label, extra = "") {
+  return `<a class="hv-row" data-doc-id="${escapeHtml(meta.id)}" data-search="${escapeHtml((meta.title + " " + meta.family).toLowerCase())}" title="${escapeHtml(meta.file)}">`
+    + `<span class="hv-row-t">${escapeHtml(label)}</span><span class="hv-row-m">${extra}</span></a>`;
+}
+
+export function renderSidebar(a) {
+  const tasks = (a.tasks || []).map((t) => deriveDocMeta("task", t.name, t.md));
+  const specs = (a.specs || []).map((s) => deriveDocMeta("spec", s.name, s.md));
+  const taskRows = tasks.map((m) => navRow(m, m.title,
+    `<code>${escapeHtml(m.id.split(":")[1])}</code> ${badge(m.status)}`)).join("");
+  const groups = {};
+  for (const m of specs) (groups[m.family] = groups[m.family] || []).push(m);
+  const specGroups = Object.entries(groups).sort((x, y) => y[1].length - x[1].length).map(([fam, items]) =>
+    `<div class="hv-group"><div class="hv-group-h">${escapeHtml(fam)} <span class="hv-group-n">${items.length}</span></div>`
+    + items.sort((p, q) => (p.date < q.date ? -1 : 1)).map((m) =>
+        navRow(m, m.title, `<span class="hv-date">${escapeHtml(m.date)}</span> <span class="verdict outline">${m.lang}</span>`)).join("")
+    + `</div>`).join("");
+  return `<aside class="hv-sidebar">`
+    + `<input class="hv-search" type="search" placeholder="🔍  검색 (제목·내용)" aria-label="search">`
+    + `<div class="hv-sec">Run</div>`
+    + `<a class="hv-row" data-doc-id="home" data-search="run overview"><span class="hv-row-t">현재 런 / 개요</span></a>`
+    + `<div class="hv-sec">Tasks <span class="hv-group-n">${tasks.length}</span></div>${taskRows || `<p class="hv-empty">None</p>`}`
+    + `<div class="hv-sec">Specs <span class="hv-group-n">${specs.length}</span></div>${specGroups || `<p class="hv-empty">None</p>`}`
+    + `</aside>`;
 }
 
 const CSS = `
