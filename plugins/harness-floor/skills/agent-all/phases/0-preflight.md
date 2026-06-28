@@ -117,6 +117,26 @@
      currentSessionId = JSON.parse(readFileSync(join(cwd, ".agent-skill/runs/current-session.json"), "utf-8")).sessionId ?? null;
    } catch { /* hook hasn't run yet (first install) — single-session assumption */ }
 
+   // Worktree RUN LEASE — the authoritative concurrent-run signal (a dedicated,
+   // heartbeat-based, atomically-acquired file, more precise than the state file's
+   // coarse 12h `status:running`). Acquired in step 9, refreshed at phase
+   // transitions, released at a terminal phase; a lease whose heartbeat has lapsed
+   // (>15min, LEASE_STALE_MS) is takeable, so a dead holder self-heals.
+   import { checkRunLease } from "./lib/run-lease.mjs";
+   const lease = checkRunLease({ cwd, sessionId: currentSessionId });
+   if (!flags.resume && lease.state === "held-by-other") {
+     // Another session is ACTIVELY running /agent-all on this worktree (fresh heartbeat).
+     // Concurrent runs interleave commits on one tree — UNSAFE. Do NOT auto-proceed (rule 14).
+     // agent-interaction/v1 decision: ["Abort (default)", "Take over (only if that run is truly dead)"].
+     //   - Abort → exit 0: "Another /agent-all run (<lease.lease.runId>, session <…>, heartbeat
+     //     ~<lease.ageMs>ms ago) is in progress on this worktree. Concurrent runs are unsafe; finish or
+     //     abort it first, or run --resume."
+     //   - Take over → continue (step 9's acquire overwrites the lease).
+     // Non-TTY/--yes: NEVER auto-take-over a FRESH lease → abort with the message above.
+   }
+   // lease.state === "stale" → the holder's heartbeat lapsed (dead session); safe to take over
+   // silently in step 9. "free"/"own" → continue normally.
+
    // Guard: a pre-existing RUNNING state that this invocation is not resuming.
    if (!flags.resume && state.status === "running") {
      const updatedAt = Date.parse(state.updatedAt || "");
@@ -147,6 +167,13 @@
 8. **Resolve loop break-condition (if `--loop` is set).** See `### Break-condition resolution` below. Mutates `config.loop.breakCondition` in memory; may rewrite `.agent-all.json` if user opts in.
 
 9. Generate/confirm `runId` (reuse the recalled checkpoint's runId on `--resume`; otherwise a fresh collision-resistant id) and push `{phase: 0, completedAt: "<iso>"}` to state. Set `state.status = "running"`, `state.runId = runId`, `state.sessionId = currentSessionId` (from 5c, may be null), `state.updatedAt = "<iso>"`, and initialize `state.awaitingUser = null`. Use atomic write (temp + rename). Create `.agent-all-state.json` with `{"status":"running","runId":runId,"sessionId":currentSessionId,"updatedAt":"<iso>","awaitingUser":null,"phases": [], "decisions": {}, "interactions": {}}` if missing. The `decisions` and `interactions` maps are populated by Phase 3b (decision-surfacing) and keyed by canonical task id (`AS-TASK-*`) when available.
+
+   **Acquire the run lease** once the run is committed to proceeding (this also performs the takeover when 5c resolved to "Take over" or the lease was "stale"):
+   ```javascript
+   import { acquireRunLease } from "./lib/run-lease.mjs";
+   acquireRunLease({ cwd, sessionId: currentSessionId, runId, task: taskPath ?? prompt ?? null });
+   ```
+   **Lease lifecycle (rule 6–10, shared-worktree safety):** `refreshRunLease({ cwd, sessionId: currentSessionId })` at every phase transition (whenever state is checkpointed) so the heartbeat stays fresh; `releaseRunLease({ cwd, sessionId: currentSessionId })` at a terminal phase (Phase 5 PR done / Phase 6 broken|exhausted|blocked, and on abort). A missed release self-heals: the lease becomes takeable after `LEASE_STALE_MS` (15 min) without a heartbeat.
 
 ## Break-condition resolution
 
