@@ -19,6 +19,7 @@ Thumbs.db
 .agent-skill/releases/
 .agent-skill/runs/
 .agent-skill/state/
+.agent-skill/html/
 
 # Local QA/debug run artifacts
 /.playwright-mcp/

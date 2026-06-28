@@ -43,7 +43,7 @@
    until the user approves it. Global CLI config patching always requires a
    separate explicit approval.
 
-5. Update `.gitignore`. If `.claude/.agent-init-state.json` is not already listed, append it. Idempotent.
+5. Update `.gitignore`. If `.claude/.agent-init-state.json` is not already listed, append it. Idempotent. Also append `.agent-skill/html/` (the `/harness-view` dashboard is a derived view, never a source of record) if not already listed.
 
 6. Make sure `.agent-skill/specs/`, `.agent-skill/plans/`, `.agent-skill/decisions/`, `.agent-skill/tasks/`, `.agent-skill/registry/`, `.agent-skill/handoff/`, `.agent-skill/reports/visual-qa/`, `.agent-skill/reports/debug/`, `.agent-skill/reports/thrift/`, and `.agent-skill/baselines/` exist. `mkdir -p` for each. Add a `.gitkeep` to each.
 
