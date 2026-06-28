@@ -115,6 +115,17 @@ test("task list items render as disabled checkboxes", () => {
   assert.doesNotMatch(html, /\[ \]/);
 });
 
+test("paragraph soft wrap joins lines with a space, not <br>", () => {
+  const { html } = renderMarkdown("line one\nline two");
+  assert.match(html, /<p>line one line two<\/p>/);
+  assert.doesNotMatch(html, /<br>/);
+});
+
+test("blockquote still joins its lines with <br>", () => {
+  const { html } = renderMarkdown("> q1\n> q2");
+  assert.match(html, /<blockquote>q1<br>q2<\/blockquote>/);
+});
+
 test("parseFrontmatter extracts meta and body", () => {
   const { meta, body } = parseFrontmatter("---\nid: AS-1\nstatus: running\n---\n# Body\ntext");
   assert.equal(meta.id, "AS-1");
