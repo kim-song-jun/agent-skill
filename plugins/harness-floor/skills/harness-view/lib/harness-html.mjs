@@ -8,7 +8,7 @@
 import { readFileSync, readdirSync, existsSync, writeFileSync, renameSync, mkdirSync } from "node:fs";
 import { resolve, join, basename } from "node:path";
 
-import { escapeHtml, inlineMd, mdToHtml, parseFrontmatter } from "./markdown.mjs";
+import { escapeHtml, inlineMd, mdToHtml, parseFrontmatter, renderMarkdown } from "./markdown.mjs";
 
 // ───────────────────────── document metadata ─────────────────────────
 export const FAMILIES = [
@@ -183,6 +183,38 @@ export function renderOverviewHome(a) {
     + `<div class="hv-stat"><div class="hv-stat-l">Specs</div><div class="hv-big">${specs.length}</div>`
       + `<div class="hv-muted">${families} topics · 최근 ${escapeHtml(latest)}</div></div>`
     + `</div>`;
+}
+
+// ───────────────────────── reading panes + toc panes ─────────────────────────
+function tocHtml(toc) {
+  if (!toc || !toc.length) return `<p class="hv-muted">No sections</p>`;
+  return `<ul class="hv-toc-list">` + toc.map((t) =>
+    `<li class="toc-l${t.level}"><a href="#${escapeHtml(t.id)}">${escapeHtml(t.text)}</a></li>`).join("") + `</ul>`;
+}
+
+function docPane(meta) {
+  const { html } = renderMarkdown(meta.body);
+  const metaLine = [meta.file, meta.date, meta.status].filter(Boolean).map(escapeHtml).join(" · ");
+  return `<section class="hv-pane" data-doc-id="${escapeHtml(meta.id)}">`
+    + `<div class="hv-doc-meta">${metaLine}</div><div class="doc-body">${html}</div></section>`;
+}
+
+export function renderReadingPanes(a) {
+  const docs = [
+    ...(a.tasks || []).map((t) => deriveDocMeta("task", t.name, t.md)),
+    ...(a.specs || []).map((s) => deriveDocMeta("spec", s.name, s.md)),
+  ];
+  return `<section class="hv-pane hv-active" data-doc-id="home">${renderOverviewHome(a)}</section>`
+    + docs.map(docPane).join("\n");
+}
+
+export function renderTocPanes(a) {
+  const docs = [
+    ...(a.tasks || []).map((t) => deriveDocMeta("task", t.name, t.md)),
+    ...(a.specs || []).map((s) => deriveDocMeta("spec", s.name, s.md)),
+  ];
+  return `<nav class="hv-toc hv-active" data-doc-id="home"><div class="hv-toc-h">On this page</div><p class="hv-muted">Overview</p></nav>`
+    + docs.map((m) => `<nav class="hv-toc" data-doc-id="${escapeHtml(m.id)}"><div class="hv-toc-h">On this page</div>${tocHtml(renderMarkdown(m.body).toc)}</nav>`).join("\n");
 }
 
 const CSS = `

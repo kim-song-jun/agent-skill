@@ -9,6 +9,7 @@ import {
 import {
   collectArtifacts, renderDashboard, writeDashboard,
   familyOf, deriveDocMeta, renderSidebar, renderOverviewHome,
+  renderReadingPanes, renderTocPanes,
 } from "../../plugins/harness-floor/skills/harness-view/lib/harness-html.mjs";
 
 test("inline: bold, inline code, link", () => {
@@ -240,4 +241,21 @@ test("renderOverviewHome shows run, tasks rollup, and specs summary", () => {
   assert.match(html, /1\s*running/i);                  // tasks rollup (fixture: one running task)
   assert.match(html, /Specs/);                          // specs summary card
   assert.match(html, /class="hv-stat"/);
+});
+
+test("renderReadingPanes has a visible home pane and one hidden doc pane per artifact", () => {
+  const a = collectArtifacts({ cwd: fixtureProject(), now: "GEN" });
+  const html = renderReadingPanes(a);
+  assert.match(html, /<section class="hv-pane hv-active" data-doc-id="home">/);
+  assert.match(html, /<section class="hv-pane" data-doc-id="task:T-1">/);
+  assert.match(html, /<section class="hv-pane" data-doc-id="spec:2026-06-29-thing">/);
+  assert.match(html, /Body for <strong>thing<\/strong>/);   // spec body rendered
+  assert.match(html, /First task/);                          // task body rendered
+});
+
+test("renderTocPanes emits a toc nav per doc with anchor links", () => {
+  const a = collectArtifacts({ cwd: fixtureProject(), now: "GEN" });
+  const html = renderTocPanes(a);
+  assert.match(html, /<nav class="hv-toc" data-doc-id="task:T-1">/);
+  assert.match(html, /<a href="#goal">Goal<\/a>/);           // T-1 fixture has "## Goal"
 });
