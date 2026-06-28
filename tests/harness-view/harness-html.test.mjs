@@ -8,7 +8,7 @@ import {
 } from "../../plugins/harness-floor/skills/harness-view/lib/markdown.mjs";
 import {
   collectArtifacts, renderDashboard, writeDashboard,
-  familyOf, deriveDocMeta, renderSidebar,
+  familyOf, deriveDocMeta, renderSidebar, renderOverviewHome,
 } from "../../plugins/harness-floor/skills/harness-view/lib/harness-html.mjs";
 
 test("inline: bold, inline code, link", () => {
@@ -230,4 +230,14 @@ test("renderSidebar has a search box, run/tasks/specs sections, grouped specs, t
   assert.match(html, /First task/);                          // task title, not "T-1.md"
   assert.match(html, /class="hv-group"[^>]*>/);             // a spec family group
   assert.match(html, /Thing spec/);                          // spec title, not the filename
+});
+
+test("renderOverviewHome shows run, tasks rollup, and specs summary", () => {
+  const a = collectArtifacts({ cwd: fixtureProject(), now: "GEN" });
+  const html = renderOverviewHome(a);
+  assert.match(html, /ship the thing/);              // run task (via renderRun)
+  assert.match(html, /RUN-9/);                         // run id
+  assert.match(html, /1\s*running/i);                  // tasks rollup (fixture: one running task)
+  assert.match(html, /Specs/);                          // specs summary card
+  assert.match(html, /class="hv-stat"/);
 });

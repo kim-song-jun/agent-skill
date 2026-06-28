@@ -167,6 +167,24 @@ export function renderSidebar(a) {
     + `</aside>`;
 }
 
+// ───────────────────────── overview-home rendering ─────────────────────────
+export function renderOverviewHome(a) {
+  const tasks = (a.tasks || []).map((t) => deriveDocMeta("task", t.name, t.md));
+  const specs = (a.specs || []).map((s) => deriveDocMeta("spec", s.name, s.md));
+  const roll = { done: 0, running: 0, todo: 0 };
+  for (const t of tasks) if (roll[t.status] != null) roll[t.status]++;
+  const families = new Set(specs.map((s) => s.family)).size;
+  const latest = specs.map((s) => s.date).filter(Boolean).sort().slice(-1)[0] || "—";
+  return `<div class="hv-stats">`
+    + `<div class="hv-stat hv-stat-wide"><div class="hv-stat-l">Run</div>${renderRun(a.run)}</div>`
+    + `<div class="hv-stat"><div class="hv-stat-l">Tasks</div><div class="hv-roll">`
+      + `<span class="r-done">● ${roll.done} done</span><span class="r-run">● ${roll.running} running</span><span class="r-todo">● ${roll.todo} todo</span>`
+      + `</div></div>`
+    + `<div class="hv-stat"><div class="hv-stat-l">Specs</div><div class="hv-big">${specs.length}</div>`
+      + `<div class="hv-muted">${families} topics · 최근 ${escapeHtml(latest)}</div></div>`
+    + `</div>`;
+}
+
 const CSS = `
 :root { --bg:#fafafa; --fg:#222; --muted:#666; --card:#fff; --border:#e5e5e5;
   --pass:#16a34a; --warn:#ca8a04; --fail:#dc2626; --new:#2563eb; --removed:#6b7280; }
