@@ -5,9 +5,9 @@
       {
         "type": "command",
         "matcher": "bash|powershell",
-        "bash": "printf '{}'",
-        "powershell": "Write-Output '{}'",
-        "timeoutSec": 5
+        "bash": "if [ -f .copilot/agent-all/lib/hooks/pre-tool-use-policy.mjs ]; then node .copilot/agent-all/lib/hooks/pre-tool-use-policy.mjs; fi",
+        "powershell": "if (Test-Path .copilot/agent-all/lib/hooks/pre-tool-use-policy.mjs) { node .copilot/agent-all/lib/hooks/pre-tool-use-policy.mjs }",
+        "timeoutSec": 10
       }
     ]
   }

@@ -59,6 +59,18 @@ test("copilot hook templates: matchers use Copilot runtime tool names", () => {
   }
 });
 
+test("copilot preToolUse hook auto-wires the git-safety handler (not an allow-all stub) with a floor-missing guard", () => {
+  const json = readJson(`${HOOK_TEMPLATE_DIR}/preToolUse.json`);
+  const [entry] = json.hooks.preToolUse;
+  // Must invoke the real handler (so git-safety is ACTIVE on install, not a printf '{}' stub).
+  assert.match(entry.bash, /pre-tool-use-policy\.mjs/, "preToolUse must invoke the git-safety handler");
+  assert.doesNotMatch(entry.bash, /printf '\{\}'/, "preToolUse must not be an allow-all stub");
+  // Must guard on the handler existing — Copilot preToolUse is fail-closed, so a builder-only
+  // install (no floor lib) must NOT brick every bash command by erroring on a missing module.
+  assert.match(entry.bash, /\[ -f .copilot\/agent-all\/lib\/hooks\/pre-tool-use-policy\.mjs \]/, "bash must guard on the handler existing (no fail-closed deny-all if floor is absent)");
+  assert.match(entry.powershell, /Test-Path/, "powershell must guard on the handler existing");
+});
+
 test("copilot instructions template does not reference nonexistent Copilot tools", () => {
   const text = readFileSync(resolve(COPILOT_INSTRUCTIONS), "utf-8");
   for (const invalid of ["apply_patch", "read_bash", "read_file", "store_memory", "recall_memory"]) {
