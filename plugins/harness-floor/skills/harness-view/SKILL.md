@@ -5,15 +5,27 @@ description: Use when you want a human-readable HTML view of the harness's own a
 
 # /harness-view
 
-Compiles the harness's markdown/JSON artifacts into ONE self-contained HTML dashboard at
-`.agent-skill/html/index.html` and opens it. Dependency-free, no network — the file opens anywhere.
+Compiles the harness's markdown/JSON artifacts into ONE self-contained, master-detail HTML dashboard
+at `.agent-skill/html/index.html` and opens it. Dependency-free, no network — the file opens anywhere.
 
 ## What it shows
 
-- **Run** — the live `.agent-all-state.json`: the phase 0–6 timeline (done / current), status badge,
-  task, decisions, cost.
-- **Tasks** — the `.agent-skill/tasks/` ledger (`index.md`) plus each task doc, expandable.
-- **Specs** — the `docs/superpowers/specs/` design docs, rendered.
+A three-pane layout: a searchable **sidebar** on the left, a focused **reading pane** in the middle,
+and a per-document **table of contents** on the right.
+
+- **Sidebar** — live search over titles and document text, then Run / Tasks / Specs. Tasks carry a
+  status badge; specs are grouped by topic family with counts. Every entry is labelled by its
+  extracted title (the document's first heading), not its filename.
+- **Overview-home** (the default landing) — stat cards: the live `.agent-all-state.json` run (phase
+  0–6 timeline done / current, status badge, task, decisions, cost), a task rollup by status, and a
+  spec summary (count, topics, latest date).
+- **Reading pane** — the selected task or spec rendered as readable HTML (not raw markdown), with a
+  meta line and an anchored TOC. Sources: `.agent-skill/tasks/` (the ledger `index.md` + each task)
+  and `docs/superpowers/specs/`.
+- **Deep-links** — the selected document is reflected in the URL hash (`#doc=<id>`) and headings are
+  anchored, so a view can be bookmarked, shared, or linked to a specific section.
+
+On narrow screens the sidebar collapses behind a toggle.
 
 ## Steps
 
@@ -35,5 +47,6 @@ Compiles the harness's markdown/JSON artifacts into ONE self-contained HTML dash
 
 - Output lives under `.agent-skill/html/` (gitignored) — it is a derived view, never a source of record.
 - The renderer is `lib/harness-html.mjs`; it is also imported by `/agent-all` for the live auto-refresh.
-- Markdown rendering is a safe subset (headings, lists, GFM tables, fenced code, bold/italic, inline
-  code, links); all content is HTML-escaped, so artifacts never inject markup into the view.
+- Markdown rendering is a safe subset (headings with anchors, nested lists, task checkboxes, GFM
+  tables, fenced code with a language label, blockquotes, bold/italic, inline code, links); all
+  content is HTML-escaped, so artifacts never inject markup into the view.
