@@ -6,6 +6,17 @@
 
 ## 미출시
 
+## Agent-skill v0.7.17 — 2026-06-28
+
+### Copilot doctor — git-safety stub를 잡는 자동 post-install 검증
+
+`doctor.mjs`는 `claude`·`codex`만 알아서 `--platform=copilot`이 "unknown platform"으로 종료했습니다 — v0.7.16의 install-but-not-activated git-safety 결함이 자동 탐지됐어야 할 바로 그 지점. 이제 doctor가 Copilot을 지원합니다:
+
+- Copilot 컨트랙트(호스트 파일 + `.copilot/agent-all/lib` + wired git-safety hook) + 플랫폼 자동탐지.
+- `.github/hooks/preToolUse.json`이 **실 핸들러(`pre-tool-use-policy.mjs`)에 wired**됐는지(printf '{}' allow-all stub이 아닌지) 검사하는 textCheck — 활성화 회귀가 이제 라이브 사용이 아닌 health check로 잡힙니다.
+
+실 install 검증: `doctor --platform=copilot` → ok 15/15; hook을 stub로 되돌리면 → failed 14/15에 명확한 "missing `pre-tool-use-policy.mjs`" 진단. (Claude/Codex는 이미 doctor 보유; Cursor/Gemini는 현재 범위상 doctor 없음.)
+
 ## Agent-skill v0.7.16 — 2026-06-28
 
 ### Copilot git-safety 설치 시 자동 활성화 + grounded 하네스 검증

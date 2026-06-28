@@ -6,6 +6,17 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.17 — 2026-06-28
+
+### Copilot doctor — automated post-install validation that catches the git-safety stub
+
+`doctor.mjs` only knew `claude` and `codex`, so `--platform=copilot` exited "unknown platform" — exactly the surface where the v0.7.16 install-but-not-activated git-safety defect would have been caught automatically. Doctor now supports Copilot:
+
+- A Copilot contract (host files + `.copilot/agent-all/lib` + the wired git-safety hook) + platform auto-detect.
+- A textCheck asserting `.github/hooks/preToolUse.json` is **wired to the real handler** (`pre-tool-use-policy.mjs`), not a `printf '{}'` allow-all stub — so the activation regression is now caught by a health check, not just live use.
+
+Verified on a real install: `doctor --platform=copilot` → ok 15/15; reverting the hook to the stub → failed 14/15 with a clear "missing `pre-tool-use-policy.mjs`" finding. (Claude/Codex already had doctor; Cursor/Gemini remain doctor-less by current scope.)
+
 ## Agent-skill v0.7.16 — 2026-06-28
 
 ### Copilot git-safety auto-activates on install + grounded harness verification
