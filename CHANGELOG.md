@@ -6,6 +6,17 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.15 — 2026-06-28
+
+### Concurrent `/agent-all` run lease — pillar-5 (parallel sessions) complete
+
+Closes the last open parallel-session gap (audit G4). Two sessions could start `/agent-all` on the same worktree with no real coordination — the prior Phase-0 guard relied on the state file's coarse 12-hour `status:running` flag with a TOCTOU race.
+
+- **`run-lease.mjs`** holds a dedicated, heartbeat-based lease at `.agent-skill/runs/active-lease.json` (`sessionId` + `heartbeat`; atomic tmp+rename acquire/refresh/release; 15-minute staleness so a dead holder self-heals and its lease becomes takeable).
+- **Phase 0** now checks it: a FRESH lease held by another session surfaces an Abort / Take-over decision (no auto-proceed; non-TTY aborts); a stale lease is taken over; the run acquires the lease at preflight, refreshes it at phase transitions, and releases it at a terminal phase.
+
+With this, pillar 5 is covered end-to-end: git-safety rules 6/7/8 hook-enforced (v0.7.13) + GIT INCIDENT detection (v0.7.13) + this concurrent-run lease. Claude canonical for now; port propagation is a follow-up.
+
 ## Agent-skill v0.7.14 — 2026-06-28
 
 ### Copilot CLI gets real hard git-safety (preToolUse hook, live-verified)

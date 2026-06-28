@@ -6,6 +6,17 @@
 
 ## 미출시
 
+## Agent-skill v0.7.15 — 2026-06-28
+
+### 동시 `/agent-all` 실행 lease — 기둥5(병렬 세션) 완성
+
+마지막 병렬-세션 갭(audit G4)을 닫습니다. 두 세션이 같은 워크트리에서 `/agent-all`을 동시에 시작해도 실질 조정이 없었습니다 — 기존 Phase-0 가드는 state 파일의 조대한 12시간 `status:running` 플래그(+TOCTOU 레이스)에 의존했습니다.
+
+- **`run-lease.mjs`**가 `.agent-skill/runs/active-lease.json`에 전용 heartbeat 기반 lease를 보유(`sessionId` + `heartbeat`; 원자적 tmp+rename acquire/refresh/release; 15분 staleness — 죽은 holder는 self-heal되고 lease는 인수 가능).
+- **Phase 0**가 이를 체크: 타 세션이 **활성**(fresh) lease 보유 시 Abort / Take-over 결정을 표시(자동 진행 없음; non-TTY는 abort), stale lease는 인수, 실행은 preflight에서 acquire·phase 전환마다 refresh·종료 시 release.
+
+이로써 기둥 5가 종단 간 커버됩니다: git-안전 규칙 6/7/8 hook 강제(v0.7.13) + GIT INCIDENT 탐지(v0.7.13) + 이번 동시실행 lease. 현재 Claude canonical, 포트 전파는 후속.
+
 ## Agent-skill v0.7.14 — 2026-06-28
 
 ### Copilot CLI에 진짜 hard git-safety (preToolUse hook, 라이브 검증)

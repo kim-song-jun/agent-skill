@@ -1,6 +1,6 @@
 {
   "name": "harness-explore",
-  "version": "0.7.14",
+  "version": "0.7.15",
   "description": "Theme D — exploration-focused codebase mapping. Parallel subagent scan, git-SHA-keyed cache, structural where/deps query slash commands, dependency graph for typed languages.",
   "keywords": [
     "harness",

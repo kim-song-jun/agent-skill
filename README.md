@@ -905,7 +905,7 @@ If you want the technical details, design specs, or are porting to a new platfor
 | `/thrift` compact delivery | ⚠️ API-gated advisory path | Claude/Codex both write durable summary files and prompt `/compact`; programmatic compact injection connects when host CLIs expose a stable API |
 | Provider-backed thrift summarizers | ✅ release-scoped | Claude's optional `@anthropic-ai/sdk` summarizer path is implemented and tested; Codex ships a dependency-free heuristic summarizer with configurable `gpt-5-nano` model metadata and OpenAI-rate audit heuristics |
 
-Versioning: `harness-builder` at `v0.7.14`, `harness-floor` at `v0.7.14`, and the other 17 installable `agent-skill` plugins at `v0.7.14` on the same release train. Internal artifact/config schema versions remain separate compatibility contracts.
+Versioning: `harness-builder` at `v0.7.15`, `harness-floor` at `v0.7.15`, and the other 17 installable `agent-skill` plugins at `v0.7.15` on the same release train. Internal artifact/config schema versions remain separate compatibility contracts.
 
 ### Release Candidate Lifecycle
 
