@@ -191,9 +191,52 @@ export const CONTRACTS = {
       reviewerHeader: /^## Configured QA Personas$/i,
     },
   },
+  copilot: {
+    label: "Copilot",
+    liteRequired: [
+      ".github/copilot-instructions.md",
+      "AGENTS.md",
+    ],
+    builderRequired: [
+      ".github/instructions/dev.instructions.md",
+      ".github/instructions/planner.instructions.md",
+      ".github/instructions/reviewer.instructions.md",
+    ],
+    operationalRequired: [
+      ".agent-all.json",
+      ".visual-qa.json",
+      ".copilot/agent-all/lib/config-loader.mjs",
+      ".copilot/agent-all/lib/hooks/pre-tool-use-policy.mjs",
+      ".copilot/agent-all/lib/hooks/git-safety.mjs",
+      ".github/hooks/preToolUse.json",
+    ],
+    jsonFiles: [
+      ".agent-all.json",
+      ".visual-qa.json",
+      ".github/hooks/preToolUse.json",
+    ],
+    operationalMarkers: [
+      ".copilot/agent-all/lib",
+      ".agent-all.json",
+    ],
+    builderMarkers: [
+      ".github/copilot-instructions.md",
+      ".github/instructions/dev.instructions.md",
+    ],
+    textChecks: [
+      {
+        // The v0.7.16-fixed contract: the project-local preToolUse hook MUST be
+        // wired to the real git-safety handler, not a `printf '{}'` allow-all stub
+        // (the install-but-not-activated defect doctor exists to catch).
+        profiles: ["operational"],
+        path: ".github/hooks/preToolUse.json",
+        patterns: [/pre-tool-use-policy\.mjs/],
+      },
+    ],
+  },
 };
 
-export const USAGE = `Usage: doctor.mjs [--target=<dir>] [--platform=auto|claude|codex] [--profile=auto|operational|builder|lite|debug] [--json] [--strict-foundations]
+export const USAGE = `Usage: doctor.mjs [--target=<dir>] [--platform=auto|claude|codex|copilot] [--profile=auto|operational|builder|lite|debug] [--json] [--strict-foundations]
 
 Checks a project-local agent-skill scaffold after install.
 
@@ -391,11 +434,14 @@ function resolvePlatform(targetAbs, platform, failures) {
   if (existsSync(resolve(targetAbs, ".claude")) || existsSync(resolve(targetAbs, "CLAUDE.md"))) {
     return "claude";
   }
+  if (existsSync(resolve(targetAbs, ".copilot/agent-all")) || existsSync(resolve(targetAbs, ".github/copilot-instructions.md"))) {
+    return "copilot";
+  }
   failures.push({
     type: "detect",
     path: targetAbs,
-    message: "unable to auto-detect platform; pass --platform=claude or --platform=codex",
-    fix: "re-run doctor with --platform=claude or --platform=codex",
+    message: "unable to auto-detect platform; pass --platform=claude|codex|copilot",
+    fix: "re-run doctor with --platform=claude, --platform=codex, or --platform=copilot",
   });
   return null;
 }
