@@ -54,7 +54,42 @@ function parseArgs(argv) {
 }
 
 function defaultHooksFile() {
-  return resolve(homedir(), ".copilot/hooks.json");
+  // Copilot CLI loads user hooks from the `~/.copilot/hooks/` DIRECTORY
+  // (`*.json` files), NOT a single `~/.copilot/hooks.json` file. Writing one
+  // labeled config file inside that directory is the supported user-level path.
+  // See https://docs.github.com/en/copilot/reference/hooks-reference (Hooks locations).
+  return resolve(homedir(), ".copilot/hooks/agent-skill.json");
+}
+
+// Resolved path to the preToolUse git-safety policy handler (a sibling of the
+// per-skill dispatchers, copied with the lib/hooks tree on install).
+const PRETOOLUSE_HANDLER = resolve(PLUGIN_ROOT, "skills/agent-all-copilot/lib/hooks/pre-tool-use-policy.mjs");
+const GIT_SAFETY_LABEL = "harness-floor-copilot:git-safety";
+
+export function buildPreToolUseEntry(handler = PRETOOLUSE_HANDLER) {
+  const command = `node ${shellQuote(handler)}`;
+  return {
+    type: "command",
+    matcher: "bash|powershell",
+    bash: command,
+    powershell: command,
+    timeoutSec: 10,
+    env: { AGENT_SKILL_HOOK_LABEL: GIT_SAFETY_LABEL },
+  };
+}
+
+// Idempotently ensure the git-safety preToolUse hook is registered (replaces the
+// entry with our label, preserves any other user-configured preToolUse hooks).
+export function addPreToolUseGitSafety(config, handler = PRETOOLUSE_HANDLER) {
+  const out = { ...config, version: config.version ?? 1 };
+  out.hooks = { ...(config.hooks && typeof config.hooks === "object" ? config.hooks : {}) };
+  const arr = Array.isArray(out.hooks.preToolUse) ? [...out.hooks.preToolUse] : [];
+  const entry = buildPreToolUseEntry(handler);
+  const idx = arr.findIndex((h) => h?.env?.AGENT_SKILL_HOOK_LABEL === GIT_SAFETY_LABEL);
+  if (idx >= 0) arr[idx] = entry;
+  else arr.push(entry);
+  out.hooks.preToolUse = arr;
+  return out;
 }
 
 export function loadHooksFile(path, fsRead = readFileSync) {
@@ -150,10 +185,19 @@ export function installHooks({
   const existing = loadHooksFile(hooksFile, fsRead);
   const entry = buildHookEntry({ label, dispatcher: resolvedDispatcher, inbox });
 
-  // Detect idempotent re-run.
-  const before = JSON.stringify(existing.hooks?.[HOOK_NAME] ?? existing[HOOK_NAME] ?? null);
-  const merged = mergeHook(existing, entry);
-  const after = JSON.stringify(merged.hooks?.[HOOK_NAME] ?? null);
+  // Detect idempotent re-run across BOTH managed hook events (subagentStop
+  // dispatcher + preToolUse git-safety). Compare array content, not the whole
+  // object, so key-ordering differences don't trigger a spurious rewrite.
+  const before = JSON.stringify({
+    s: existing.hooks?.[HOOK_NAME] ?? existing[HOOK_NAME] ?? null,
+    p: existing.hooks?.preToolUse ?? null,
+  });
+  let merged = mergeHook(existing, entry);
+  merged = addPreToolUseGitSafety(merged);
+  const after = JSON.stringify({
+    s: merged.hooks?.[HOOK_NAME] ?? null,
+    p: merged.hooks?.preToolUse ?? null,
+  });
   const changed = before !== after;
   if (!changed && !force) {
     return { ok: true, changed: false, action: "noop", path: hooksFile };

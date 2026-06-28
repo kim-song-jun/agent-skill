@@ -12,6 +12,70 @@ dispatch for prompt-level fan-out. Unlike the earlier scaffold, this port
 does not assume public `read_agent`, `list_agents`, or `store_memory` tools.
 Durable state is file-backed.
 
+## Live-CLI verification (2026-06-28 — Copilot CLI v1.0.63, #27 partially resolved)
+
+Verified against the agentic GitHub Copilot CLI **v1.0.63** (installed locally via
+`gh copilot`; binary at `~/.local/share/gh/copilot/copilot`) and the authoritative
+[hooks reference](https://docs.github.com/en/copilot/reference/hooks-reference).
+The prior "#27 = CLI not installed / primitives are unverified guesses" status is
+**stale**. Confirmed FACTS:
+
+- **Hooks are real** and delivered via plugins / hook config files —
+  `preToolUse`, `postToolUse`, `subagentStart`, `subagentStop`, `agentStop`, etc.
+- **`subagentStop` payload** (camelCase) is `{ sessionId, timestamp, cwd,
+  transcriptPath, agentName, agentDisplayName?, stopReason: "end_turn" }`, plus a
+  VS Code snake_case form — exactly what `subagent-stop-dispatcher.mjs` already
+  parses. ✅
+- **Hook config schema** `{ version:1, hooks:{ "<event>": [{ type:"command",
+  bash, powershell?, cwd?, env?, timeoutSec? }] } }` matches what `install-hooks`
+  writes. ✅
+- Real tool names for matching: `bash`/`powershell` (shell), `write`/`edit`/
+  `create`/`view`/`glob`/`grep`, `task`, `ask_user`, `web_fetch`. `store_memory`
+  is NOT a CLI tool — `memory-bridge.mjs` only calls it through an injected
+  `toolCaller` (absent on Copilot) and otherwise persists file-backed, so this is
+  a graceful optional path, not a dependency.
+
+FIXED this slice:
+
+- **Hook install location** — `install-hooks` wrote a single
+  `~/.copilot/hooks.json`, but the CLI loads user hooks from the `~/.copilot/hooks/`
+  **directory** (`*.json`). Now writes `~/.copilot/hooks/agent-skill.json`.
+- **Real hard enforcement (NEW)** — `lib/hooks/git-safety.mjs` +
+  `lib/hooks/pre-tool-use-policy.mjs` give Copilot a `preToolUse` hook that
+  DENIES shared-worktree-dangerous git commands (`stash`, `checkout -b`/`switch`,
+  `clean`, `reset --hard`, `add -A`, pathspec-less/`-a`/`--amend` commit,
+  `push --force`) via `{permissionDecision:"deny"}`. `preToolUse` is fail-closed,
+  so the handler fails OPEN (allow) on any internal error to avoid bricking the
+  session. This upgrades Copilot from prompt-level guidance to the same hard
+  git-safety the Claude/Codex `agent-policy-hook` enforces.
+
+KNOWN CONSTRAINT (documented, not a bug):
+
+- The built-in `general-purpose` agent does **not** emit `subagentStart`/
+  `subagentStop`. To get the lifecycle dispatcher to fire, the `task` dispatch
+  must target a CUSTOM agent (`--agent`). Prompt-level fan-out still works without
+  it; only the hook-based awaiter depends on a custom agent.
+
+LIVE-VERIFIED (2026-06-28, Copilot CLI v1.0.63 — closes the `#27` preToolUse gap):
+
+- A real `gh copilot -p "...git stash..." --allow-all` run against a `~/.copilot/hooks/`
+  install of this handler returned, from the live agent:
+  `✗ Run git stash command (shell) → Denied by preToolUse hook: git stash (rule 6 — …)`.
+  The hook loads, fires, and the deny is honored end-to-end. (Probe hook removed
+  after verification; install it for real via `bin/install-hooks.mjs`.)
+- The live probe also surfaced a bug that no spec read would have: Copilot v1.0.63
+  delivers `toolArgs` as a **JSON-encoded string** (`'{"command":"git stash",…}'`),
+  not a parsed object. `pre-tool-use-policy.mjs` now JSON-parses a string `toolArgs`
+  before extracting `.command`. Without this it treated the JSON blob as the literal
+  command and allowed everything — the first probe run let `git stash` through.
+
+STILL `#27`-deferred (lower-value, not yet live-run):
+
+- The `subagentStop` lifecycle dispatch on a real multi-task Copilot run (requires a
+  custom `--agent`; the built-in `general-purpose` agent does not emit it). The
+  payload parsing + install path are unit-tested; only the live multi-agent run is
+  unverified.
+
 ## Effort estimate vs other ports
 
 Spec estimate: **1 week** (same as Codex; less than Gemini's 1.5w).

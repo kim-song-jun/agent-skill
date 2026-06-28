@@ -6,6 +6,8 @@ import { join, resolve } from "node:path";
 import {
   installHooks,
   buildHookEntry,
+  buildPreToolUseEntry,
+  addPreToolUseGitSafety,
   mergeHook,
   loadHooksFile,
   __internal,
@@ -185,4 +187,41 @@ test("installHooks: writes pretty-printed JSON for diffability", () => {
 test("__internal: DEFAULT_DISPATCHERS resolves both plugin paths", () => {
   assert.equal(__internal.DEFAULT_DISPATCHERS["agent-all"], DISPATCHER);
   assert.equal(__internal.DEFAULT_DISPATCHERS["visual-qa"], VQ_DISPATCHER);
+});
+
+test("buildPreToolUseEntry: matcher bash|powershell, points at the git-safety handler, labeled", () => {
+  const e = buildPreToolUseEntry("/abs/pre-tool-use-policy.mjs");
+  assert.equal(e.type, "command");
+  assert.equal(e.matcher, "bash|powershell");
+  assert.match(e.bash, /node '\/abs\/pre-tool-use-policy\.mjs'/);
+  assert.equal(e.env.AGENT_SKILL_HOOK_LABEL, "harness-floor-copilot:git-safety");
+});
+
+test("addPreToolUseGitSafety: idempotent and preserves an unrelated preToolUse hook", () => {
+  const existing = {
+    version: 1,
+    hooks: { preToolUse: [{ type: "command", bash: "echo user", env: { AGENT_SKILL_HOOK_LABEL: "user-pre" } }] },
+  };
+  let merged = addPreToolUseGitSafety(existing, "/h.mjs");
+  assert.equal(merged.hooks.preToolUse.length, 2);
+  merged = addPreToolUseGitSafety(merged, "/h.mjs"); // re-run replaces, not appends
+  assert.equal(merged.hooks.preToolUse.length, 2);
+  assert.ok(merged.hooks.preToolUse.find((h) => h.env?.AGENT_SKILL_HOOK_LABEL === "user-pre"));
+  assert.ok(merged.hooks.preToolUse.find((h) => h.env?.AGENT_SKILL_HOOK_LABEL === "harness-floor-copilot:git-safety"));
+});
+
+test("installHooks: registers the preToolUse git-safety hook alongside subagentStop", () => {
+  const { hooksFile, inbox } = fresh();
+  installHooks({ hooksFile, inbox, label: "agent-all" });
+  const parsed = JSON.parse(readFileSync(hooksFile, "utf-8"));
+  assert.equal(parsed.hooks.subagentStop.length, 1);
+  assert.equal(parsed.hooks.preToolUse.length, 1);
+  assert.equal(parsed.hooks.preToolUse[0].matcher, "bash|powershell");
+  assert.match(parsed.hooks.preToolUse[0].bash, /pre-tool-use-policy\.mjs/);
+  assert.equal(parsed.hooks.preToolUse[0].env.AGENT_SKILL_HOOK_LABEL, "harness-floor-copilot:git-safety");
+});
+
+test("defaultHooksFile resolves inside the ~/.copilot/hooks/ directory (not a single hooks.json)", () => {
+  assert.match(__internal.defaultHooksFile(), /\.copilot\/hooks\/[^/]+\.json$/);
+  assert.doesNotMatch(__internal.defaultHooksFile(), /\.copilot\/hooks\.json$/);
 });
