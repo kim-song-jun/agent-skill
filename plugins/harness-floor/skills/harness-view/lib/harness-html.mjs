@@ -132,7 +132,7 @@ export function renderSidebar(a) {
   const specGroups = Object.entries(groups).sort((x, y) => y[1].length - x[1].length).map(([fam, items]) =>
     `<div class="hv-group"><div class="hv-group-h">${escapeHtml(fam)} <span class="hv-group-n">${items.length}</span></div>`
     + items.sort((p, q) => (p.date < q.date ? -1 : 1)).map((m) =>
-        navRow(m, m.title, `<span class="hv-date">${escapeHtml(m.date)}</span> <span class="verdict outline">${m.lang}</span>`)).join("")
+        navRow(m, m.title, `<span class="hv-date">${escapeHtml(m.date)}</span> <span class="verdict outline">${escapeHtml(m.lang)}</span>`)).join("")
     + `</div>`).join("");
   return `<aside class="hv-sidebar">`
     + `<input class="hv-search" type="search" placeholder="🔍  검색 (제목·내용)" aria-label="search">`
@@ -246,7 +246,7 @@ a { color:var(--accent); }
 .doc-body pre{background:#1e1e1e;color:#e6e6e6;padding:.9rem 1rem;border-radius:8px;overflow:auto;font-size:.82rem;margin:0;}
 .doc-body :not(pre)>code{background:#eef0f2;border-radius:4px;padding:.05rem .35rem;font-size:.85em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;} .doc-body pre code{background:none;padding:0;}
 @media (max-width:860px){
-  .hv-app{grid-template-columns:1fr;} .hv-toc{display:none;} .hv-toggle{display:block;margin-left:.4rem;}
+  .hv-app{grid-template-columns:1fr;} .hv-toc,.hv-toc.hv-active{display:none;} .hv-toggle{display:block;margin-left:.4rem;}
   .hv-sidebar{position:fixed;z-index:5;top:52px;bottom:0;left:0;width:280px;transform:translateX(-100%);transition:transform .15s;}
   body.hv-nav-open .hv-sidebar{transform:none;}
 }
