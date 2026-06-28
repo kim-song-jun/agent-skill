@@ -257,5 +257,43 @@ test("renderTocPanes emits a toc nav per doc with anchor links", () => {
   const a = collectArtifacts({ cwd: fixtureProject(), now: "GEN" });
   const html = renderTocPanes(a);
   assert.match(html, /<nav class="hv-toc" data-doc-id="task:T-1">/);
-  assert.match(html, /<a href="#goal">Goal<\/a>/);           // T-1 fixture has "## Goal"
+  // id = "task:T-1" → aid = "task-T-1" → href = #task-T-1--goal
+  assert.match(html, /<a href="#task-T-1--goal">Goal<\/a>/);
+});
+
+test("renderMarkdown with idPrefix produces prefixed heading ids in html and toc", () => {
+  const { html, toc } = renderMarkdown("## Goal", { idPrefix: "spec-x" });
+  assert.match(html, /id="spec-x--goal"/);
+  assert.equal(toc.length, 1);
+  assert.equal(toc[0].id, "spec-x--goal");
+});
+
+test("dedup-register: three headings where Notes 2 slug collides with synthesized Notes", () => {
+  // Order: Notes (→ notes), Notes 2 (→ notes-2), Notes (→ notes-3, skipping the taken notes-2)
+  const { html } = renderMarkdown("## Notes\n\n## Notes 2\n\n## Notes");
+  const ids = [...html.matchAll(/id="([^"]+)"/g)].map((m) => m[1]);
+  // All three must be distinct
+  assert.equal(new Set(ids).size, ids.length, `duplicate id found: ${ids.join(", ")}`);
+  // "Notes 2" must keep its natural slug
+  assert.ok(ids.includes("notes-2"), "Notes 2 must map to notes-2");
+  // The synthesized third Notes must NOT collide with notes-2
+  assert.ok(!ids.filter((id) => id !== "notes-2").includes("notes-2"), "synthesized Notes must not reuse notes-2");
+});
+
+test("href single-escape: & in URL appears as &amp; once, not &amp;amp;", () => {
+  const h = inlineMd("[t](http://x?a=1&b=2)");
+  assert.match(h, /href="http:\/\/x\?a=1&amp;b=2"/);
+  assert.doesNotMatch(h, /&amp;amp;/);
+});
+
+test("cross-pane uniqueness: two docs with '## Goal' get distinct heading ids", () => {
+  // fixtureProject has task T-1 with "## Goal"; add a second spec that also has "## Goal"
+  const dir = fixtureProject();
+  mkdirSync(join(dir, "docs", "superpowers", "specs"), { recursive: true });
+  writeFileSync(join(dir, "docs", "superpowers", "specs", "2026-01-01-other.md"), "# Other\n\n## Goal\nAlso has goal.");
+  const a = collectArtifacts({ cwd: dir, now: "GEN" });
+  const html = renderReadingPanes(a);
+  const goalIds = [...html.matchAll(/id="([^"]*goal[^"]*)"/gi)].map((m) => m[1]);
+  assert.ok(goalIds.length >= 2, `expected at least 2 goal headings, got: ${goalIds.join(", ")}`);
+  assert.equal(new Set(goalIds).size, goalIds.length, `duplicate goal id found: ${goalIds.join(", ")}`);
 });

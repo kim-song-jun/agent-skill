@@ -8,7 +8,7 @@
 import { readFileSync, readdirSync, existsSync, writeFileSync, renameSync, mkdirSync } from "node:fs";
 import { resolve, join, basename } from "node:path";
 
-import { escapeHtml, inlineMd, mdToHtml, parseFrontmatter, renderMarkdown } from "./markdown.mjs";
+import { escapeHtml, parseFrontmatter, renderMarkdown } from "./markdown.mjs";
 
 // ───────────────────────── document metadata ─────────────────────────
 export const FAMILIES = [
@@ -169,7 +169,8 @@ function tocHtml(toc) {
 }
 
 function docPane(meta) {
-  const { html } = renderMarkdown(meta.body);
+  const aid = meta.id.replace(/[^a-zA-Z0-9_-]/g, "-");
+  const { html } = renderMarkdown(meta.body, { idPrefix: aid });
   const metaLine = [meta.file, meta.date, meta.status].filter(Boolean).map(escapeHtml).join(" · ");
   return `<section class="hv-pane" data-doc-id="${escapeHtml(meta.id)}">`
     + `<div class="hv-doc-meta">${metaLine}</div><div class="doc-body">${html}</div></section>`;
@@ -190,7 +191,10 @@ export function renderTocPanes(a) {
     ...(a.specs || []).map((s) => deriveDocMeta("spec", s.name, s.md)),
   ];
   return `<nav class="hv-toc hv-active" data-doc-id="home"><div class="hv-toc-h">On this page</div><p class="hv-muted">Overview</p></nav>`
-    + docs.map((m) => `<nav class="hv-toc" data-doc-id="${escapeHtml(m.id)}"><div class="hv-toc-h">On this page</div>${tocHtml(renderMarkdown(m.body).toc)}</nav>`).join("\n");
+    + docs.map((m) => {
+      const aid = m.id.replace(/[^a-zA-Z0-9_-]/g, "-");
+      return `<nav class="hv-toc" data-doc-id="${escapeHtml(m.id)}"><div class="hv-toc-h">On this page</div>${tocHtml(renderMarkdown(m.body, { idPrefix: aid }).toc)}</nav>`;
+    }).join("\n");
 }
 
 const CSS = `
@@ -265,7 +269,7 @@ const CLIENT_JS = `
     if (!found) { var home = document.querySelector('.hv-pane[data-doc-id=\\'home\\']'); if (home) home.classList.add('hv-active'); }
     document.body.classList.remove('hv-nav-open');
   }
-  function fromHash() { var m = /^#doc=(.+)$/.exec(location.hash); show(m ? decodeURIComponent(m[1]) : 'home'); }
+  function fromHash() { var m = /^#doc=(.+)$/.exec(location.hash); if (m) show(decodeURIComponent(m[1])); else if (!location.hash) show('home'); /* else: bare heading anchor — leave pane active, let browser scroll */ }
   rows.forEach(function (r) { r.addEventListener('click', function (e) { e.preventDefault(); location.hash = 'doc=' + encodeURIComponent(r.getAttribute('data-doc-id')); }); });
   window.addEventListener('hashchange', fromHash);
   var box = document.querySelector('.hv-search');

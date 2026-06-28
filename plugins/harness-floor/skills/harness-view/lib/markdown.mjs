@@ -8,7 +8,8 @@ export function escapeHtml(s) {
 // Only permit benign hrefs; everything else (javascript:, data:, vbscript:) drops the link target.
 function safeHref(url) {
   const u = String(url).trim();
-  if (/^(https?:\/\/|mailto:|#|\/|\.\/|\.\.\/)/i.test(u) && !/^javascript:/i.test(u)) return escapeHtml(u);
+  // u is already HTML-escaped by inlineMd's line-level escapeHtml; safeHref's job is only the allow-list.
+  if (/^(https?:\/\/|mailto:|#|\/|\.\/|\.\.\/)/i.test(u) && !/^javascript:/i.test(u)) return u;
   return null;
 }
 
@@ -42,7 +43,7 @@ export function slugify(s) {
   return String(s).toLowerCase().replace(/[^a-z0-9가-힣]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
-export function renderMarkdown(md) {
+export function renderMarkdown(md, { idPrefix = "" } = {}) {
   const lines = String(md ?? "").split(/\r?\n/);
   const out = []; const toc = []; const seen = {};
   let i = 0;
@@ -70,10 +71,13 @@ export function renderMarkdown(md) {
     if (h) {
       flushPara();
       const level = h[1].length; const text = h[2].trim();
-      let id = slugify(text) || `h-${i}`;
-      if (seen[id]) id = `${id}-${++seen[id]}`; else seen[id] = 1;
-      if (level >= 2 && level <= 3) toc.push({ level, text, id });
-      out.push(`<h${level} id="${id}">${inlineMd(text)}</h${level}>`);
+      let base = slugify(text) || `h-${i}`;
+      let id = base; let n = 1;
+      while (seen[id]) { n++; id = `${base}-${n}`; }
+      seen[id] = true; // register the final (possibly synthesized) id
+      const finalId = idPrefix ? `${idPrefix}--${id}` : id;
+      if (level >= 2 && level <= 3) toc.push({ level, text, id: finalId });
+      out.push(`<h${level} id="${finalId}">${inlineMd(text)}</h${level}>`);
       i++; continue;
     }
     // hr
