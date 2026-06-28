@@ -55,6 +55,16 @@ test("fenced code is verbatim + escaped, not formatted", () => {
   assert.match(h, /<pre><code>if \(a &lt; b\) \*\*x\*\*<\/code><\/pre>/);
 });
 
+test("fenced code with a language gets a label badge; body still escaped", () => {
+  const { html } = renderMarkdown("```python\nx = a < b\n```");
+  assert.match(html, /<div class="codeblock"><span class="code-lang">python<\/span><pre><code>x = a &lt; b<\/code><\/pre><\/div>/);
+});
+
+test("fenced code without a language has no label", () => {
+  const { html } = renderMarkdown("```\nplain\n```");
+  assert.match(html, /<div class="codeblock"><pre><code>plain<\/code><\/pre><\/div>/);
+});
+
 test("headings and lists", () => {
   const h = mdToHtml("# Title\n\n- one\n- two\n\n1. a\n2. b");
   assert.match(h, /<h1 id="title">Title<\/h1>/);

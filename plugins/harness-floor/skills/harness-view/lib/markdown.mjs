@@ -56,11 +56,12 @@ export function renderMarkdown(md) {
     const fence = line.match(/^\s*```(.*)$/);
     if (fence) {
       flushPara();
-      const buf = [];
-      i++;
+      const lang = fence[1].trim();
+      const buf = []; i++;
       while (i < lines.length && !/^\s*```\s*$/.test(lines[i])) { buf.push(lines[i]); i++; }
       i++; // closing fence
-      out.push(`<pre><code>${escapeHtml(buf.join("\n"))}</code></pre>`);
+      const label = lang ? `<span class="code-lang">${escapeHtml(lang)}</span>` : "";
+      out.push(`<div class="codeblock">${label}<pre><code>${escapeHtml(buf.join("\n"))}</code></pre></div>`);
       continue;
     }
     if (/^\s*$/.test(line)) { flushPara(); i++; continue; }
