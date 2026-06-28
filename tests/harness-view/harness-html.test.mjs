@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   mdToHtml, inlineMd, escapeHtml, parseFrontmatter,
+} from "../../plugins/harness-floor/skills/harness-view/lib/markdown.mjs";
+import {
   collectArtifacts, renderDashboard, writeDashboard,
 } from "../../plugins/harness-floor/skills/harness-view/lib/harness-html.mjs";
 
