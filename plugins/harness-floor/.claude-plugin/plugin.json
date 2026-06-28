@@ -1,6 +1,6 @@
 {
   "name": "harness-floor",
-  "version": "0.7.19",
+  "version": "0.7.20",
   "description": "Visual QA + agent-all pipeline (cost-unrestricted patterns)",
   "hooks": {
     "SessionStart": [

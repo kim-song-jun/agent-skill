@@ -6,6 +6,12 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.20 — 2026-06-29
+
+### `/harness-view` polish — full-height layout + smarter sidebar search
+
+Follow-up polish on the v0.7.19 dashboard. The layout no longer hardcodes the header height: a flexbox column replaces `calc(100vh - 52px)`, removing a small bottom gap, and on narrow screens the sidebar is an in-flow collapsible block instead of a fixed overlay (so it no longer depends on a magic header-offset). Sidebar search now also hides section labels and the "None" empty-placeholder when a query filters their rows away, and resolves panes through a prebuilt id→pane map instead of a per-keystroke selector. No change to rendering, deep-links, or the TOC.
+
 ## Agent-skill v0.7.19 — 2026-06-29
 
 ### `/harness-view` redesigned as a master-detail dashboard
