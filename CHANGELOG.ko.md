@@ -6,6 +6,12 @@
 
 ## 미출시
 
+## Agent-skill v0.7.19 — 2026-06-29
+
+### `/harness-view`를 마스터-디테일 대시보드로 재설계
+
+v0.7.18 첫 컷도 markdown을 HTML로 렌더했지만, Specs 뷰가 날짜-접두 *파일명* 50개의 평면 아코디언이었고 task 체크박스가 리터럴 `[x]`/`[ ]` 텍스트로 새어나왔습니다. 이제 마스터-디테일 대시보드입니다: 검색 가능한 사이드바(Run / Tasks / Specs — 각 항목을 추출 제목으로 라벨링하고 토픽 family로 그룹핑), 집중 읽기 패널, 문서별 목차(TOC), 오버뷰 홈 랜딩(run 타임라인 + task 롤업 + spec 요약), 딥링크(`#doc=<id>` + 헤딩 앵커). markdown 엔진을 별도 `markdown.mjs`로 분리하고 task 체크박스(실제 disabled `<input>`)·들여쓰기 인식 중첩 리스트·코드펜스 언어 라벨·헤딩 앵커·CommonMark 소프트랩을 추가했습니다. 여전히 의존성 0 단일 `.agent-skill/html/index.html`이며(브라우저는 파서를 싣지 않고 Node가 모든 문서를 사전 렌더), `render.mjs` / `writeDashboard` 진입점은 불변입니다. 최종 적대적 전체-브랜치 리뷰가 머지 전에 cross-pane TOC 결함(헤딩 id 충돌 + 해시 라우팅)을 잡아 수정했습니다. 렌더러 / 메타데이터 / TOC 유닛테스트 추가, 풀스위트 2479/2479.
+
 ## Agent-skill v0.7.18 — 2026-06-29
 
 ### 고아 /agent-all 런 자가 치유 + `/harness-view` HTML 대시보드

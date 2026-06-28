@@ -6,6 +6,12 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.19 — 2026-06-29
+
+### `/harness-view` redesigned as a master-detail dashboard
+
+The v0.7.18 first-cut `/harness-view` already rendered markdown to HTML, but its Specs view was a flat accordion of date-prefixed *filenames* (50 in this repo) and task checkboxes leaked as literal `[x]`/`[ ]` text. The skill is now a master-detail dashboard: a searchable sidebar (Run / Tasks / Specs, each entry labelled by its extracted title and grouped by topic family), a focused reading pane, a per-document table of contents, an overview-home landing (run timeline + task rollup + spec summary), and deep-links (`#doc=<id>` plus heading anchors). The markdown engine moved into its own `markdown.mjs` and gained task checkboxes (real disabled `<input>`), indentation-aware nested lists, code-fence language labels, heading anchors, and CommonMark soft-wrap. It is still ONE dependency-free `.agent-skill/html/index.html` — the browser ships no parser; Node pre-renders every document — and `render.mjs` / `writeDashboard` entry points are unchanged. A final adversarial whole-branch review caught and fixed a cross-pane TOC defect (heading-id collisions + hash routing) before merge. +new renderer / metadata / TOC unit tests; full suite 2479/2479.
+
 ## Agent-skill v0.7.18 — 2026-06-29
 
 ### Orphan /agent-all run self-heal + `/harness-view` HTML dashboard

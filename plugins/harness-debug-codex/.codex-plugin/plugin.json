@@ -1,6 +1,6 @@
 {
   "name": "harness-debug-codex",
-  "version": "0.7.18",
+  "version": "0.7.19",
   "description": "Theme E for Codex CLI — systematic debugging: reproduce -> isolate -> hypothesize -> verify with structured error parsing, .debug-state.json persistence, git/input bisection, and durable debug-log artifacts. Wraps superpowers:systematic-debugging when available.",
   "keywords": [
     "harness",
