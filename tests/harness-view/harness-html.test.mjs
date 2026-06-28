@@ -87,6 +87,14 @@ test("mdToHtml is the html string of renderMarkdown", () => {
   assert.equal(mdToHtml("## A"), renderMarkdown("## A").html);
 });
 
+test("task list items render as disabled checkboxes", () => {
+  const { html } = renderMarkdown("- [x] done item\n- [ ] open item");
+  assert.match(html, /<li class="task-li"><label class="task"><input type="checkbox" disabled checked> done item<\/label><\/li>/);
+  assert.match(html, /<li class="task-li"><label class="task"><input type="checkbox" disabled > open item<\/label><\/li>/);
+  assert.doesNotMatch(html, /\[x\]/);
+  assert.doesNotMatch(html, /\[ \]/);
+});
+
 test("parseFrontmatter extracts meta and body", () => {
   const { meta, body } = parseFrontmatter("---\nid: AS-1\nstatus: running\n---\n# Body\ntext");
   assert.equal(meta.id, "AS-1");

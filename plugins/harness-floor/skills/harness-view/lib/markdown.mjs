@@ -106,7 +106,14 @@ export function renderMarkdown(md) {
         items.push(lines[i].replace(/^\s*([-*+]|\d+\.)\s+/, "")); i++;
       }
       const tag = ordered ? "ol" : "ul";
-      out.push(`<${tag}>${items.map((it) => `<li>${inlineMd(it)}</li>`).join("")}</${tag}>`);
+      out.push(`<${tag}>${items.map((it) => {
+        const cb = it.match(/^\[([ xX])\]\s+(.*)$/);
+        if (cb) {
+          const checked = cb[1].toLowerCase() === "x";
+          return `<li class="task-li"><label class="task"><input type="checkbox" disabled ${checked ? "checked" : ""}> ${inlineMd(cb[2])}</label></li>`;
+        }
+        return `<li>${inlineMd(it)}</li>`;
+      }).join("")}</${tag}>`);
       continue;
     }
     para.push(line.trim());
