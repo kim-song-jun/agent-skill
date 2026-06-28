@@ -6,6 +6,16 @@
 
 ## 미출시
 
+## Agent-skill v0.7.16 — 2026-06-28
+
+### Copilot git-safety 설치 시 자동 활성화 + grounded 하네스 검증
+
+"이 하네스가 general하게 올바르게 동작하는지" grounded 검증(5개 플랫폼 실 install-and-run 프로브 + cross-port 계약 + 76-assertion orchestration-spine 실행)이 **works-with-caveats**를 반환하고, 실제 결함 1건을 짚었습니다:
+
+- **수정 — Copilot git-safety가 설치됐지만 활성화 안 됨.** `install-platform.sh --platform=copilot`이 `.github/hooks/preToolUse.json`을 `printf '{}'`(allow-all) stub로 써서, v0.7.14 규칙 6/8 git-safety가 사용자가 별도로 `bin/install-hooks.mjs`를 돌리기 전까지 조용히 부재했습니다. project-local `preToolUse.json`이 이제 실 핸들러를 호출하되, 핸들러 파일 존재를 가드합니다(Copilot `preToolUse`는 fail-closed라 builder-only 설치가 모든 `bash`를 차단하면 안 됨). project-local(`.github/hooks/`) — 전역 `~/.copilot` 변경 없음.
+
+검증으로 확인된 견고함: Claude/Codex end-to-end 클린(doctor 35/35·45/45), Cursor 동작, orchestration spine 실증(config-loader/wave-builder/gate-plan/run-lease/break-resolver/adversarial 독립성 — 76/76 실행 assertion), cross-port 무결성 게이트(sync-lib 209 일치, port-ssot 34/34, 버전 skew 0).
+
 ## Agent-skill v0.7.15 — 2026-06-28
 
 ### 동시 `/agent-all` 실행 lease — 기둥5(병렬 세션) 완성

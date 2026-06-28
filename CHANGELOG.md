@@ -6,6 +6,16 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.16 — 2026-06-28
+
+### Copilot git-safety auto-activates on install + grounded harness verification
+
+A grounded "does this harness work generally/correctly" verification (real install-and-run probes across all 5 platforms + cross-port contracts + a 76-assertion orchestration-spine run) returned **works-with-caveats** — and surfaced one genuine defect:
+
+- **Fix — Copilot git-safety was installed but NOT activated.** `install-platform.sh --platform=copilot` wrote `.github/hooks/preToolUse.json` as a `printf '{}'` allow-all stub, so the v0.7.14 rule-6/8 git-safety guarantees were silently absent until a user separately ran `bin/install-hooks.mjs`. The project-local `preToolUse.json` now invokes the real handler, guarded on the handler file existing (Copilot `preToolUse` is fail-closed, so a builder-only install must not deny every `bash` command). Project-local (`.github/hooks/`) — no global `~/.copilot` mutation.
+
+Verification confirmed solid: Claude/Codex end-to-end clean (doctor 35/35, 45/45), Cursor functional, the orchestration spine real (config-loader / wave-builder / gate-plan / run-lease / break-resolver / adversarial-independence — 76/76 executed assertions), cross-port integrity gated (sync-lib 209 match, port-ssot 34/34, zero version skew).
+
 ## Agent-skill v0.7.15 — 2026-06-28
 
 ### Concurrent `/agent-all` run lease — pillar-5 (parallel sessions) complete
