@@ -38,13 +38,17 @@ function splitRow(line) {
   return line.replace(/^\s*\|/, "").replace(/\|\s*$/, "").split("|").map((c) => c.trim());
 }
 
-export function mdToHtml(md) {
+export function slugify(s) {
+  return String(s).toLowerCase().replace(/[^a-z0-9가-힣]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+export function renderMarkdown(md) {
   const lines = String(md ?? "").split(/\r?\n/);
-  const out = [];
+  const out = []; const toc = []; const seen = {};
   let i = 0;
   let para = [];
   const flushPara = () => {
-    if (para.length) { out.push(`<p>${para.map(inlineMd).join("<br>")}</p>`); para = []; }
+    if (para.length) { out.push(`<p>${para.map(inlineMd).join(" ")}</p>`); para = []; }
   };
   while (i < lines.length) {
     const line = lines[i];
@@ -62,7 +66,15 @@ export function mdToHtml(md) {
     if (/^\s*$/.test(line)) { flushPara(); i++; continue; }
     // heading
     const h = line.match(/^(#{1,6})\s+(.*)$/);
-    if (h) { flushPara(); out.push(`<h${h[1].length}>${inlineMd(h[2].trim())}</h${h[1].length}>`); i++; continue; }
+    if (h) {
+      flushPara();
+      const level = h[1].length; const text = h[2].trim();
+      let id = slugify(text) || `h-${i}`;
+      if (seen[id]) id = `${id}-${++seen[id]}`; else seen[id] = 1;
+      if (level >= 2 && level <= 3) toc.push({ level, text, id });
+      out.push(`<h${level} id="${id}">${inlineMd(text)}</h${level}>`);
+      i++; continue;
+    }
     // hr
     if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) { flushPara(); out.push("<hr>"); i++; continue; }
     // table: a pipe row followed by a separator row
@@ -101,8 +113,10 @@ export function mdToHtml(md) {
     i++;
   }
   flushPara();
-  return out.join("\n");
+  return { html: out.join("\n"), toc };
 }
+
+export function mdToHtml(md) { return renderMarkdown(md).html; }
 
 // Strip a leading YAML-ish frontmatter block; return { meta, body }.
 export function parseFrontmatter(md) {

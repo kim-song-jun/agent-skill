@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  mdToHtml, inlineMd, escapeHtml, parseFrontmatter,
+  mdToHtml, inlineMd, escapeHtml, parseFrontmatter, renderMarkdown, slugify,
 } from "../../plugins/harness-floor/skills/harness-view/lib/markdown.mjs";
 import {
   collectArtifacts, renderDashboard, writeDashboard,
@@ -57,9 +57,34 @@ test("fenced code is verbatim + escaped, not formatted", () => {
 
 test("headings and lists", () => {
   const h = mdToHtml("# Title\n\n- one\n- two\n\n1. a\n2. b");
-  assert.match(h, /<h1>Title<\/h1>/);
+  assert.match(h, /<h1 id="title">Title<\/h1>/);
   assert.match(h, /<ul><li>one<\/li><li>two<\/li><\/ul>/);
   assert.match(h, /<ol><li>a<\/li><li>b<\/li><\/ol>/);
+});
+
+test("slugify lowercases and hyphenates, keeps hangul", () => {
+  assert.equal(slugify("Goal & Scope"), "goal-scope");
+  assert.equal(slugify("재설정 토큰"), "재설정-토큰");
+});
+
+test("renderMarkdown gives headings ids and collects an h2/h3 toc", () => {
+  const { html, toc } = renderMarkdown("# Title\n\n## Goal\ntext\n\n### Detail\nmore\n\n# Other H1");
+  assert.match(html, /<h2 id="goal">Goal<\/h2>/);
+  assert.match(html, /<h3 id="detail">Detail<\/h3>/);
+  assert.deepEqual(toc, [
+    { level: 2, text: "Goal", id: "goal" },
+    { level: 3, text: "Detail", id: "detail" },
+  ]); // h1 is excluded from the toc
+});
+
+test("renderMarkdown dedupes repeated heading slugs", () => {
+  const { html } = renderMarkdown("## Notes\n\n## Notes");
+  assert.match(html, /<h2 id="notes">Notes<\/h2>/);
+  assert.match(html, /<h2 id="notes-2">Notes<\/h2>/);
+});
+
+test("mdToHtml is the html string of renderMarkdown", () => {
+  assert.equal(mdToHtml("## A"), renderMarkdown("## A").html);
 });
 
 test("parseFrontmatter extracts meta and body", () => {
