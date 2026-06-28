@@ -87,6 +87,16 @@ test("mdToHtml is the html string of renderMarkdown", () => {
   assert.equal(mdToHtml("## A"), renderMarkdown("## A").html);
 });
 
+test("nested list items nest by indentation", () => {
+  const { html } = renderMarkdown("- a\n  - a1\n  - a2\n- b");
+  assert.match(html, /<ul><li>a<\/li><ul><li>a1<\/li><li>a2<\/li><\/ul><li>b<\/li><\/ul>/);
+});
+
+test("flat single-level list is unchanged", () => {
+  const { html } = renderMarkdown("- one\n- two");
+  assert.match(html, /<ul><li>one<\/li><li>two<\/li><\/ul>/);
+});
+
 test("task list items render as disabled checkboxes", () => {
   const { html } = renderMarkdown("- [x] done item\n- [ ] open item");
   assert.match(html, /<li class="task-li"><label class="task"><input type="checkbox" disabled checked> done item<\/label><\/li>/);

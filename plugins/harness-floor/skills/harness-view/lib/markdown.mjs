@@ -97,23 +97,27 @@ export function renderMarkdown(md) {
       out.push(`<blockquote>${buf.map(inlineMd).join("<br>")}</blockquote>`);
       continue;
     }
-    // list (flat; ordered vs unordered by the first marker)
+    // list (indent-stack; ordered vs unordered per item; folds in Task 3 checkbox logic)
     if (/^\s*([-*+]|\d+\.)\s+/.test(line)) {
       flushPara();
-      const ordered = /^\s*\d+\.\s+/.test(line);
-      const items = [];
+      const stack = [];                       // [{ indent, tag }]
+      const html = [];
+      const closeTo = (indent) => { while (stack.length && stack[stack.length - 1].indent > indent) html.push(`</${stack.pop().tag}>`); };
       while (i < lines.length && /^\s*([-*+]|\d+\.)\s+/.test(lines[i])) {
-        items.push(lines[i].replace(/^\s*([-*+]|\d+\.)\s+/, "")); i++;
+        const m = lines[i].match(/^(\s*)([-*+]|\d+\.)\s+(.*)$/);
+        const indent = m[1].replace(/\t/g, "  ").length;
+        const ordered = /\d+\./.test(m[2]);
+        let content = m[3];
+        const top = stack[stack.length - 1];
+        if (!top || indent > top.indent) { const tag = ordered ? "ol" : "ul"; html.push(`<${tag}>`); stack.push({ indent, tag }); }
+        else if (indent < top.indent) closeTo(indent);
+        const cb = content.match(/^\[([ xX])\]\s+(.*)$/);     // checkbox support from Task 3
+        if (cb) { const checked = cb[1].toLowerCase() === "x"; html.push(`<li class="task-li"><label class="task"><input type="checkbox" disabled ${checked ? "checked" : ""}> ${inlineMd(cb[2])}</label></li>`); }
+        else html.push(`<li>${inlineMd(content)}</li>`);
+        i++;
       }
-      const tag = ordered ? "ol" : "ul";
-      out.push(`<${tag}>${items.map((it) => {
-        const cb = it.match(/^\[([ xX])\]\s+(.*)$/);
-        if (cb) {
-          const checked = cb[1].toLowerCase() === "x";
-          return `<li class="task-li"><label class="task"><input type="checkbox" disabled ${checked ? "checked" : ""}> ${inlineMd(cb[2])}</label></li>`;
-        }
-        return `<li>${inlineMd(it)}</li>`;
-      }).join("")}</${tag}>`);
+      while (stack.length) html.push(`</${stack.pop().tag}>`);
+      out.push(html.join(""));
       continue;
     }
     para.push(line.trim());
