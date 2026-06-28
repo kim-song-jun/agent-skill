@@ -160,17 +160,17 @@ test("collectArtifacts gathers run, tasks, specs", () => {
   assert.match(a.taskIndex, /Task ledger/);
 });
 
-test("renderDashboard includes run status, task, spec, and 3 panels", () => {
+test("renderDashboard assembles the three-column shell with content", () => {
   const a = collectArtifacts({ cwd: fixtureProject(), now: "GEN" });
   const html = renderDashboard(a);
   assert.match(html, /<!DOCTYPE html>/);
-  assert.match(html, /ship the thing/);          // run task
-  assert.match(html, /RUN-9/);                     // run id
-  assert.match(html, /First task/);                // task body rendered
-  assert.match(html, /Thing spec/);                // spec body rendered
-  assert.match(html, /id="run"/);
-  assert.match(html, /id="tasks"/);
-  assert.match(html, /id="specs"/);
+  assert.match(html, /class="hv-app"/);                       // grid shell
+  assert.match(html, /class="hv-sidebar"/);                   // sidebar present
+  assert.match(html, /data-doc-id="home"/);                   // home pane
+  assert.match(html, /ship the thing/);                        // run task (overview-home)
+  assert.match(html, /First task/);                            // task rendered in a pane
+  assert.match(html, /Thing spec/);                            // spec rendered in a pane
+  assert.match(html, /<script>/);                              // client JS embedded
 });
 
 test("phase timeline marks completed and current", () => {
