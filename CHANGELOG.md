@@ -6,6 +6,16 @@ All notable changes to this project. Date-stamped tags exist for each release ca
 
 ## Unreleased
 
+## Agent-skill v0.7.18 — 2026-06-29
+
+### Orphan /agent-all run self-heal + `/harness-view` HTML dashboard
+
+**Stop-hook orphan handling.** A run that died at Phase 0 (state written, but the turn ended before Phase 1 captured a `task`) used to trap every turn-end for up to 12h: `agent-all-continue.mjs` blocked on `status:"running"` alone, unaware of the run lease or whether a task even existed. The hook now models liveness off the 15-min run lease plus a "no task = nothing to continue" check, and self-heals a provably-dead, safely-owned orphan to `status:"aborted"` — gated by staleness, a compare-and-swap re-read, and a fresh-foreign-lease veto so a shared worktree's concurrent run is never clobbered. The lease is read-only in the hook. Refactored into a pure `evaluateStop()` + thin I/O shell; +11 tests (regression for the exact trap, the concurrency veto, CAS, healthy-run-still-blocks).
+
+### `/harness-view` — human-readable HTML dashboard of harness artifacts
+
+New `harness-floor` skill that compiles the harness's own artifacts — the live `/agent-all` run state, the task ledger, and design specs — into ONE self-contained HTML dashboard at `.agent-skill/html/index.html` (dependency-free, no network). On demand via `/harness-view`; `/agent-all` best-effort regenerates it at every phase checkpoint so the human view tracks a run live. +14 renderer tests (HTML escaping, GFM tables, a regression that prose digits aren't mangled by the code-span sentinel). `.agent-skill/html/` is gitignored — a derived view, never a source of record.
+
 ## Agent-skill v0.7.17 — 2026-06-28
 
 ### Copilot doctor — automated post-install validation that catches the git-safety stub

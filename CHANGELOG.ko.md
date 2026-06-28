@@ -6,6 +6,16 @@
 
 ## 미출시
 
+## Agent-skill v0.7.18 — 2026-06-29
+
+### 고아 /agent-all 런 자가 치유 + `/harness-view` HTML 대시보드
+
+**Stop 훅 고아 처리.** Phase 0에서 죽은 런(상태는 기록됐지만 Phase 1이 `task`를 잡기 전에 턴이 끝난 경우)이 최대 12시간 동안 매 턴 종료를 가로막던 함정을 제거. `agent-all-continue.mjs`는 `status:"running"`만 보고 run lease나 task 유무를 몰랐습니다. 이제 15분 run lease + "task 없음 = 이어갈 것 없음" 신호로 liveness를 판단하고, 확실히 죽고 안전하게 소유된 고아만 `status:"aborted"`로 자가 치유합니다 — staleness·compare-and-swap 재독해·fresh foreign lease veto로 게이트해 공유 워크트리의 동시 런을 절대 덮어쓰지 않습니다. 훅에서 lease는 읽기 전용. 순수 `evaluateStop()` + 얇은 I/O 셸로 리팩터, 테스트 +11(함정 회귀·동시성 veto·CAS·정상 런 보존).
+
+### `/harness-view` — 하네스 산출물의 사람이 읽는 HTML 대시보드
+
+라이브 `/agent-all` 런 상태·task 원장·설계 spec을 self-contained HTML 대시보드(`.agent-skill/html/index.html`, 의존성·네트워크 0)로 컴파일하는 신규 `harness-floor` 스킬. `/harness-view`로 온디맨드, `/agent-all`은 phase checkpoint마다 best-effort로 재생성해 사람 뷰가 런을 실시간 추적. 렌더러 테스트 +14(HTML escaping·GFM 테이블·코드 sentinel이 본문 숫자를 망치지 않는 회귀). `.agent-skill/html/`는 gitignore(파생 뷰, 원본 아님).
+
 ## Agent-skill v0.7.17 — 2026-06-28
 
 ### Copilot doctor — git-safety stub를 잡는 자동 post-install 검증
