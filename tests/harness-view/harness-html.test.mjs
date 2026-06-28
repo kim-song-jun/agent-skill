@@ -8,6 +8,7 @@ import {
 } from "../../plugins/harness-floor/skills/harness-view/lib/markdown.mjs";
 import {
   collectArtifacts, renderDashboard, writeDashboard,
+  familyOf, deriveDocMeta,
 } from "../../plugins/harness-floor/skills/harness-view/lib/harness-html.mjs";
 
 test("inline: bold, inline code, link", () => {
@@ -192,4 +193,30 @@ test("writeDashboard writes .agent-skill/html/index.html", () => {
   assert.ok(existsSync(p));
   assert.match(p, /\.agent-skill\/html\/index\.html$/);
   assert.match(readFileSync(p, "utf-8"), /<!DOCTYPE html>/);
+});
+
+test("familyOf matches known prefixes, else misc", () => {
+  assert.equal(familyOf("2026-05-18-agent-all-codex-impl-spec"), "agent-all");
+  assert.equal(familyOf("2026-05-17-visual-qa-design"), "visual-qa");
+  assert.equal(familyOf("2026-06-11-something-unknown"), "misc");
+});
+
+test("deriveDocMeta extracts title, date, family, lang, id, status", () => {
+  const md = "---\ndisplay_id: T-1\nstatus: running\n---\n# First task\n\nbody";
+  const m = deriveDocMeta("task", "T-1-first.md", md);
+  assert.equal(m.id, "task:T-1-first");
+  assert.equal(m.title, "First task");
+  assert.equal(m.status, "running");
+  assert.match(m.body, /body/);
+
+  const spec = deriveDocMeta("spec", "2026-06-29-thing.ko.md", "# 한글 제목\n\n본문");
+  assert.equal(spec.id, "spec:2026-06-29-thing.ko");
+  assert.equal(spec.title, "한글 제목");
+  assert.equal(spec.date, "2026-06-29");
+  assert.equal(spec.lang, "KO");
+});
+
+test("deriveDocMeta falls back to the file slug when there is no h1", () => {
+  const m = deriveDocMeta("spec", "2026-01-01-no-title.md", "no heading here");
+  assert.equal(m.title, "2026-01-01-no-title");
 });

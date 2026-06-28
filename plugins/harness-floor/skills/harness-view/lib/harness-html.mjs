@@ -10,6 +10,30 @@ import { resolve, join, basename } from "node:path";
 
 import { escapeHtml, inlineMd, mdToHtml, parseFrontmatter } from "./markdown.mjs";
 
+// ───────────────────────── document metadata ─────────────────────────
+export const FAMILIES = [
+  "agent-all", "visual-qa", "harness-builder", "harness-debug", "harness-explore",
+  "harness-thrift", "cross-platform", "hook", "decision-surfacing", "auto-detect",
+  "native-ask", "cli-runtime",
+];
+export function familyOf(slug) { for (const f of FAMILIES) if (String(slug).includes(f)) return f; return "misc"; }
+
+export function deriveDocMeta(kind, file, md) {
+  const { meta, body } = parseFrontmatter(md);
+  const slug = String(file).replace(/\.md$/, "");
+  const titleM = body.match(/^#\s+(.+)$/m);
+  const date = (String(file).match(/^(\d{4}-\d{2}-\d{2})/) || [])[1] || "";
+  return {
+    id: `${kind}:${slug}`,
+    file, body,
+    title: titleM ? titleM[1].trim() : slug,
+    date,
+    family: familyOf(slug),
+    lang: /\.ko$/.test(slug) ? "KO" : "EN",
+    status: meta.status || "",
+  };
+}
+
 // ───────────────────────── artifact collection ─────────────────────────
 function readJson(path) { try { return JSON.parse(readFileSync(path, "utf-8")); } catch { return null; } }
 function readText(path) { try { return readFileSync(path, "utf-8"); } catch { return null; } }
