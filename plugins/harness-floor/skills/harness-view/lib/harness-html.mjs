@@ -284,6 +284,7 @@ const CLIENT_JS = `
       var body = pane ? (pane.textContent || '').toLowerCase() : '';
       r.style.display = (!q || hay.indexOf(q) >= 0 || body.indexOf(q) >= 0) ? '' : 'none';
     });
+    document.querySelectorAll('.hv-empty').forEach(function (e) { e.style.display = q ? 'none' : ''; });
     document.querySelectorAll('.hv-group').forEach(function (g) {
       var any = Array.prototype.some.call(g.querySelectorAll('.hv-row'), function (r) { return r.style.display !== 'none'; });
       g.style.display = any ? '' : 'none';
